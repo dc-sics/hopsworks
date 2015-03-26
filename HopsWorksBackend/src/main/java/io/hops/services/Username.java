@@ -10,7 +10,6 @@ import java.util.Random;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
-import org.apache.commons.codec.digest.DigestUtils;
 
 /**
  *
