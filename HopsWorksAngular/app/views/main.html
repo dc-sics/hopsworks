@@ -1,0 +1,38 @@
+<style type="text/css">
+  .input-group {
+    margin-top: 20px;
+  }
+</style>
+
+<div class="container">
+  <h2>Test todo</h2>
+
+  <!-- Todos input -->
+  <label>Sök: <input ng-model="sokvarde" type="text"/></label>
+
+  <form role="form" ng-submit="addTodo()">
+    <div class="row">
+      <div class="input-group">
+        <input type="text" ng-model="todo" placeholder="What needs to be done?" class="form-control">
+        <span class="input-group-btn">
+          <input type="submit" class="btn btn-primary" value="Add">
+        </span>
+      </div>
+    </div>
+  </form>
+
+  <!-- Todos list -->
+  <p class="input-group" ng-repeat="todo in todos | filter: sokvarde">
+
+    <input type="text" ng-model="todo" class="form-control">
+    <span class="input-group-btn">
+      <button class="btn btn-danger" ng-click="removeTodo($index)" aria-label="Remove">X</button>
+    </span>
+
+  </p>
+
+
+
+
+
+</div>
