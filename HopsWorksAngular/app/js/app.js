@@ -10,19 +10,12 @@ angular.module('hopsWorksApp', [
   ])
   .config(function ($routeProvider) {
     $routeProvider
-      .when('/', {
-        templateUrl: 'views/main.html',
-        controller: 'MainCtrl'
-      })
-      .when('/about', {
-        templateUrl: 'views/about.html',
-        controller: 'AboutCtrl'
-      })
       .when('/login', {
         templateUrl: 'views/login.html',
         controller: 'SecurityCtrl'
       })
       .otherwise({
-        redirectTo: '/'
-      });
+        templateUrl: 'views/login.html',
+        controller: 'SecurityCtrl'      
+    });
   });
