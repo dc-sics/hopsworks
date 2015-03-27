@@ -14,8 +14,12 @@ angular.module('hopsWorksApp', [
         templateUrl: 'views/login.html',
         controller: 'SecurityCtrl'
       })
+      .when('/home', {
+        templateUrl: 'views/home.html',
+        controller: 'HomeCtrl'
+      })
       .otherwise({
-        templateUrl: 'views/login.html',
-        controller: 'SecurityCtrl'      
+        templateUrl: 'views/home.html',
+        controller: 'HomeCtrl'      
     });
   });

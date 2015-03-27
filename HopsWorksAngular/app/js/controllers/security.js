@@ -24,7 +24,7 @@ angular.module('hopsWorksApp')
   		.success(function(data) {
   			console.log('You are now logged in.. Great.. Really');
   			console.log(data);
-  			//$location.url('/about');
+  			$location.url('/home');
 
   			// Save the auth_token to session
   			$cookies.sessionID = data.sessionID;
