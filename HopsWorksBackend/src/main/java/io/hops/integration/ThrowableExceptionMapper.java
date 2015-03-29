@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.hops.services;
+package io.hops.integration;
 
+import io.hops.services.rest.JsonResponse;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -28,7 +29,7 @@ public class ThrowableExceptionMapper implements ExceptionMapper<Throwable>{
     @Override
     @Produces(MediaType.APPLICATION_JSON)
     public Response toResponse(Throwable ex) {
-        System.out.println("ThrowableExceptionMapper: "+ex.getClass());
+        System.out.println("ThrowableExceptionMapper: " + ex.getClass());
         ex.printStackTrace();
         //usually you don't pass detailed info out (don't do this here in production environments)
         JSON.setErrorMsg(ex.getMessage());

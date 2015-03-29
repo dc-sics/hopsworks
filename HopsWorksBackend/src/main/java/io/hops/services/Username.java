@@ -1,5 +1,6 @@
 package io.hops.services;
 
+import io.hops.integration.UserDTO;
 import java.io.Serializable;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.Random;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import org.apache.commons.codec.digest.DigestUtils;
 
 /**
  *
@@ -71,13 +73,13 @@ public class Username implements Serializable {
     @NotNull
     @Column(name = "STATUS")
     private int status;
-    
+   /* 
     @Transient
     private Group extraGroup;
-
+*/
     private static final long serialVersionUID = 1L;
     // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
-
+/*
     @ElementCollection(targetClass = Group.class)
     @CollectionTable(name = "USERS_GROUPS",
             joinColumns = @JoinColumn(name = "email", nullable = false),
@@ -86,7 +88,7 @@ public class Username implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column(name = "groupname", length = 64, nullable = false)
     private List<Group> groups;
-
+*/
     public Username() {
     }
 
@@ -115,7 +117,7 @@ public class Username implements Serializable {
     public void setRegisteredOn(Date registeredOn) {
         this.registeredOn = registeredOn;
     }
-
+/*
     public List<Group> getGroups() {
         return groups;
     }
@@ -123,7 +125,7 @@ public class Username implements Serializable {
     public void setGroups(List<Group> groups) {
         this.groups = groups;
     }
-
+*/
     public byte[] getSalt() {
         return salt;
     }
@@ -146,8 +148,8 @@ public class Username implements Serializable {
 
     public void setPassword(String password) {
         if(password != null){
-            //this.password = DigestUtils.sha256Hex(password);
-            this.password = DatatypeConverter.printHexBinary(password.getBytes());
+            this.password = DigestUtils.sha256Hex(password);
+            //this.password = DatatypeConverter.printHexBinary(password.getBytes());
         } else {
             this.password = "";
         }
@@ -243,7 +245,7 @@ public class Username implements Serializable {
         }
         return true;
     }
-
+/*
     public void addGroup(Group g) {
         if (groups == null || groups.isEmpty()) {
             groups = new ArrayList<>();
@@ -255,7 +257,7 @@ public class Username implements Serializable {
     
     /*
      Derived property to allow adding groups with dropdown list in frontend.
-    */
+
     public void setExtraGroup(Group g){
         addGroup(g);
         this.extraGroup = g;
@@ -264,4 +266,4 @@ public class Username implements Serializable {
     public Group getExtraGroup(){
         return extraGroup;
     }
-}
+*/}

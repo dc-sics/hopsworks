@@ -29,8 +29,8 @@ public class ApplicationConfig extends Application {
      * If required, comment out calling this method in getClasses().
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
-        resources.add(io.hops.services.ThrowableExceptionMapper.class);
-        resources.add(io.hops.services.UserManagementService.class);
+        resources.add(io.hops.integration.ThrowableExceptionMapper.class);
+        resources.add(io.hops.services.rest.SecurityService.class);
     }
     
 }
