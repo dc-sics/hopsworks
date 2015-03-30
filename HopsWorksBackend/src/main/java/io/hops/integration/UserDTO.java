@@ -4,71 +4,113 @@ package io.hops.integration;
 
 /**
  *
- * @author Jim Dowling<jdowling@sics.se>
+ * @author André & Ermias
  */
 public class UserDTO {
- 
-    private String username;
     private String email;
-    private String name;
-    private String password1;
-    private String password2;
-    private String mobileNum;
+    private String telephoneNum;
+    private String firstName;
+    private String lastName; 
+    private int status;
+    private String securityQuestion;
+    private String securityAnswer;
+    private String secret;   
+    private String chosenPassword;
+    private String repeatedPassword;
 
     public UserDTO() {
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getName() {
-        return name;
-    }
-     
-    public void setName(String name) {
-        this.name = name;
-    }
-  
+    
+    
     public String getEmail() {
         return email;
-    } 
- 
+    }
+
     public void setEmail(String email) {
         this.email = email;
     }
-  
-    public String getPassword1() {
-        return password1;
+
+    public String getTelephoneNum() {
+        return telephoneNum;
     }
-     
-    public void setPassword1(String password) {
-        this.password1 = password;
+
+    public void setTelephoneNum(String telephoneNum) {
+        this.telephoneNum = telephoneNum;
     }
-     
-    public String getPassword2() {
-        return password2;
+
+    public String getFirstName() {
+        return firstName;
     }
-     
-    public void setPassword2(String password) {
-        this.password2 = password;
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
-      
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public String getSecurityQuestion() {
+        return securityQuestion;
+    }
+
+    public void setSecurityQuestion(String securityQuestion) {
+        this.securityQuestion = securityQuestion;
+    }
+
+    public String getSecurityAnswer() {
+        return securityAnswer;
+    }
+
+    public void setSecurityAnswer(String securityAnswer) {
+        this.securityAnswer = securityAnswer;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    public String getChosenPassword() {
+        return chosenPassword;
+    }
+
+    public void setChosenPassword(String chosenPassword) {
+        this.chosenPassword = chosenPassword;
+    }
+
+    public String getRepeatedPassword() {
+        return repeatedPassword;
+    }
+
+    public void setRepeatedPassword(String repeatedPassword) {
+        this.repeatedPassword = repeatedPassword;
+    }
+
+    
     @Override
     public String toString() {
-        return "User [email=" + email + ", name=" + name
-                + ", password1=" + password1 +", password2=" + password2 + "]";
+        return "UserDTO{" + "email=" + email + ", telephoneNum=" + telephoneNum + 
+               ", firstName=" + firstName + ", lastName=" + lastName + 
+               ", status=" + status + ", securityQuestion=" + securityQuestion + 
+               ", securityAnswer=" + securityAnswer + ", secret=" + secret + 
+               ", chosenPassword=" + chosenPassword + ", repeatedPassword=" + repeatedPassword + '}';
     }
 
-    public String getMobileNum() {
-        return mobileNum;
-    }
-
-    public void setMobileNum(String mobileNum) {
-        this.mobileNum = mobileNum;
-    }
 }

@@ -28,12 +28,12 @@ import javax.ws.rs.core.SecurityContext;
 
 /**
  *
- * @author Jim Dowling<jdowling@sics.se>
+ * @author André & Ermias
  */
 @Path("/auth")
 @Produces(MediaType.TEXT_PLAIN)
 @Stateless
-public class SecurityService {
+public class AuthService {
 
     @EJB
     private UserFacade userBean;
@@ -59,10 +59,11 @@ public class SecurityService {
     @GET
     @Path("session")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response session(@Context HttpServletRequest req) {
+    public Response session(@Context SecurityContext sc, @Context HttpServletRequest req) {
         JsonResponse json = new JsonResponse();
-        req.getServletContext().log("SESSIONID@ping: " + req.getSession().getId());
-        json.setData(req.getSession().getId());
+        req.getServletContext().log("SESSIONID: " + req.getSession().getId());
+        
+        json.setData(sc.getUserPrincipal().getName());
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
 
@@ -77,18 +78,18 @@ public class SecurityService {
         req.getServletContext().log("SESSIONID@login: " + req.getSession().getId());
 
         JsonResponse json = new JsonResponse();
-        UsersInterface user = (UsersInterface) userBean.findByEmail(email);
+        Users user = userBean.findByEmail(email);
 
         //only login if not already logged in...
         if (req.getUserPrincipal() == null) {
-            if (user != null && user.getStatus() == UsersInterface.STATUS_REQUEST) {
+            if (user != null && user.getStatus() == Users.STATUS_REQUEST) {
                 json.setStatus("FAILED");
                 json.setErrorMsg("Your request has not yet been acknowlegded.");
                 return Response.ok().entity(json).build();
             }
             try {
                 req.login(email, password);
-                req.getServletContext().log("Authentication Demo: successfully logged in " + email);
+                req.getServletContext().log("Authentication: successfully logged in " + email);
             } catch (ServletException e) {
                 json.setStatus("FAILED");
                 json.setErrorMsg("Authentication failed");
@@ -101,7 +102,10 @@ public class SecurityService {
         //read the user data from db and return to caller
         json.setStatus("SUCCESS");
 
-        req.getServletContext().log("Authentication Demo: successfully retrieved User Profile from DB for " + email);
+        //we don't want to send the hashed password out in the json response
+        userBean.detach(user);
+        user.setPassword("");
+        req.getServletContext().log("Authentication: successfully retrieved User Profile from DB for " + email);
         json.setData(user);
         json.setSessionID(req.getSession().getId());
 
@@ -143,11 +147,13 @@ public class SecurityService {
     public Response register(UserDTO newUser, @Context HttpServletRequest req) {
 
         JsonResponse json = new JsonResponse();
-        json.setData(newUser); //just return the date we received
+        json.setData(newUser); //just return the data we received
 
         //do some validation (in reality you would do some more validation...)
         //by the way: i did not choose to use bean validation (JSR 303)
-        if (newUser.getPassword1().length() == 0 || !newUser.getPassword1().equals(newUser.getPassword2())) {
+        if (newUser.getChosenPassword().length() == 0 || 
+           !newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
+            
             json.setErrorMsg("Both passwords have to be the same - typo?");
             json.setStatus("FAILED");
             return Response.ok().entity(json).build();
@@ -160,7 +166,7 @@ public class SecurityService {
         //this could cause a runtime exception, i.e. in case the user already exists
         //such exceptions will be caught by our ExceptionMapper, i.e. javax.transaction.RollbackException
         userBean.persist(user); // this would use the clients transaction which is committed after save() has finished
-        req.getServletContext().log("successfully registered new user: '" + newUser.getEmail() + "':'" + newUser.getPassword1() + "'");
+        req.getServletContext().log("successfully registered new user: '" + newUser.getEmail() + "'");
 
         return Response.ok().entity(json).build();
     }

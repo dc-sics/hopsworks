@@ -6,6 +6,7 @@
 package io.hops.model;
 
 import io.hops.integration.UserDTO;
+import io.hops.model.Groups;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,31 +39,39 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 @NamedQueries({
     @NamedQuery(name = "Users.findAll", query = "SELECT u FROM Users u"),
     @NamedQuery(name = "Users.findByEmail", query = "SELECT u FROM Users u WHERE u.email = :email"),
-    @NamedQuery(name = "Users.findByMobilenum", query = "SELECT u FROM Users u WHERE u.mobilenum = :mobilenum"),
-    @NamedQuery(name = "Users.findByName", query = "SELECT u FROM Users u WHERE u.name = :name"),
-    @NamedQuery(name = "Users.findAllByName", query = "SELECT r.name FROM Users r"),
+    @NamedQuery(name = "Users.findByTelephoneNum", query = "SELECT u FROM Users u WHERE u.telephoneNum = :telephoneNum"),
+    @NamedQuery(name = "Users.findByFirstName", query = "SELECT u FROM Users u WHERE u.firstName = :firstName"),
+    @NamedQuery(name = "Users.findByPassword", query = "SELECT u FROM Users u WHERE u.password = :password"),
     @NamedQuery(name = "Users.findByRegisteredon", query = "SELECT u FROM Users u WHERE u.registeredon = :registeredon"),
-    @NamedQuery(name = "Users.findByStatus", query = "SELECT u FROM Users u WHERE u.status = :status")})
-public class Users implements Serializable, UsersInterface {
+    @NamedQuery(name = "Users.findByStatus", query = "SELECT u FROM Users u WHERE u.status = :status"),
+    @NamedQuery(name = "Users.findByLastName", query = "SELECT u FROM Users u WHERE u.lastName = :lastName"),
+    @NamedQuery(name = "Users.findBySecurityQuestion", query = "SELECT u FROM Users u WHERE u.securityQuestion = :securityQuestion"),
+    @NamedQuery(name = "Users.findBySecurityAnswer", query = "SELECT u FROM Users u WHERE u.securityAnswer = :securityAnswer"),
+    @NamedQuery(name = "Users.findBySecret", query = "SELECT u FROM Users u WHERE u.secret = :secret"),
+    @NamedQuery(name = "Users.findByIsonline", query = "SELECT u FROM Users u WHERE u.isonline = :isonline"),
+    @NamedQuery(name = "Users.findByFalseLogin", query = "SELECT u FROM Users u WHERE u.falseLogin = :falseLogin")})
+public class Users implements Serializable {
+    
+    public static final int STATUS_REQUEST = -1;
+    public static final int STATUS_ALLOW = 0;
+    
+    public static final int STATUS_IS_ONLINE = 0;
+    public static final int STATUS_IS_OFFLINE = -1;
+    
     private static final long serialVersionUID = 1L;
     // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
-    
     @Id
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 255)
     @Column(name = "email")
     private String email;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 255)
-    @Column(name = "mobilenum")
-    private String mobilenum;
-    @Basic(optional = false)
-    @NotNull
-    @Size(min = 1, max = 255)
-    @Column(name = "name")
-    private String name;
+    @Size(max = 255)
+    @Column(name = "telephoneNum")
+    private String telephoneNum;
+    @Size(max = 255)
+    @Column(name = "firstName")
+    private String firstName;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 128)
@@ -82,6 +91,26 @@ public class Users implements Serializable, UsersInterface {
     @NotNull
     @Column(name = "status")
     private int status;
+    @Size(max = 255)
+    @Column(name = "lastName")
+    private String lastName;
+    @Size(max = 45)
+    @Column(name = "security_question")
+    private String securityQuestion;
+    @Size(max = 128)
+    @Column(name = "security_answer")
+    private String securityAnswer;
+    @Size(max = 45)
+    @Column(name = "secret")
+    private String secret;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "isonline")
+    private int isonline;
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "false_login")
+    private int falseLogin;
     @ManyToMany(mappedBy = "usersCollection")
     private Collection<Groups> groupsCollection;
 
@@ -93,18 +122,18 @@ public class Users implements Serializable, UsersInterface {
     }
 
     public Users(UserDTO dto) {
-        if (dto.getPassword1() == null || dto.getPassword1().length() == 0
-                || dto.getPassword1().compareTo(dto.getPassword2()) != 0) {
-            throw new IllegalArgumentException("Password 1 and Password 2 have to be equal (typo?)");
-        }
+
         this.email = dto.getEmail();
-        this.name = dto.getEmail();
-        this.mobilenum = dto.getMobileNum();
-        setPassword(dto.getPassword1());
+        this.firstName = dto.getFirstName();
+        this.lastName = dto.getLastName();
+        this.telephoneNum = dto.getTelephoneNum();
+        setPassword(dto.getChosenPassword());
         this.registeredon = new Date();
+        this.secret = dto.getSecret();
+        this.securityQuestion = dto.getSecurityQuestion();
+        this.securityAnswer = dto.getSecurityAnswer();
     }
 
-    @Override
     public String getEmail() {
         return email;
     }
@@ -113,22 +142,20 @@ public class Users implements Serializable, UsersInterface {
         this.email = email;
     }
 
-    @Override
-    public String getMobilenum() {
-        return mobilenum;
+    public String getTelephoneNum() {
+        return telephoneNum;
     }
 
-    public void setMobilenum(String mobilenum) {
-        this.mobilenum = mobilenum;
+    public void setTelephoneNum(String telephoneNum) {
+        this.telephoneNum = telephoneNum;
     }
 
-    @Override
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
     public String getPassword() {
@@ -143,7 +170,6 @@ public class Users implements Serializable, UsersInterface {
         }
     }
 
-    @Override
     public Date getRegisteredon() {
         return registeredon;
     }
@@ -160,13 +186,60 @@ public class Users implements Serializable, UsersInterface {
         this.salt = salt;
     }
 
-    @Override
     public int getStatus() {
         return status;
     }
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getSecurityQuestion() {
+        return securityQuestion;
+    }
+
+    public void setSecurityQuestion(String securityQuestion) {
+        this.securityQuestion = securityQuestion;
+    }
+
+    public String getSecurityAnswer() {
+        return securityAnswer;
+    }
+
+    public void setSecurityAnswer(String securityAnswer) {
+        this.securityAnswer = securityAnswer;
+    }
+
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    public int getIsonline() {
+        return isonline;
+    }
+
+    public void setIsonline(int isonline) {
+        this.isonline = isonline;
+    }
+
+    public int getFalseLogin() {
+        return falseLogin;
+    }
+
+    public void setFalseLogin(int falseLogin) {
+        this.falseLogin = falseLogin;
     }
 
     @XmlTransient
@@ -178,7 +251,7 @@ public class Users implements Serializable, UsersInterface {
     public void setGroupsCollection(Collection<Groups> groupsCollection) {
         this.groupsCollection = groupsCollection;
     }
-    
+
     public void addGroup(Groups g) {
         if (this.groupsCollection == null || this.groupsCollection.isEmpty()) {
             this.groupsCollection = new ArrayList<>();
@@ -210,7 +283,7 @@ public class Users implements Serializable, UsersInterface {
 
     @Override
     public String toString() {
-        return "io.hops.model.Users[ email=" + email + " ]";
+        return "io.hops.filters.Users[ email=" + email + " ]";
     }
     
 }

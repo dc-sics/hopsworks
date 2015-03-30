@@ -1,7 +1,6 @@
 package io.hops.integration;
 
 import io.hops.model.Users;
-import io.hops.services.Username;
 import java.util.List;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -50,7 +49,7 @@ public class UserFacade extends AbstractFacade<Users> {
 
         Query query = em.createNativeQuery(
                 "SELECT * FROM USERS WHERE email NOT IN (SELECT team_member FROM StudyTeam WHERE name=?)",
-                Username.class).setParameter(1, name);
+                Users.class).setParameter(1, name);
         return query.getResultList();
     }
 

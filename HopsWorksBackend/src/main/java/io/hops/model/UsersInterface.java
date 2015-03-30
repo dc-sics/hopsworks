@@ -13,6 +13,10 @@ public interface UsersInterface {
     public static final int STATUS_REQUEST = -1;
     public static final int STATUS_ALLOW = 0;
     
+    public static final int STATUS_IS_ONLINE = 0;
+    public static final int STATUS_IS_OFFLINE = -1;
+    
+    
     public String getEmail();
 
     public String getMobilenum();
