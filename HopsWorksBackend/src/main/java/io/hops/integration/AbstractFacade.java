@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package io.hops.services;
+package io.hops.integration;
 
 import java.util.List;
 import javax.persistence.EntityManager;

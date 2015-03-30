@@ -1,4 +1,4 @@
-package io.hops.services;
+package io.hops.services.rest;
 
 import java.util.Map;
 import javax.xml.bind.annotation.XmlElement;
