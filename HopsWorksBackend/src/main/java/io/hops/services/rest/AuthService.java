@@ -169,7 +169,6 @@ public class AuthService {
                 
         Groups group = groupBean.findByGroupName(Groups.USER);
         user.addGroup(group);
-
         //this could cause a runtime exception, i.e. in case the user already exists
         //such exceptions will be caught by our ExceptionMapper, i.e. javax.transaction.RollbackException
         userBean.persist(user); // this would use the clients transaction which is committed after save() has finished

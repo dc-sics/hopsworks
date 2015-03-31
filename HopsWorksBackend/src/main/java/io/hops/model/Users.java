@@ -12,6 +12,8 @@ import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
 import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQueries;
@@ -102,7 +104,10 @@ public class Users implements Serializable {
     @Basic(optional = false)
     @Column(name = "false_login")
     private int falseLogin;
-    @ManyToMany(mappedBy = "usersCollection")
+    @JoinTable(name = "users_groups", joinColumns = {
+        @JoinColumn(name = "email", referencedColumnName = "email")}, inverseJoinColumns = {
+        @JoinColumn(name = "groupname", referencedColumnName = "group_name")})
+    @ManyToMany
     private Collection<Groups> groupsCollection;
 
     public Users() {

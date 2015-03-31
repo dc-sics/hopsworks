@@ -6,6 +6,7 @@
 package io.hops.model;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import javax.persistence.Basic;
 import javax.persistence.Column;
@@ -54,10 +55,7 @@ public class Groups implements Serializable {
     @Size(max = 200)
     @Column(name = "group_desc")
     private String groupDesc;
-    @JoinTable(name = "users_groups", joinColumns = {
-        @JoinColumn(name = "groupname", referencedColumnName = "group_name")}, inverseJoinColumns = {
-        @JoinColumn(name = "email", referencedColumnName = "email")})
-    @ManyToMany
+    @ManyToMany(mappedBy = "groupsCollection")
     private Collection<Users> usersCollection;
 
     public Groups() {
@@ -105,7 +103,7 @@ public class Groups implements Serializable {
     public void setUsersCollection(Collection<Users> usersCollection) {
         this.usersCollection = usersCollection;
     }
-
+    
     @Override
     public int hashCode() {
         int hash = 0;
