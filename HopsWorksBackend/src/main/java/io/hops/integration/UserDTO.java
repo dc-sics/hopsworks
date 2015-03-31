@@ -2,10 +2,13 @@
  */
 package io.hops.integration;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
 /**
  *
  * @author André & Ermias
  */
+@XmlRootElement
 public class UserDTO {
     private String email;
     private String telephoneNum;
@@ -21,8 +24,6 @@ public class UserDTO {
     public UserDTO() {
     }
 
-    
-    
     public String getEmail() {
         return email;
     }

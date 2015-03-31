@@ -75,17 +75,13 @@ public class Users implements Serializable {
     @Column(name = "password")
     private String password;
     @Basic(optional = false)
-    @NotNull
     @Column(name = "registeredon")
     @Temporal(TemporalType.TIMESTAMP)
     private Date registeredon;
-    @Basic(optional = false)
-    @NotNull
     @Lob
     @Column(name = "salt")
     private byte[] salt;
     @Basic(optional = false)
-    @NotNull
     @Column(name = "status")
     private int status;
     @Size(max = 255)
@@ -101,11 +97,9 @@ public class Users implements Serializable {
     @Column(name = "secret")
     private String secret;
     @Basic(optional = false)
-    @NotNull
     @Column(name = "isonline")
     private int isonline;
     @Basic(optional = false)
-    @NotNull
     @Column(name = "false_login")
     private int falseLogin;
     @ManyToMany(mappedBy = "usersCollection")
@@ -119,7 +113,6 @@ public class Users implements Serializable {
     }
 
     public Users(UserDTO dto) {
-
         this.email = dto.getEmail();
         this.firstName = dto.getFirstName();
         this.lastName = dto.getLastName();

@@ -62,6 +62,7 @@ public class AuthService {
         JsonResponse json = new JsonResponse();
         req.getServletContext().log("SESSIONID: " + req.getSession().getId());
         try {
+            req.getServletContext().log("TEST: " + sc.getUserPrincipal().getName());
             json.setData(sc.getUserPrincipal().getName());
         } catch (Exception e) {
             json.setStatus("401");
@@ -77,7 +78,7 @@ public class AuthService {
     public Response login(@FormParam("email") String email, @FormParam("password") String password,
             @Context HttpServletRequest req, @Context HttpHeaders httpHeaders) {
 
-        req.getServletContext().log("Username: " + email);
+        req.getServletContext().log("email: " + email);
         //req.getServletContext().log("Password: " + password);
         req.getServletContext().log("SESSIONID@login: " + req.getSession().getId());
 
@@ -129,7 +130,7 @@ public class AuthService {
     @Path("logout")
     @Produces(MediaType.APPLICATION_JSON)
     public Response logout(@Context HttpServletRequest req) {
-
+        req.getServletContext().log("Logging out...");
         JsonResponse json = new JsonResponse();
 
         try {
@@ -150,13 +151,14 @@ public class AuthService {
     @TransactionAttribute(TransactionAttributeType.NEVER)
     public Response register(UserDTO newUser, @Context HttpServletRequest req) {
 
+        req.getServletContext().log("Registering This dude..." + newUser.getEmail() + ", " + newUser.getFirstName());
+
         JsonResponse json = new JsonResponse();
         json.setData(newUser); //just return the data we received
 
         //do some validation (in reality you would do some more validation...)
         //by the way: i did not choose to use bean validation (JSR 303)
-        if (newUser.getChosenPassword().length() == 0
-                || !newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
+        if (newUser.getChosenPassword().length() == 0 || !newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
 
             json.setErrorMsg("Both passwords have to be the same - typo?");
             json.setStatus("FAILED");
@@ -164,6 +166,7 @@ public class AuthService {
         }
 
         Users user = new Users(newUser);
+                
         Groups group = groupBean.findByGroupName(Groups.USER);
         user.addGroup(group);
 
