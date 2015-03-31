@@ -5,7 +5,6 @@ import io.hops.integration.UserDTO;
 import io.hops.integration.UserFacade;
 import io.hops.model.Groups;
 import io.hops.model.Users;
-import io.hops.model.UsersInterface;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -37,7 +36,7 @@ public class AuthService {
 
     @EJB
     private UserFacade userBean;
-    
+
     @EJB
     private GroupFacade groupBean;
 
@@ -55,15 +54,20 @@ public class AuthService {
 
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
-    
+
     @GET
     @Path("session")
     @Produces(MediaType.APPLICATION_JSON)
     public Response session(@Context SecurityContext sc, @Context HttpServletRequest req) {
         JsonResponse json = new JsonResponse();
         req.getServletContext().log("SESSIONID: " + req.getSession().getId());
-        
-        json.setData(sc.getUserPrincipal().getName());
+        try {
+            json.setData(sc.getUserPrincipal().getName());
+        } catch (Exception e) {
+            json.setStatus("401");
+            json.setErrorMsg("Authentication failed");
+            return getNoCacheResponseBuilder(Response.Status.UNAUTHORIZED).entity(json).build();
+        }
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
 
@@ -151,9 +155,9 @@ public class AuthService {
 
         //do some validation (in reality you would do some more validation...)
         //by the way: i did not choose to use bean validation (JSR 303)
-        if (newUser.getChosenPassword().length() == 0 || 
-           !newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
-            
+        if (newUser.getChosenPassword().length() == 0
+                || !newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
+
             json.setErrorMsg("Both passwords have to be the same - typo?");
             json.setStatus("FAILED");
             return Response.ok().entity(json).build();

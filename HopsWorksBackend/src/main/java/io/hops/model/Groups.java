@@ -25,7 +25,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  *
- * @author Ermias
+ * @author André & Ermias
  */
 @Entity
 @Table(name = "groups")

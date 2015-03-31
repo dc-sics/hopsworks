@@ -3,13 +3,15 @@
 package io.hops.integration;
 
 import io.hops.model.Groups;
+import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
 /**
  *
- * @author Ermias
+ * @author André & Ermias
  */
+@Stateless
 public class GroupFacade extends AbstractFacade<Groups>{
     
     @PersistenceContext(unitName = "kthfsPU")
