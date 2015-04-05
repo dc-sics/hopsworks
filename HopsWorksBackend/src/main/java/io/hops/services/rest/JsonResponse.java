@@ -57,7 +57,7 @@ public class JsonResponse{
     public void setFieldErrors(Map<String, Object> fieldErrors) {
         this.fieldErrors = fieldErrors;
     }
-     
+    
     public Object getData() {
         return data;
     }
