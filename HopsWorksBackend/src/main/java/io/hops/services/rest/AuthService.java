@@ -5,7 +5,6 @@ import io.hops.integration.UserDTO;
 import io.hops.integration.UserFacade;
 import io.hops.model.Groups;
 import io.hops.model.Users;
-import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -41,28 +40,13 @@ public class AuthService {
     private GroupFacade groupBean;
 
     @GET
-    @Path("ping")
-    @RolesAllowed("ADMIN")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response ping(@Context SecurityContext sc, @Context HttpServletRequest req) {
-        JsonResponse json = new JsonResponse();
-
-        req.getServletContext().log("Principal of callee: " + sc.getUserPrincipal().getName());
-        req.getServletContext().log("SESSIONID@ping: " + req.getSession().getId());
-
-        json.setData(sc.getUserPrincipal().getName());
-
-        return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
-    }
-
-    @GET
     @Path("session")
     @Produces(MediaType.APPLICATION_JSON)
     public Response session(@Context SecurityContext sc, @Context HttpServletRequest req) {
         JsonResponse json = new JsonResponse();
         req.getServletContext().log("SESSIONID: " + req.getSession().getId());
         try {
-            req.getServletContext().log("TEST: " + sc.getUserPrincipal().getName());
+            //req.getServletContext().log("TEST: " + sc.getUserPrincipal().getName());
             json.setData(sc.getUserPrincipal().getName());
         } catch (Exception e) {
             json.setStatus("401");
@@ -156,25 +140,68 @@ public class AuthService {
         JsonResponse json = new JsonResponse();
         json.setData(newUser); //just return the data we received
 
-        //do some validation (in reality you would do some more validation...)
-        //by the way: i did not choose to use bean validation (JSR 303)
-        if (newUser.getChosenPassword().length() == 0 || !newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
+        //do some more validation 
+        if (newUser.getChosenPassword().length() == 0) {
+            json.setErrorMsg("Password can not be empty.");
+            json.setStatus("FAILED");
+            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+        }
+        if (!newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
 
             json.setErrorMsg("Both passwords have to be the same - typo?");
             json.setStatus("FAILED");
-            return Response.ok().entity(json).build();
+            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
         }
 
         Users user = new Users(newUser);
-                
+
         Groups group = groupBean.findByGroupName(Groups.USER);
         user.addGroup(group);
         //this could cause a runtime exception, i.e. in case the user already exists
         //such exceptions will be caught by our ExceptionMapper, i.e. javax.transaction.RollbackException
         userBean.persist(user); // this would use the clients transaction which is committed after save() has finished
         req.getServletContext().log("successfully registered new user: '" + newUser.getEmail() + "'");
+        
 
-        return Response.ok().entity(json).build();
+        return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
+    }
+    //latter can be implemented with a mailing service to mail the user a new password
+   //to their given email.
+    @POST
+    @Path("forgotPassword")
+    @Produces(MediaType.APPLICATION_JSON)
+    @TransactionAttribute(TransactionAttributeType.NEVER)
+    public Response forgotPassword(@FormParam("securityQuestion") String securityQuestion,
+            @FormParam("securityAnswer") String securityAnswer,
+            @FormParam("newPassword") String newPassword,
+            @FormParam("confirmedPassword") String confirmedPassword,
+            @Context SecurityContext sc) {
+        JsonResponse json = new JsonResponse();
+        Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
+
+        if (user == null) {
+            json.setStatus("FAILED");
+            json.setErrorMsg("Operation failed. User not found");
+            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+        }
+        if (!user.getSecurityQuestion().equalsIgnoreCase(securityQuestion)
+                || !user.getSecurityAnswer().equalsIgnoreCase(securityAnswer)) {
+            json.setStatus("FAILED");
+            json.setErrorMsg("Operation failed. security question or answer do not match");
+            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+        }
+        if (!newPassword.equals(confirmedPassword)) {
+            json.setStatus("FAILED");
+            json.setErrorMsg("Operation failed. passwords do not match.");
+            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+        }
+
+        user.setPassword(newPassword);
+        userBean.update(user);
+
+        json.setStatus("OK");
+
+        return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
 
 }

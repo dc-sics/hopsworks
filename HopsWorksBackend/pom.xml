@@ -14,7 +14,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     
-    <dependencies> 
+    <dependencies>
+        <dependency>
+            <groupId>com.eclipsesource.jaxrs</groupId>
+            <artifactId>jersey-all</artifactId>
+            <version>2.10.1</version>
+            <type>jar</type>
+        </dependency>
         <dependency>
             <groupId>javax</groupId>
             <artifactId>javaee-api</artifactId>

@@ -49,14 +49,14 @@ import org.codehaus.jackson.annotate.JsonIgnore;
     @NamedQuery(name = "Users.findBySecret", query = "SELECT u FROM Users u WHERE u.secret = :secret"),
     @NamedQuery(name = "Users.findByIsonline", query = "SELECT u FROM Users u WHERE u.isonline = :isonline"),
     @NamedQuery(name = "Users.findByFalseLogin", query = "SELECT u FROM Users u WHERE u.falseLogin = :falseLogin")})
-public class Users implements Serializable {
+public class Users implements Serializable{
+
+    public static final int STATUS_REQUEST = 0;
+    public static final int STATUS_ALLOW = 1;
     
-    public static final int STATUS_REQUEST = -1;
-    public static final int STATUS_ALLOW = 0;
-    
-    public static final int STATUS_IS_ONLINE = 0;
-    public static final int STATUS_IS_OFFLINE = -1;
-    
+    public static final int STATUS_IS_ONLINE = 1;
+    public static final int STATUS_IS_OFFLINE = 0;
+
     private static final long serialVersionUID = 1L;
     // @Pattern(regexp="[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?", message="Invalid email")//if the field contains email address consider using this annotation to enforce field validation
     @Id
@@ -153,6 +153,8 @@ public class Users implements Serializable {
         this.firstName = firstName;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public String getPassword() {
         return password;
     }
@@ -173,6 +175,8 @@ public class Users implements Serializable {
         this.registeredon = registeredon;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public byte[] getSalt() {
         return salt;
     }
@@ -181,6 +185,8 @@ public class Users implements Serializable {
         this.salt = salt;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public int getStatus() {
         return status;
     }
@@ -197,6 +203,8 @@ public class Users implements Serializable {
         this.lastName = lastName;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public String getSecurityQuestion() {
         return securityQuestion;
     }
@@ -205,6 +213,8 @@ public class Users implements Serializable {
         this.securityQuestion = securityQuestion;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public String getSecurityAnswer() {
         return securityAnswer;
     }
@@ -213,6 +223,8 @@ public class Users implements Serializable {
         this.securityAnswer = securityAnswer;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public String getSecret() {
         return secret;
     }
@@ -229,6 +241,8 @@ public class Users implements Serializable {
         this.isonline = isonline;
     }
 
+    @XmlTransient
+    @JsonIgnore
     public int getFalseLogin() {
         return falseLogin;
     }
@@ -275,10 +289,16 @@ public class Users implements Serializable {
         }
         return true;
     }
-
+    
+/*
     @Override
     public String toString() {
         return "io.hops.filters.Users[ email=" + email + " ]";
     }
-    
+ */   
+
+    @Override
+    public String toString() {
+        return "{firstName:'" + firstName + "', lastName:'" + lastName +  "'," + "email:'" + email + "', telephoneNum:'" + telephoneNum + "',  registeredon:'" + registeredon + "'}";
+    }
 }
