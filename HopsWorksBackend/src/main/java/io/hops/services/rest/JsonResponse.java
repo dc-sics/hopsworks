@@ -41,7 +41,7 @@ public class JsonResponse{
     public void setStatus(String status) {
         this.status = status;
     }
-     
+      @XmlElement
     public String getErrorMsg() {
         return errorMsg;
     }
@@ -58,6 +58,7 @@ public class JsonResponse{
         this.fieldErrors = fieldErrors;
     }
     
+     @XmlElement
     public Object getData() {
         return data;
     }

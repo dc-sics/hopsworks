@@ -22,5 +22,5 @@ public @interface AllowedRoles {
      *
      * @return
      */
-    public String[] roles() default {};
+    public String[] roles() default {AllowedRoles.OWNER};
 }
