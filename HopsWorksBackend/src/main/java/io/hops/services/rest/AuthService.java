@@ -171,13 +171,14 @@ public class AuthService {
     @Path("forgotPassword")
     @Produces(MediaType.APPLICATION_JSON)
     @TransactionAttribute(TransactionAttributeType.NEVER)
-    public Response forgotPassword(@FormParam("securityQuestion") String securityQuestion,
+    public Response forgotPassword(@FormParam("email") String email,
+            @FormParam("securityQuestion") String securityQuestion,
             @FormParam("securityAnswer") String securityAnswer,
             @FormParam("newPassword") String newPassword,
             @FormParam("confirmedPassword") String confirmedPassword,
             @Context SecurityContext sc) {
         JsonResponse json = new JsonResponse();
-        Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
+        Users user = userBean.findByEmail(email);
 
         if (user == null) {
             json.setStatus("FAILED");

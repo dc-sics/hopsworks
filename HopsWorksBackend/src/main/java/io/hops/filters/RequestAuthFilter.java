@@ -16,10 +16,10 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
-import org.glassfish.jersey.server.internal.routing.UriRoutingContext;
-import org.glassfish.jersey.server.model.ResourceMethodInvoker;
 
 /**
  *
@@ -29,17 +29,20 @@ import org.glassfish.jersey.server.model.ResourceMethodInvoker;
 public class RequestAuthFilter implements ContainerRequestFilter, ContainerResponseFilter {
     @EJB
     private UserFacade userBean;
+    @Context
+    private ResourceInfo resourceInfo;
     
     private final static Logger log = Logger.getLogger( RequestAuthFilter.class.getName() );
     
     @Override
     public void filter(ContainerRequestContext requestContext) {
        String path = requestContext.getUriInfo().getPath();
-       UriRoutingContext routingContext = (UriRoutingContext) requestContext.getUriInfo();
-       ResourceMethodInvoker invoker = (ResourceMethodInvoker) routingContext.getInflector();
+       //UriRoutingContext routingContext = (UriRoutingContext) requestContext.getUriInfo();
+       //ResourceMethodInvoker invoker = (ResourceMethodInvoker) routingContext.getInflector();
        //if we want to annotate classes
        //Class<?> className = invoker.getResourceClass();
-       Method method = invoker.getResourceMethod();
+       //Method method = invoker.getResourceMethod();
+       Method method =resourceInfo.getResourceMethod();
        log.log(Level.INFO, "Filtering request path: {0}", path);
        
        
