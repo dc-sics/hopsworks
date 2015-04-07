@@ -26,6 +26,7 @@ public class ApplicationConfig extends Application {
      */
     private void addRestResourceClasses(Set<Class<?>> resources) {
         resources.add(io.hops.filters.RequestAuthFilter.class);
+        resources.add(io.hops.integration.AppExceptionMapper.class);
         resources.add(io.hops.integration.ThrowableExceptionMapper.class);
         resources.add(io.hops.services.rest.AdminServices.class);
         resources.add(io.hops.services.rest.AuthService.class);

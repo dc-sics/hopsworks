@@ -1,5 +1,6 @@
 package io.hops.services.rest;
 
+import io.hops.integration.AppException;
 import io.hops.integration.GroupFacade;
 import io.hops.integration.UserDTO;
 import io.hops.integration.UserFacade;
@@ -29,7 +30,6 @@ import javax.ws.rs.core.SecurityContext;
  * @author André & Ermias
  */
 @Path("/auth")
-@Produces(MediaType.TEXT_PLAIN)
 @Stateless
 public class AuthService {
 
@@ -42,16 +42,15 @@ public class AuthService {
     @GET
     @Path("session")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response session(@Context SecurityContext sc, @Context HttpServletRequest req) {
+    public Response session(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
         JsonResponse json = new JsonResponse();
         req.getServletContext().log("SESSIONID: " + req.getSession().getId());
         try {
-            //req.getServletContext().log("TEST: " + sc.getUserPrincipal().getName());
+            json.setStatus("SUCCESS");
             json.setData(sc.getUserPrincipal().getName());
         } catch (Exception e) {
-            json.setStatus("401");
-            json.setErrorMsg("Authentication failed");
-            return getNoCacheResponseBuilder(Response.Status.UNAUTHORIZED).entity(json).build();
+            throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(), 
+                                    "Authentication failed");
         }
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
@@ -60,7 +59,7 @@ public class AuthService {
     @Path("login")
     @Produces(MediaType.APPLICATION_JSON)
     public Response login(@FormParam("email") String email, @FormParam("password") String password,
-            @Context HttpServletRequest req, @Context HttpHeaders httpHeaders) {
+            @Context HttpServletRequest req, @Context HttpHeaders httpHeaders) throws AppException {
 
         req.getServletContext().log("email: " + email);
         //req.getServletContext().log("Password: " + password);
@@ -72,17 +71,15 @@ public class AuthService {
         //only login if not already logged in...
         if (req.getUserPrincipal() == null) {
             if (user != null && user.getStatus() == Users.STATUS_REQUEST) {
-                json.setStatus("FAILED");
-                json.setErrorMsg("Your request has not yet been acknowlegded.");
-                return Response.ok().entity(json).build();
+                throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
+                                        "Your request has not yet been acknowlegded.");
             }
             try {
                 req.login(email, password);
                 req.getServletContext().log("Authentication: successfully logged in " + email);
             } catch (ServletException e) {
-                json.setStatus("FAILED");
-                json.setErrorMsg("Authentication failed");
-                return Response.ok().entity(json).build();
+                throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(), 
+                                        "Authentication failed");
             }
         } else {
             req.getServletContext().log("Skip logged because already logged in: " + email);
@@ -113,7 +110,7 @@ public class AuthService {
     @GET
     @Path("logout")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response logout(@Context HttpServletRequest req) {
+    public Response logout(@Context HttpServletRequest req) throws AppException {
         req.getServletContext().log("Logging out...");
         JsonResponse json = new JsonResponse();
 
@@ -122,8 +119,8 @@ public class AuthService {
             json.setStatus("SUCCESS");
             req.getSession().invalidate();
         } catch (ServletException e) {
-            json.setStatus("FAILED");
-            json.setErrorMsg("Logout failed on backend");
+            throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), 
+                                    "Logout failed on backend");
         }
         return Response.ok().entity(json).build();
     }
@@ -133,7 +130,7 @@ public class AuthService {
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     @TransactionAttribute(TransactionAttributeType.NEVER)
-    public Response register(UserDTO newUser, @Context HttpServletRequest req) {
+    public Response register(UserDTO newUser, @Context HttpServletRequest req) throws AppException {
 
         req.getServletContext().log("Registering This dude..." + newUser.getEmail() + ", " + newUser.getFirstName());
 
@@ -142,15 +139,12 @@ public class AuthService {
 
         //do some more validation 
         if (newUser.getChosenPassword().length() == 0) {
-            json.setErrorMsg("Password can not be empty.");
-            json.setStatus("FAILED");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+                                    "Password can not be empty.");
         }
         if (!newUser.getChosenPassword().equals(newUser.getRepeatedPassword())) {
-
-            json.setErrorMsg("Both passwords have to be the same - typo?");
-            json.setStatus("FAILED");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+                                    "Both passwords have to be the same - typo?");
         }
 
         Users user = new Users(newUser);
@@ -176,25 +170,23 @@ public class AuthService {
             @FormParam("securityAnswer") String securityAnswer,
             @FormParam("newPassword") String newPassword,
             @FormParam("confirmedPassword") String confirmedPassword,
-            @Context SecurityContext sc) {
+            @Context SecurityContext sc) throws AppException {
         JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(email);
 
         if (user == null) {
-            json.setStatus("FAILED");
-            json.setErrorMsg("Operation failed. User not found");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
+                                    "Operation failed. User not found");
         }
         if (!user.getSecurityQuestion().equalsIgnoreCase(securityQuestion)
                 || !user.getSecurityAnswer().equalsIgnoreCase(securityAnswer)) {
-            json.setStatus("FAILED");
-            json.setErrorMsg("Operation failed. security question or answer do not match");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                        "Operation failed. security question or answer do not match");
         }
         if (!newPassword.equals(confirmedPassword)) {
-            json.setStatus("FAILED");
-            json.setErrorMsg("Operation failed. passwords do not match.");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+                                    "Operation failed. passwords do not match.");
         }
 
         user.setPassword(newPassword);

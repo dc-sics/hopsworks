@@ -2,7 +2,7 @@
  */
 package io.hops.services.rest;
 
-import io.hops.integration.GroupFacade;
+import io.hops.integration.AppException;
 import io.hops.integration.UserFacade;
 import io.hops.model.Users;
 import javax.annotation.security.RolesAllowed;
@@ -29,34 +29,28 @@ import org.apache.commons.codec.digest.DigestUtils;
  */
 @Path("/user")
 @RolesAllowed({"ADMIN", "USER"})
-@Produces(MediaType.TEXT_PLAIN)
 @Stateless
 public class UserService {
 
     @EJB
     private UserFacade userBean;
 
-    @EJB
-    private GroupFacade groupBean;
-
     @GET
     @Path("profile")
     @Produces(MediaType.APPLICATION_JSON)
     @TransactionAttribute(TransactionAttributeType.NEVER)
-    public Response getUserProfile(@Context SecurityContext sc) {
+    public Response getUserProfile(@Context SecurityContext sc) throws AppException {
         JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         if (user == null) {
-            json.setStatus("FAILED");
-            json.setErrorMsg("Operation failed. User not found");
-            return getNoCacheResponseBuilder(Response.Status.NOT_FOUND).entity(json).build();
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
+                                "Operation failed. User not found");
         }
 
         userBean.detach(user);
         user.setPassword("");
-        //json.setStatus("OK");
-        //json.setData(user);
+
         return getNoCacheResponseBuilder(Response.Status.OK).entity(user).build();
     }
 
@@ -69,14 +63,13 @@ public class UserService {
                                   @FormParam("lastName") String lastName, 
                                   @FormParam("telephoneNum") String telephoneNum, 
                                   @Context SecurityContext sc, 
-                                  @Context HttpServletRequest req) {
+                                  @Context HttpServletRequest req) throws AppException {
         JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         if (user == null) {
-            json.setStatus("FAILED");
-            json.setErrorMsg("Operation failed. User not found");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
+                                    "Operation failed. User not found");
         }
 
         req.getServletContext().log("Updating..." + firstName + ", " + lastName);
@@ -88,7 +81,7 @@ public class UserService {
         //we don't want to send the hashed password out in the json response
         userBean.detach(user);
         user.setPassword("");
-        json.setData(user);
+        //json.setData(user);
 
         return getNoCacheResponseBuilder(Response.Status.OK).entity(user).build();
     }
@@ -101,30 +94,25 @@ public class UserService {
                                            @FormParam("newPassword") String newPassword,
                                            @FormParam("confirmedPassword") String confirmedPassword,
                                            @Context SecurityContext sc,
-                                           @Context HttpServletRequest req) {
+                                           @Context HttpServletRequest req) throws AppException {
         JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         if (user == null) {
-            json.setStatus("NOT_MODIFIED");
-            json.setErrorMsg("Operation failed. User not found");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
+                    "Operation failed. User not found");
         }
         if (!user.getPassword().equals(DigestUtils.sha256Hex(oldPassword))) {
-            json.setStatus("NOT_MODIFIED");
-            json.setErrorMsg("Operation failed. password not correct");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+                    "Operation failed. password not correct");
         }
         if (newPassword.length() == 0) {
-            json.setStatus("NOT_MODIFIED");
-            json.setErrorMsg("Operation failed. password can not be empty.");
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).entity(json).build();
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+                    "Operation failed. password can not be empty.");
         }
         if (!newPassword.equals(confirmedPassword)) {
-            json.setStatus("304");
-            json.setErrorMsg("Operation failed. passwords do not match.");
-            req.getServletContext().log("Sending:----"+ json);
-            return getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).type("text/plain").entity("Operation failed. passwords do not match.").build();
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+                    "Operation failed. passwords do not match.");
         }
 
         user.setPassword(newPassword);
