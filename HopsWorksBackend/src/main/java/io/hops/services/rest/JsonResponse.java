@@ -17,6 +17,7 @@ public class JsonResponse{
     private static final float version = 1.0f;  
  
     private String status;
+    private Integer statusCode;
     private String errorMsg;
     private Map<String, Object> fieldErrors;
     private Object data;
@@ -27,7 +28,21 @@ public class JsonResponse{
      
     public JsonResponse(String status) {
         this.status = status;
-    }    
+    }  
+
+    public JsonResponse(Integer statusCode) {
+        this.statusCode = statusCode;
+    }
+
+    public Integer getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(Integer statusCode) {
+        this.statusCode = statusCode;
+    }
+    
+    
      
     @XmlElement
     public float getVersion() {
