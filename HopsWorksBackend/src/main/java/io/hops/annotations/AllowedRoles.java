@@ -1,4 +1,5 @@
-/*
+/**
+ * 
  */
 package io.hops.annotations;
 
@@ -9,6 +10,11 @@ import java.lang.annotation.Target;
 
 /**
  * @author André & Ermias
+ * 
+ * Annotations that can be used to restrict users from accessing project methods
+ * based on the role they have for that project. 
+ * 
+ * if no role is specified the default will be OWNER only access
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
@@ -19,8 +25,8 @@ public @interface AllowedRoles {
     public static final String GUEST = "GUEST";
     
     /**
-     *
-     * @return
+     *  Used to annotate methods that work with project resources 
+     * @return allowed roles
      */
     public String[] roles() default {AllowedRoles.OWNER};
 }
