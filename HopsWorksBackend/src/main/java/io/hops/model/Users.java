@@ -1,14 +1,12 @@
-/*
- */
 package io.hops.model;
 
 import io.hops.integration.UserDTO;
-import io.hops.model.Groups;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -18,6 +16,7 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToMany;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -50,6 +49,11 @@ import org.codehaus.jackson.annotate.JsonIgnore;
     @NamedQuery(name = "Users.findByIsonline", query = "SELECT u FROM Users u WHERE u.isonline = :isonline"),
     @NamedQuery(name = "Users.findByFalseLogin", query = "SELECT u FROM Users u WHERE u.falseLogin = :falseLogin")})
 public class Users implements Serializable{
+    @Lob
+    @Column(name = "salt")
+    private byte[] salt;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "email")
+    private Collection<ProjectUser> projectUserCollection;
 
     public static final int STATUS_REQUEST = 0;
     public static final int STATUS_ALLOW = 1;
@@ -80,9 +84,6 @@ public class Users implements Serializable{
     @Column(name = "registeredon")
     @Temporal(TemporalType.TIMESTAMP)
     private Date registeredon;
-    @Lob
-    @Column(name = "salt")
-    private byte[] salt;
     @Basic(optional = false)
     @Column(name = "status")
     private int status;
@@ -175,15 +176,6 @@ public class Users implements Serializable{
         this.registeredon = registeredon;
     }
 
-    @XmlTransient
-    @JsonIgnore
-    public byte[] getSalt() {
-        return salt;
-    }
-
-    public void setSalt(byte[] salt) {
-        this.salt = salt;
-    }
 
     @XmlTransient
     @JsonIgnore
@@ -300,5 +292,24 @@ public class Users implements Serializable{
     @Override
     public String toString() {
         return "{firstName:'" + firstName + "', lastName:'" + lastName +  "'," + "email:'" + email + "', telephoneNum:'" + telephoneNum + "',  registeredon:'" + registeredon + "'}";
+    }
+
+
+    @XmlTransient
+    @JsonIgnore
+    public Collection<ProjectUser> getProjectUserCollection() {
+        return projectUserCollection;
+    }
+
+    public void setProjectUserCollection(Collection<ProjectUser> projectUserCollection) {
+        this.projectUserCollection = projectUserCollection;
+    }
+
+    public byte[] getSalt() {
+        return salt;
+    }
+
+    public void setSalt(byte[] salt) {
+        this.salt = salt;
     }
 }
