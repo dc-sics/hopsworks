@@ -8,15 +8,15 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * @author Ermias
+ * @author André & Ermias
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface AllowedRoles {
-    public static final String ALL = "All";
-    public static final String OWNER = "Owner";
-    public static final String DEVELOPER = "Developer";
-    public static final String GUEST = "Guest";
+    public static final String ALL = "ALL";
+    public static final String OWNER = "OWNER";
+    public static final String CONTRIBUTOR = "CONTRIBUTOR";
+    public static final String GUEST = "GUEST";
     
     /**
      *
