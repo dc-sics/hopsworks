@@ -31,7 +31,6 @@ import org.apache.commons.lang.StringUtils;
  */
 @Path("/admin")
 @RolesAllowed("ADMIN")
-@Produces(MediaType.TEXT_PLAIN)
 @Stateless
 public class AdminServices {
 

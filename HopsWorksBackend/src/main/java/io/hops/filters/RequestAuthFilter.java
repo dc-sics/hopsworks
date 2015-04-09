@@ -39,12 +39,9 @@ public class RequestAuthFilter implements ContainerRequestFilter, ContainerRespo
 
     @Override
     public void filter(ContainerRequestContext requestContext) {
+
         String path = requestContext.getUriInfo().getPath();
-       //UriRoutingContext routingContext = (UriRoutingContext) requestContext.getUriInfo();
-        //ResourceMethodInvoker invoker = (ResourceMethodInvoker) routingContext.getInflector();
-        //if we want to annotate classes
-        //Class<?> className = invoker.getResourceClass();
-        //Method method = invoker.getResourceMethod();
+       
         Method method = resourceInfo.getResourceMethod();
         log.log(Level.INFO, "Filtering request path: {0}", path);
 
