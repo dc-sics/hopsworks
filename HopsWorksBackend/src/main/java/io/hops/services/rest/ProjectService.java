@@ -31,7 +31,7 @@ import javax.ws.rs.core.SecurityContext;
 
 /**
  *
- * @author André
+ * @author André & Ermias
  */
 @Path("/project")
 @RolesAllowed({"ADMIN", "USER"})

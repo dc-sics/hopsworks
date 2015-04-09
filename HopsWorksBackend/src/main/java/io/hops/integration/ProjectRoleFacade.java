@@ -1,6 +1,5 @@
 package io.hops.integration;
 
-import io.hops.annotations.AllowedRoles;
 import io.hops.model.ProjectRole;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -8,7 +7,7 @@ import javax.persistence.PersistenceContext;
 
 /**
  *
- * @author AMore
+ * @author André & Ermias
  */
 @Stateless
 public class ProjectRoleFacade  extends AbstractFacade<ProjectRole> {

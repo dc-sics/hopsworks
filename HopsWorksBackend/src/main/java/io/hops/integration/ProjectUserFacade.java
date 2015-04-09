@@ -8,7 +8,7 @@ import javax.persistence.PersistenceContext;
 
 /**
  *
- * @author AMore
+ * @author André & Ermias
  */
 @Stateless
 public class ProjectUserFacade extends AbstractFacade<ProjectUser>{

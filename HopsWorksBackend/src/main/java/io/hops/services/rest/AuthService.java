@@ -62,7 +62,6 @@ public class AuthService {
             @Context HttpServletRequest req, @Context HttpHeaders httpHeaders) throws AppException {
 
         req.getServletContext().log("email: " + email);
-        //req.getServletContext().log("Password: " + password);
         req.getServletContext().log("SESSIONID@login: " + req.getSession().getId());
 
         JsonResponse json = new JsonResponse();
@@ -88,23 +87,10 @@ public class AuthService {
         //read the user data from db and return to caller
         json.setStatus("SUCCESS");
 
-        //we don't want to send the hashed password out in the json response
-        userBean.detach(user);
-        user.setPassword("");
         req.getServletContext().log("Authentication: successfully retrieved User Profile from DB for " + email);
-        json.setData(user);
         json.setSessionID(req.getSession().getId());
 
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
-    }
-
-    private Response.ResponseBuilder getNoCacheResponseBuilder(Response.Status status) {
-        CacheControl cc = new CacheControl();
-        cc.setNoCache(true);
-        cc.setMaxAge(-1);
-        cc.setMustRevalidate(true);
-
-        return Response.status(status).cacheControl(cc);
     }
 
     @GET
@@ -159,6 +145,7 @@ public class AuthService {
 
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
+    
     //latter can be implemented with a mailing service to mail the user a new password
    //to their given email.
     @POST
@@ -197,4 +184,12 @@ public class AuthService {
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
 
+    private Response.ResponseBuilder getNoCacheResponseBuilder(Response.Status status) {
+        CacheControl cc = new CacheControl();
+        cc.setNoCache(true);
+        cc.setMaxAge(-1);
+        cc.setMustRevalidate(true);
+
+        return Response.status(status).cacheControl(cc);
+    }
 }
