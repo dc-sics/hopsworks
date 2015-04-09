@@ -1,6 +1,3 @@
-/**
- * 
- */
 package io.hops.annotations;
 
 import java.lang.annotation.ElementType;

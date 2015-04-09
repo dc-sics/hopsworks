@@ -1,5 +1,3 @@
-/*
- */
 package io.hops.services.rest;
 
 import io.hops.integration.AppException;

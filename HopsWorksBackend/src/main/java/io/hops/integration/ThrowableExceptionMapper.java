@@ -1,11 +1,8 @@
-/*
- */
 package io.hops.integration;
 
 import io.hops.services.rest.JsonResponse;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ejb.AccessLocalException;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -15,7 +12,7 @@ import javax.ws.rs.ext.Provider;
  
 /**
  *
- * @author Ermias
+ * @author André & Ermias
  */
  
 @Provider

@@ -1,5 +1,3 @@
-/*
- */
 package io.hops.integration;
 
 import javax.xml.bind.annotation.XmlRootElement;

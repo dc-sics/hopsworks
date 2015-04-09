@@ -11,6 +11,7 @@ import javax.persistence.TypedQuery;
 /**
  *
  * @author Jim Dowling<jdowling@sics.se>
+ * 
  */
 @Stateless
 public class UserFacade extends AbstractFacade<Users> {
