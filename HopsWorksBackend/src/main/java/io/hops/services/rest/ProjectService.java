@@ -111,9 +111,9 @@ public class ProjectService {
             proj.setType(updatedProject.getType());
         }        
         
-        String status = (projectBean.updateByProject(proj) ? "OK" : "ERROR");
+        projectBean.updateByProject(proj);
         
-        json.setStatus(status);        
+        json.setStatus("OK");        
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
     
@@ -134,11 +134,11 @@ public class ProjectService {
 
         projUser.setEmail(user);
         projUser.setProjectId(project);
-        projUser.setRole( projectRoleBean.getUserRoleByName(AllowedRoles.OWNER) );
+        projUser.setRole( projectRoleBean.getUserRoleByName(AllowedRoles.OWNER));
 
-        String status = (projectBean.createProject(projUser, project) ? "OK" : "ERROR");
+        projectBean.createProject(projUser, project);
         
-        json.setStatus(status);        
+        json.setStatus("201");// Created       
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
     
@@ -153,9 +153,9 @@ public class ProjectService {
 
         JsonResponse json = new JsonResponse();
         
-        String status = (projectBean.removeByProjectID(Integer.valueOf(id)) ? "OK" : "ERROR");
+        projectBean.removeByProjectID(Integer.valueOf(id));
         
-        json.setStatus(status);        
+        json.setStatus("OK");        
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
     

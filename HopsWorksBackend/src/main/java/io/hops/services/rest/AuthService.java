@@ -6,6 +6,7 @@ import io.hops.integration.UserDTO;
 import io.hops.integration.UserFacade;
 import io.hops.model.Groups;
 import io.hops.model.Users;
+import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -41,6 +42,7 @@ public class AuthService {
 
     @GET
     @Path("session")
+    @RolesAllowed({"ADMIN", "USER"})
     @Produces(MediaType.APPLICATION_JSON)
     public Response session(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
         JsonResponse json = new JsonResponse();
