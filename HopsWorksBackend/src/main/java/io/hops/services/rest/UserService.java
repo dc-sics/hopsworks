@@ -38,12 +38,11 @@ public class UserService {
     @Produces(MediaType.APPLICATION_JSON)
     @TransactionAttribute(TransactionAttributeType.NEVER)
     public Response getUserProfile(@Context SecurityContext sc) throws AppException {
-        JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         if (user == null) {
-            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
-                                "Operation failed. User not found");
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
+                    "Operation failed. User not found");
         }
 
         userBean.detach(user);
@@ -52,28 +51,36 @@ public class UserService {
         return getNoCacheResponseBuilder(Response.Status.OK).entity(user).build();
     }
 
-
     @POST
     @Path("updateProfile")
     @Produces(MediaType.APPLICATION_JSON)
     @TransactionAttribute(TransactionAttributeType.NEVER)
     public Response updateProfile(@FormParam("firstName") String firstName,
-                                  @FormParam("lastName") String lastName, 
-                                  @FormParam("telephoneNum") String telephoneNum, 
-                                  @Context SecurityContext sc, 
-                                  @Context HttpServletRequest req) throws AppException {
+            @FormParam("lastName") String lastName,
+            @FormParam("telephoneNum") String telephoneNum,
+            @Context SecurityContext sc,
+            @Context HttpServletRequest req) throws AppException {
         JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         if (user == null) {
-            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
-                                    "Operation failed. User not found");
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
+                    "Operation failed. User not found");
         }
 
         req.getServletContext().log("Updating..." + firstName + ", " + lastName);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setTelephoneNum(telephoneNum);
+        if (firstName != null) {
+            user.setFirstName(firstName);
+        }
+
+        if (lastName != null) {
+            user.setLastName(lastName);
+        }
+
+        if (telephoneNum != null) {
+            user.setTelephoneNum(telephoneNum);
+        }
+
         userBean.update(user);
         json.setStatus("OK");
         //we don't want to send the hashed password out in the json response
@@ -89,27 +96,27 @@ public class UserService {
     @Produces(MediaType.APPLICATION_JSON)
     @TransactionAttribute(TransactionAttributeType.NEVER)
     public Response changeLoginCredentials(@FormParam("oldPassword") String oldPassword,
-                                           @FormParam("newPassword") String newPassword,
-                                           @FormParam("confirmedPassword") String confirmedPassword,
-                                           @Context SecurityContext sc,
-                                           @Context HttpServletRequest req) throws AppException {
+            @FormParam("newPassword") String newPassword,
+            @FormParam("confirmedPassword") String confirmedPassword,
+            @Context SecurityContext sc,
+            @Context HttpServletRequest req) throws AppException {
         JsonResponse json = new JsonResponse();
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         if (user == null) {
-            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), 
+            throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
                     "Operation failed. User not found");
         }
         if (!user.getPassword().equals(DigestUtils.sha256Hex(oldPassword))) {
-            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     "Operation failed. password not correct");
         }
         if (newPassword.length() == 0) {
-            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     "Operation failed. password can not be empty.");
         }
         if (!newPassword.equals(confirmedPassword)) {
-            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), 
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     "Operation failed. passwords do not match.");
         }
 
@@ -120,7 +127,6 @@ public class UserService {
 
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
-
 
     private Response.ResponseBuilder getNoCacheResponseBuilder(Response.Status status) {
         CacheControl cc = new CacheControl();

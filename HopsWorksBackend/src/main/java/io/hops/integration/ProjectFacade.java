@@ -27,7 +27,7 @@ public class ProjectFacade extends AbstractFacade<Project> {
         super(Project.class);
     }
 
-public List<Project> findAllByUser(Users user) {
+    public List<Project> findAllByUser(Users user) {
         List<Project> query = em.createNamedQuery("Project.findAllByUser", Project.class).setParameter("email", user).getResultList();
         return query;
     }
@@ -36,39 +36,24 @@ public List<Project> findAllByUser(Users user) {
         Project proj = em.find(Project.class, projectID);
         return proj;
     }
-     
-    public boolean removeByProjectID(int projectID){
-        try {
-            Project proj = em.find(Project.class, projectID);
-            em.remove(proj);        
-            return true;
-        } catch (Exception e) {
-            return false;
-        }        
-    }
-    
-    public boolean updateByProject(Project project){
-        try {
-            em.merge(project);
-            return true;
-        } catch (Exception e) {
-            return false;
+
+    public void removeByProjectID(int projectID) {
+        Project proj = em.find(Project.class, projectID);
+        if (proj != null) {
+            em.remove(proj);
         }
     }
-    
-    public boolean createProject(ProjectUser projUser, Project project){
-        try {            
-            em.persist(projUser);
-            em.persist(project);
-            return true; 
-        } catch (Exception e) {
-            return false;
-        }
+
+    public void updateByProject(Project project) {
+        em.merge(project);
     }
-    
-    
-    
-    public void detach(Project project){
+
+    public void createProject(ProjectUser projUser, Project project) {
+        em.persist(projUser);
+        em.persist(project);
+    }
+
+    public void detach(Project project) {
         em.detach(project);
     }
 
