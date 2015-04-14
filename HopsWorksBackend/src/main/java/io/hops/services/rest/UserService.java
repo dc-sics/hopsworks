@@ -1,8 +1,12 @@
 package io.hops.services.rest;
 
+import io.hops.annotations.AllowedRoles;
 import io.hops.integration.AppException;
+import io.hops.integration.UserCardDTO;
 import io.hops.integration.UserFacade;
 import io.hops.model.Users;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -16,6 +20,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
@@ -33,6 +38,26 @@ public class UserService {
     @EJB
     private UserFacade userBean;
 
+    @GET
+    @Path("allcards")
+    @Produces(MediaType.APPLICATION_JSON)
+    @AllowedRoles(roles = {AllowedRoles.ALL})
+    public Response findAllByUser(@Context SecurityContext sc, @Context HttpServletRequest req) {
+        
+        List<Users> users = userBean.findAllUsers();
+        List<UserCardDTO> userCardDTOs = new ArrayList<>();
+        
+        for(Users user : users){
+            UserCardDTO userCardDTO = new UserCardDTO(user);
+            userCardDTOs.add(userCardDTO);
+        }
+        
+        GenericEntity<List<UserCardDTO>> userCards = new GenericEntity<List<UserCardDTO>>(userCardDTOs) {};
+
+        return getNoCacheResponseBuilder(Response.Status.OK).entity(userCards).build();
+    }
+    
+    
     @GET
     @Path("profile")
     @Produces(MediaType.APPLICATION_JSON)

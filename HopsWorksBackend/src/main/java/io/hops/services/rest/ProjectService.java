@@ -7,6 +7,7 @@ import io.hops.integration.UserFacade;
 import io.hops.model.Project;
 import io.hops.model.ProjectUser;
 import io.hops.model.Users;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -90,33 +91,33 @@ public class ProjectService {
             @Context HttpServletRequest req) {
 
         JsonResponse json = new JsonResponse();
-        
+
         Project proj = projectBean.findByProjectID(Integer.valueOf(id));
         projectBean.detach(proj);
-        
+
         // Check if something changed
-        if(updatedProject.getName() != null){
+        if (updatedProject.getName() != null) {
             proj.setName(updatedProject.getName());
         }
-        if(updatedProject.getDescription() != null){
+        if (updatedProject.getDescription() != null) {
             proj.setDescription(updatedProject.getDescription());
         }
-        if(updatedProject.getStatus() != null){
+        if (updatedProject.getStatus() != null) {
             proj.setStatus(updatedProject.getStatus());
         }
-        if(updatedProject.getDateCreated() != null){
+        if (updatedProject.getDateCreated() != null) {
             proj.setDateCreated(updatedProject.getDateCreated());
         }
-        if(updatedProject.getType() != null){
+        if (updatedProject.getType() != null) {
             proj.setType(updatedProject.getType());
-        }        
-        
+        }
+
         projectBean.updateByProject(proj);
-        
-        json.setStatus("OK");        
+
+        json.setStatus("OK");
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
-    
+
     @POST
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -126,22 +127,37 @@ public class ProjectService {
             @Context SecurityContext sc,
             @Context HttpServletRequest req) {
 
-        JsonResponse json = new JsonResponse();
+        JsonResponse json = new JsonResponse();        
         
         Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
         ProjectUser projUser = new ProjectUser();
-
         projUser.setEmail(user);
         projUser.setProjectId(project);
-        projUser.setRole( projectRoleBean.getUserRoleByName(AllowedRoles.OWNER));
+        projUser.setRole(projectRoleBean.getUserRoleByName(AllowedRoles.OWNER));
 
         projectBean.createProject(projUser, project);
-        
+
+        ArrayList<String> projectMembers = (ArrayList)project.getMembers();
+
+
+        for (String member : projectMembers) {
+            Users foundMember = userBean.findByEmail(member);
+
+            if (!foundMember.getEmail().equals(user.getEmail())) {
+                ProjectUser projMember = new ProjectUser();
+                projMember.setEmail(foundMember);
+                projMember.setProjectId(project);
+                projMember.setRole(projectRoleBean.getUserRoleByName(AllowedRoles.GUEST));
+
+                projectBean.createProject(projMember, project);
+            }
+        }
+
         json.setStatus("201");// Created       
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
-    
+
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -152,14 +168,13 @@ public class ProjectService {
             @Context HttpServletRequest req) {
 
         JsonResponse json = new JsonResponse();
-        
+
         projectBean.removeByProjectID(Integer.valueOf(id));
-        
-        json.setStatus("OK");        
+
+        json.setStatus("OK");
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
     }
-    
-    
+
     private Response.ResponseBuilder getNoCacheResponseBuilder(Response.Status status) {
         CacheControl cc = new CacheControl();
         cc.setNoCache(true);
