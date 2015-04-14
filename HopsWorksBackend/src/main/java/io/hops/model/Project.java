@@ -3,6 +3,7 @@ package io.hops.model;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -13,9 +14,11 @@ import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -39,6 +42,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
     @NamedQuery(name = "Project.findByStatus", query = "SELECT p FROM Project p WHERE p.status = :status"),
     @NamedQuery(name = "Project.findByType", query = "SELECT p FROM Project p WHERE p.type = :type")})
 public class Project implements Serializable {
+
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -64,6 +68,9 @@ public class Project implements Serializable {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "projectId")
     private Collection<ProjectUser> projectUserCollection;
 
+    @Transient
+    private List<String> members;
+
     public Project() {
     }
 
@@ -74,6 +81,11 @@ public class Project implements Serializable {
     public Project(Integer id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.dateCreated = new Date();
     }
 
     public Integer getId() {
@@ -134,6 +146,14 @@ public class Project implements Serializable {
         this.projectUserCollection = projectUserCollection;
     }
 
+    public List<String> getMembers() {
+        return this.members;
+    }
+
+    public void setMembers(List<String> members) {
+        this.members = members;
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -158,5 +178,5 @@ public class Project implements Serializable {
     public String toString() {
         return "io.hops.model.Project[ id=" + id + " ]";
     }
-    
+
 }
