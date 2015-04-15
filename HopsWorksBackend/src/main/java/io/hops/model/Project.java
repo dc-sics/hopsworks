@@ -41,10 +41,6 @@ import org.codehaus.jackson.annotate.JsonIgnore;
     @NamedQuery(name = "Project.findByDateCreated", query = "SELECT p FROM Project p WHERE p.dateCreated = :dateCreated"),
     @NamedQuery(name = "Project.findByStatus", query = "SELECT p FROM Project p WHERE p.status = :status")})
 public class Project implements Serializable {
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "projectID")
-    private Collection<ProjectType> projectTypeCollection;
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "projectID")
-    private Collection<ProjectHistory> projectHistoryCollection;
 
     private static final long serialVersionUID = 1L;
     @Id
@@ -67,9 +63,15 @@ public class Project implements Serializable {
     private Integer status;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "projectId")
     private Collection<ProjectUser> projectUserCollection;
-
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "projectID")
+    private Collection<ProjectType> projectTypeCollection;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "projectID")
+    private Collection<ProjectHistory> projectHistoryCollection;
+    
     @Transient
     private List<String> members;
+    @Transient
+    private List<String> types;
 
     public Project() {
     }
@@ -145,6 +147,16 @@ public class Project implements Serializable {
     public void setMembers(List<String> members) {
         this.members = members;
     }
+
+    public List<String> getTypes() {
+        return types;
+    }
+
+    public void setTypes(List<String> types) {
+        this.types = types;
+    }
+    
+    
 
     @Override
     public int hashCode() {
