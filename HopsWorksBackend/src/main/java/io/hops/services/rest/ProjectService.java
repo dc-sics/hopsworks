@@ -3,11 +3,12 @@ package io.hops.services.rest;
 import io.hops.annotations.AllowedRoles;
 import io.hops.integration.ProjectFacade;
 import io.hops.integration.ProjectRoleFacade;
+import io.hops.integration.ProjectTypeFacade;
 import io.hops.integration.UserFacade;
 import io.hops.model.Project;
+import io.hops.model.ProjectType;
 import io.hops.model.ProjectUser;
 import io.hops.model.Users;
-import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -46,6 +47,8 @@ public class ProjectService {
     private ProjectRoleFacade projectRoleBean;
     @EJB
     private UserFacade userBean;
+    @EJB
+    private ProjectTypeFacade projectTypeBean;
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -126,22 +129,30 @@ public class ProjectService {
 
         JsonResponse json = new JsonResponse();        
         
-        Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
-
+        Users owner = userBean.findByEmail(sc.getUserPrincipal().getName());
+        
+        // Add owner and create project
         ProjectUser projUser = new ProjectUser();
-        projUser.setEmail(user);
+        projUser.setEmail(owner);
         projUser.setProjectId(project);
         projUser.setRole(projectRoleBean.getUserRoleByName(AllowedRoles.OWNER));
-
+        
         projectBean.createProject(projUser, project);
 
-        ArrayList<String> projectMembers = (ArrayList)project.getMembers();
-
-
-        for (String member : projectMembers) {
+        // Add types
+        for(String type : project.getTypes()){
+            ProjectType projType = new ProjectType();
+            projType.setProjectID(project);
+            projType.setType(type);
+            
+            projectTypeBean.persist(projType);
+        }
+        
+        // Add members
+        for (String member : project.getMembers()) {
             Users foundMember = userBean.findByEmail(member);
 
-            if (!foundMember.getEmail().equals(user.getEmail())) {
+            if (!foundMember.getEmail().equals(owner.getEmail())) {
                 ProjectUser projMember = new ProjectUser();
                 projMember.setEmail(foundMember);
                 projMember.setProjectId(project);
