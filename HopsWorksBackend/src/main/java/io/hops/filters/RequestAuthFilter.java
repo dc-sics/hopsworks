@@ -1,7 +1,11 @@
 package io.hops.filters;
 
 import io.hops.annotations.AllowedRoles;
+import io.hops.integration.ProjectFacade;
 import io.hops.integration.ProjectUserFacade;
+import io.hops.integration.UserFacade;
+import io.hops.model.Project;
+import io.hops.model.Users;
 import io.hops.services.rest.JsonResponse;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -27,7 +31,11 @@ import javax.ws.rs.ext.Provider;
 public class RequestAuthFilter implements ContainerRequestFilter {
 
     @EJB
-    private ProjectUserFacade projectUserBean;
+    private ProjectUserFacade projectUserBean; 
+    @EJB
+    private ProjectFacade projectBean;
+    @EJB
+    private UserFacade userBean;
 
     @Context
     private ResourceInfo resourceInfo;
@@ -71,7 +79,9 @@ public class RequestAuthFilter implements ContainerRequestFilter {
 
             String userRole;
             try {
-                userRole = projectUserBean.findRoleByID(userEmail, projectId);
+                Users user = userBean.findByEmail(userEmail);
+                Project proj = projectBean.find(Integer.valueOf(projectId));
+                userRole = projectUserBean.findRoleByID(user, proj);
             } catch (Exception e) {
                 userRole = "";
             }

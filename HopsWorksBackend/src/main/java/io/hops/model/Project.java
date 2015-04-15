@@ -183,8 +183,8 @@ public class Project implements Serializable {
         return "io.hops.model.Project[ id=" + id + " ]";
     }
 
-    @XmlTransient
-    @JsonIgnore
+    //@XmlTransient
+    //@JsonIgnore
     public Collection<ProjectType> getProjectTypeCollection() {
         return projectTypeCollection;
     }
