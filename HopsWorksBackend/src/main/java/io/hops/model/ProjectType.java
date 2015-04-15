@@ -15,6 +15,8 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  *
@@ -54,7 +56,9 @@ public class ProjectType implements Serializable {
         this.id = id;
         this.type = type;
     }
-
+    
+    @XmlTransient
+    @JsonIgnore
     public Integer getId() {
         return id;
     }
@@ -70,7 +74,8 @@ public class ProjectType implements Serializable {
     public void setType(String type) {
         this.type = type;
     }
-
+    
+    @XmlTransient
     public Project getProjectID() {
         return projectID;
     }

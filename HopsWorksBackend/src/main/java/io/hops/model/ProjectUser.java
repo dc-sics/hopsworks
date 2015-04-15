@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Table(name = "project_user")
 @XmlRootElement
 @NamedQueries({
-    @NamedQuery(name = "ProjectUser.findRoleByEmailAndID", query = "SELECT p FROM ProjectUser p WHERE p.email = :email AND p.id = :id"),
+    @NamedQuery(name = "ProjectUser.findRoleByEmailAndID", query = "SELECT p FROM ProjectUser p WHERE p.email = :email AND p.projectId = :projectId"),
     @NamedQuery(name = "ProjectUser.findAll", query = "SELECT p FROM ProjectUser p"),
     @NamedQuery(name = "ProjectUser.findById", query = "SELECT p FROM ProjectUser p WHERE p.id = :id")})
 public class ProjectUser implements Serializable {

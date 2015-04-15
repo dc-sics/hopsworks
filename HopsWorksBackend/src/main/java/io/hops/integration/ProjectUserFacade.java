@@ -1,5 +1,6 @@
 package io.hops.integration;
 
+import io.hops.model.Project;
 import io.hops.model.ProjectUser;
 import io.hops.model.Users;
 import javax.ejb.Stateless;
@@ -26,12 +27,11 @@ public class ProjectUserFacade extends AbstractFacade<ProjectUser>{
     }
     
     
-    public String findRoleByID(String email, String id){
-        Users user = em.find(Users.class, email);
-
+    public String findRoleByID(Users user, Project projectID){
+        
         ProjectUser pu = em.createNamedQuery("ProjectUser.findRoleByEmailAndID", ProjectUser.class)
                 .setParameter("email", user)
-                .setParameter("id", Integer.valueOf(id))
+                .setParameter("projectId", projectID)
                 .getSingleResult();
         
         return pu.getRole().getName();
