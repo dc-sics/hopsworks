@@ -108,9 +108,6 @@ public class ProjectService {
         if (updatedProject.getDateCreated() != null) {
             proj.setDateCreated(updatedProject.getDateCreated());
         }
-        if (updatedProject.getType() != null) {
-            proj.setType(updatedProject.getType());
-        }
 
         projectBean.updateByProject(proj);
 
