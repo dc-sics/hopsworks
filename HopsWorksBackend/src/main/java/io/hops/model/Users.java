@@ -53,6 +53,8 @@ public class Users implements Serializable{
     @Column(name = "salt")
     private byte[] salt;
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "email")
+    private Collection<ProjectHistory> projectHistoryCollection;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "email")
     private Collection<ProjectUser> projectUserCollection;
 
     public static final int STATUS_REQUEST = 0;
@@ -311,5 +313,15 @@ public class Users implements Serializable{
 
     public void setSalt(byte[] salt) {
         this.salt = salt;
+    }
+
+    @XmlTransient
+    @JsonIgnore
+    public Collection<ProjectHistory> getProjectHistoryCollection() {
+        return projectHistoryCollection;
+    }
+
+    public void setProjectHistoryCollection(Collection<ProjectHistory> projectHistoryCollection) {
+        this.projectHistoryCollection = projectHistoryCollection;
     }
 }
