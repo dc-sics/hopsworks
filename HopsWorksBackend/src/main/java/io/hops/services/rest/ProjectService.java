@@ -111,7 +111,7 @@ public class ProjectService {
         if (updatedProject.getDateCreated() != null) {
             proj.setDateCreated(updatedProject.getDateCreated());
         }
-
+        
         projectBean.updateByProject(proj);
 
         json.setStatus("OK");
@@ -149,7 +149,8 @@ public class ProjectService {
         }
         
         // Add members
-        for (String member : project.getMembers()) {
+        if(!project.getMembers().isEmpty()){
+            for (String member : project.getMembers()) {
             Users foundMember = userBean.findByEmail(member);
 
             if (!foundMember.getEmail().equals(owner.getEmail())) {
@@ -161,6 +162,8 @@ public class ProjectService {
                 projectBean.createProject(projMember, project);
             }
         }
+        }
+        
 
         json.setStatus("201");// Created       
         return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
