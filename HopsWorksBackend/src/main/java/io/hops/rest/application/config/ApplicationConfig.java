@@ -30,6 +30,7 @@ public class ApplicationConfig extends Application {
         resources.add(io.hops.integration.ThrowableExceptionMapper.class);
         resources.add(io.hops.integration.TransactionExceptionMapper.class);
         resources.add(io.hops.services.rest.AuthService.class);
+        resources.add(io.hops.services.rest.HistoryService.class);
         resources.add(io.hops.services.rest.ProjectService.class);
         resources.add(io.hops.services.rest.UserService.class);
     }

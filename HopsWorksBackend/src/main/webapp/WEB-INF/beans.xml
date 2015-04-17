@@ -12,5 +12,8 @@
         <exclude name="com.google.inject.**" />     
         <exclude name="com.sun.jersey.guice.**" />
     </scan>
+    <interceptors>
+        <class>io.hops.filters.OperationInterceptor</class>
+    </interceptors>
     
 </beans>
