@@ -47,7 +47,7 @@ public class ProjectFacade extends AbstractFacade<Project> {
     public void updateByProject(Project project) {
         em.merge(project);
     }
-
+    
     public void createProject(ProjectUser projUser, Project project) {
         em.persist(projUser);
         em.persist(project);

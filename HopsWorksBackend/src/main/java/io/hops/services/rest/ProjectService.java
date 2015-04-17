@@ -1,6 +1,7 @@
 package io.hops.services.rest;
 
 import io.hops.annotations.AllowedRoles;
+import io.hops.annotations.LogOperation;
 import io.hops.integration.ProjectFacade;
 import io.hops.integration.ProjectRoleFacade;
 import io.hops.integration.ProjectTypeFacade;
@@ -68,6 +69,7 @@ public class ProjectService {
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
     @AllowedRoles(roles = {AllowedRoles.GUEST, AllowedRoles.CONTRIBUTOR, AllowedRoles.OWNER})
+    @LogOperation(type=LogOperation.ACCESS, description = "Access project")//this is just a test!!!!!!!
     public Response findByProjectID(
             @PathParam("id") String id,
             @Context SecurityContext sc,
@@ -166,7 +168,7 @@ public class ProjectService {
         
 
         json.setStatus("201");// Created       
-        return getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
+        return getNoCacheResponseBuilder(Response.Status.CREATED).entity(json).build();
     }
 
     @DELETE

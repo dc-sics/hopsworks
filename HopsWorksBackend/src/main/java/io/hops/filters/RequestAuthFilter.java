@@ -76,7 +76,7 @@ public class RequestAuthFilter implements ContainerRequestFilter {
             //if the resource is only allowed for some roles check if the user have the requierd role for the resource.
             String userEmail = requestContext.getSecurityContext().getUserPrincipal().getName();
             String projectId = path.substring(path.indexOf("/") + 1, path.length());
-
+            
             String userRole;
             try {
                 Users user = userBean.findByEmail(userEmail);

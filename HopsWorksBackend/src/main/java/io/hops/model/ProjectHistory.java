@@ -1,7 +1,4 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
  */
 package io.hops.model;
 
@@ -25,18 +22,25 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- *
- * @author AMore
+ * @author André<amore@kth.se>
+ * @author Ermias<ermiasg@kth.se>
  */
 @Entity
 @Table(name = "project_history")
 @XmlRootElement
 @NamedQueries({
+    @NamedQuery(name = "ProjectHistory.findHistoryByProject", query = "SELECT p FROM ProjectHistory p JOIN p.projectID u WHERE u.id = :id"),
+    @NamedQuery(name = "ProjectHistory.findHistoryByEmail", query = "SELECT p FROM ProjectHistory p JOIN p.email u WHERE u.email = :email"),
     @NamedQuery(name = "ProjectHistory.findAll", query = "SELECT p FROM ProjectHistory p"),
     @NamedQuery(name = "ProjectHistory.findById", query = "SELECT p FROM ProjectHistory p WHERE p.id = :id"),
-    @NamedQuery(name = "ProjectHistory.findByOperation", query = "SELECT p FROM ProjectHistory p WHERE p.operation = :operation"),
-    @NamedQuery(name = "ProjectHistory.findByDate", query = "SELECT p FROM ProjectHistory p WHERE p.date = :date")})
+    @NamedQuery(name = "ProjectHistory.findByOperation", query = "SELECT p FROM ProjectHistory p WHERE p.op = :op"),
+    @NamedQuery(name = "ProjectHistory.findByDate", query = "SELECT p FROM ProjectHistory p WHERE p.datestamp = :datestamp")})
 public class ProjectHistory implements Serializable {
+
+    public enum Operation {
+
+        ACCESS, UPDATE, CREATE
+    };
     private static final long serialVersionUID = 1L;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,13 +50,16 @@ public class ProjectHistory implements Serializable {
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 7)
-    @Column(name = "operation")
-    private String operation;
+    @Column(name = "op")
+    private String op;
     @Basic(optional = false)
     @NotNull
-    @Column(name = "date")
+    @Column(name = "datestamp")
     @Temporal(TemporalType.TIMESTAMP)
-    private Date date;
+    private Date datestamp;
+    @Size(max = 255)
+    @Column(name = "description")
+    private String description;
     @JoinColumn(name = "email", referencedColumnName = "email")
     @ManyToOne(optional = false)
     private Users email;
@@ -69,10 +76,10 @@ public class ProjectHistory implements Serializable {
 
     public ProjectHistory(Integer id, String operation, Date date) {
         this.id = id;
-        this.operation = operation;
-        this.date = date;
+        this.op = operation;
+        this.datestamp = date;
     }
-
+    
     public Integer getId() {
         return id;
     }
@@ -81,20 +88,28 @@ public class ProjectHistory implements Serializable {
         this.id = id;
     }
 
-    public String getOperation() {
-        return operation;
+    public String getOp() {
+        return op;
     }
 
-    public void setOperation(String operation) {
-        this.operation = operation;
+    public void setOp(String operation) {
+        this.op = operation;
     }
 
-    public Date getDate() {
-        return date;
+    public Date getDatestamp() {
+        return datestamp;
     }
 
-    public void setDate(Date date) {
-        this.date = date;
+    public void setDatestamp(Date date) {
+        this.datestamp = date;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String desc) {
+        this.description = desc;
     }
 
     public Users getEmail() {
@@ -137,5 +152,5 @@ public class ProjectHistory implements Serializable {
     public String toString() {
         return "io.hops.model.ProjectHistory[ id=" + id + " ]";
     }
-    
+
 }

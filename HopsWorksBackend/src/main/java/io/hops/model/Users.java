@@ -314,7 +314,7 @@ public class Users implements Serializable{
     public void setSalt(byte[] salt) {
         this.salt = salt;
     }
-
+    
     @XmlTransient
     @JsonIgnore
     public Collection<ProjectHistory> getProjectHistoryCollection() {
@@ -324,4 +324,4 @@ public class Users implements Serializable{
     public void setProjectHistoryCollection(Collection<ProjectHistory> projectHistoryCollection) {
         this.projectHistoryCollection = projectHistoryCollection;
     }
-}
+    }
