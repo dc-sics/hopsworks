@@ -1,9 +1,3 @@
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package se.kth.hopsworks.rest;
 
 import java.io.File;
@@ -37,12 +31,10 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.SecurityContext;
 import se.kth.bbc.fileoperations.FileOperations;
 import se.kth.bbc.lims.Constants;
-import se.kth.bbc.project.Project;
-import se.kth.bbc.project.ProjectFacade;
-import se.kth.hopsworks.controller.ResponseMessages;
-import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.bbc.lims.StagingManager;
 import se.kth.bbc.lims.Utils;
+import se.kth.bbc.project.Project;
+import se.kth.bbc.project.ProjectFacade;
 import se.kth.bbc.project.fb.Inode;
 import se.kth.bbc.project.fb.InodeFacade;
 import se.kth.bbc.project.fb.InodeView;
@@ -51,6 +43,8 @@ import se.kth.bbc.upload.ResumableInfo;
 import se.kth.bbc.upload.ResumableInfoStorage;
 import se.kth.hopsworks.controller.DataSetDTO;
 import se.kth.hopsworks.controller.FolderNameValidator;
+import se.kth.hopsworks.controller.ResponseMessages;
+import se.kth.hopsworks.filters.AllowedRoles;
 
 /**
  * @author André<amore@kth.se>
@@ -112,7 +106,6 @@ public class DataSetService {
     for (Inode i : cwdChildren) {
       kids.add(new InodeView(i, inodes.getPath(i)));
     }
-
     GenericEntity<List<InodeView>> inodViews
             = new GenericEntity<List<InodeView>>(kids) {
             };
@@ -165,22 +158,27 @@ public class DataSetService {
           @Context HttpServletRequest req) throws AppException {
     InputStream is = null;
     String fullPath = this.path + filePath;
-    logger.log(Level.INFO, "File to be downloaded from HDFS path: {0}", fullPath);
+    logger.
+            log(Level.INFO, "File to be downloaded from HDFS path: {0}",
+                    fullPath);
     if (inodes.getInodeAtPath(fullPath) == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
               ResponseMessages.FILE_NOT_FOUND);
     }
     try {
       is = fileOps.getInputStream(fullPath);
-      logger.log(Level.FINE, "File was downloaded from HDFS path: {0}",fullPath);
+      logger.
+              log(Level.FINE, "File was downloaded from HDFS path: {0}",
+                      fullPath);
     } catch (IOException ex) {
       logger.log(Level.INFO, null, ex);
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
               "Could not open stream.");
     }
     String[] p = filePath.split(File.separator);
-    ResponseBuilder response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK);
-    response.header("filename", p[p.length-1]);
+    ResponseBuilder response = noCacheResponse.getNoCacheResponseBuilder(
+            Response.Status.OK);
+    response.header("filename", p[p.length - 1]);
     return response.entity(is).build();
   }
 
@@ -433,7 +431,7 @@ public class DataSetService {
     if (!info.vaild()) {
       storage.remove(info);
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Invalid request params.");
+              "Invalid request params. ");
     }
     return info;
   }
