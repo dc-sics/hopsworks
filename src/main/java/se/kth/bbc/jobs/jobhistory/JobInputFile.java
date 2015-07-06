@@ -13,13 +13,15 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 /**
  *
  * @author stig
  */
 @Entity
-@Table(name = "job_input_files")
+@Table(name = "vangelis_kthfs.job_input_files")
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(name = "JobInputFile.findAll",
@@ -88,6 +90,8 @@ public class JobInputFile implements Serializable {
     this.path = path;
   }
 
+  @XmlTransient
+  @JsonIgnore
   public JobHistory getJobHistory() {
     return jobHistory;
   }

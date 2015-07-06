@@ -1,6 +1,5 @@
 package se.kth.meta.entity;
 
-import se.kth.meta.entity.listener.EntityListener;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,13 +21,14 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import se.kth.meta.entity.listener.EntityListener;
 
 /**
  *
  * @author Vangelis
  */
 @Entity
-@Table(name = "tables")
+@Table(name = "vangelis_kthfs.meta_tables")
 @EntityListeners(EntityListener.class)
 
 @NamedQueries({
@@ -72,6 +72,9 @@ public class Tables implements Serializable, EntityIntf {
           fetch = FetchType.LAZY,
           cascade = CascadeType.ALL) //cascade type all updates the child entities
   private List<Fields> fields;
+
+  @Transient
+  private int inodeid;
 
   /*
    * indicates whether a table containing fields can be deleted along
@@ -170,6 +173,14 @@ public class Tables implements Serializable, EntityIntf {
 
   public void setTemplates(Templates templates) {
     this.templates = templates;
+  }
+
+  public void setInodeid(int inodeid) {
+    this.inodeid = inodeid;
+  }
+
+  public int getInodeid() {
+    return this.inodeid;
   }
 
   @Override

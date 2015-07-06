@@ -13,20 +13,24 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public final class InodeView {
 
-  private  String name;
-  private  boolean dir;
-  private  boolean parent;
-  private  String path;
-  private  Date modification;
-  private  Date accessTime;
-  
+  private String name;
+  private boolean dir;
+  private boolean parent;
+  private String path;
+  private Date modification;
+  private Date accessTime;
+  private int id;
+  private int template;
 
   public InodeView() {
   }
-  
+
   public InodeView(Inode i, String path) {
     this.name = i.getInodePK().getName();
     this.dir = i.isDir();
+    this.id = i.getId();
+    //put the template id in the REST response
+    this.template = i.getTemplate();
     this.parent = false;
     this.path = path;
     this.modification = new Date(i.getModificationTime().longValue());
@@ -61,6 +65,14 @@ public final class InodeView {
     this.dir = dir;
   }
 
+  public void setId(int id) {
+    this.id = id;
+  }
+
+  public void setTemplate(int template) {
+    this.template = template;
+  }
+
   public void setParent(boolean parent) {
     this.parent = parent;
   }
@@ -76,13 +88,21 @@ public final class InodeView {
   public void setAccessTime(Date accessTime) {
     this.accessTime = accessTime;
   }
-  
+
   public String getName() {
     return name;
   }
 
   public boolean isDir() {
     return dir;
+  }
+
+  public int getId() {
+    return this.id;
+  }
+
+  public int getTemplate() {
+    return this.template;
   }
 
   public boolean isParent() {

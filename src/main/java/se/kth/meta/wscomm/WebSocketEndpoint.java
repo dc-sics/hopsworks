@@ -1,10 +1,6 @@
 package se.kth.meta.wscomm;
 
-import se.kth.meta.db.Dbao;
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -22,6 +18,7 @@ import javax.websocket.server.ServerEndpoint;
 import se.kth.bbc.project.Project;
 import se.kth.bbc.project.ProjectFacade;
 import se.kth.bbc.project.ProjectTeamFacade;
+import se.kth.meta.db.Dbao;
 import se.kth.meta.wscomm.message.Message;
 import se.kth.meta.wscomm.message.TextMessage;
 
@@ -46,7 +43,6 @@ public class WebSocketEndpoint {
   private Project project;
   private String userRole;
   private HttpSession httpSession;//this might be used to check the underlying http session
-  private Dbao db;
   private Protocol protocol;
 
   @OnOpen
@@ -74,7 +70,7 @@ public class WebSocketEndpoint {
 
     //returns the user role in project. Null if the user has no role in project
     this.userRole = projectTeamBean.findCurrentRole(this.project, this.sender);
-    logger.log(Level.SEVERE, "User role in this projuct {0}", this.userRole);
+    logger.log(Level.SEVERE, "User role in this product {0}", this.userRole);
 
     if (this.userRole == null) {
       try {

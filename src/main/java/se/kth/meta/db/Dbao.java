@@ -1,9 +1,5 @@
 package se.kth.meta.db;
 
-import se.kth.meta.entity.Fields;
-import se.kth.meta.entity.RawData;
-import se.kth.meta.entity.Tables;
-import se.kth.meta.exception.DatabaseException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,6 +10,7 @@ import javax.naming.NamingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -22,8 +19,12 @@ import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 import se.kth.meta.entity.FieldPredefinedValues;
 import se.kth.meta.entity.FieldTypes;
+import se.kth.meta.entity.Fields;
+import se.kth.meta.entity.RawData;
+import se.kth.meta.entity.Tables;
 import se.kth.meta.entity.Templates;
 import se.kth.meta.entity.TupleToFile;
+import se.kth.meta.exception.DatabaseException;
 
 /**
  * Offers database functionalities
@@ -49,12 +50,6 @@ public class Dbao {
       this.ic = (Context) new InitialContext();
       this.em = (EntityManager) ic.lookup("java:comp/env/persistence/em");
       this.utx = (UserTransaction) ic.lookup("java:comp/env/UserTransaction");
-
-      logger.log(Level.SEVERE, "Database initialized.\n");
-
-//            Fields field = this.em.find(Fields.class, 10);
-//            field.setForceDelete(true);
-//            this.deleteField(field);
     } catch (NamingException | IllegalStateException | SecurityException ex) {
       logger.log(Level.SEVERE, null, ex);
       throw new DatabaseException(Dbao.class.getName(), ex.getMessage());
@@ -196,11 +191,13 @@ public class Dbao {
 
     try {
       Tables t = this.getTable(table.getId());
-      t.setForceDelete(table.forceDelete());
-      if (!t.getFields().isEmpty() && !t.forceDelete()) {
-        throw new DatabaseException("Table '" + t.getName() + "' has fields "
-                + "associated to it");
-      }
+
+//    NEEDS TO BE REEMPLOYED
+//            t.setForceDelete(table.forceDelete());
+//            if (!t.getFields().isEmpty() && !t.forceDelete()) {
+//                throw new DatabaseException("Table '" + t.getName() + "' has fields "
+//                        + "associated to it");
+//            }
 
       //first remove all the child elements of this table to avoid foreign key violation
       List<Fields> fields = t.getFields();
@@ -314,8 +311,7 @@ public class Dbao {
    * Deletes a field's predefined values. When a field modification happens
    * all its previously defined values need to be purged before the new
    * ones take their place i.e. a field gets its type changed from a dropdown
-   * list
-   * to true/false, or to plain text
+   * list to true/false, or to plain text
    * <p>
    *
    * @param fieldid
@@ -427,55 +423,44 @@ public class Dbao {
     return query.getResultList();
   }
 
-  //TEST TO SEE DATABASE UPDATES
-//    @Override
-//    public void run() {
-//        while (true) {
-//            try {
-//
-//                Thread.sleep(2000);
-//                if (table == null) {
-//                    table = this.getTable(1);
-//                    if (!this.em.contains(table)) {
-//                        try {
-//                            utx.begin();
-//                            //now the entity becomes managed
-//                            table = em.merge(table);
-//                            //utx.commit();
-//                        } catch (SecurityException | IllegalStateException ex) {
-//                            Logger.getLogger(Dbao.class.getName()).log(Level.SEVERE, null, ex);
-//                        }
-//
-//                        System.out.print("this entity should now be managed: " + em.contains(table));
-//                    }
-//                    System.out.println("Table retrieved " + table.getId() + " -- " + table.getName());
-//                } else {
-//                    //this.utx.begin();
-//                    //table = this.em.find(Tables.class, 1);
-//                    this.em.refresh(table);
-//                    //table = this.em.merge(table);
-//                    //this.utx.commit();
-//                    System.out.println("Table refreshed " + table.getId() + " -- " + table.getName());
-//                }
-//
-//                //another test
-//                //this.loadTemplate();
-//            } catch (InterruptedException e) {
-//                System.err.println("O " + e.getMessage());
-//            } catch (NotSupportedException | SystemException | ApplicationException ex) {
-//                Logger.getLogger(Dbao.class.getName()).log(Level.SEVERE, null, ex);
-//            }
-//        }
-//    }
-  public void shutdown() throws DatabaseException {
-//        this.em.clear();
-    //this.em.close();
+  /**
+   * Find the Template that has <i>templateid</i> as id.
+   * <p>
+   * @param templateid
+   * @return
+   */
+  public Templates findTemplateById(int templateid) {
+    TypedQuery<Templates> query = em.createNamedQuery(
+            "Templates.findByTemplateid",
+            Templates.class);
 
-    //this.utx = null;
-//        try {
-//            this.ic.close();
-//        } catch (NamingException e) {
-//            throw new ApplicationException(e.getMessage());
-//        }
+    query.setParameter("templateid", templateid);
+    return query.getSingleResult();
+  }
+
+  /**
+   * Update the relationship table <i>meta_template_to_inode</i>
+   * <p>
+   * @param template
+   * @throws se.kth.meta.exception.DatabaseException
+   */
+  public void updateTemplatesInodesMxN(Templates template) throws
+          DatabaseException {
+    try {
+      this.utx.begin();
+      this.em.merge(template);
+      this.utx.commit();
+    } catch (IllegalStateException | SecurityException | HeuristicMixedException |
+            HeuristicRollbackException | NotSupportedException |
+            RollbackException |
+            SystemException e) {
+
+      throw new DatabaseException(Dbao.class.getName(),
+              "Problem when attaching template " + template.getId());
+    }
+  }
+
+  public void shutdown() throws DatabaseException {
+
   }
 }

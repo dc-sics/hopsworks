@@ -7,16 +7,15 @@ import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
+import se.kth.bbc.project.Project;
 import se.kth.bbc.security.ua.model.Address;
 import se.kth.bbc.security.ua.model.Organization;
-import se.kth.bbc.security.ua.model.User;
 import se.kth.bbc.security.ua.model.PeopleGroup;
 import se.kth.bbc.security.ua.model.PeopleGroupPK;
+import se.kth.bbc.security.ua.model.User;
 import se.kth.bbc.security.ua.model.Userlogins;
 import se.kth.bbc.security.ua.model.Yubikey;
-import se.kth.bbc.project.Project;
 
 /**
  *
@@ -232,7 +231,7 @@ public class UserManager {
   //TODO: remove native query. Use JPA
   public List<String> findGroups(int uid) {
     String sql
-            = "SELECT group_name FROM bbc_group INNER JOIN people_group ON (people_group.gid = bbc_group.gid AND people_group.uid = "
+            = "SELECT group_name FROM vangelis_kthfs.bbc_group INNER JOIN vangelis_kthfs.people_group ON (vangelis_kthfs.people_group.gid = vangelis_kthfs.bbc_group.gid AND vangelis_kthfs.people_group.uid = "
             + uid + " )";
     List existing = em.createNativeQuery(sql).getResultList();
     return existing;

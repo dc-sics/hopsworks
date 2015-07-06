@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package se.kth.bbc.security.ua.model;
 
 import java.io.Serializable;
@@ -28,7 +23,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
  * @author Ali Gholami <gholami@pdc.kth.se>
  */
 @Entity
-@Table(name = "bbc_group")
+@Table(name = "vangelis_kthfs.bbc_group")
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(name = "BBCGroup.findAll",

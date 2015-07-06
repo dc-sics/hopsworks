@@ -1,6 +1,5 @@
 package se.kth.meta.entity.listener;
 
-import se.kth.meta.entity.Tables;
 import javax.persistence.PostLoad;
 import javax.persistence.PostPersist;
 import javax.persistence.PostRemove;
@@ -8,6 +7,7 @@ import javax.persistence.PostUpdate;
 import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
 import javax.persistence.PreUpdate;
+import se.kth.meta.entity.Tables;
 
 /**
  *
@@ -15,15 +15,15 @@ import javax.persistence.PreUpdate;
  */
 public class EntityListener {
 
+  //Listener in case we need to handle the entities before or after db
+  //operations take place. Should be removed probably
   @PrePersist
   void onPrePersist(Object o) {
   }
 
   @PostPersist
   void onPostPersist(Object o) {
-    System.err.println("CHANGES MADE TO THE DATABASE ");
     Tables t = (Tables) o;
-    System.out.println("TABLE " + t.getName());
   }
 
   @PostLoad

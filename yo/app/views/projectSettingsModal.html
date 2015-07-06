@@ -1,6 +1,5 @@
 <div growl></div>
 
-
 <div class="modal-header">
   <button class="close"
           ng-click="projectCtrl.close()"
@@ -30,9 +29,11 @@
                      disabled
                      >
             </md-input-container>
-                        <span
-                          ng-show="(projectForm.$submitted || projectForm.project_name.$dirty) &amp;&amp; projectForm.project_name.$error.required"
-                          class="text-danger ng-hide">This field is required</span>
+            <span
+              ng-show="(projectForm.$submitted || projectForm.project_name.$dirty) & amp;
+                  & amp;
+                  projectForm.project_name.$error.required"
+              class="text-danger ng-hide">This field is required</span>
 
             <p></p>
 
@@ -56,12 +57,12 @@
             <md-checkbox class="md-primary"
                          ng-repeat="projectType in projectCtrl.projectTypes"
                          ng-click="projectCtrl.exists(projectType)">
-              {{ projectType }}
+              {{ projectType}}
+
             </md-checkbox>
           </div>
         </fieldset>
       </div>
-
 
     </div>
   </div>
