@@ -2,6 +2,8 @@
 set -e
 #mvn clean install
 
+echo "bye"
+
 cp hopsworks.sql ../hopsworks-chef/templates/default/tables.sql.erb
 cp rows.sql ../hopsworks-chef/templates/default/rows.sql.erb
 #cd ../hopsworks-chef
