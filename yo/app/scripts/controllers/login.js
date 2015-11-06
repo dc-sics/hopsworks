@@ -6,7 +6,8 @@ angular.module('hopsWorksApp')
 
             var self = this;
             self.working = false;
-            self.user = {email: '', password: ''};
+            self.otp = $cookies['otp'];
+            self.user = {email: '', password: '', otp:''};
 
             self.login = function () {
               self.working = true;
@@ -15,7 +16,7 @@ angular.module('hopsWorksApp')
                         self.working = false;
                         $cookies.email = self.user.email;
                         $location.path('/');
-			location.reload();
+			
                       }, function (error) {
                         self.working = false;
                         self.errorMessage = error.data.errorMsg;

@@ -20,6 +20,8 @@ angular.module('hopsWorksApp')
             self.projectName = '';
             self.projectDesc = '';
 
+            self.regex = /^(?!.*?__|.*?&|.*? |.*?\/|.*\\|.*?\?|.*?\*|.*?:|.*?\||.*?'|.*?\"|.*?<|.*?>|.*?%|.*?\(|.*?\)|.*?\;|.*?#).*$/;
+
             UserService.allcards().then(
                     function (success) {
                       self.cards = success.data;
@@ -85,8 +87,7 @@ angular.module('hopsWorksApp')
                         }
                         $modalInstance.close($scope.newProject);
                       }, function (error) {
-                        self.working = false;
-                        growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000, referenceId: 1});
+                        self.working = false;                        
               }
               );
             };
