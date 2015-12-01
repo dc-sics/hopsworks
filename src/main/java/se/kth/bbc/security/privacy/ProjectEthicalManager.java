@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
@@ -90,14 +92,17 @@ public class ProjectEthicalManager implements Serializable {
 
   public void showConsent(Consents consName) {
 
+      Consents consent = null;
     try {
-      Consents consent = privacyManager.getConsentByName(consName.getId());
+      consent = privacyManager.getConsentByName(consName.getId());
+    } catch (ParseException ex) {
+      Logger.getLogger(ProjectEthicalManager.class.getName()).
+              log(Level.SEVERE, null, ex);
+    }
       privacyManager.downloadPDF(consent);
-    } catch (ParseException | IOException ex) {
-
+    
     }
 
-  }
  public void approveProject(Project project) {
 
     if (project == null) {

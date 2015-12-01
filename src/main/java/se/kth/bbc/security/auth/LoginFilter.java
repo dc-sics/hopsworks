@@ -32,7 +32,7 @@ public class LoginFilter extends PolicyAdministrationPoint implements Filter {
 
     // If user is logged in redirect to index first page 
     // otherwise continue 
-    if (request.getRemoteUser() != null && !allowedRequest) {
+    if (username != null && !allowedRequest) {
       String contextPath = ((HttpServletRequest) request).getContextPath();
       // redirect the admin to the admin pannel
       // otherwise redirect other authorized roles to the index page

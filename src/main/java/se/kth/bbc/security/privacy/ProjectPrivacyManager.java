@@ -1,12 +1,8 @@
 package se.kth.bbc.security.privacy;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.Path;
 
 import io.hops.bbc.ConsentStatus;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.text.ParseException;
@@ -19,40 +15,35 @@ import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-
 import javax.persistence.TypedQuery;
 import javax.servlet.http.HttpServletResponse;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.SelectEvent;
-import org.primefaces.model.DefaultStreamedContent;
-import org.primefaces.model.StreamedContent;
 import io.hops.bbc.Consents;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ws.rs.core.Response;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import se.kth.bbc.project.Project;
 import se.kth.bbc.project.fb.InodeFacade;
-import se.kth.hopsworks.rest.AppException;
 import se.kth.hopsworks.util.Settings;
+import se.kth.bbc.lims.MessagesController;
+
 
 @Stateless
 public class ProjectPrivacyManager {
 
-  
-  private static final Logger logger = Logger.getLogger(ProjectPrivacyManager.class.
+  private static final Logger logger = Logger.getLogger(
+          ProjectPrivacyManager.class.
           getName());
-  
-   @EJB
+
+  @EJB
   private Settings settings;
-  
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
-  
   @EJB
   private InodeFacade inodeFacade;
 
@@ -129,7 +120,7 @@ public class ProjectPrivacyManager {
     return false;
   }
 
-  public void downloadPDF(Consents consent) throws IOException {
+  public boolean downloadPDF(Consents consent) {
 
     // Prepare.
     FacesContext facesContext = FacesContext.getCurrentInstance();
@@ -142,25 +133,25 @@ public class ProjectPrivacyManager {
     String projectPath = "/" + Settings.DIR_ROOT + "/" + consent.getProject().
             getName();
     String consentsPath = projectPath + "/" + Settings.DIR_CONSENTS;
-    
-    String path =  relativePath(inodeFacade.getPath(consent.getInode()), consent.getProject());
 
-        Configuration conf = new Configuration();
+    String path = relativePath(inodeFacade.getPath(consent.getInode()), consent.
+            getProject());
+
+    Configuration conf = new Configuration();
     String hdfsPath = settings.getHadoopConfDir() + "/core-site.xml";
     org.apache.hadoop.fs.Path p = new org.apache.hadoop.fs.Path(hdfsPath);
     conf.addResource(p);
     FileSystem hdfs;
     FSDataInputStream stream;
-    try { 
+    try {
       hdfs = FileSystem.get(conf);
       stream = hdfs.open(new org.apache.hadoop.fs.Path(path));
     //response.header("Content-disposition", "attachment;");
 
-
       // Init servlet response.
       response.reset();
   //    response.setHeader("Content-Type", "application/pdf");
-    //  response.setHeader("Content-Length",
+      //  response.setHeader("Content-Length",
       //        String.valueOf(data.length)
       //);
       response.setHeader("Content-disposition", "attachment;");
@@ -176,6 +167,14 @@ public class ProjectPrivacyManager {
 
       // Finalize task.
       output.flush();
+    } catch (IOException ex) {
+      Logger.getLogger(ProjectPrivacyManager.class.getName()).
+              log(Level.SEVERE, null, ex);
+
+       MessagesController.addErrorMessage("Eror",
+                  "Could not download the form.");
+       return false;
+
     } finally {
       // Gently close streams.
       close(output);
@@ -185,6 +184,7 @@ public class ProjectPrivacyManager {
     // This is very important, otherwise you will get the following exception in the logs:
     // java.lang.IllegalStateException: Cannot forward after response has been committed.
     facesContext.responseComplete();
+    return true;
   }
 
   // Helpers (can be refactored to public utility class) ----------------------------------------
@@ -202,7 +202,8 @@ public class ProjectPrivacyManager {
 
   private String relativePath(String path, Project project) {
     logger.info("relative path for: " + path);
-    return path.replace("/" + Settings.DIR_ROOT + "/" + project.getName() + "/", "");
+    return path.replace("/" + Settings.DIR_ROOT + "/" + project.getName() + "/",
+            "");
   }
 
 }
