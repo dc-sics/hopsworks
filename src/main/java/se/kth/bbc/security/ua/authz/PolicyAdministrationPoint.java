@@ -1,24 +1,15 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package se.kth.bbc.security.ua.authz;
 
 import java.io.Serializable;
-import java.util.logging.Logger;
 import javax.ejb.EJB;
 import se.kth.bbc.security.ua.BBCGroup;
 import se.kth.bbc.security.ua.UserManager;
-import se.kth.bbc.security.ua.YubikeyActivator;
 import se.kth.hopsworks.user.model.Users;
 
 public class PolicyAdministrationPoint implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  private static final Logger logger = Logger.getLogger(YubikeyActivator.class.
-          getName());
 
   @EJB
   private UserManager userPolicMgr;
