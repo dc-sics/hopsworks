@@ -43,6 +43,10 @@ angular.module('hopsWorksApp')
               });
             };
 
+            $scope.$on("refreshCharon", function (event, args) {
+              self.getAllDatasets();
+            });
+
             /**
              * Get the contents of the directory at the path with the given path components and load it into the frontend.
              * @param {type} The array of path compontents to fetch. If empty, fetches the current path.
@@ -69,7 +73,8 @@ angular.module('hopsWorksApp')
                         self.files = success.data;
                         self.pathArray = newPathArray;
                         self.working = false;
-                        console.log(success);
+                        console.log("Success getting the contents of the path" +
+                          " " + getPath(newPathArray));
                       }, function (error) {
                         self.working = false;
                 console.log("Error getting the contents of the path " + getPath(newPathArray));
