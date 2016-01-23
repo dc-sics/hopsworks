@@ -231,8 +231,12 @@ public class AuthService {
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
-
-    userController.recoverPassword(email, securityQuestion, securityAnswer, req);
+    
+    String cleanEmail = new HTMLFilter().filter(email);
+    String cleanSec = new HTMLFilter().filter(securityQuestion);
+    String cleanAns = new HTMLFilter().filter(securityAnswer);
+    
+    userController.recoverPassword(cleanEmail, cleanSec, cleanAns, req);
 
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.PASSWORD_RESET_SUCCESSFUL);
