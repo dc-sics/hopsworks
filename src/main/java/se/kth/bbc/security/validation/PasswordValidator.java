@@ -1,4 +1,4 @@
-package se.kth.bbc.security.ua;
+package se.kth.bbc.security.validation;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

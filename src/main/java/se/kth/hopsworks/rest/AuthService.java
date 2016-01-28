@@ -27,6 +27,7 @@ import se.kth.bbc.security.audit.UserAuditActions;
 import se.kth.bbc.security.auth.AuthenticationConstants;
 import se.kth.bbc.security.ua.BBCGroup;
 import se.kth.bbc.security.ua.PeopleAccountStatus;
+import se.kth.bbc.security.validation.HTMLFilter;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.controller.UserStatusValidator;
 import se.kth.hopsworks.controller.UsersController;
@@ -87,17 +88,26 @@ public class AuthService {
     req.getServletContext().log("SecurityContext in role: " + sc.isUserInRole(
             "BBC_USER"));
     JsonResponse json = new JsonResponse();
-    Users user = userBean.findByEmail(email);
+
+    
+    //  Check for XSS inputs
+    String cleanEmail = new HTMLFilter().filter(email);
+    
+    String cleanPassword = new HTMLFilter().filter(password);
+    
+    String cleanOTP = new HTMLFilter().filter(otp);
+     
+    Users user = userBean.findByEmail(cleanEmail);
     String newPassword = null;
     // Add padding if custom realm is disabled
-    if (otp == null || otp.isEmpty() && user.getMode() == PeopleAccountStatus.MOBILE_USER.getValue()) {
-      otp = AuthenticationConstants.MOBILE_OTP_PADDING;
+    if (cleanOTP == null || cleanOTP.isEmpty() && user.getMode() == PeopleAccountStatus.MOBILE_USER.getValue()) {
+      cleanOTP = AuthenticationConstants.MOBILE_OTP_PADDING;
     } 
 
-    if (otp.length() == AuthenticationConstants.MOBILE_OTP_PADDING.length() && user.getMode() == PeopleAccountStatus.MOBILE_USER.getValue()) {
-      newPassword = password + otp;
-    } else if (otp.length() == AuthenticationConstants.YUBIKEY_OTP_PADDING.length() && user.getMode() == PeopleAccountStatus.YUBIKEY_USER.getValue()) {
-        newPassword = password + otp + AuthenticationConstants.YUBIKEY_USER_MARKER;
+    if (cleanOTP.length() == AuthenticationConstants.MOBILE_OTP_PADDING.length() && user.getMode() == PeopleAccountStatus.MOBILE_USER.getValue()) {
+      newPassword = cleanPassword + cleanOTP;
+    } else if (cleanOTP.length() == AuthenticationConstants.YUBIKEY_OTP_PADDING.length() && user.getMode() == PeopleAccountStatus.YUBIKEY_USER.getValue()) {
+        newPassword = cleanPassword + cleanOTP + AuthenticationConstants.YUBIKEY_USER_MARKER;
     }
     
     //only login if not already logged in...
@@ -108,7 +118,7 @@ public class AuthService {
           req.getServletContext().log("going to login. User status: " + user.
                   getStatus());
           req.login(email, newPassword);
-          req.getServletContext().log("3 step: " + email);
+          req.getServletContext().log("3 step: " + cleanEmail);
           userController.resetFalseLogin(user);
           am.registerLoginInfo(user, UserAuditActions.LOGIN.name(),
                   UserAuditActions.SUCCESS.name(), req);         
@@ -221,8 +231,12 @@ public class AuthService {
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
-
-    userController.recoverPassword(email, securityQuestion, securityAnswer, req);
+    
+    String cleanEmail = new HTMLFilter().filter(email);
+    String cleanSec = new HTMLFilter().filter(securityQuestion);
+    String cleanAns = new HTMLFilter().filter(securityAnswer);
+    
+    userController.recoverPassword(cleanEmail, cleanSec, cleanAns, req);
 
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.PASSWORD_RESET_SUCCESSFUL);

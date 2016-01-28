@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package se.kth.bbc.security.ua;
+package se.kth.bbc.security.validation;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,6 +16,7 @@ import javax.faces.context.FacesContext;
 import javax.faces.validator.Validator;
 import javax.faces.validator.ValidatorException;
 import se.kth.bbc.security.auth.AccountStatusErrorMessages;
+import se.kth.bbc.security.ua.UserManager;
 
 
 @ManagedBean
