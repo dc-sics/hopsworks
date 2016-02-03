@@ -218,7 +218,14 @@ angular.module('hopsWorksApp')
               });
             };
             
-            
+
+            self.isPublic = function (id) {
+              dataSetService.isPublic(id).then(
+                      function (success) {
+                      }, function (error) {
+                      growl.error(error.data.errorMsg, {title: 'Error', ttl: 1000});
+              });
+            };
 
             /**
              * Opens a modal dialog for file upload.
