@@ -203,6 +203,22 @@ angular.module('hopsWorksApp')
               removePathArray.push(fileName);
               removeInode(getPath(removePathArray));
             };
+            
+            /**
+             * Makes the dataset public for anybody within the local cluster or any outside cluster.
+             * @param id inodeId
+             */
+            self.makePublic = function (id) {
+              dataSetService.makePublic(id).then(
+                      function (success) {
+                        growl.success(success.data.successMessage, {title: 'Success', ttl: 1000});
+                        getDirContents();
+                      }, function (error) {
+                growl.error(error.data.errorMsg, {title: 'Error', ttl: 1000});
+              });
+            };
+            
+            
 
             /**
              * Opens a modal dialog for file upload.

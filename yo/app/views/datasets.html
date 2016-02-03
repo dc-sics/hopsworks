@@ -58,7 +58,10 @@
                         <a>
                           <span class="corner"></span>
 
-                          <div class="icon">
+                          <div class="icon-public" ng-show="dataset.publicDs === true">
+                            <i class="glyphicon glyphicons-folder-flag" uib-tooltip-html="Public DataSet"></i>
+                          </div>
+                          <div class="icon" ng-show="dataset.publicDs === false">
                             <i class="glyphicon glyphicon-folder-open"></i>
                           </div>
                         </a>
@@ -126,6 +129,15 @@
                               Remove</span>
                           </a>
                         </li>
+                        <li>
+                          <a class="pointer"
+                             role="menuitem"
+                             tabindex="6"
+                             ng-click="datasetsCtrl.makePublic(dataset.id)">
+                            <span><i class="fa fa-globe"></i>
+                              Make Public</span>
+                          </a>
+                        </li>                        
                       </ul>
                     </div>
                   </div>
