@@ -168,3 +168,21 @@ input[type=checkbox] {
     vertical-align:middle; 
     margin: 7px 5px 5px 5px;
 }
+
+.bootstrapGettingStarted{
+    font-family: Lobster;
+}
+
+.btn-link{
+    padding: 10px 15px;
+    background: #fff;
+    color: #2e353d;
+    border-radius: 4px;
+    border: solid 1px #2e353d;
+}
+
+.btn-link:hover, .button-link:focus {
+    background: #000;
+    border: solid 1px #000;
+    text-decoration: none;
+}
