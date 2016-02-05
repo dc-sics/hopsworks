@@ -12,27 +12,15 @@
                     <div class="timeline clearfix">
                         <div class="mid-line"></div>
 
-                        <div class="bootstrapGettingStarted" style="text-align: center;">  
-                            <div class="colBeginner">
-                                <h3 id="beginner">Complete Beginner</h3>
-                                <p>Getting started with some example datasets and programs...</p>
-                                <p> <a href="" class="btn-link" onclick="">Getting Started</a> </p>
+                        <div class="bootstrapGettingStarted">
+                            <div id="gettingStartedText" style="width: 50%; margin: 0 auto;">
+                                <p style="text-align: left;">
+                                   This tour shows how to create a Project, import a <br>
+                                   dataset run a simple job. It will be a useful starting point <br>
+                                   for an unfamiliar Hops user and give insight into how wonderful Hops is.
+                                </p>
                             </div>
-                            <div class="advancedUsers">
-                                <div class="colApacheSpark" style="float: left; margin-left: 25px;">
-                                    <h3 id="spark">Apache Spark</h3>
-                                    <p>Try some Spark ...</p>
-                                    <p> 
-                                        <a href="" class="btn-link" onclick="">
-                                            Spark me up!</a> </p>
-                                </div>
-                                <div class="colApacheFlink" style="float: right; margin-right: 25px;">
-                                    <h3 id="flink">Apache Flink</h3>
-                                    <p>Try some Flink ...</p>
-                                    <p> <a href="" class="btn-link" onclick="">Forward with Flink.</a> </p>
-                                </div>
-                            </div>  
-
+                            <p style="text-align: center;"> <a href="" class="btn-link" onclick="">Getting Started</a> </p>  
                         </div>
                         <div
                             ng-repeat="historyObject in homeCtrl.histories| startFrom:(homeCtrl.currentPage - 1) * homeCtrl.pageSize | limitTo:homeCtrl.pageSize">
