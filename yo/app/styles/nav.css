@@ -172,8 +172,8 @@ input[type=checkbox] {
 .btn-link{
     font-family: Lobster;
     padding: 10px 15px;
-    background: #fff;
-    color: #2e353d;
+    background: #2e353d;
+    color: #fff;
     border-radius: 4px;
     border: solid 1px #2e353d;
 }
@@ -182,4 +182,5 @@ input[type=checkbox] {
     background: #fff;
     border: solid 1px #2e353d;
     text-decoration: none;
+    color: #2e353d;
 }
