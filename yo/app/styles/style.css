@@ -281,3 +281,48 @@ div.scroll > ul > li > textarea {
     vertical-align: bottom;
 	font-size: 14px;
 }
+
+.bootstrapGettingStarted > .btn-default { 
+  color: #FFFFFF; 
+  background-color: #4CAE4C; 
+  border-color: #2E353D; 
+} 
+ 
+.bootstrapGettingStarted > .btn-default:hover, 
+.bootstrapGettingStarted > .btn-default:focus, 
+.bootstrapGettingStarted > .btn-default:active, 
+.bootstrapGettingStarted > .btn-default.active, 
+.open .dropdown-toggle.btn-default { 
+  color: #FFFFFF; 
+  background-color: #3A853A; 
+} 
+ 
+.bootstrapGettingStarted > .btn-default:active, 
+.bootstrapGettingStarted > .btn-default.active, 
+.open .dropdown-toggle.btn-default { 
+  background-image: none; 
+} 
+ 
+.bootstrapGettingStarted > .btn-default.disabled, 
+.bootstrapGettingStarted > .btn-default[disabled], 
+fieldset[disabled] .btn-default, 
+.bootstrapGettingStarted > .btn-default.disabled:hover, 
+.bootstrapGettingStarted > .btn-default[disabled]:hover, 
+fieldset[disabled] .btn-default:hover, 
+.bootstrapGettingStarted > .btn-default.disabled:focus, 
+.bootstrapGettingStarted > .btn-default[disabled]:focus, 
+fieldset[disabled] .btn-default:focus, 
+.bootstrapGettingStarted > .btn-default.disabled:active, 
+.bootstrapGettingStarted > .btn-default[disabled]:active, 
+fieldset[disabled] .btn-default:active, 
+.bootstrapGettingStarted > .btn-default.disabled.active, 
+.bootstrapGettingStarted > .btn-default[disabled].active, 
+fieldset[disabled] .btn-default.active { 
+  background-color: #4CAE4C; 
+  border-color: #2E353D; 
+} 
+ 
+.bootstrapGettingStarted > .btn-default .badge { 
+  color: #4CAE4C; 
+  background-color: #FFFFFF; 
+}

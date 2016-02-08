@@ -113,6 +113,20 @@ ul.dropdown-messages a:hover  {
     color: #006190;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 input[type=checkbox] {
     visibility: hidden;
 }
@@ -167,20 +181,4 @@ input[type=checkbox] {
     text-align:center;
     vertical-align:middle; 
     margin: 7px 5px 5px 5px;
-}
-
-.btn-link{
-    font-family: Lobster;
-    padding: 10px 15px;
-    background: #2e353d;
-    color: #fff;
-    border-radius: 4px;
-    border: solid 1px #2e353d;
-}
-
-.btn-link:hover, .button-link:focus {
-    background: #fff;
-    border: solid 1px #2e353d;
-    text-decoration: none;
-    color: #2e353d;
 }

@@ -12,15 +12,14 @@
                     <div class="timeline clearfix">
                         <div class="mid-line"></div>
 
-                        <div class="bootstrapGettingStarted">
+                        <div class="bootstrapGettingStarted" style="text-align: center;">
                             <div id="gettingStartedText" style="width: 50%; margin: 0 auto;">
                                 <p style="text-align: left;">
-                                   This tour shows how to create a Project, import a <br>
-                                   dataset run a simple job. It will be a useful starting point <br>
-                                   for an unfamiliar Hops user and give insight into how wonderful Hops is.
+                                   This tour shows how to create a Project, import a dataset and run a simple job. 
+                                   It will be a useful starting point for an unfamiliar Hops user and give insight into how wonderful Hops is.
                                 </p>
                             </div>
-                            <p style="text-align: center;"> <a href="" class="btn-link" onclick="">Getting Started</a> </p>  
+                            <button type="button" class="btn btn-default btn-large" id="gettingStartedButton">Getting Started</button>  
                         </div>
                         <div
                             ng-repeat="historyObject in homeCtrl.histories| startFrom:(homeCtrl.currentPage - 1) * homeCtrl.pageSize | limitTo:homeCtrl.pageSize">
