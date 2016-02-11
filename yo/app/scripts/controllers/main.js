@@ -31,7 +31,7 @@ angular.module('hopsWorksApp')
                         self.errorMessage = error.data.msg;
                     });
                 };
-
+                
                 self.profileModal = function () {
                     ModalService.profile('md');
                 };
@@ -129,6 +129,7 @@ angular.module('hopsWorksApp')
                 };
 
                 self.searchTerm = "";
+                self.currentStep = - 1;
                 self.globalClusterBoundary = false;
                 self.searchReturned = "";
                 self.searchResult = [];
@@ -136,7 +137,11 @@ angular.module('hopsWorksApp')
                 self.resultItems = 0;
                 self.currentPage = 1;
                 self.pageSize = 5;
-
+                
+                self.IncrementCurrentStep = function(){
+                    self.currentStep = self.currentStep + 1;
+                }
+                
                 self.hitEnter = function (evt) {
                     if (angular.equals(evt.keyCode, 13)) {
                         self.search();

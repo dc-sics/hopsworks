@@ -15,11 +15,12 @@
                         <div class="bootstrapGettingStarted" style="text-align: center;">
                             <div id="gettingStartedText" style="width: 50%; margin: 0 auto;">
                                 <p style="text-align: left;">
-                                   This tour shows how to create a Project, import a dataset and run a simple job. 
-                                   It will be a useful starting point for an unfamiliar Hops user and give insight into how wonderful Hops is.
+                                   Take a tour through the HopsWorks website, learn the different services, create an example project and
+                                   run a job.
                                 </p>
                             </div>
-                            <button type="button" class="btn btn-default btn-large" id="gettingStartedButton">Getting Started</button>  
+                            <button type="button" class="btn btn-default btn-large" id="gettingStartedButton" ng-click="mainCtrl.IncrementCurrentStep()" style="font-family: Lobster;">HopsWorks Tour</button>
+                            
                         </div>
                         <div
                             ng-repeat="historyObject in homeCtrl.histories| startFrom:(homeCtrl.currentPage - 1) * homeCtrl.pageSize | limitTo:homeCtrl.pageSize">
@@ -66,7 +67,7 @@
             <span class="list-group-item active">
                 <span class="badge pull-left" style="margin-right: 10px;">{{homeCtrl.projects.length}}</span> Projects
 
-                <button class="btn btn-success pull-right"
+                <button class="btn btn-success pull-right" id="buttonCreateProject"
                         style="height: 43px;margin-right: -16px;margin-top: -11px;width: 70px; border-radius: 0px;"
                         ng-click="homeCtrl.newProject()">
                     <i class="fa fa-plus-circle fa-lg"></i>
@@ -161,4 +162,51 @@
             <pager total-items="homeCtrl.totalItemsProjects" ng-model="homeCtrl.currentPageProjects"></pager>
         </div>
     </div>
+    <tour class="ng-scope" step="mainCtrl.currentStep">
+        <virtual-step 
+            class="ng-scope" 
+            tourtip="Search for Projects and Datasets" 
+            tourtup-step="0" 
+            tourtip-element="#srch-term" 
+            tourtip-placement="left" 
+            tourtip-container-element=".navbar-form"
+            onProceed="mainCtrl.IncrementCurrentStep()"
+            tourtip-offset-vertical="-20"
+            tourtip-offset-horizontal="+15"
+        ></virtual-step>
+        <virtual-step 
+            class="ng-scope" 
+            tourtip="Read your messages" 
+            tourtup-step="1" 
+            tourtip-element="#readMessagesToggle" 
+            tourtip-placement="left" 
+            tourtip-container-element=".navbar-form"
+            tourtip-offset-vertical="-12.5"
+            tourtip-offset-horizontal="+20"
+            onProceed="mainCtrl.IncrementCurrentStep()"
+       ></virtual-step>
+        <virtual-step 
+            class="ng-scope" 
+            tourtip="Account Settings and logout" 
+            tourtup-step="2" 
+            tourtip-element="#dropdownAccountSettingsLogout" 
+            tourtip-placement="bottom" 
+            tourtip-container-element=".navbar-form"
+            tourtip-offset-vertical="-10"
+            onProceed="mainCtrl.IncrementCurrentStep()"
+       ></virtual-step> 
+        <virtual-step 
+            class="ng-scope" 
+            tourtip="Create a new Project!" 
+            tourtup-step="3" 
+            tourtip-element="#buttonCreateProject" 
+            tourtip-placement="right" 
+            tourtip-container-element=".container"
+            tourtip-offset-vertical="+30"
+            tourtip-offset-horizontal="-20"
+            onProceed="mainCtrl.IncrementCurrentStep()"
+       ></virtual-step>
+        
+    </tour>
 </div>
+
