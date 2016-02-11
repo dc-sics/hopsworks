@@ -2,6 +2,7 @@ package se.kth.hopsworks.rest;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -224,29 +225,29 @@ public class ProjectService {
         ProjectServiceEnum se = ProjectServiceEnum.valueOf(s.toUpperCase());
         se.toString();
 
-        if (s.compareToIgnoreCase(ProjectServiceEnum.BIOBANKING.toString()) == 0) {
-          String owner = sc.getUserPrincipal().getName();
-          try {
-            projectController.createProjectConsentFolder(owner, project);
-          } catch (ProjectInternalFoldersFailedException ex) {
-            Logger.getLogger(ProjectService.class.getName()).log(Level.SEVERE,
-                    null, ex);
-            json.setErrorMsg(s + ResponseMessages.PROJECT_FOLDER_NOT_CREATED
-                    + " 'consents' \n "
-                    + json.getErrorMsg());
-          }
-        }
-        if (s.compareToIgnoreCase(ProjectServiceEnum.CHARON.toString()) == 0) {
-          try {
-            projectController.createProjectCharonFolder(project);
-          } catch (ProjectInternalFoldersFailedException ex) {
-            Logger.getLogger(ProjectService.class.getName()).log(Level.SEVERE,
-                    null, ex);
-            json.setErrorMsg(s + ResponseMessages.PROJECT_FOLDER_NOT_CREATED
-                    + " 'consents' \n "
-                    + json.getErrorMsg());
-          }
-        }
+        // if (s.compareToIgnoreCase(ProjectServiceEnum.BIOBANKING.toString()) == 0) {
+        //   String owner = sc.getUserPrincipal().getName();
+        //   try {
+        //     projectController.createProjectConsentFolder(owner, project);
+        //   } catch (ProjectInternalFoldersFailedException ex) {
+        //     Logger.getLogger(ProjectService.class.getName()).log(Level.SEVERE,
+        //             null, ex);
+        //     json.setErrorMsg(s + ResponseMessages.PROJECT_FOLDER_NOT_CREATED
+        //             + " 'consents' \n "
+        //             + json.getErrorMsg());
+        //   }
+        // }
+        // if (s.compareToIgnoreCase(ProjectServiceEnum.CHARON.toString()) == 0) {
+        //   try {
+        //     projectController.createProjectCharonFolder(project);
+        //   } catch (ProjectInternalFoldersFailedException ex) {
+        //     Logger.getLogger(ProjectService.class.getName()).log(Level.SEVERE,
+        //             null, ex);
+        //     json.setErrorMsg(s + ResponseMessages.PROJECT_FOLDER_NOT_CREATED
+        //             + " 'consents' \n "
+        //             + json.getErrorMsg());
+        //   }
+        // }
         projectServices.add(se);
       } catch (IllegalArgumentException iex) {
         logger.log(Level.SEVERE,
@@ -273,6 +274,74 @@ public class ProjectService {
             Response.Status.CREATED).entity(json).build();
   }
 
+  
+  @POST
+  @Path("starterProject")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.ALL})
+  public Response starterProject(
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+        JsonResponse json = new JsonResponse();
+    ProjectDTO projectDTO = new ProjectDTO();
+    projectDTO.setCreated(new Date());
+    projectDTO.setProjectName("test");
+    String owner = sc.getUserPrincipal().getName();
+    projectDTO.setProjectName(owner);
+        
+        Project project;
+    try {
+      //save the project
+      project = projectController.createProject(projectDTO, owner);
+    } catch (IOException ex) {
+      logger.log(Level.SEVERE,
+              ResponseMessages.PROJECT_FOLDER_NOT_CREATED, ex);
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_FOLDER_NOT_CREATED);
+    } catch (IllegalArgumentException e) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.
+              getLocalizedMessage());
+    } catch (EJBException ex) {
+      logger.log(Level.SEVERE, ResponseMessages.FOLDER_INODE_NOT_CREATED, ex);
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.FOLDER_INODE_NOT_CREATED);
+    }
+    if (project != null) {
+      try {
+        hdfsUsersBean.addProjectFolderOwner(project);
+        projectController.createProjectLogResources(owner, project);
+        
+        
+      } catch (ProjectInternalFoldersFailedException ee) {
+        try {
+          projectController.removeByID(project.getId(), owner, true);
+          throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                  "Could not create project resources");
+        } catch (IOException e) {
+          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                  getStatusCode(), e.getMessage());
+        }
+      } catch (IOException ex) {
+        try {
+          projectController.removeByID(project.getId(), owner, true);
+          throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                  "Could not add project folder owner in HDFS");
+        } catch (IOException e) {
+          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                  getStatusCode(), e.getMessage());
+        }
+      }
+    } else {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_NAME_EXIST);
+    }    
+    
+    
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.CREATED).
+            entity(json).build();    
+  }  
+  
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -321,12 +390,12 @@ public class ProjectService {
       try {
         hdfsUsersBean.addProjectFolderOwner(project);
         projectController.createProjectLogResources(owner, project);
-        if (projectServices.contains(ProjectServiceEnum.BIOBANKING)) {
-          projectController.createProjectConsentFolder(owner, project);
-        }
-        if (projectServices.contains(ProjectServiceEnum.CHARON)) {
-          projectController.createProjectCharonFolder(project);
-        }
+        // if (projectServices.contains(ProjectServiceEnum.BIOBANKING)) {
+        //   projectController.createProjectConsentFolder(owner, project);
+        // }
+        // if (projectServices.contains(ProjectServiceEnum.CHARON)) {
+        //   projectController.createProjectCharonFolder(project);
+        // }
       } catch (ProjectInternalFoldersFailedException ee) {
         try {
           projectController.removeByID(project.getId(), owner, true);

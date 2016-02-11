@@ -55,7 +55,7 @@ import se.kth.hopsworks.dataset.DatasetFacade;
 import se.kth.hopsworks.dataset.DatasetRequest;
 import se.kth.hopsworks.dataset.DatasetRequestFacade;
 import se.kth.hopsworks.filters.AllowedRoles;
-import se.kth.hopsworks.hdfs.fileoperations.DFSSingleton;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.hdfsUsers.controller.HdfsUsersController;
 import se.kth.hopsworks.meta.db.TemplateFacade;
 import se.kth.hopsworks.meta.entity.Template;
@@ -102,7 +102,7 @@ public class DataSetService {
   @EJB
   private HdfsUsersController hdfsUsersBean;
   @EJB
-  private DFSSingleton dfs;
+  private DistributedFsService dfs;
   @EJB
   private Settings settings;
   @Inject
@@ -373,7 +373,7 @@ public class DataSetService {
     try {
       datasetController.createDataset(user, project, dataSet.getName(), dataSet.
               getDescription(), dataSet.getTemplate(), dataSet.isSearchable(),
-              false, false);
+              false);
     } catch (NullPointerException c) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), c.
               getLocalizedMessage());
@@ -494,8 +494,10 @@ public class DataSetService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Could not delete the file at " + filePath);
     }
-    //remove the group associated with this dataset
-    hdfsUsersBean.deleteDatasetGroup(this.dataset);
+    //remove the group associated with this dataset if the dataset is toplevel ds 
+    if (filePath.endsWith(this.dataset.getInode().getInodePK().getName())) {
+        hdfsUsersBean.deleteDatasetGroup(this.dataset);
+    }
     json.setSuccessMessage(ResponseMessages.DATASET_REMOVED_FROM_HDFS);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             json).build();
@@ -808,4 +810,40 @@ public class DataSetService {
             + path;
   }
 
+  @GET
+  @Path("/makePublic/{inodeId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response makePublic(@PathParam("inodeId") Integer inodeId,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+    JsonResponse json = new JsonResponse();
+    if (inodeId == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "Incomplete request!");
+    }
+    Inode inode = inodes.findById(inodeId);
+    if (inode == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_FOUND);
+    }
+
+    Dataset ds = datasetFacade.findByProjectAndInode(this.project, inode);
+    if (ds == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_FOUND);
+    }
+    if (ds.isPublicDs()) { 
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_ALREADY_PUBLIC);
+    }
+    ds.setPublicDs(true);
+    datasetFacade.merge(ds);
+    json.setSuccessMessage("The Dataset is now public.");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            json).build();
+  }
+
+  
+  
 }

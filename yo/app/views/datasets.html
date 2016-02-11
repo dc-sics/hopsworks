@@ -58,7 +58,10 @@
                         <a>
                           <span class="corner"></span>
 
-                          <div class="icon">
+                          <div class="icon-public" ng-show="dataset.publicDs === true">
+                            <i class="glyphicon glyphicons-folder-flag" uib-tooltip-html="Public DataSet"></i>
+                          </div>
+                          <div class="icon" ng-show="dataset.publicDs === false">
                             <i class="glyphicon glyphicon-folder-open"></i>
                           </div>
                         </a>
@@ -126,6 +129,15 @@
                               Remove</span>
                           </a>
                         </li>
+                        <li>
+                          <a class="pointer"
+                             role="menuitem"
+                             tabindex="6"
+                             ng-click="datasetsCtrl.makePublic(dataset.id)">
+                            <span><i class="fa fa-globe"></i>
+                              Make Public</span>
+                          </a>
+                        </li>                        
                       </ul>
                     </div>
                   </div>
@@ -490,7 +502,7 @@
                                          style="border-radius: 3px; margin-top:10px;">
                             <div class="col-md-2" style="margin-top: -45px;">
                               <img class="profile-image img-circle" style="height: 42px; border: 1px solid lightgrey;"
-                                   src="http://gravatar.com/avatar/4b43f0e86b038f246887dde7f399a5a3?d=mm">
+                                   src="https://gravatar.com/avatar/4b43f0e86b038f246887dde7f399a5a3?d=mm">
                             </div>
                             <div class="col-md-10" style="margin-top: 12px;padding-left:20px;">
                               <b>You</b> uploaded an item
@@ -507,7 +519,7 @@
                                          style="border-radius: 3px; margin-top:20px; margin-bottom: 20px;">
                             <div class="col-md-2" style="margin-top: -45px;">
                               <img class="profile-image img-circle" style="height: 42px; border: 1px solid lightgrey;"
-                                   src="http://gravatar.com/avatar/4b43f0e86b038f246887dde7f399a5a3?d=mm">
+                                   src="https://gravatar.com/avatar/4b43f0e86b038f246887dde7f399a5a3?d=mm">
                             </div>
                             <div class="col-md-10" style="margin-top: 12px;padding-left:20px;">
                               <b>André</b> uploaded an item
@@ -530,7 +542,7 @@
                                          style="border-radius: 3px; margin-top:10px;">
                             <div class="col-md-2" style="margin-top: -45px;">
                               <img class="profile-image img-circle" style="height: 42px; border: 1px solid lightgrey;"
-                                   src="http://gravatar.com/avatar/f7b87f83afcba880c6300e1e4e4a8790?d=mm">
+                                   src="https://gravatar.com/avatar/f7b87f83afcba880c6300e1e4e4a8790?d=mm">
                             </div>
                             <div class="col-md-10" style="margin-top: 12px;padding-left:20px;">
                               <b>Ermias</b> uploaded an item

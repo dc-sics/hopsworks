@@ -102,6 +102,10 @@ public class ResponseMessages {
           = " The selected user is not a team member in this project.";
   public final static String ROLE_NOT_SET = "Role cannot be empty.";
   public final static String CONSENT_ALREADY_EXISTS = "Duplicate error. There is already a consent form in the Project with the same name";
+  
+  public final static String CHARON_SITE_ALREADY_EXISTS = "Duplicate error. This site is already registered in the Project.";
+  public final static String CHARON_BAD_SITE = "Bad site name.";
+  public final static String CHARON_SHARE_ALREADY_EXISTS = "Duplicate error. This shared path is already registered in the Project.";
 
   //project success messages
   public final static String PROJECT_CREATED = "Project created successfully.";
@@ -134,6 +138,8 @@ public class ResponseMessages {
           = "The shared dataset is removed from this project.";
   public final static String DATASET_NOT_FOUND
           = "DataSet not found.";
+  public final static String DATASET_ALREADY_PUBLIC
+          = "DataSet is already public.";
 
   //Metadata
   public final static String TEMPLATE_INODEID_EMPTY
