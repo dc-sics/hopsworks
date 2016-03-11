@@ -53,8 +53,9 @@ public class ProjectTopics implements Serializable {
   public ProjectTopics() {
   }
 
-  public ProjectTopics(String topicName) {
+  public ProjectTopics(String topicName, Project project) {
     this.topicName = topicName;
+    this.project = project;
   }
 
   public String getTopicName() {

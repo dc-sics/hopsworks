@@ -45,6 +45,11 @@ public class Settings {
   private static final String VARIABLE_ADAM_USER = "adam_user";
   private static final String VARIABLE_ADAM_DIR = "adam_dir";
   private static final String VARIABLE_TWOFACTOR_AUTH = "twofactor_auth";
+  private static final String VARIABLE_KAFKA_DIR = "kafka_dir";
+  private static final String VARIABLE_KAFKA_USER = "kafka_user";
+  private static final String VARIABLE_ZK_DIR = "zk_dir";
+  private static final String VARIABLE_ZK_USER = "zk_user";
+  private static final String VARIABLE_ZK_IP = "zk_ip";
 
   public static final String ERASURE_CODING_CONFIG = "erasure-coding-site.xml";
 
@@ -100,6 +105,11 @@ public class Settings {
       HADOOP_DIR = setDirVar(VARIABLE_HADOOP_DIR, HADOOP_DIR);
       NDB_DIR = setDirVar(VARIABLE_NDB_DIR, NDB_DIR);
       ELASTIC_IP = setIpVar(VARIABLE_ELASTIC_IP, ELASTIC_IP);
+      ZK_IP = setIpVar(VARIABLE_ZK_IP, ZK_IP);
+      ZK_USER = setUserVar(VARIABLE_ZK_USER, ZK_USER);
+      ZK_DIR = setDirVar(VARIABLE_ZK_DIR, ZK_DIR);
+      KAFKA_USER = setUserVar(VARIABLE_KAFKA_USER, KAFKA_USER);
+      KAFKA_DIR = setDirVar(VARIABLE_KAFKA_DIR, KAFKA_DIR);
       CHARON_DIR = setDirVar(VARIABLE_CHARON_DIR, CHARON_DIR);
       HIWAY_DIR = setDirVar(VARIABLE_HIWAY_DIR, HIWAY_DIR);
       YARN_DEFAULT_QUOTA = setDirVar(VARIABLE_YARN_DEFAULT_QUOTA, YARN_DEFAULT_QUOTA);
@@ -403,6 +413,39 @@ public class Settings {
 
   public static final int ELASTIC_PORT = 9300;
 
+  
+  // Zookeeper 
+  private String ZK_IP = "127.0.0.1";
+
+  public synchronized String getZkIp() {
+    checkCache();
+    return ZK_IP;
+  }
+
+  private String ZK_USER = "zk";
+  public synchronized String getZkUser() {
+    checkCache();
+    return ZK_USER;
+  }
+  private String KAFKA_USER = "kafka";
+  public synchronized String getKafkaUser() {
+    checkCache();
+    return KAFKA_USER;
+  }
+  
+  private String KAFKA_DIR = "/srv/kafka";
+  public synchronized String getKafkaDir() {
+    checkCache();
+    return KAFKA_DIR;
+  }
+  
+  private String ZK_DIR = "/srv/zookeeper";
+  public synchronized String getZkDir() {
+    checkCache();
+    return ZK_DIR;
+  }
+  
+  
   // Hopsworks
   public static final Charset ENCODING = StandardCharsets.UTF_8;
   public static final String HOPS_USERNAME_SEPARATOR = "__";

@@ -12,8 +12,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class TopicDTO {
 
   private String topic;
+  // TODO - put in all the topic details here
 
   public TopicDTO() {
+  }
+  public TopicDTO(String topic) {
+    this.topic = topic;
   }
 
   public String getTopic() {

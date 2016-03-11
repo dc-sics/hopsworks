@@ -1,5 +1,6 @@
 package se.kth.hopsworks.rest;
 
+import io.hops.KafkaFacade;
 import io.hops.hdfs.HdfsLeDescriptorsFacade;
 import io.hops.kafka.TopicDTO;
 import java.io.File;
@@ -71,7 +72,7 @@ import se.kth.hopsworks.util.Settings;
 public class KafkaService {
 
   private final static Logger logger = Logger.getLogger(KafkaService.class.
-          getName());
+      getName());
 
   @EJB
   private ProjectFacade projectFacade;
@@ -87,7 +88,9 @@ public class KafkaService {
   private UserFacade userfacade;
   @EJB
   private Settings settings;
-  
+  @EJB
+  private KafkaFacade kafka;
+
   private Integer projectId;
   private Project project;
   private String path;
@@ -106,40 +109,78 @@ public class KafkaService {
     return projectId;
   }
 
+  /**
+   * Gets the list of topics for this project
+   *
+   * @param sc
+   * @param req
+   * @return
+   * @throws AppException
+   */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response findTopicsInProjectID(
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
 
-    List<TopicDTO> listTopics = new ArrayList<>();
-
+    List<TopicDTO> listTopics = kafka.findTopicsByProject(this.project);
     GenericEntity<List<TopicDTO>> topics
-            = new GenericEntity<List<TopicDTO>>(listTopics) {
-            };
-
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            topics).build();
+        = new GenericEntity<List<TopicDTO>>(listTopics) {
+    };
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(topics).build();
   }
-
 
   @GET
   @Path("/create/{topic}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response acceptRequest(@PathParam("t") Integer projectId,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response createTopic(@PathParam("topic") String topicName,
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Incomplete request!");
+          "Incomplete request!");
     }
-    json.setSuccessMessage("The Dataset is now accessable.");
+    json.setSuccessMessage("The Topic has been created.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+        json).build();
   }
 
+  @GET
+  @Path("/remove/{topic}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response removeTopic(@PathParam("name") String topicName,
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
+    JsonResponse json = new JsonResponse();
+    if (projectId == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Incomplete request!");
+    }
+    json.setSuccessMessage("The topic has been removed.");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+        json).build();
+  }
+
+  @GET
+  @Path("/details/{topic}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response getDetailsTopic(@PathParam("name") String topicName,
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
+    JsonResponse json = new JsonResponse();
+    if (projectId == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Incomplete request!");
+    }
+
+    TopicDTO topic = kafka.getTopicDetails(project, topicName);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+        topic).build();
+  }
 
 }
