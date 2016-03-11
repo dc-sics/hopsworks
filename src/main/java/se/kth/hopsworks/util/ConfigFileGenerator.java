@@ -27,6 +27,8 @@ public class ConfigFileGenerator {
       = TEMPLATE_ROOT + File.separator + "zeppelin" + File.separator + "zeppelin_env_template.sh";
   public static final String INTERPRETER_TEMPLATE
       = TEMPLATE_ROOT + File.separator + "zeppelin" + File.separator + "interpreter_template.json";
+
+  
   /**
    * @param filePath
    * @param pairs
