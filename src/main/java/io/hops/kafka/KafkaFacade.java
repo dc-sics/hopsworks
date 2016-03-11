@@ -1,5 +1,6 @@
 package io.hops;
 
+import io.hops.ProjectTopics;
 import io.hops.metadata.hdfs.entity.User;
 import java.io.IOException;
 import se.kth.bbc.project.*;
