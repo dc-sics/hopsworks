@@ -115,11 +115,10 @@ public class KafkaFacade {
   }
 
   @Asynchronous
-  public String createHopsUserSslCert(User user, Project project) throws IOException {
+  public void createHopsUserSslCert(User user, Project project) throws IOException {
 
     String stdout = LocalhostServices.createSslUserCert(user.getName(), project.getName(), settings.getGlassfishDir());
 
-    return stdout;
   }
 
 }

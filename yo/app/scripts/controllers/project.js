@@ -25,7 +25,7 @@ angular.module('hopsWorksApp')
 
         // We could instead implement a service to get all the available types but this will do it for now
 //        self.projectTypes = ['JOBS', 'ZEPPELIN', 'BIOBANKING', 'CHARON'];
-        self.projectTypes = ['JOBS', 'ZEPPELIN'];
+        self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
         self.alreadyChoosenServices = [];
         self.selectionProjectTypes = [];
         self.pId = $routeParams.projectID;
@@ -150,15 +150,6 @@ angular.module('hopsWorksApp')
               });
         };
 
-//        self.projectSettingModal = function () {
-//          ModalService.projectSettings('md').then(
-//              function (success) {
-//                getAllActivities();
-//                getCurrentProject();
-//              }, function (error) {
-//            growl.info("You closed without saving.", {title: 'Info', ttl: 5000});
-//          });
-//        };
 
         self.membersModal = function () {
           ModalService.projectMembers('lg', self.pId).then(
@@ -218,6 +209,10 @@ angular.module('hopsWorksApp')
 
         self.goToBiobanking = function () {
           $location.path('project/' + self.pId + '/biobanking');
+        };
+
+        self.goToKafka = function () {
+          $location.path('project/' + self.pId + '/kafka');
         };
 
         self.goToService = function (service) {
@@ -288,6 +283,11 @@ angular.module('hopsWorksApp')
         self.showBiobanking = function () {
           return showService("Biobanking");
         };
+
+        self.showKafka = function () {
+          return showService("Kafka");
+        };
+        
         
         self.getRole = function () {
           UserService.getRole(self.pId).then(

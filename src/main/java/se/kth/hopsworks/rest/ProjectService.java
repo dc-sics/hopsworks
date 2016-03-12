@@ -213,8 +213,7 @@ public class ProjectService {
     // Update the retention period if it have been chenged
     if (project.getRetentionPeriod() == null || !project.getRetentionPeriod().equals(
             projectDTO.getRetentionPeriod())) {
-      projectController.updateProject(project, projectDTO,
-              userEmail);
+      projectController.updateProject(project, projectDTO, userEmail);
       activityController.persistActivity("Changed   retention period to "+ projectDTO.getRetentionPeriod(), project, userEmail);
       json.setSuccessMessage(ResponseMessages.PROJECT_RETENTON_CHANGED);
       updated = true;

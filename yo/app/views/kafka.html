@@ -1,0 +1,38 @@
+<div ng-controller="MainCtrl as mainCtrl">
+    <div ng-include="'nav.html'"></div>
+    <div id="wrapper" class="toggled">
+        <div class="overlay"></div>
+
+        <div ng-include="'navProject.html'"></div>
+
+        <section>
+            <div class="content-wrapper">
+                <h3 id="projectBread" style="display: none;"> {{ projectCtrl.currentProject.projectName}} / Kafka</h3>
+                <div growl reference="10" class="pull-right" ></div>
+                <div class="row" style="margin: 50px">
+                        <div class="btn-group"
+                             style="width: 100%;" ng-show="projectCtrl.role == 'Data owner'">
+                          <button style="width: 100%;"
+                                  ng-click="datasetsCtrl.newDataSetModal()"
+                                  class="btn btn-warning">
+                            New dataset
+                          </button>
+                        </div>
+
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Kafka Topics</h3>
+                        </div>
+                        <div class="panel-body">
+                            <div class="col-md-8 col-lg-6">{{mainCtrl.getUser()}}__{{projectCtrl.currentProject.projectName}}@{{mainCtrl.getHostname()}}</div>
+
+                            
+                            
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
