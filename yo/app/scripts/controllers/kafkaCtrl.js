@@ -10,8 +10,8 @@ angular.module('hopsWorksApp')
           function ($scope, $routeParams, growl, KafkaService, $location, ModalService, $interval, StorageService, $mdSidenav) {
 
             var self = this;
-            this.projectId = $routeParams.projectID;
-            this.topics []; // Will contain all the jobs.
+            self.projectId = $routeParams.projectID;
+            self.topics []; // Will contain all the jobs.
 
             self.currentTopic = null;
 
