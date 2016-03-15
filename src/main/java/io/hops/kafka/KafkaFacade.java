@@ -1,6 +1,5 @@
-package io.hops;
+package io.hops.kafka;
 
-import io.hops.kafka.TopicDTO;
 import io.hops.metadata.hdfs.entity.User;
 import java.io.IOException;
 import java.net.InetAddress;

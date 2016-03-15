@@ -1,6 +1,6 @@
 package se.kth.hopsworks.rest;
 
-import io.hops.KafkaFacade;
+import io.hops.kafka.KafkaFacade;
 import io.hops.hdfs.HdfsLeDescriptorsFacade;
 import io.hops.kafka.TopicDTO;
 import java.io.File;
