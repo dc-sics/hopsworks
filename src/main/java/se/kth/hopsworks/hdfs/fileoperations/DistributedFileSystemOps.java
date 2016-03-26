@@ -19,6 +19,7 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.security.UserGroupInformation;
 import se.kth.bbc.lims.Utils;
+import se.kth.hopsworks.util.Settings;
 
 public class DistributedFileSystemOps {
 
@@ -291,18 +292,33 @@ public class DistributedFileSystemOps {
     dfs.setOwner(path, username, groupname);
   }
 
-  //Set quota in GB
-  public void setQuota(Path src, long diskspaceQuota) throws
+  /**
+   * 
+   * @param src
+   * @param diskspaceQuotaInBytes hdfs quota size in bytes
+   * @throws IOException 
+   */
+  public void setQuota(Path src, long diskspaceQuotaInBytes) throws
           IOException {
-    dfs.setQuota(src, HdfsConstants.QUOTA_DONT_SET, 1073741824 * diskspaceQuota);
+    dfs.setQuota(src, HdfsConstants.QUOTA_DONT_SET, 1073741824 * diskspaceQuotaInBytes);
   }
 
-  //Get quota in GB
+  /**
+   * 
+   * @param path
+   * @return hdfs quota size in bytes
+   * @throws IOException 
+   */
   public long getQuota(Path path) throws IOException {
     return dfs.getContentSummary(path).getSpaceQuota() / 1073741824;
   }
 
-  //Get used disk space in GB
+  /**
+   * 
+   * @param path
+   * @return number of bytes stored in this subtree in bytes
+   * @throws IOException 
+   */
   public long getUsedQuota(Path path) throws IOException {
     return dfs.getContentSummary(path).getSpaceConsumed() / 1073741824;
   }
@@ -336,12 +352,12 @@ public class DistributedFileSystemOps {
     Path location = new Path(p);
     //add the erasure coding configuration file
     File erasureCodingConfFile
-            = new File(hadoopConfDir, "erasure-coding-site.xml");
+            = new File(hadoopConfDir, Settings.ERASURE_CODING_CONFIG);
     if (!erasureCodingConfFile.exists()) {
       logger.log(Level.SEVERE, "Unable to locate configuration file in {0}",
               erasureCodingConfFile);
       throw new IllegalStateException(
-              "No erasure coding conf file: erasure-coding-site.xml");
+              "No erasure coding conf file: " + Settings.ERASURE_CODING_CONFIG);
     }
 
     this.conf.addResource(new Path(erasureCodingConfFile.getAbsolutePath()));

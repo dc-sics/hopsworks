@@ -47,6 +47,7 @@ import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.util.Ip;
 import se.kth.hopsworks.util.Settings;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 /**
  *
@@ -199,7 +200,8 @@ public class ElasticService {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_INDEX_NOT_FOUND);
     } else if (!this.typeExists(client, Settings.META_PROJECT_INDEX,
-        Settings.META_PROJECT_CHILD_TYPE)) {
+        Settings.META_PROJECT_PARENT_TYPE)) {
+//        Settings.META_PROJECT_CHILD_TYPE)) {
 
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_TYPE_NOT_FOUND);
@@ -281,7 +283,8 @@ public class ElasticService {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_INDEX_NOT_FOUND);
     } else if (!this.typeExists(client, Settings.META_DATASET_INDEX,
-        Settings.META_DATASET_CHILD_TYPE)) {
+        Settings.META_DATASET_PARENT_TYPE)) {
+//        Settings.META_DATASET_CHILD_TYPE)) {
 
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_TYPE_NOT_FOUND);
