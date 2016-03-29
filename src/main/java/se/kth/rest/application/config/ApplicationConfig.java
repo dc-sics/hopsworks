@@ -2,6 +2,7 @@ package se.kth.rest.application.config;
 
 import org.glassfish.jersey.server.ResourceConfig;
 
+
 @javax.ws.rs.ApplicationPath("api")
 public class ApplicationConfig extends ResourceConfig {
 
@@ -46,6 +47,10 @@ public class ApplicationConfig extends ResourceConfig {
     // register resources and features
     register(org.glassfish.jersey.media.multipart.MultiPartFeature.class);
     //register(org.glassfish.jersey.filter.LoggingFilter.class);
+
+    register(se.kth.hopsworks.rest.WorkflowService.class);
+    register(se.kth.hopsworks.rest.NodeService.class);
+    register(se.kth.hopsworks.rest.EdgeService.class);
 
     // Enable Tracing support.
     //property(ServerProperties.TRACING, "OFF");
