@@ -9,15 +9,12 @@ import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.util.List;
 import java.util.Map;
 
 @Stateless
-public class EdgeFacade extends AbstractFacade<Edge> {
+public class EdgeFacade extends AbstractCrudFacade<Edge> {
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -58,24 +55,8 @@ public class EdgeFacade extends AbstractFacade<Edge> {
         em.flush();
     }
 
-    public void update(Edge edge, JSONObject params) {
-
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaUpdate<Edge> update = cb.createCriteriaUpdate(Edge.class);
-        Root<Edge> e = update.from(Edge.class);
-
-        update.where(cb.equal(e.get("edgePK"), edge.getEdgePK()));
-
-        for (Object k: params.keySet()){
-            String key = k.toString();
-            try{
-                Edge.class.getDeclaredField(key);
-                update.set(key, params.get(key));
-            }catch(NoSuchFieldException ex){
-                continue;
-            }
-        }
-        em.createQuery(update).executeUpdate();
+    public Predicate updateWhere(Edge edge, Root<Edge> root){
+        return em.getCriteriaBuilder().equal(root.get("edgePK"), edge.getEdgePK());
     }
 
     public Edge merge(Edge edge) {

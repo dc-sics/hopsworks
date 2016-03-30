@@ -96,9 +96,8 @@ public class Workflow implements Serializable {
         return result;
     }
 
-    private Collection<Edge> edges;
-
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")
+    private Collection<Edge> edges;
     public Collection<Edge> getEdges() {
         return edges;
     }
@@ -108,9 +107,8 @@ public class Workflow implements Serializable {
     }
 
 
-    private Collection<Node> nodes;
-
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")
+    private Collection<Node> nodes;
     public Collection<Node> getNodes() {
         return nodes;
     }

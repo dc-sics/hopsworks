@@ -3,11 +3,14 @@ package se.kth.hopsworks.workflows;
 import org.codehaus.jackson.annotate.JsonIgnore;
 
 import javax.persistence.*;
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @XmlRootElement
@@ -28,7 +31,6 @@ public class Node implements Serializable {
     private String type;
 
     @JoinColumn(name = "workflow_id",
-            referencedColumnName = "id",
             insertable = false,
             updatable = false)
     @ManyToOne(optional = false)
@@ -140,40 +142,37 @@ public class Node implements Serializable {
         return true;
     }
 
-//    @Override
-//    public String toString() {
-//        return "[" + workflow + "," + nodePK.getId() + " ]";
-//    }
 
-
-
-
-
-
-
-
-    /*
+    @OneToMany(cascade = CascadeType.ALL,
+        fetch = FetchType.LAZY)
+    @JoinTable(name = "hopsworks.edges",
+            joinColumns = {
+                    @JoinColumn(table= "nodes", name = "source_id", referencedColumnName = "id") ,
+                    @JoinColumn(table= "nodes", name = "workflow_id", referencedColumnName = "workflow_id")
+            },
+            inverseJoinColumns ={
+                    @JoinColumn(table= "nodes", name = "target_id", referencedColumnName = "id") ,
+                    @JoinColumn(table= "nodes", name = "workflow_id", referencedColumnName = "workflow_id")
+            }
+    )
     private Set<Node> children;
-
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "parent")
+    @JsonIgnore
+    @XmlTransient
     public Set<Node> getChildren() {
         return this.children;
+    }
+
+    @XmlElement(name = "childrenIds")
+    public Set<String> getChildrenIds() {
+        Set<String> ids = new HashSet();
+        for(Node child : this.children){
+            ids.add(child.getId());
+        }
+        return ids;
     }
 
     public void setChildren(Set<Node> children) {
         this.children = children;
     }
 
-    @ManyToOne(optional = false)
-    @JoinTable(name = "edges", joinColumns = { @JoinColumn(name = "source_id", referencedColumnName = "id") }, inverseJoinColumns = { @JoinColumn(name = "target_id", referencedColumnName = "id") })
-    private Node parent;
-
-    public Node getParent() {
-        return parent;
-    }
-
-    public void setParent(Node parent) {
-        this.parent = parent;
-    }
-    */
 }

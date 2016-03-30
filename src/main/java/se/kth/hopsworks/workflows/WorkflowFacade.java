@@ -10,11 +10,12 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.util.List;
 
 @Stateless
-public class WorkflowFacade extends AbstractFacade<Workflow> {
+public class WorkflowFacade extends AbstractCrudFacade<Workflow> {
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -69,18 +70,7 @@ public class WorkflowFacade extends AbstractFacade<Workflow> {
         return w;
     }
 
-    public void update(Workflow workflow, JSONObject params) {
-
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaUpdate<Workflow> update = cb.createCriteriaUpdate(Workflow.class);
-        Root<Workflow> e = update.from(Workflow.class);
-
-        update.where(cb.equal(e.get("id"), workflow.getId()));
-
-        for (Object k: params.keySet()){
-            String key = k.toString();
-            update.set(key, params.get(key));
-        }
-        em.createQuery(update).executeUpdate();
+    public Predicate updateWhere(Workflow workflow, Root<Workflow> root){
+        return em.getCriteriaBuilder().equal(root.get("id"), workflow.getId());
     }
 }

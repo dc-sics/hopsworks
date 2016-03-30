@@ -9,11 +9,12 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaUpdate;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import java.util.List;
 
 @Stateless
-public class NodeFacade extends AbstractFacade<Node> {
+public class NodeFacade extends AbstractCrudFacade<Node> {
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -53,24 +54,8 @@ public class NodeFacade extends AbstractFacade<Node> {
 
     }
 
-    public void update(Node node, JSONObject params) {
-
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaUpdate<Node> update = cb.createCriteriaUpdate(Node.class);
-        Root<Node> e = update.from(Node.class);
-
-        update.where(cb.equal(e.get("nodePK"), node.getNodePK()));
-
-        for (Object k: params.keySet()){
-            String key = k.toString();
-            try{
-                Node.class.getDeclaredField(key);
-                update.set(key, params.get(key));
-            }catch(NoSuchFieldException ex){
-                continue;
-            }
-        }
-        em.createQuery(update).executeUpdate();
+    public Predicate updateWhere(Node node, Root<Node> root){
+        return em.getCriteriaBuilder().equal(root.get("nodePK"), node.getNodePK());
     }
 
     public void remove(Node node) {

@@ -28,10 +28,8 @@ public class Edge implements Serializable {
     protected EdgePK edgePK;
 
     @JoinColumn(name = "workflow_id",
-            referencedColumnName = "id",
             insertable = false,
-            updatable
-                    = false)
+            updatable = false)
     @ManyToOne(optional = false)
     private Workflow workflow;
 
