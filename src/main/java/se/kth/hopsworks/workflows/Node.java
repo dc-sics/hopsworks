@@ -175,4 +175,9 @@ public class Node implements Serializable {
         this.children = children;
     }
 
+    @PreUpdate
+    public void updateTimeStamps() {
+       this.updatedAt = new Date();
+    }
+
 }

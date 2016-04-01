@@ -107,7 +107,7 @@ public class Edge implements Serializable {
 
     @Basic
     @Column(name = "type", length = 255)
-    private String type = "default-edge";
+    private String type;
     public String getType() {
         return type;
     }
