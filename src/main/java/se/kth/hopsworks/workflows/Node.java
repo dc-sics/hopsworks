@@ -1,20 +1,21 @@
 package se.kth.hopsworks.workflows;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.json.JSONObject;
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Entity
 @XmlRootElement
 @Table(name = "hopsworks.nodes")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "classname")
 @NamedQueries({
         @NamedQuery(name = "Node.findAll",
                 query
@@ -22,8 +23,10 @@ import java.util.stream.Collectors;
         @NamedQuery(name = "Node.findById",
                 query
                         = "SELECT n FROM Node n WHERE n.nodePK = :nodePK")})
-public class Node implements Serializable {
+public abstract  class Node implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    private String classname;
 
     @EmbeddedId
     protected NodePK nodePK;
@@ -119,6 +122,22 @@ public class Node implements Serializable {
     public void setType(String type) {
         this.type = type;
     }
+
+    @Basic
+    @Column(name = "data")
+    private  String data;
+
+    public JSONObject getData() {
+        return new JSONObject(this.data);
+    }
+
+    public void setData(JSONObject data) {
+        this.data = data.toString();
+    }
+
+//    public void setData(String data) {
+//        this.data = data;
+//    }
 
     @Override
     public int hashCode() {

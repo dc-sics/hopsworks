@@ -66,6 +66,11 @@
 	<class>se.kth.hopsworks.workflows.Workflow</class>
     <class>se.kth.hopsworks.workflows.Edge</class>
     <class>se.kth.hopsworks.workflows.Node</class>
+    <class>se.kth.hopsworks.workflows.nodes.BlankNode</class>
+    <class>se.kth.hopsworks.workflows.nodes.EndNode</class>
+    <class>se.kth.hopsworks.workflows.nodes.RootNode</class>
+    <class>se.kth.hopsworks.workflows.nodes.SparkCustomNode</class>
+    <class>se.kth.hopsworks.workflows.nodes.EmailNode</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <shared-cache-mode>NONE</shared-cache-mode>
     <validation-mode>NONE</validation-mode>
