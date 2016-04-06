@@ -1,10 +1,9 @@
 package se.kth.hopsworks.rest;
 
 
-import org.apache.http.HttpRequest;
+import org.apache.commons.beanutils.BeanUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.json.JSONObject;
+import org.codehaus.jackson.node.ObjectNode;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.Edge;
@@ -22,9 +21,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @RequestScoped
@@ -92,15 +91,16 @@ public class EdgeService {
     public Response update(
             String stringParams,
             @PathParam("id") String id
-    ) throws AppException {
-        JSONObject params = new JSONObject(stringParams);
+    ) throws AppException, IllegalAccessException, InvocationTargetException {
         EdgePK edgePk = new EdgePK(id, workflow.getId());
         Edge edge = edgeFacade.findById(edgePk);
         if (edge == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.EDGE_NOT_FOUND);
         }
-        edgeFacade.update(edge, params);
+        Map<String, Object> paramsMap = new ObjectMapper().convertValue(stringParams, Map.class);
+        BeanUtils.populate(edge, paramsMap);
+        edgeFacade.merge(edge);
 
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edgeFacade.refresh(edge)).build();
     }

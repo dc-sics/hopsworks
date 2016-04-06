@@ -1,20 +1,15 @@
 package se.kth.hopsworks.workflows;
 
-import org.eclipse.persistence.dynamic.DynamicEntity;
-import org.eclipse.persistence.internal.jpa.JPAQuery;
-import org.json.JSONObject;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
 import java.util.List;
-import java.util.Map;
 
 @Stateless
-public class EdgeFacade extends AbstractCrudFacade<Edge> {
+public class EdgeFacade extends AbstractFacade<Edge> {
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -29,12 +24,6 @@ public class EdgeFacade extends AbstractCrudFacade<Edge> {
         TypedQuery<Edge> query = em.createNamedQuery("Edge.findAll",
                 Edge.class);
         return query.getResultList();
-    }
-
-    public DynamicEntity findByIdDynamic(EdgePK id){
-        TypedQuery<DynamicEntity> query =  em.createNamedQuery("Edge.findById", DynamicEntity.class);
-        query.setParameter("edgePK", id);
-        return query.getSingleResult();
     }
 
     public Edge findById(EdgePK id) {
@@ -53,10 +42,6 @@ public class EdgeFacade extends AbstractCrudFacade<Edge> {
 
     public void flush() {
         em.flush();
-    }
-
-    public Predicate updateWhere(Edge edge, Root<Edge> root){
-        return em.getCriteriaBuilder().equal(root.get("edgePK"), edge.getEdgePK());
     }
 
     public Edge merge(Edge edge) {

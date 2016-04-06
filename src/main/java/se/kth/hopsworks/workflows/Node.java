@@ -1,15 +1,18 @@
 package se.kth.hopsworks.workflows;
 
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.json.JSONObject;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.codehaus.jackson.map.ObjectMapper;
+
 
 import javax.persistence.*;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Entity
 @XmlRootElement
@@ -26,6 +29,16 @@ import java.util.stream.Collectors;
 public abstract  class Node implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    public String getClassname() {
+        return classname;
+    }
+
+    public void setClassname(String classname) {
+        this.classname = classname;
+    }
+
+    @Basic(optional = false)
+    @Column(name = "classname")
     private String classname;
 
     @EmbeddedId
@@ -33,7 +46,8 @@ public abstract  class Node implements Serializable {
 
     private String type;
 
-    @JoinColumn(name = "workflow_id",
+
+        @JoinColumn(name = "workflow_id",
             insertable = false,
             updatable = false)
     @ManyToOne(optional = false)
@@ -123,21 +137,22 @@ public abstract  class Node implements Serializable {
         this.type = type;
     }
 
-    @Basic
+    @JsonProperty("data")
     @Column(name = "data")
-    private  String data;
+    @Convert(converter = JsonObjectConverter.class)
+    private JsonNode data;
 
-    public JSONObject getData() {
-        return new JSONObject(this.data);
+    public JsonNode getData() {
+        return this.data;
     }
 
-    public void setData(JSONObject data) {
-        this.data = data.toString();
+    public void setData(JsonNode data) {
+        this.data = data;
     }
 
-//    public void setData(String data) {
-//        this.data = data;
-//    }
+    public void setData(String data) throws IOException{
+        this.data = new ObjectMapper().readTree(data);
+    }
 
     @Override
     public int hashCode() {

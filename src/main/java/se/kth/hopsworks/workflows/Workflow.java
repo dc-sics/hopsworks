@@ -116,4 +116,10 @@ public class Workflow implements Serializable {
     public void setNodes(Collection<Node> nodes) {
         this.nodes = nodes;
     }
+
+    @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")
+    private Collection<Node> blankNodes;
+    public Collection<Node> getblankNodes() {
+        return blankNodes;
+    }
 }

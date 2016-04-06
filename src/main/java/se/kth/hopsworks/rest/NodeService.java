@@ -2,7 +2,10 @@ package se.kth.hopsworks.rest;
 
 
 import org.apache.commons.beanutils.BeanUtils;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 import org.json.JSONObject;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
@@ -15,15 +18,18 @@ import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
+import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import se.kth.hopsworks.workflows.nodes.*;
 import static com.google.common.base.CaseFormat.*;
@@ -51,13 +57,13 @@ public class NodeService {
 
     }
 
-    @GET
-    @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-    public Response index() throws AppException {
-        List<Node> nodes = nodeFacade.findAll();
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
-    }
+//    @GET
+//    @Produces(MediaType.APPLICATION_JSON)
+//    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+//    public Response index() throws AppException {
+//        List<Node> nodes = nodeFacade.findAll();
+//        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
+//    }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
@@ -65,19 +71,23 @@ public class NodeService {
     public Response create(
             String stringParams,
             @Context HttpServletRequest req) throws AppException, ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode params = mapper.readTree(stringParams);
+        Map<String, Object> paramsMap = mapper.convertValue(params, Map.class);
 
-        HashMap<String,Object> paramsMap =
-                new ObjectMapper().readValue(stringParams, HashMap.class);
         String className = LOWER_HYPHEN.to(UPPER_CAMEL, paramsMap.get("type").toString());
         Class nodeClass = Class.forName("se.kth.hopsworks.workflows.nodes." + className);
         Node node = (Node)nodeClass.newInstance();
-        paramsMap.put("data", new JSONObject((HashMap)paramsMap.get("data")));
+
+        paramsMap.put("data", params.get("data"));
+//        paramsMap.put("data", new JSONObject(stringParams).getJSONObject("data"));
         BeanUtils.populate(node, paramsMap);
         node.setWorkflowId(workflow.getId());
 
 
         nodeFacade.persist(node);
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodeClass.cast(node)).build();
+        JsonNode json = new ObjectMapper().valueToTree(node);
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
 
     }
 
@@ -86,7 +96,7 @@ public class NodeService {
     @Produces(MediaType.APPLICATION_JSON)
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
-            @PathParam("id") String id) throws AppException, ClassNotFoundException {
+            @PathParam("id") String id) throws AppException {
         NodePK nodePk = new NodePK(id, workflow.getId());
 
         Node node = nodeFacade.findById(nodePk);
@@ -94,11 +104,8 @@ public class NodeService {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.NODE_NOT_FOUND);
         }
-
-        String className = LOWER_HYPHEN.to(UPPER_CAMEL, node.getType());
-        Class nodeClass = Class.forName("se.kth.hopsworks.workflows.nodes." + className);
-
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodeClass.cast(node)).build();
+        JsonNode json = new ObjectMapper().valueToTree(node);
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
     }
 
     @PUT
@@ -108,19 +115,26 @@ public class NodeService {
     public Response update(
             String stringParams,
             @PathParam("id") String id
-    ) throws AppException {
-        JSONObject params = new JSONObject(stringParams);
+    ) throws AppException, IOException, IllegalAccessException, InvocationTargetException {
+
         NodePK nodePk = new NodePK(id, workflow.getId());
         Node node = nodeFacade.findById(nodePk);
         if (node == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.NODE_NOT_FOUND);
         }
-        String className = LOWER_HYPHEN.to(UPPER_CAMEL, params.get("type").toString());
-        params.put("classname", className);
-        nodeFacade.update(node, params);
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode params = (ObjectNode) mapper.readTree(stringParams);
+        Map<String, Object> paramsMap = mapper.convertValue(params, Map.class);
 
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodeFacade.refresh(node)).build();
+        String className = LOWER_HYPHEN.to(UPPER_CAMEL, params.get("type").getValueAsText());
+        paramsMap.put("classname", className);
+        paramsMap.put("data", params.get("data"));
+        BeanUtils.populate(node, paramsMap);
+        nodeFacade.merge(node);
+
+        JsonNode json = new ObjectMapper().valueToTree(nodeFacade.refresh(node));
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
     }
 
     @DELETE

@@ -1,18 +1,15 @@
 package se.kth.hopsworks.workflows;
 
+import se.kth.kthfsdashboard.user.AbstractFacade;
+
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import java.util.List;
 
-import static com.google.common.base.CaseFormat.LOWER_HYPHEN;
-import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-
 @Stateless
-public class NodeFacade extends AbstractCrudFacade<Node> {
+public class NodeFacade extends AbstractFacade<Node> {
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -39,10 +36,8 @@ public class NodeFacade extends AbstractCrudFacade<Node> {
         super(Node.class);
     }
 
-    public void persist(Node node) throws ClassNotFoundException{
-        String className = LOWER_HYPHEN.to(UPPER_CAMEL, node.getType());
-        Class nodeClass = Class.forName("se.kth.hopsworks.workflows.nodes." + className);
-        em.persist(nodeClass.cast(node));
+    public void persist(Node node){
+        em.persist(node);
     }
 
     public void flush() {
@@ -52,10 +47,6 @@ public class NodeFacade extends AbstractCrudFacade<Node> {
     public Node merge(Node node) {
         return em.merge(node);
 
-    }
-
-    public Predicate updateWhere(Node node, Root<Node> root){
-        return em.getCriteriaBuilder().equal(root.get("nodePK"), node.getNodePK());
     }
 
     public void remove(Node node) {

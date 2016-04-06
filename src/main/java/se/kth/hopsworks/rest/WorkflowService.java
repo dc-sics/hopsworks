@@ -1,7 +1,9 @@
 package se.kth.hopsworks.rest;
 
 
-import org.json.JSONObject;
+import org.apache.commons.beanutils.BeanUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.NodeFacade;
@@ -17,8 +19,12 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
+
 @Path("/workflows")
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class WorkflowService {
@@ -84,14 +90,15 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response update(
             String stringParams,
-            @PathParam("id") Integer id) throws AppException {
-        JSONObject params = new JSONObject(stringParams);
+            @PathParam("id") Integer id) throws AppException, IllegalAccessException, InvocationTargetException {
         Workflow workflow = workflowFacade.findById(id);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
         }
-        workflowFacade.update(workflow, params);
+        Map<String, Object> paramsMap = new ObjectMapper().convertValue(stringParams, Map.class);
+        BeanUtils.populate(workflow, paramsMap);
+        workflowFacade.merge(workflow);
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowFacade.refresh(workflow)).build();
     }
 

@@ -1,21 +1,15 @@
 package se.kth.hopsworks.workflows;
 
-import org.json.JSONObject;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaUpdate;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
 import java.util.List;
 
 @Stateless
-public class WorkflowFacade extends AbstractCrudFacade<Workflow> {
+public class WorkflowFacade extends AbstractFacade<Workflow> {
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -68,9 +62,5 @@ public class WorkflowFacade extends AbstractCrudFacade<Workflow> {
         Workflow w = findById(workflow.getId());
         em.refresh(w);
         return w;
-    }
-
-    public Predicate updateWhere(Workflow workflow, Root<Workflow> root){
-        return em.getCriteriaBuilder().equal(root.get("id"), workflow.getId());
     }
 }

@@ -1,5 +1,6 @@
 package se.kth.hopsworks.workflows;
 
+import org.codehaus.jackson.node.ObjectNode;
 import org.json.JSONObject;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
@@ -7,6 +8,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import java.util.Iterator;
 
 
 public abstract class AbstractCrudFacade<T> extends AbstractFacade<T> {
@@ -17,17 +19,27 @@ public abstract class AbstractCrudFacade<T> extends AbstractFacade<T> {
         this.entityClass = entityClass;
     }
 
-    public void update(T entity, JSONObject params){
+    public void update(T entity, ObjectNode params){
 
         CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
         CriteriaUpdate<T> update = cb.createCriteriaUpdate(entityClass);
         Root<T> root = update.from(entityClass);
-
-        for (Object k: params.keySet()){
-            String key = k.toString();
+        Iterator<String> fields = params.getFieldNames();
+        for (String k; fields.hasNext();){
+            String key = fields.next();
             try{
                 entityClass.getDeclaredField(key);
-                update.set(key, params.get(key));
+                if(params.get(key).isTextual()){
+                    update.set(key, params.get(key).getValueAsText());
+                    return;
+                }
+                if(params.get(key).isBoolean()){
+                    update.set(key, params.get(key).getValueAsBoolean());
+                    return;
+                }
+                if(params.get(key).isContainerNode()) {
+                    update.set(key, params.get(key));
+                }
             }catch(NoSuchFieldException ex){
                 continue;
             }
