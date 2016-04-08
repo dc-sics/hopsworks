@@ -2,11 +2,13 @@ package se.kth.hopsworks.workflows;
 
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.codehaus.jackson.annotate.JsonProperty;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 
 import javax.persistence.*;
+import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
@@ -28,18 +30,6 @@ import java.util.*;
                         = "SELECT n FROM Node n WHERE n.nodePK = :nodePK")})
 public abstract  class Node implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    public String getClassname() {
-        return classname;
-    }
-
-    public void setClassname(String classname) {
-        this.classname = classname;
-    }
-
-    @Basic(optional = false)
-    @Column(name = "classname")
-    private String classname;
 
     @EmbeddedId
     protected NodePK nodePK;
@@ -137,9 +127,8 @@ public abstract  class Node implements Serializable {
         this.type = type;
     }
 
-    @JsonProperty("data")
     @Column(name = "data")
-    @Convert(converter = JsonObjectConverter.class)
+    @Convert(converter = NodeDataConverter.class)
     private JsonNode data;
 
     public JsonNode getData() {
@@ -152,6 +141,19 @@ public abstract  class Node implements Serializable {
 
     public void setData(String data) throws IOException{
         this.data = new ObjectMapper().readTree(data);
+    }
+
+    @Basic(optional = false)
+    @Column(name = "classname")
+    private String classname;
+
+    @JsonIgnore
+    public String getClassname() {
+        return classname;
+    }
+
+    public void setClassname(String classname) {
+        this.classname = classname;
     }
 
     @Override
@@ -209,9 +211,14 @@ public abstract  class Node implements Serializable {
         this.children = children;
     }
 
-    @PreUpdate
-    public void updateTimeStamps() {
-       this.updatedAt = new Date();
-    }
+    public abstract Element getWorkflowElement(Document doc, Element root) throws UnsupportedOperationException, ProcessingException;
+
+//    @PreUpdate
+//    public void updateTimeStamps() {
+//        Date date = new Date();
+//        this.updatedAt = date;
+//        this.workflow.setUpdatedAt(date);
+//
+//    }
 
 }

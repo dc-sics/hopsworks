@@ -1,11 +1,20 @@
 package se.kth.hopsworks.workflows;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.eclipse.persistence.annotations.AdditionalCriteria;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import se.kth.hopsworks.workflows.nodes.BlankNode;
+import se.kth.hopsworks.workflows.nodes.RootNode;
 
 import javax.persistence.*;
+import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
@@ -76,6 +85,18 @@ public class Workflow implements Serializable {
         this.updatedAt = updatedAt;
     }
 
+    @Basic(optional = false)
+    @Column(name = "xml_created_at")
+    private Date xmlCreatedAt;
+
+    public Date getXmlCreatedAt() {
+        return xmlCreatedAt;
+    }
+
+    public void setXmlCreatedAt(Date xmlCreatedAt) {
+        this.xmlCreatedAt = xmlCreatedAt;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -118,8 +139,37 @@ public class Workflow implements Serializable {
     }
 
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")
-    private Collection<Node> blankNodes;
-    public Collection<Node> getblankNodes() {
+    private Collection<BlankNode> blankNodes;
+
+    @JsonIgnore
+    public Collection<BlankNode> getBlankNodes() {
         return blankNodes;
     }
+
+    @OneToOne(cascade = CascadeType.REMOVE, mappedBy = "workflow")
+    private RootNode rootNode;
+
+    @JsonIgnore
+    public RootNode getRootNode() {
+        return rootNode;
+    }
+
+    public Boolean isComplete(){
+        if(this.getBlankNodes().size() > 0) return false;
+        return true;
+    }
+
+    public Document makeWorkflowFile() throws ParserConfigurationException, ProcessingException, UnsupportedOperationException{
+
+        if(!this.isComplete()) throw new ProcessingException("Workflow is not in a complete state");
+        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
+        Element workflow = doc.createElement("workflow-app");
+        workflow.setAttribute("name", this.getName());
+        workflow.setAttribute("xmlns", "uri:oozie:workflow:0.5");
+        rootNode.getWorkflowElement(doc, workflow);
+        doc.appendChild(workflow);
+        return doc;
+    }
+
+
 }

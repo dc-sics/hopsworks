@@ -179,6 +179,11 @@
       <artifactId>elasticsearch</artifactId>
       <version>2.1.2</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.oozie</groupId>
+      <artifactId>oozie-client</artifactId>
+      <version>4.2.0</version>
+    </dependency>
   </dependencies>
   <build>
     <finalName>hopsworks</finalName>

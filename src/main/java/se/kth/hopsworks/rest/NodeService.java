@@ -3,32 +3,26 @@ package se.kth.hopsworks.rest;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.JsonSerializer;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
-import org.json.JSONObject;
 import se.kth.hopsworks.controller.ResponseMessages;
-import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.Node;
 import se.kth.hopsworks.workflows.NodeFacade;
 import se.kth.hopsworks.workflows.NodePK;
 import se.kth.hopsworks.workflows.Workflow;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
-import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.io.StringReader;
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import se.kth.hopsworks.workflows.nodes.*;
@@ -59,7 +53,7 @@ public class NodeService {
 
 //    @GET
 //    @Produces(MediaType.APPLICATION_JSON)
-//    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+//    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
 //    public Response index() throws AppException {
 //        List<Node> nodes = nodeFacade.findAll();
 //        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
@@ -67,34 +61,44 @@ public class NodeService {
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response create(
             String stringParams,
-            @Context HttpServletRequest req) throws AppException, ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode params = mapper.readTree(stringParams);
-        Map<String, Object> paramsMap = mapper.convertValue(params, Map.class);
+            @Context HttpServletRequest req) throws AppException {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode params = mapper.readTree(stringParams);
+            Map<String, Object> paramsMap = mapper.convertValue(params, Map.class);
 
-        String className = LOWER_HYPHEN.to(UPPER_CAMEL, paramsMap.get("type").toString());
-        Class nodeClass = Class.forName("se.kth.hopsworks.workflows.nodes." + className);
-        Node node = (Node)nodeClass.newInstance();
+            String className = LOWER_HYPHEN.to(UPPER_CAMEL, paramsMap.get("type").toString());
+            Class nodeClass = Class.forName("se.kth.hopsworks.workflows.nodes." + className);
+            Node node = (Node) nodeClass.newInstance();
+            node.setWorkflow(workflow);
+            node.setWorkflowId(workflow.getId());
+            paramsMap.put("data", params.get("data"));
+            BeanUtils.populate(node, paramsMap);
 
-        paramsMap.put("data", params.get("data"));
-//        paramsMap.put("data", new JSONObject(stringParams).getJSONObject("data"));
-        BeanUtils.populate(node, paramsMap);
-        node.setWorkflowId(workflow.getId());
-
-
-        nodeFacade.persist(node);
-        JsonNode json = new ObjectMapper().valueToTree(node);
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
+            nodeFacade.persist(node);
+            JsonNode json = new ObjectMapper().valueToTree(node);
+            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
+        }catch(ClassNotFoundException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        }catch(IllegalAccessException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        }catch(InstantiationException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        }catch(InvocationTargetException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        }catch(IOException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        }
 
     }
 
     @GET
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response show(
             @PathParam("id") String id) throws AppException {
         NodePK nodePk = new NodePK(id, workflow.getId());
@@ -111,7 +115,7 @@ public class NodeService {
     @PUT
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response update(
             String stringParams,
             @PathParam("id") String id
@@ -131,16 +135,16 @@ public class NodeService {
         paramsMap.put("classname", className);
         paramsMap.put("data", params.get("data"));
         BeanUtils.populate(node, paramsMap);
-        nodeFacade.merge(node);
+        node = nodeFacade.merge(node);
 
-        JsonNode json = new ObjectMapper().valueToTree(nodeFacade.refresh(node));
+        JsonNode json = new ObjectMapper().valueToTree(node);
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
     }
 
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response delete(
             @PathParam("id") String id) throws AppException {
         NodePK nodePk = new NodePK(id, workflow.getId());

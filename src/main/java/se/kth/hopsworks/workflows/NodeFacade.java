@@ -6,6 +6,7 @@ import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import java.util.Date;
 import java.util.List;
 
 @Stateless
@@ -37,7 +38,11 @@ public class NodeFacade extends AbstractFacade<Node> {
     }
 
     public void persist(Node node){
+        Date date = new Date();
+        Workflow workflow = node.getWorkflow();
+        workflow.setUpdatedAt(date);
         em.persist(node);
+        em.merge(workflow);
     }
 
     public void flush() {
@@ -45,6 +50,11 @@ public class NodeFacade extends AbstractFacade<Node> {
     }
 
     public Node merge(Node node) {
+        Date date = new Date();
+        Workflow workflow = node.getWorkflow();
+        node.setUpdatedAt(date);
+        workflow.setUpdatedAt(date);
+        em.merge(workflow);
         return em.merge(node);
 
     }

@@ -3,14 +3,13 @@ package se.kth.hopsworks.rest;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
 import se.kth.hopsworks.controller.ResponseMessages;
-import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.Edge;
 import se.kth.hopsworks.workflows.EdgeFacade;
 import se.kth.hopsworks.workflows.EdgePK;
 import se.kth.hopsworks.workflows.Workflow;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -20,7 +19,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +49,7 @@ public class EdgeService {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response index() throws AppException {
         List<Edge> edges = edgeFacade.findAll();
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edges).build();
@@ -59,7 +57,7 @@ public class EdgeService {
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response create(
             Edge edge,
             @Context HttpServletRequest req) throws AppException {
@@ -72,7 +70,7 @@ public class EdgeService {
     @GET
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response show(
             @PathParam("id") String id) throws AppException {
         EdgePK edgePk = new EdgePK(id, workflow.getId());
@@ -87,7 +85,7 @@ public class EdgeService {
     @PUT
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response update(
             String stringParams,
             @PathParam("id") String id
@@ -100,15 +98,15 @@ public class EdgeService {
         }
         Map<String, Object> paramsMap = new ObjectMapper().convertValue(stringParams, Map.class);
         BeanUtils.populate(edge, paramsMap);
-        edgeFacade.merge(edge);
+        edge = edgeFacade.merge(edge);
 
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edgeFacade.refresh(edge)).build();
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edge).build();
     }
 
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
     public Response delete(
             @PathParam("id") String id) throws AppException {
         EdgePK edgePk = new EdgePK(id, workflow.getId());

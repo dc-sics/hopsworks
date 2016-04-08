@@ -9,7 +9,7 @@ import javax.persistence.Converter;
 import javax.persistence.PersistenceException;
 
 @Converter(autoApply = true)
-public class JsonObjectConverter implements AttributeConverter<JsonNode, String> {
+public class NodeDataConverter implements AttributeConverter<JsonNode, String> {
 
     @Override
     public String convertToDatabaseColumn(JsonNode jsonObject) {
