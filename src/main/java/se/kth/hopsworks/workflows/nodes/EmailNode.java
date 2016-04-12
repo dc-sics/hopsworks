@@ -51,7 +51,7 @@ public class EmailNode extends Node {
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
 
         Element action = doc.createElement("action");
-        action.setAttribute("name", this.getId());
+        action.setAttribute("name", this.getOozieId());
 
 
         Element email = doc.createElement("email");
@@ -79,7 +79,7 @@ public class EmailNode extends Node {
         action.appendChild(email);
 
         Element ok = doc.createElement("ok");
-        ok.setAttribute("to", child.getId());
+        ok.setAttribute("to", child.getOozieId());
         action.appendChild(ok);
 
         Element error = doc.createElement("error");

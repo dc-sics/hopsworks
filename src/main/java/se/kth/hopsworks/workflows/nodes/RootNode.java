@@ -22,9 +22,13 @@ public class RootNode extends Node {
 
         Node child = this.getChildren().iterator().next();
 
-        element.setAttribute("to", child.getId());
+        element.setAttribute("to", child.getOozieId());
         child.getWorkflowElement(doc, root);
 
         return element;
+    }
+
+    public String getOozieId() {
+        return this.getId();
     }
 }

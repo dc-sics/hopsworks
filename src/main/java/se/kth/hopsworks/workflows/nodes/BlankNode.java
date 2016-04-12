@@ -15,4 +15,7 @@ public class BlankNode extends Node {
     public Element getWorkflowElement(Document doc, Element root) throws UnsupportedOperationException{
         throw new UnsupportedOperationException("Blank node is not part of the Workflow");
     }
+    public String getOozieId() throws UnsupportedOperationException{
+        throw new UnsupportedOperationException("Blank node is not part of the Workflow");
+    }
 }

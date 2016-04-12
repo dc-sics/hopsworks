@@ -3,8 +3,8 @@ package se.kth.hopsworks.rest;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.oozie.client.OozieClient;
 import org.apache.oozie.client.OozieClientException;
+import org.apache.oozie.client.OozieClient;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.w3c.dom.Document;
@@ -122,10 +122,10 @@ public class WorkflowService {
                     ResponseMessages.WORKFLOW_NOT_FOUND);
         }
         Users user = userBean.findByEmail(req.getRemoteUser());
-        String path = "/Workflows/" + user.getUsername() + "/" + workflow.hashCode() + "/" + workflow.getUpdatedAt().getTime() ;
+        String path = "/Workflows/" + user.getUsername() + "/" + workflow.getName() + "/" + workflow.getUpdatedAt().getTime() ;
         OozieClient client = new OozieClient(OOZIE_URL);
         Properties conf = client.createConfiguration();
-        conf.setProperty(OozieClient.APP_PATH, path);
+        conf.setProperty(OozieClient.APP_PATH, "${nameNode}" + path);
         conf.setProperty(OozieClient.LIBPATH , "/user/glassfish/workflows/lib");
         conf.setProperty(OozieClient.USE_SYSTEM_LIBPATH , String.valueOf(Boolean.TRUE));
         conf.setProperty("jobTracker", JOB_TRACKER);

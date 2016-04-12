@@ -19,8 +19,12 @@ public class EndNode extends Node {
 
         Element element = doc.createElement("end");
 
-        element.setAttribute("name", this.getId());
+        element.setAttribute("name", this.getOozieId());
         root.appendChild(element);
         return element;
+    }
+
+    public String getOozieId() {
+        return this.getId();
     }
 }

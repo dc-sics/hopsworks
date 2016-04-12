@@ -24,7 +24,7 @@ public class SparkCustomNode extends Node {
     @XmlElement(name = "jar")
     public String getJar() {
         if(this.getData().get("jar") == null) return null;
-        return this.getData().get("jar").getValueAsText();
+        return "${nameNode}" + this.getData().get("jar").getValueAsText();
     }
 
     @XmlElement(name = "mainClass")
@@ -52,7 +52,7 @@ public class SparkCustomNode extends Node {
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
 
         Element action = doc.createElement("action");
-        action.setAttribute("name", this.getId());
+        action.setAttribute("name", this.getOozieId());
 
 
         Element spark = doc.createElement("spark");
@@ -90,7 +90,7 @@ public class SparkCustomNode extends Node {
         action.appendChild(spark);
 
         Element ok = doc.createElement("ok");
-        ok.setAttribute("to", child.getId());
+        ok.setAttribute("to", child.getOozieId());
         action.appendChild(ok);
 
         Element error = doc.createElement("error");
