@@ -4,6 +4,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 import org.eclipse.persistence.annotations.AdditionalCriteria;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.workflows.nodes.BlankNode;
 import se.kth.hopsworks.workflows.nodes.RootNode;
 
@@ -12,6 +13,7 @@ import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -159,9 +161,25 @@ public class Workflow implements Serializable {
         return true;
     }
 
-    public Document makeWorkflowFile() throws ParserConfigurationException, ProcessingException, UnsupportedOperationException{
+    private transient String path;
+    @JsonIgnore
+    @XmlTransient
+    public String getPath() {
+        return path;
+    }
+
+    private transient DistributedFsService dfs;
+    @JsonIgnore
+    @XmlTransient
+    public DistributedFsService getDfs() {
+        return dfs;
+    }
+
+    public Document makeWorkflowFile(String path, DistributedFsService dfs) throws ParserConfigurationException, ProcessingException, UnsupportedOperationException{
 
         if(!this.isComplete()) throw new ProcessingException("Workflow is not in a complete state");
+        this.path = path;
+        this.dfs = dfs;
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
         Element workflow = doc.createElement("workflow-app");
         workflow.setAttribute("name", this.getName());

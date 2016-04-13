@@ -12,6 +12,7 @@ import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.users.UserFacade;
@@ -122,7 +123,7 @@ public class WorkflowService {
                     ResponseMessages.WORKFLOW_NOT_FOUND);
         }
         Users user = userBean.findByEmail(req.getRemoteUser());
-        String path = "/Workflows/" + user.getUsername() + "/" + workflow.getName() + "/" + workflow.getUpdatedAt().getTime() ;
+        String path = "/Workflows/" + user.getUsername() + "/" + workflow.getName() + "/" + workflow.getUpdatedAt().getTime() + "/";
         OozieClient client = new OozieClient(OOZIE_URL);
         Properties conf = client.createConfiguration();
         conf.setProperty(OozieClient.APP_PATH, "${nameNode}" + path);
@@ -136,8 +137,12 @@ public class WorkflowService {
         if(!workflow.getUpdatedAt().equals(workflow.getXmlCreatedAt())){
 
             try{
-                Document workflowFile = workflow.makeWorkflowFile();
-                FSDataOutputStream fsStream = dfs.getDfsOps().create(path.concat("/workflow.xml"));
+                DistributedFileSystemOps dfsOps = dfs.getDfsOps();
+                dfsOps.create(path.concat("lib/init"));
+                dfsOps.close();
+
+                Document workflowFile = workflow.makeWorkflowFile(path, dfs);
+                FSDataOutputStream fsStream = dfs.getDfsOps().create(path.concat("workflow.xml"));
                 DOMImplementationLS domImplementation = (DOMImplementationLS) workflowFile.getImplementation();
                 LSSerializer lsSerializer = domImplementation.createLSSerializer();
                 PrintStream ps = new PrintStream(fsStream);
@@ -146,8 +151,6 @@ public class WorkflowService {
                 ps.close();
 
                 workflow.setXmlCreatedAt(workflow.getUpdatedAt());
-                workflowFacade.merge(workflow);
-
 
             }catch (ProcessingException e){
                 throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
@@ -160,10 +163,9 @@ public class WorkflowService {
             }
         }
 
-
-
         try{
             String jobId = client.run(conf);
+            workflowFacade.merge(workflow);
             return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity("{'job': " + jobId +"}").build();
         }catch (OozieClientException e){
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());

@@ -1,22 +1,29 @@
 package se.kth.hopsworks.workflows.nodes;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.codehaus.jackson.node.ObjectNode;
 import org.json.JSONObject;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.workflows.Node;
 
+import javax.ejb.EJB;
 import javax.persistence.*;
 import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.io.IOException;
 
 
 @Entity
 @XmlRootElement
 public class SparkCustomNode extends Node {
+
     public SparkCustomNode(){
         super();
     }
@@ -24,7 +31,7 @@ public class SparkCustomNode extends Node {
     @XmlElement(name = "jar")
     public String getJar() {
         if(this.getData().get("jar") == null) return null;
-        return "${nameNode}" + this.getData().get("jar").getValueAsText();
+        return this.getData().get("jar").getValueAsText();
     }
 
     @XmlElement(name = "mainClass")
@@ -84,7 +91,16 @@ public class SparkCustomNode extends Node {
         spark.appendChild(mainClass);
 
         Element jar = doc.createElement("jar");
-        jar.setTextContent(this.getJar());
+        String jarPath = this.getJar();
+        String jarName = jarPath.split("/")[jarPath.split("/").length - 1];
+        try {
+            DistributedFileSystemOps dfsops = this.getWorkflow().getDfs().getDfsOps();
+//            dfsops.setConf(new Configuration());
+            dfsops.copyInHdfs(new Path(jarPath), new Path(this.getWorkflow().getPath().concat("lib/")));
+        }catch(IOException e){
+            throw new ProcessingException(e.getMessage());
+        }
+        jar.setTextContent("${nameNode}" + this.getWorkflow().getPath().concat("lib/").concat(jarName));
         spark.appendChild(jar);
 
         action.appendChild(spark);
