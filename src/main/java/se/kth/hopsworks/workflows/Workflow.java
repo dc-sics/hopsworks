@@ -1,7 +1,6 @@
 package se.kth.hopsworks.workflows;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.eclipse.persistence.annotations.AdditionalCriteria;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
@@ -10,16 +9,14 @@ import se.kth.hopsworks.workflows.nodes.RootNode;
 
 import javax.persistence.*;
 import javax.ws.rs.ProcessingException;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 
 @Entity
@@ -87,18 +84,6 @@ public class Workflow implements Serializable {
         this.updatedAt = updatedAt;
     }
 
-    @Basic(optional = false)
-    @Column(name = "xml_created_at")
-    private Date xmlCreatedAt;
-
-    public Date getXmlCreatedAt() {
-        return xmlCreatedAt;
-    }
-
-    public void setXmlCreatedAt(Date xmlCreatedAt) {
-        this.xmlCreatedAt = xmlCreatedAt;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -117,6 +102,17 @@ public class Workflow implements Serializable {
         int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (name != null ? name.hashCode() : 0);
         return result;
+    }
+
+    @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")
+    @OrderBy("workflowTimestamp DESC")
+    private List<WorkflowExecution> workflowExecutions;
+    public List<WorkflowExecution> getWorkflowExecutions() {
+        return workflowExecutions;
+    }
+
+    public void setWorkflowExecutions(List<WorkflowExecution> workflowExecutions) {
+        this.workflowExecutions = workflowExecutions;
     }
 
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")

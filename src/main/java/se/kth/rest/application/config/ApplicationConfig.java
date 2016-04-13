@@ -51,6 +51,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(se.kth.hopsworks.rest.WorkflowService.class);
     register(se.kth.hopsworks.rest.NodeService.class);
     register(se.kth.hopsworks.rest.EdgeService.class);
+    register(se.kth.hopsworks.rest.WorkflowExecutionService.class);
 
     // Enable Tracing support.
     //property(ServerProperties.TRACING, "OFF");

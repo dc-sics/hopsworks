@@ -41,6 +41,7 @@ public class NodeFacade extends AbstractFacade<Node> {
         Date date = new Date();
         Workflow workflow = node.getWorkflow();
         workflow.setUpdatedAt(date);
+        node.setCreatedAt(date);
         em.persist(node);
         em.merge(workflow);
     }
