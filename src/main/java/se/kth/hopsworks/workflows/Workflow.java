@@ -40,8 +40,8 @@ public class Workflow implements Serializable {
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Integer id;
     @Column(name = "id", nullable = false)
+    private Integer id;
     public Integer getId() {
         return id;
     }

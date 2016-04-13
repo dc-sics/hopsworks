@@ -1,9 +1,9 @@
 package se.kth.hopsworks.workflows;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
@@ -18,8 +18,9 @@ public class WorkflowExecution implements Serializable {
 
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private Integer id;
     @Column(name = "id", nullable = false)
+    @XmlElement(name = "id")
+    private Integer id;
     public Integer getId() {
         return id;
     }
@@ -102,4 +103,5 @@ public class WorkflowExecution implements Serializable {
     public void setWorkflow(Workflow workflow) {
         this.workflow = workflow;
     }
+
 }

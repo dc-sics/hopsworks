@@ -212,6 +212,8 @@ public abstract  class Node implements Serializable {
     }
 
     public abstract Element getWorkflowElement(Document doc, Element root) throws UnsupportedOperationException, ProcessingException;
+    @JsonIgnore
+    @XmlTransient
     public String getOozieId() throws UnsupportedOperationException {
        return this.getClass().getName().charAt(0) + this.getId().replaceAll("-", "_");
     }

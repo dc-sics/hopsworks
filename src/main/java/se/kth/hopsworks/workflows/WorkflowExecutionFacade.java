@@ -20,4 +20,8 @@ public class WorkflowExecutionFacade extends AbstractFacade<WorkflowExecution> {
         super(WorkflowExecution.class);
     }
 
+    public void flush() {
+        em.flush();
+    }
+
 }
