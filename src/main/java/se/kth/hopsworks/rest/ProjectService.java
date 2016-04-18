@@ -74,6 +74,8 @@ public class ProjectService {
     private BiobankingService biobanking;
     @Inject
     private CharonService charon;
+	@Inject
+	private WorkflowService workflowService;
     
     @EJB
     private ActivityFacade activityFacade;
@@ -686,5 +688,17 @@ public class ProjectService {
 
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
+	@Path("{id}/workflows")
+  	@AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  	public WorkflowService workflows(@PathParam("id") Integer id) throws
+          AppException {
+    	Project project = projectController.findProjectById(id);
+    	if (project == null) {
+      	throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_NOT_FOUND);
+    	}
+    	this.workflowService.setProject(project);
+    	return workflowService;
+  }
 
 }

@@ -2,40 +2,31 @@ package se.kth.hopsworks.rest;
 
 
 import org.apache.commons.beanutils.BeanUtils;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.oozie.client.OozieClientException;
-import org.apache.oozie.client.OozieClient;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.w3c.dom.Document;
-import org.w3c.dom.ls.DOMImplementationLS;
-import org.w3c.dom.ls.LSSerializer;
+import se.kth.bbc.project.Project;
 import se.kth.hopsworks.controller.ResponseMessages;
-import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
-import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
-import se.kth.hopsworks.user.model.Users;
-import se.kth.hopsworks.users.UserFacade;
+import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.*;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.logging.Logger;
 
-@Path("/workflows")
+@RequestScoped
+@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class WorkflowService {
     private final static Logger logger = Logger.getLogger(WorkflowService.class.
@@ -59,13 +50,23 @@ public class WorkflowService {
     @Inject
     private WorkflowExecutionService workflowExecutionService;
 
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    Project project;
+
     public WorkflowService(){
 
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         List<Workflow> workflows = workflowFacade.findAll();
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflows).build();
@@ -73,10 +74,11 @@ public class WorkflowService {
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response create(
             Workflow workflow,
             @Context HttpServletRequest req) throws AppException {
+        workflow.setProjectId(this.project.getId());
         workflowFacade.persist(workflow);
 
         JsonNode json = new ObjectMapper().valueToTree(workflow);
@@ -87,7 +89,7 @@ public class WorkflowService {
     @GET
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
             @PathParam("id") Integer id) throws AppException {
         Workflow workflow = workflowFacade.findById(id);
@@ -99,26 +101,10 @@ public class WorkflowService {
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
     }
 
-//    @PUT
-//    @Path("{id}/run")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
-//    public Response run(
-//            @PathParam("id") Integer id,
-//            @Context HttpServletRequest req) throws AppException {
-//        Workflow workflow = workflowFacade.findById(id);
-//        if (workflow == null) {
-//            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-//                    ResponseMessages.WORKFLOW_NOT_FOUND);
-//        }
-//
-//
-//    }
-
     @PUT
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response update(
             String stringParams,
             @PathParam("id") Integer id) throws AppException, IllegalAccessException, InvocationTargetException {
@@ -137,7 +123,7 @@ public class WorkflowService {
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response delete(
             @PathParam("id") Integer id) throws AppException {
         Workflow workflow = workflowFacade.findById(id);
@@ -150,7 +136,7 @@ public class WorkflowService {
     }
 
     @Path("{id}/nodes")
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public NodeService nodes(
             @PathParam("id") Integer id) throws AppException {
         Workflow workflow = workflowFacade.findById(id);
@@ -164,7 +150,7 @@ public class WorkflowService {
     }
 
     @Path("{id}/edges")
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public EdgeService edges(
             @PathParam("id") Integer id) throws AppException {
         Workflow workflow = workflowFacade.findById(id);
@@ -178,7 +164,7 @@ public class WorkflowService {
     }
 
     @Path("{id}/executions")
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public WorkflowExecutionService executions(
             @PathParam("id") Integer id) throws AppException {
         Workflow workflow = workflowFacade.findById(id);

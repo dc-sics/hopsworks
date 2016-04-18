@@ -4,6 +4,7 @@ package se.kth.hopsworks.rest;
 import org.apache.commons.beanutils.BeanUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import se.kth.hopsworks.controller.ResponseMessages;
+import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.Edge;
 import se.kth.hopsworks.workflows.EdgeFacade;
 import se.kth.hopsworks.workflows.EdgePK;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @RequestScoped
+@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class EdgeService {
     private final static Logger logger = Logger.getLogger(EdgeService.class.
@@ -49,7 +51,7 @@ public class EdgeService {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         List<Edge> edges = edgeFacade.findAll();
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edges).build();
@@ -57,7 +59,7 @@ public class EdgeService {
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response create(
             Edge edge,
             @Context HttpServletRequest req) throws AppException {
@@ -70,7 +72,7 @@ public class EdgeService {
     @GET
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
             @PathParam("id") String id) throws AppException {
         EdgePK edgePk = new EdgePK(id, workflow.getId());
@@ -85,7 +87,7 @@ public class EdgeService {
     @PUT
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response update(
             String stringParams,
             @PathParam("id") String id
@@ -106,7 +108,7 @@ public class EdgeService {
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response delete(
             @PathParam("id") String id) throws AppException {
         EdgePK edgePk = new EdgePK(id, workflow.getId());

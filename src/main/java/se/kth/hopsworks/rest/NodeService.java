@@ -6,6 +6,7 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
 import se.kth.hopsworks.controller.ResponseMessages;
+import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.Node;
 import se.kth.hopsworks.workflows.NodeFacade;
 import se.kth.hopsworks.workflows.NodePK;
@@ -29,6 +30,7 @@ import se.kth.hopsworks.workflows.nodes.*;
 import static com.google.common.base.CaseFormat.*;
 
 @RequestScoped
+@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class NodeService {
     private final static Logger logger = Logger.getLogger(NodeService.class.
@@ -53,7 +55,7 @@ public class NodeService {
 
 //    @GET
 //    @Produces(MediaType.APPLICATION_JSON)
-//    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+//    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
 //    public Response index() throws AppException {
 //        List<Node> nodes = nodeFacade.findAll();
 //        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
@@ -61,7 +63,7 @@ public class NodeService {
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response create(
             String stringParams,
             @Context HttpServletRequest req) throws AppException {
@@ -98,7 +100,7 @@ public class NodeService {
     @GET
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
             @PathParam("id") String id) throws AppException {
         NodePK nodePk = new NodePK(id, workflow.getId());
@@ -115,7 +117,7 @@ public class NodeService {
     @PUT
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response update(
             String stringParams,
             @PathParam("id") String id
@@ -144,7 +146,7 @@ public class NodeService {
     @DELETE
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response delete(
             @PathParam("id") String id) throws AppException {
         NodePK nodePk = new NodePK(id, workflow.getId());

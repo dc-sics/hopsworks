@@ -1,5 +1,6 @@
 package se.kth.hopsworks.rest;
 
+import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.users.UserFacade;
@@ -22,6 +23,7 @@ import javax.ws.rs.core.Response;
 
 
 @RequestScoped
+@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class WorkflowExecutionService {
 
@@ -53,7 +55,7 @@ public class WorkflowExecutionService {
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response create(
             @Context HttpServletRequest req) throws AppException {
         Users user = userBean.findByEmail(req.getRemoteUser());

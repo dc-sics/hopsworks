@@ -3,11 +3,13 @@ package se.kth.hopsworks.workflows;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.bbc.project.Project;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.workflows.nodes.BlankNode;
 import se.kth.hopsworks.workflows.nodes.RootNode;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
@@ -62,6 +64,17 @@ public class Workflow implements Serializable {
     }
 
     @Basic(optional = false)
+    @NotNull
+    @Column(name = "project_id", nullable = false)
+    private Integer projectId;
+    public Integer getProjectId() {
+        return projectId;
+    }
+    public void setProjectId(Integer projectId) {
+        this.projectId = projectId;
+    }
+
+    @Basic(optional = false)
     @Column(name = "created_at")
     private Date createdAt;
     public Date getCreatedAt() {
@@ -110,6 +123,7 @@ public class Workflow implements Serializable {
     public List<WorkflowExecution> getWorkflowExecutions() {
         return workflowExecutions;
     }
+
 
     public void setWorkflowExecutions(List<WorkflowExecution> workflowExecutions) {
         this.workflowExecutions = workflowExecutions;
@@ -185,5 +199,17 @@ public class Workflow implements Serializable {
         return doc;
     }
 
+    @ManyToOne(fetch=FetchType.LAZY)
+    @PrimaryKeyJoinColumn(name="project_id")
+    private Project project;
+    @JsonIgnore
+    @XmlTransient
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
+    }
 
 }
