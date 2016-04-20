@@ -3,7 +3,6 @@ package se.kth.hopsworks.workflows;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 
@@ -156,6 +155,14 @@ public abstract  class Node implements Serializable {
         this.classname = classname;
     }
 
+
+    @JsonIgnore
+    @XmlTransient
+    public String getDecision() {
+        if(this.getData().get("decision") == null) return null;
+        return this.getData().get("decision").getValueAsText();
+    }
+
     @Override
     public int hashCode() {
         int hash = 0;
@@ -211,7 +218,7 @@ public abstract  class Node implements Serializable {
         this.children = children;
     }
 
-    public abstract Element getWorkflowElement(Document doc, Element root) throws UnsupportedOperationException, ProcessingException;
+    public abstract Element getWorkflowElement(OozieFacade execution, Element root) throws UnsupportedOperationException, ProcessingException;
     @JsonIgnore
     @XmlTransient
     public String getOozieId() throws UnsupportedOperationException {

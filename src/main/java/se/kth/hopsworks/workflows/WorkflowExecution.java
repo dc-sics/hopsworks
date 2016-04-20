@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.util.Date;
+import se.kth.hopsworks.user.model.Users;
 
 @Entity
 @Table(name = "hopsworks.workflow_executions")
@@ -47,7 +48,17 @@ public class WorkflowExecution implements Serializable {
         this.workflowId = workflowId;
     }
 
+    @Basic(optional = false)
+    @NotNull
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
+    public Integer getUserId() {
+        return userId;
+    }
 
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
 
     @Basic(optional = false)
     @Column(name = "workflow_timestamp")
@@ -93,6 +104,19 @@ public class WorkflowExecution implements Serializable {
     @ManyToOne(fetch=FetchType.LAZY)
     @PrimaryKeyJoinColumn(name="workflow_id")
     private Workflow workflow;
+
+    @ManyToOne(fetch=FetchType.LAZY)
+    @PrimaryKeyJoinColumn(name="user_id")
+    private Users user;
+    @JsonIgnore
+    @XmlTransient
+    public Users getUser() {
+        return user;
+    }
+
+    public void setUser(Users user) {
+        this.user = user;
+    }
 
     @JsonIgnore
     @XmlTransient

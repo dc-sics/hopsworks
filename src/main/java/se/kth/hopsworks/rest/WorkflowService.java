@@ -21,6 +21,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -68,7 +69,7 @@ public class WorkflowService {
     @Produces(MediaType.APPLICATION_JSON)
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
-        List<Workflow> workflows = workflowFacade.findAll();
+        Collection<Workflow> workflows = project.getWorkflowCollection();
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflows).build();
     }
 

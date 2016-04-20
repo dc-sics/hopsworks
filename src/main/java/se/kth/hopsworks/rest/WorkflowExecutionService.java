@@ -1,13 +1,13 @@
 package se.kth.hopsworks.rest;
 
+import org.apache.oozie.client.OozieClientException;
+import org.apache.oozie.client.WorkflowJob;
+import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.users.UserFacade;
-import se.kth.hopsworks.workflows.AsynchronousWorkflowExecutor;
-import se.kth.hopsworks.workflows.WorkflowExecution;
-import se.kth.hopsworks.workflows.WorkflowExecutionFacade;
-import se.kth.hopsworks.workflows.Workflow;
+import se.kth.hopsworks.workflows.*;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -15,11 +15,11 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.POST;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Collection;
 
 
 @RequestScoped
@@ -41,7 +41,10 @@ public class WorkflowExecutionService {
     private DistributedFsService dfs;
 
     @EJB
-    private AsynchronousWorkflowExecutor async;
+    private OozieFacade oozieFacade;
+
+    @EJB
+    private NodeFacade nodeFacade;
 
     public void setWorkflow(Workflow workflow) {
         this.workflow = workflow;
@@ -51,6 +54,34 @@ public class WorkflowExecutionService {
 
     public WorkflowExecutionService(){
 
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    public Response index() throws AppException {
+        Collection<WorkflowExecution> executions = workflow.getWorkflowExecutions();
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(executions).build();
+    }
+
+    @GET
+    @Path("{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    public Response show(
+            @PathParam("id") Integer id) throws AppException {
+        WorkflowExecution execution = workflowExecutionFacade.find(id);
+        if (execution == null) {
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                    ResponseMessages.WORKFLOW_NOT_FOUND);
+        }
+        try{
+            WorkflowJob job = oozieFacade.getJob(execution.getJobId());
+        }catch(OozieClientException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        }
+
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
     }
 
     @POST
@@ -63,9 +94,11 @@ public class WorkflowExecutionService {
         WorkflowExecution workflowExecution = new WorkflowExecution();
         workflowExecution.setWorkflowId(workflow.getId());
         workflowExecution.setWorkflow(workflow);
+        workflowExecution.setUser(user);
+        workflowExecution.setUserId(user.getUid());
         workflowExecutionFacade.save(workflowExecution);
         workflowExecutionFacade.flush();
-        this.async.run(workflowExecution, path, dfs);
+        this.oozieFacade.run(workflowExecution);
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowExecution).build();
     }
 }

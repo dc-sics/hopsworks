@@ -1,7 +1,7 @@
 package se.kth.hopsworks.workflows.nodes;
 
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.hopsworks.workflows.OozieFacade;
 import se.kth.hopsworks.workflows.Node;
 
 import javax.persistence.*;
@@ -13,17 +13,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class RootNode extends Node {
     public RootNode(){}
 
-    public Element getWorkflowElement(Document doc ,Element root) throws ProcessingException{
+    public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
 
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
 
-        Element element = doc.createElement("start");
+        Element element = execution.getDoc().createElement("start");
         root.appendChild(element);
 
         Node child = this.getChildren().iterator().next();
 
         element.setAttribute("to", child.getOozieId());
-        child.getWorkflowElement(doc, root);
+        child.getWorkflowElement(execution, root);
 
         return element;
     }

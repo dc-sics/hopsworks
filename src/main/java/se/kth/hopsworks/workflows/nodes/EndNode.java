@@ -1,7 +1,7 @@
 package se.kth.hopsworks.workflows.nodes;
 
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.hopsworks.workflows.OozieFacade;
 import se.kth.hopsworks.workflows.Node;
 
 import javax.persistence.*;
@@ -13,15 +13,22 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class EndNode extends Node {
     public EndNode(){}
 
-    public Element getWorkflowElement(Document doc , Element root) throws ProcessingException{
+    public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
 
         if(this.getChildren().size() != 0) throw new ProcessingException("End node should have no descendants");
 
-        Element element = doc.createElement("end");
+        Element end = execution.getDoc().createElement("end");
+        end.setAttribute("name", this.getOozieId());
 
-        element.setAttribute("name", this.getOozieId());
-        root.appendChild(element);
-        return element;
+        Element kill = execution.getDoc().createElement("kill");
+        Element message = execution.getDoc().createElement("message");
+        kill.setAttribute("name", "kill");
+        message.setTextContent("Workflow failed, error message[${wf:errorMessage(wf:lastErrorNode())}]");
+        kill.appendChild(message);
+
+        root.appendChild(kill);
+        root.appendChild(end);
+        return end;
     }
 
     public String getOozieId() {

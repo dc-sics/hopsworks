@@ -24,6 +24,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Logger;
 import se.kth.hopsworks.workflows.nodes.*;
@@ -53,13 +54,13 @@ public class NodeService {
 
     }
 
-//    @GET
-//    @Produces(MediaType.APPLICATION_JSON)
-//    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-//    public Response index() throws AppException {
-//        List<Node> nodes = nodeFacade.findAll();
-//        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
-//    }
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    public Response index() throws AppException {
+        Collection<Node> nodes = workflow.getNodes();
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
+    }
 
     @POST
     @Produces(MediaType.APPLICATION_JSON)

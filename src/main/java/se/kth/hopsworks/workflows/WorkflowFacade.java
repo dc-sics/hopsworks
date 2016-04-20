@@ -1,11 +1,17 @@
 package se.kth.hopsworks.workflows;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import javax.ws.rs.ProcessingException;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.util.List;
 
 @Stateless

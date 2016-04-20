@@ -1,7 +1,7 @@
 package se.kth.hopsworks.workflows.nodes;
 
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.hopsworks.workflows.OozieFacade;
 import se.kth.hopsworks.workflows.Node;
 
 import javax.persistence.*;
@@ -44,50 +44,50 @@ public class EmailNode extends Node {
         return this.getData().get("name").getValueAsText();
     }
 
-    public Element getWorkflowElement(Document doc , Element root) throws ProcessingException{
+    public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
         /* Add  attachment content_type*/
 
         if(this.getTo().isEmpty() || this.getBody().isEmpty() || this.getSubject().isEmpty()) throw new ProcessingException("Missing arguments for Email");
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
 
-        Element action = doc.createElement("action");
+        Element action = execution.getDoc().createElement("action");
         action.setAttribute("name", this.getOozieId());
 
 
-        Element email = doc.createElement("email");
+        Element email = execution.getDoc().createElement("email");
         Node child = this.getChildren().iterator().next();
         email.setAttribute("xmlns", "uri:oozie:email-action:0.1");
 
-        Element to = doc.createElement("to");
+        Element to = execution.getDoc().createElement("to");
         to.setTextContent(this.getTo());
         email.appendChild(to);
 
-        Element subject = doc.createElement("subject");
+        Element subject = execution.getDoc().createElement("subject");
         subject.setTextContent(this.getSubject());
         email.appendChild(subject);
 
-        Element body = doc.createElement("body");
+        Element body = execution.getDoc().createElement("body");
         body.setTextContent(this.getBody());
         email.appendChild(body);
 
         if(!this.getCC().isEmpty()){
-            Element cc = doc.createElement("cc");
+            Element cc = execution.getDoc().createElement("cc");
             cc.setTextContent(this.getCC());
             email.appendChild(cc);
         }
 
         action.appendChild(email);
 
-        Element ok = doc.createElement("ok");
+        Element ok = execution.getDoc().createElement("ok");
         ok.setAttribute("to", child.getOozieId());
         action.appendChild(ok);
 
-        Element error = doc.createElement("error");
+        Element error = execution.getDoc().createElement("error");
         error.setAttribute("to", "end");
         action.appendChild(error);
 
         root.appendChild(action);
-        child.getWorkflowElement(doc, root);
+        if(child.getClass() != JoinNode.class) child.getWorkflowElement(execution, root);
         return action;
     }
 }

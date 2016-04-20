@@ -1,10 +1,8 @@
 package se.kth.hopsworks.workflows;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import se.kth.bbc.project.Project;
-import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.workflows.nodes.BlankNode;
 import se.kth.hopsworks.workflows.nodes.RootNode;
 
@@ -13,7 +11,6 @@ import javax.validation.constraints.NotNull;
 import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.Serializable;
 import java.util.Collection;
@@ -171,32 +168,16 @@ public class Workflow implements Serializable {
         return true;
     }
 
-    private transient String path;
-    @JsonIgnore
-    @XmlTransient
-    public String getPath() {
-        return path;
-    }
 
-    private transient DistributedFsService dfs;
-    @JsonIgnore
-    @XmlTransient
-    public DistributedFsService getDfs() {
-        return dfs;
-    }
-
-    public Document makeWorkflowFile(String path, DistributedFsService dfs) throws ParserConfigurationException, ProcessingException, UnsupportedOperationException{
+    public void makeWorkflowFile(OozieFacade execution) throws ParserConfigurationException, ProcessingException, UnsupportedOperationException{
 
         if(!this.isComplete()) throw new ProcessingException("Workflow is not in a complete state");
-        this.path = path;
-        this.dfs = dfs;
-        Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
-        Element workflow = doc.createElement("workflow-app");
+
+        Element workflow = execution.getDoc().createElement("workflow-app");
         workflow.setAttribute("name", this.getName());
         workflow.setAttribute("xmlns", "uri:oozie:workflow:0.5");
-        rootNode.getWorkflowElement(doc, workflow);
-        doc.appendChild(workflow);
-        return doc;
+        rootNode.getWorkflowElement(execution, workflow);
+        execution.getDoc().appendChild(workflow);
     }
 
     @ManyToOne(fetch=FetchType.LAZY)
