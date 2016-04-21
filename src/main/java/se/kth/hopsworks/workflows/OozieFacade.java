@@ -18,6 +18,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 
@@ -62,6 +64,23 @@ public class OozieFacade {
         return doc;
     }
 
+    private List<String> nodeIds;
+
+    public Boolean hasNodeId(String id) {
+        return nodeIds.contains(id);
+    }
+
+    public void addNodeId(String id){
+        nodeIds.add(id);
+    }
+
+    public void removeNodeId(String id){
+        nodeIds.remove(id);
+    }
+
+    public OozieFacade(){
+        nodeIds = new ArrayList<String>();
+    }
     @Asynchronous
     public void run(WorkflowExecution workflowExecution){
         try {

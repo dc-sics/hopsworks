@@ -50,6 +50,8 @@ public class EmailNode extends Node {
         if(this.getTo().isEmpty() || this.getBody().isEmpty() || this.getSubject().isEmpty()) throw new ProcessingException("Missing arguments for Email");
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
 
+        if(execution.hasNodeId(this.getOozieId())) return null;
+
         Element action = execution.getDoc().createElement("action");
         action.setAttribute("name", this.getOozieId());
 
@@ -88,6 +90,7 @@ public class EmailNode extends Node {
 
         root.appendChild(action);
         if(child.getClass() != JoinNode.class) child.getWorkflowElement(execution, root);
+        execution.addNodeId(this.getOozieId());
         return action;
     }
 }

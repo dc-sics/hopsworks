@@ -18,6 +18,7 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
@@ -70,7 +71,8 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         Collection<Workflow> workflows = project.getWorkflowCollection();
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflows).build();
+        GenericEntity<Collection<Workflow>> workflowsList = new GenericEntity<Collection<Workflow>>(workflows) {};
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowsList).build();
     }
 
     @POST

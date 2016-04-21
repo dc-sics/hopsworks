@@ -1,0 +1,15 @@
+<div ng-controller="ProjectCtrl as projectCtrl">
+<div ng-include="'nav.html'"></div>
+<div ng-include="'navProject.html'"></div>
+<div class="content-wrapper">
+    <h3>
+        <div class="col-lg-3" style="margin-top: -17px; margin-left: 13px;">
+            <button class="btn btn-success" ng-click="workflowCtrl.newWorkflowModal()" dropdown-toggle="" type="button" id="newDataSet" aria-haspopup="true" aria-expanded="true">
+                Create New Workflow
+            </button>
+        </div>
+    </h3>
+</div>
+<div ng-repeat="workflow in workflowCtrl.workflows">
+    {{workflow.name}}
+</div>

@@ -4,6 +4,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
 import org.w3c.dom.Element;
 import se.kth.bbc.project.Project;
 import se.kth.hopsworks.workflows.nodes.BlankNode;
+import se.kth.hopsworks.workflows.nodes.EndNode;
 import se.kth.hopsworks.workflows.nodes.RootNode;
 
 import javax.persistence.*;
@@ -163,6 +164,14 @@ public class Workflow implements Serializable {
         return rootNode;
     }
 
+    @OneToOne(cascade = CascadeType.REMOVE, mappedBy = "workflow")
+    private EndNode endNode;
+
+    @JsonIgnore
+    public EndNode getEndNode() {
+        return endNode;
+    }
+
     public Boolean isComplete(){
         if(this.getBlankNodes().size() > 0) return false;
         return true;
@@ -176,7 +185,11 @@ public class Workflow implements Serializable {
         Element workflow = execution.getDoc().createElement("workflow-app");
         workflow.setAttribute("name", this.getName());
         workflow.setAttribute("xmlns", "uri:oozie:workflow:0.5");
+        execution.addNodeId(rootNode.getOozieId());
+        execution.addNodeId(endNode.getOozieId());
         rootNode.getWorkflowElement(execution, workflow);
+        execution.removeNodeId(endNode.getOozieId());
+        endNode.getWorkflowElement(execution, workflow);
         execution.getDoc().appendChild(workflow);
     }
 

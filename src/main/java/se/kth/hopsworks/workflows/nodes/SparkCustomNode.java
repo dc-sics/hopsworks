@@ -97,6 +97,7 @@ public class SparkCustomNode extends Node {
 
         if(this.getJar().isEmpty() || this.getMainClass().isEmpty()) throw new ProcessingException("Missing arguments for Spark Job");
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
+        if(execution.hasNodeId(this.getOozieId())) return null;
 
         Element action = execution.getDoc().createElement("action");
         action.setAttribute("name", this.getOozieId());
@@ -219,6 +220,7 @@ public class SparkCustomNode extends Node {
         root.appendChild(action);
         if(child.getClass() != JoinNode.class) child.getWorkflowElement(execution, root);
 
+        execution.addNodeId(this.getOozieId());
         return action;
     }
 

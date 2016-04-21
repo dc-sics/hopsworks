@@ -16,6 +16,7 @@ public class EndNode extends Node {
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
 
         if(this.getChildren().size() != 0) throw new ProcessingException("End node should have no descendants");
+        if(execution.hasNodeId(this.getOozieId())) return null;
 
         Element end = execution.getDoc().createElement("end");
         end.setAttribute("name", this.getOozieId());
@@ -28,6 +29,7 @@ public class EndNode extends Node {
 
         root.appendChild(kill);
         root.appendChild(end);
+        execution.addNodeId(this.getOozieId());
         return end;
     }
 

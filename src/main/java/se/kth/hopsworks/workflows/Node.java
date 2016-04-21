@@ -214,6 +214,16 @@ public abstract  class Node implements Serializable {
         return ids;
     }
 
+    @OneToMany
+    @JoinColumns({@JoinColumn(name="source_id", referencedColumnName="id", insertable=false, updatable=false),
+                  @JoinColumn( name = "workflow_id", referencedColumnName = "workflow_id", insertable=false, updatable=false)})
+    private List<Edge> outEdges;
+    @JsonIgnore
+    @XmlTransient
+    public List<Edge> getOutEdges() {
+        return outEdges;
+    }
+
     public void setChildren(Set<Node> children) {
         this.children = children;
     }

@@ -15,6 +15,7 @@ public class JoinNode extends Node{
 
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException {
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
+        if(execution.hasNodeId(this.getOozieId())) return null;
 
         Element element = execution.getDoc().createElement("join");
         root.appendChild(element);
@@ -25,6 +26,7 @@ public class JoinNode extends Node{
         element.setAttribute("name", this.getOozieId());
         child.getWorkflowElement(execution, root);
 
+        execution.addNodeId(this.getOozieId());
         return element;
     }
 }

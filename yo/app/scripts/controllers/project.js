@@ -231,6 +231,10 @@ angular.module('hopsWorksApp')
                     $location.path('project/' + self.pId + '/datasets');
                 };
 
+                self.goToWorklows = function () {
+                    $location.path('project/' + self.pId + '/workflows');
+                };
+
                 self.goToJobs = function () {
                     $location.path('project/' + self.pId + '/jobs');
                     if(self.tourService.currentStep_TourTwo > -1){

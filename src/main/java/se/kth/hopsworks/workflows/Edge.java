@@ -167,5 +167,34 @@ public class Edge implements Serializable {
     public String toString() {
         return "[" + workflow + "," + edgePK.getId() + " ]";
     }
+
+
+    @OneToOne(fetch=FetchType.LAZY)
+    @JoinColumns({@JoinColumn(name="target_id", referencedColumnName="id", insertable=false, updatable=false),
+            @JoinColumn( name = "workflow_id", referencedColumnName = "workflow_id", insertable=false, updatable=false)})
+    private Node target;
+    @JsonIgnore
+    @XmlTransient
+    public Node getTarget() {
+        return target;
+    }
+
+    public void setTarget(Node target) {
+        this.target = target;
+    }
+
+    @OneToOne(fetch=FetchType.LAZY)
+    @JoinColumns({@JoinColumn(name="source_id", referencedColumnName="id", insertable=false, updatable=false),
+            @JoinColumn( name = "workflow_id", referencedColumnName = "workflow_id", insertable=false, updatable=false)})
+    private Node source;
+    @JsonIgnore
+    @XmlTransient
+    public Node getSource() {
+        return source;
+    }
+
+    public void setSource(Node source) {
+        this.source = source;
+    }
     
 }

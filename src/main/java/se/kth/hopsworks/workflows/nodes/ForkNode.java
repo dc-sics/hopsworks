@@ -22,6 +22,7 @@ public class ForkNode extends Node {
     }
 
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException {
+        if(execution.hasNodeId(this.getOozieId())) return null;
         Element fork = execution.getDoc().createElement("fork");
         fork.setAttribute("name", this.getOozieId());
         root.appendChild(fork);
@@ -35,6 +36,7 @@ public class ForkNode extends Node {
         JoinNode joinNode = execution.getEm().find(JoinNode.class, new NodePK(this.getJoinNodeId(), this.getWorkflowId()));
         joinNode.getWorkflowElement(execution, root);
 
+        execution.addNodeId(this.getOozieId());
         return fork;
     }
 }
