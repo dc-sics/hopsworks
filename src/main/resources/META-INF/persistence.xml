@@ -72,9 +72,12 @@
     <class>se.kth.hopsworks.workflows.nodes.EndNode</class>
     <class>se.kth.hopsworks.workflows.nodes.RootNode</class>
     <class>se.kth.hopsworks.workflows.nodes.SparkCustomNode</class>
+    <class>se.kth.hopsworks.workflows.nodes.EmailNode</class>
     <class>se.kth.hopsworks.workflows.nodes.DecisionNode</class>
     <class>se.kth.hopsworks.workflows.nodes.ForkNode</class>
     <class>se.kth.hopsworks.workflows.nodes.JoinNode</class>
+    <class>se.kth.hopsworks.workflows.WorkflowJob</class>
+    <class>se.kth.hopsworks.workflows.WorkflowAction</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <shared-cache-mode>NONE</shared-cache-mode>
     <validation-mode>NONE</validation-mode>

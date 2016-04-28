@@ -1,5 +1,6 @@
 package se.kth.hopsworks.workflows.nodes;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.w3c.dom.Element;
 import se.kth.hopsworks.workflows.OozieFacade;
 import se.kth.hopsworks.workflows.Node;
@@ -11,7 +12,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 @Entity
 @XmlRootElement
 public class EndNode extends Node {
-    public EndNode(){}
+    public EndNode(){
+        this.setId("end");
+        this.setType("end-node");
+        this.setData(new ObjectMapper().createObjectNode());
+    }
 
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
 

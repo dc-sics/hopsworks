@@ -8,8 +8,8 @@
  * Controller of the hopsWorksApp
  */
 angular.module('hopsWorksApp')
-  .controller('WorkflowCtrl',[ '$routeParams', 'growl','WorkflowService', 'ModalService',
-      function ($routeParams, growl, WorkflowService, ModalService) {
+  .controller('WorkflowCtrl',[ '$routeParams', '$location', 'growl','WorkflowService', 'ModalService',
+      function ($routeParams, $location, growl, WorkflowService, ModalService) {
     var self = this;
       self.workflows = [];
       var projectId = $routeParams.projectID
@@ -32,4 +32,7 @@ angular.module('hopsWorksApp')
                   index();
               });
       };
+      self.goToShow = function (id) {
+          $location.path('project/' + projectId + '/workflows/' + id);
+      }
   }]);

@@ -1,13 +1,13 @@
 package se.kth.hopsworks.rest;
 
 import org.apache.oozie.client.OozieClientException;
-import org.apache.oozie.client.WorkflowJob;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.users.UserFacade;
 import se.kth.hopsworks.workflows.*;
+import se.kth.kthfsdashboard.user.AbstractFacade;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -17,6 +17,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collection;
@@ -46,6 +47,9 @@ public class WorkflowExecutionService {
     @EJB
     private NodeFacade nodeFacade;
 
+    @EJB
+    private WorkflowJobFacade workflowJobFacade;
+
     public void setWorkflow(Workflow workflow) {
         this.workflow = workflow;
     }
@@ -61,7 +65,8 @@ public class WorkflowExecutionService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         Collection<WorkflowExecution> executions = workflow.getWorkflowExecutions();
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(executions).build();
+        GenericEntity<Collection<WorkflowExecution>> executionsList = new GenericEntity<Collection<WorkflowExecution>>(executions) {};
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(executionsList).build();
     }
 
     @GET
@@ -70,18 +75,18 @@ public class WorkflowExecutionService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
             @PathParam("id") Integer id) throws AppException {
-        WorkflowExecution execution = workflowExecutionFacade.find(id);
+        WorkflowExecution execution = workflowExecutionFacade.find(id, workflow);
         if (execution == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
         }
-        try{
-            WorkflowJob job = oozieFacade.getJob(execution.getJobId());
-        }catch(OozieClientException e){
-            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), e.getMessage());
+        if(execution.getJobId() != null){
+            workflowJobFacade.find(execution.getJobId()).getActions();
+            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowJobFacade.find(execution.getJobId())).build();
+        }else{
+            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
         }
 
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
     }
 
     @POST

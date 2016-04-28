@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import static com.google.common.base.CaseFormat.LOWER_HYPHEN;
+import static com.google.common.base.CaseFormat.UPPER_CAMEL;
+
 @Entity
 @XmlRootElement
 @Table(name = "hopsworks.nodes")
@@ -36,6 +39,7 @@ public abstract  class Node implements Serializable {
     private String type;
 
 
+
         @JoinColumn(name = "workflow_id",
             insertable = false,
             updatable = false)
@@ -53,6 +57,7 @@ public abstract  class Node implements Serializable {
 
     public Node(String id, Workflow workflow, String type) {
         this.nodePK = new NodePK(id, workflow.getId());
+        this.workflow = workflow;
         this.type = type;
     }
 
@@ -91,7 +96,12 @@ public abstract  class Node implements Serializable {
 
     public void setWorkflow(Workflow workflow) {
         this.workflow = workflow;
+        this.setWorkflowId(workflow.getId());
     }
+
+    @Basic(optional = false)
+    @Column(name = "external_id")
+    private String externalId;
 
     @Basic(optional = false)
     @Column(name = "created_at")
@@ -190,12 +200,12 @@ public abstract  class Node implements Serializable {
         fetch = FetchType.LAZY)
     @JoinTable(name = "hopsworks.edges",
             joinColumns = {
-                    @JoinColumn(table= "nodes", name = "source_id", referencedColumnName = "id") ,
-                    @JoinColumn(table= "nodes", name = "workflow_id", referencedColumnName = "workflow_id")
+                    @JoinColumn(table= "hopsworks.nodes", name = "source_id", referencedColumnName = "id") ,
+                    @JoinColumn(table= "hopsworks.nodes", name = "workflow_id", referencedColumnName = "workflow_id")
             },
             inverseJoinColumns ={
-                    @JoinColumn(table= "nodes", name = "target_id", referencedColumnName = "id") ,
-                    @JoinColumn(table= "nodes", name = "workflow_id", referencedColumnName = "workflow_id")
+                    @JoinColumn(table= "hopsworks.nodes", name = "target_id", referencedColumnName = "id") ,
+                    @JoinColumn(table= "hopsworks.nodes", name = "workflow_id", referencedColumnName = "workflow_id")
             }
     )
     private Set<Node> children;
@@ -229,10 +239,24 @@ public abstract  class Node implements Serializable {
     }
 
     public abstract Element getWorkflowElement(OozieFacade execution, Element root) throws UnsupportedOperationException, ProcessingException;
+
+    @JsonIgnore
+    @XmlTransient
+    public String getPrefix(){
+        String type = LOWER_HYPHEN.to(UPPER_CAMEL, this.type.toString());
+        if(type.length() < 13) return type;
+        return type.substring(0,12);
+    }
     @JsonIgnore
     @XmlTransient
     public String getOozieId() throws UnsupportedOperationException {
-       return this.getClass().getName().charAt(0) + this.getId().replaceAll("-", "_");
+       return this.getPrefix() + "_" + this.getId();
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void prePersist() {
+        this.externalId = this.getOozieId();
     }
 
 //    @PreUpdate

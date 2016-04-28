@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @XmlRootElement
@@ -45,6 +46,13 @@ public class Edge implements Serializable {
     public Edge(String id, Workflow workflow, String type) {
         this.edgePK = new EdgePK(id, workflow.getId());
         this.type = type;
+    }
+
+    public Edge(Node source, Node target) throws IllegalArgumentException{
+        if(!source.getWorkflow().equals(target.getWorkflow())) throw new IllegalArgumentException("source and target should be of the same workflow");
+        this.sourceId = source.getId();
+        this.targetId = target.getId();
+        this.edgePK = new EdgePK(UUID.randomUUID().toString(), source.getWorkflowId());
     }
 
     @JsonIgnore

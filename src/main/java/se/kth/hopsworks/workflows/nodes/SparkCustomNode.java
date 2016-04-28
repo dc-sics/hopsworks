@@ -35,18 +35,14 @@ public class SparkCustomNode extends Node {
     @XmlElement(name = "mainClass")
     public String getMainClass() {
         if(this.getData().get("mainClass") == null) return null;
+        if(this.getData().get("mainClass").isArray()) return this.getData().get("mainClass").get(0).getValueAsText();
         return this.getData().get("mainClass").getValueAsText();
-    }
-
-    @XmlElement(name = "prepare")
-    public Boolean getPrepare() {
-        if(this.getData().get("prepare") == null) return null;
-        return this.getData().get("prepare").getValueAsBoolean();
     }
 
     @XmlElement(name = "name")
     public String getName() {
         if(this.getData().get("name") == null) return this.getId();
+        if(this.getData().get("name").isArray()) return this.getData().get("name").get(0).getValueAsText();
         return this.getData().get("name").getValueAsText();
     }
 
@@ -54,6 +50,7 @@ public class SparkCustomNode extends Node {
     @XmlTransient
     public Iterator<JsonNode> getArguments() {
         if(this.getData().get("arguments") == null) return null;
+        if(!this.getData().get("arguments").isArray()) return null;
         return this.getData().get("arguments").getElements();
     }
 
@@ -61,6 +58,7 @@ public class SparkCustomNode extends Node {
     @XmlTransient
     public Iterator<JsonNode> getJobXmls() {
         if(this.getData().get("jobXmls") == null) return null;
+        if(!this.getData().get("jobXmls").isArray()) return null;
         return this.getData().get("jobXmls").getElements();
     }
 
@@ -68,6 +66,7 @@ public class SparkCustomNode extends Node {
     @XmlTransient
     public Iterator<JsonNode> getConfigurations() {
         if(this.getData().get("configurations") == null) return null;
+        if(!this.getData().get("configurations").isArray()) return null;
         return this.getData().get("configurations").getElements();
     }
 
@@ -75,6 +74,7 @@ public class SparkCustomNode extends Node {
     @XmlTransient
     public Iterator<JsonNode> getMkDirs() {
         if(this.getData().get("mkDirs") == null) return null;
+        if(!this.getData().get("mkDirs").isArray()) return null;
         return this.getData().get("mkDirs").getElements();
     }
 
@@ -82,6 +82,7 @@ public class SparkCustomNode extends Node {
     @XmlTransient
     public Iterator<JsonNode> getRmDirs() {
         if(this.getData().get("rmDirs") == null) return null;
+        if(!this.getData().get("rmDirs").isArray()) return null;
         return this.getData().get("rmDirs").getElements();
     }
 
@@ -89,13 +90,14 @@ public class SparkCustomNode extends Node {
     @XmlTransient
     public String getOpts() {
         if(this.getData().get("sparkOptions") == null) return null;
+        if(this.getData().get("sparkOptions").isArray()) return this.getData().get("sparkOptions").get(0).getValueAsText();
+
         return this.getData().get("sparkOptions").getValueAsText();
     }
 
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
-        /* Add  prepare job-xml configuration spark-opts arg*/
 
-        if(this.getJar().isEmpty() || this.getMainClass().isEmpty()) throw new ProcessingException("Missing arguments for Spark Job");
+        if((this.getJar() != null && this.getJar().isEmpty()) || (this.getMainClass() != null && this.getMainClass().isEmpty())) throw new ProcessingException("Missing arguments for Spark Job");
         if(this.getChildren().size() != 1) throw new ProcessingException("Node should only contain one descendant");
         if(execution.hasNodeId(this.getOozieId())) return null;
 
@@ -174,8 +176,10 @@ public class SparkCustomNode extends Node {
         spark.appendChild(mode);
 
         Element name = execution.getDoc().createElement("name");
-        name.setTextContent(this.getName());
-        spark.appendChild(name);
+        if(name != null){
+            name.setTextContent(this.getName());
+            spark.appendChild(name);
+        }
 
         Element mainClass = execution.getDoc().createElement("class");
         mainClass.setTextContent(this.getMainClass());
@@ -194,8 +198,10 @@ public class SparkCustomNode extends Node {
         spark.appendChild(jar);
 
         Element opts = execution.getDoc().createElement("spark-opts");
-        opts.setTextContent(this.getOpts());
-        spark.appendChild(opts);
+        if(opts != null){
+            opts.setTextContent(this.getOpts());
+            spark.appendChild(opts);
+        }
 
         Iterator<JsonNode> args = this.getArguments();
         if(args != null){

@@ -195,7 +195,7 @@ angular.module('hopsWorksApp', [
             })
             .when('/project/:projectID/workflows/:workflowID', {
                 templateUrl: 'views/workflow.html',
-                controller: 'ProjectCtrl as projectCtrl',
+                controller: 'WorkflowCtrl as workflowCtrl',
                 resolve: {
                     auth: ['$q', '$location', 'AuthService', '$cookies',
                         function ($q, $location, AuthService, $cookies) {

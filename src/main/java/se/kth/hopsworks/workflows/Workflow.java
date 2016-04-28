@@ -26,9 +26,9 @@ import java.util.List;
         @NamedQuery(name = "Workflow.findAll",
                 query
                         = "SELECT w FROM Workflow w"),
-        @NamedQuery(name = "Workflow.findById",
+        @NamedQuery(name = "Workflow.find",
                 query
-                        = "SELECT w FROM Workflow w WHERE w.id = :id"),
+                        = "SELECT w FROM Workflow w WHERE w.id = :id AND w.projectId = :projectId"),
         @NamedQuery(name = "Workflow.findByName",
                 query
                         = "SELECT w FROM Workflow w WHERE w.name = :name")})

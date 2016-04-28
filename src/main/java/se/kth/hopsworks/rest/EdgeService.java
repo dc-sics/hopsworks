@@ -5,10 +5,7 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
-import se.kth.hopsworks.workflows.Edge;
-import se.kth.hopsworks.workflows.EdgeFacade;
-import se.kth.hopsworks.workflows.EdgePK;
-import se.kth.hopsworks.workflows.Workflow;
+import se.kth.hopsworks.workflows.*;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -18,6 +15,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.lang.reflect.InvocationTargetException;
@@ -55,7 +53,8 @@ public class EdgeService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         Collection<Edge> edges = workflow.getEdges();
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edges).build();
+        GenericEntity<Collection<Edge>> edgesList = new GenericEntity<Collection<Edge>>(edges) {};
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(edgesList).build();
     }
 
     @POST

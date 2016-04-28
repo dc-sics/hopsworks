@@ -13,6 +13,10 @@ import se.kth.hopsworks.user.model.Users;
 @Entity
 @Table(name = "hopsworks.workflow_executions")
 @XmlRootElement
+@NamedQueries({
+        @NamedQuery(name = "WorkflowExecution.find",
+                query
+                        = "SELECT e FROM WorkflowExecution e WHERE e.id = :id AND e.workflowId = :workflowId")})
 public class WorkflowExecution implements Serializable {
 
     public WorkflowExecution(){}

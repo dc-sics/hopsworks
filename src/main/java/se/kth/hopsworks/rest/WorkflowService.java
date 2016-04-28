@@ -8,6 +8,9 @@ import se.kth.bbc.project.Project;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.workflows.*;
+import se.kth.hopsworks.workflows.nodes.BlankNode;
+import se.kth.hopsworks.workflows.nodes.EndNode;
+import se.kth.hopsworks.workflows.nodes.RootNode;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -39,6 +42,9 @@ public class WorkflowService {
 
     @EJB
     private NodeFacade nodeFacade;
+
+    @EJB
+    private EdgeFacade edgeFacade;
 
     @EJB
     private NoCacheResponse noCacheResponse;
@@ -83,8 +89,27 @@ public class WorkflowService {
             @Context HttpServletRequest req) throws AppException {
         workflow.setProjectId(this.project.getId());
         workflowFacade.persist(workflow);
+        workflowFacade.flush();
 
-        JsonNode json = new ObjectMapper().valueToTree(workflow);
+
+        RootNode root = new RootNode();
+        root.setWorkflow(workflow);
+        EndNode end = new EndNode();
+        end.setWorkflow(workflow);
+        BlankNode blank = new BlankNode();
+        blank.setWorkflow(workflow);
+        nodeFacade.persist(root);
+        nodeFacade.persist(end);
+        nodeFacade.persist(blank);
+        nodeFacade.flush();
+
+        Edge rootEdge = new Edge(root, blank);
+        edgeFacade.save(rootEdge);
+
+        Edge endEdge = new Edge(blank, end);
+        edgeFacade.save(endEdge);
+        edgeFacade.flush();
+        JsonNode json = new ObjectMapper().valueToTree(workflowFacade.refresh(workflow));
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
 
     }
@@ -95,7 +120,7 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
             @PathParam("id") Integer id) throws AppException {
-        Workflow workflow = workflowFacade.findById(id);
+        Workflow workflow = workflowFacade.find(id, project);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
@@ -111,7 +136,7 @@ public class WorkflowService {
     public Response update(
             String stringParams,
             @PathParam("id") Integer id) throws AppException, IllegalAccessException, InvocationTargetException {
-        Workflow workflow = workflowFacade.findById(id);
+        Workflow workflow = workflowFacade.find(id, project);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
@@ -129,7 +154,7 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response delete(
             @PathParam("id") Integer id) throws AppException {
-        Workflow workflow = workflowFacade.findById(id);
+        Workflow workflow = workflowFacade.find(id, project);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
@@ -142,7 +167,7 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public NodeService nodes(
             @PathParam("id") Integer id) throws AppException {
-        Workflow workflow = workflowFacade.findById(id);
+        Workflow workflow = workflowFacade.find(id, project);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
@@ -156,7 +181,7 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public EdgeService edges(
             @PathParam("id") Integer id) throws AppException {
-        Workflow workflow = workflowFacade.findById(id);
+        Workflow workflow = workflowFacade.find(id, project);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);
@@ -170,7 +195,7 @@ public class WorkflowService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public WorkflowExecutionService executions(
             @PathParam("id") Integer id) throws AppException {
-        Workflow workflow = workflowFacade.findById(id);
+        Workflow workflow = workflowFacade.find(id, project);
         if (workflow == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WORKFLOW_NOT_FOUND);

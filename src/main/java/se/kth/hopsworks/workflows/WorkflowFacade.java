@@ -1,7 +1,11 @@
 package se.kth.hopsworks.workflows;
 
+import io.hops.metadata.hdfs.entity.User;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import se.kth.bbc.project.Project;
+import se.kth.bbc.project.fb.Inode;
+import se.kth.hopsworks.dataset.Dataset;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
@@ -34,6 +38,13 @@ public class WorkflowFacade extends AbstractFacade<Workflow> {
         TypedQuery<Workflow> query = em.createNamedQuery("Workflow.findAll",
                 Workflow.class);
         return query.getResultList();
+    }
+
+    public Workflow find(Integer id, Project project) {
+        TypedQuery<Workflow> query = em.createNamedQuery("Workflow.find",
+                Workflow.class).setParameter(
+                "id", id).setParameter("projectId", project.getId());
+        return query.getSingleResult();
     }
 
     public Workflow findById(Integer id) {

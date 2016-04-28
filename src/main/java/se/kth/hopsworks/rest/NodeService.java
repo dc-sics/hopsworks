@@ -20,6 +20,7 @@ import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -59,7 +60,8 @@ public class NodeService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         Collection<Node> nodes = workflow.getNodes();
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodes).build();
+        GenericEntity<Collection<Node>> nodesList = new GenericEntity<Collection<Node>>(nodes) {};
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(nodesList).build();
     }
 
     @POST
