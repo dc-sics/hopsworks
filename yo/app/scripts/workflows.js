@@ -968,7 +968,7 @@
         var form =$('<form class="form-horizontal" id="spark-form"></form>')
         form.append(node.cy().defaults.hdfsInput(node, false, "Jar*", "jar", function(target, n){
             target.val(n.data.fullPath).change()
-            node.data('jarINodeId', n.id)
+            node.data({'jarINodeId': n.id, 'metaKey': null})
             populateTemplates(n.id)
         }))
         form.append(node.cy().defaults.textInput(node, "text", "Main Class*", "mainClass"))
@@ -1120,6 +1120,14 @@
             }
         },
         {
+            selector: 'edge[type = "default-decision-edge"]',
+            style: {
+                // 'curve-style': "segments",
+                'line-color': '#aaa',
+                'line-style': 'dashed'
+            }
+        },
+        {
             selector: 'node.selected',
             css: {
                 color: '#337ab7'
@@ -1154,14 +1162,6 @@
             css: {
                 'line-color':'#ACE8AC',
                 'target-arrow-color': '#ACE8AC'
-            }
-        },
-        {
-            selector: 'edge[type = "default-decision-edge"]',
-            style: {
-                // 'curve-style': "segments",
-                'line-color': '#aaa',
-                'line-style': 'dashed'
             }
         },
         {

@@ -214,6 +214,48 @@ angular.module('hopsWorksApp', [
                 }
             })
 
+            .when('/project/:projectID/workflows/:workflowID/executions', {
+                templateUrl: 'views/workflowExecutions.html',
+                controller: 'WorkflowExecutionCtrl as workflowExecutionCtrl',
+                resolve: {
+                    auth: ['$q', '$location', 'AuthService', '$cookies',
+                        function ($q, $location, AuthService, $cookies) {
+                            return AuthService.session().then(
+                                function (success) {
+                                    $cookies.email = success.data.data.value;
+                                },
+                                function (err) {
+                                    delete $cookies.email;
+                                    delete $cookies.projectID;
+                                    $location.path('/login');
+                                    $location.replace();
+                                    return $q.reject(err);
+                                });
+                        }]
+                }
+            })
+
+            .when('/project/:projectID/workflows/:workflowID/executions/:executionID', {
+                templateUrl: 'views/workflowExecution.html',
+                controller: 'WorkflowExecutionCtrl as workflowExecutionCtrl',
+                resolve: {
+                    auth: ['$q', '$location', 'AuthService', '$cookies',
+                        function ($q, $location, AuthService, $cookies) {
+                            return AuthService.session().then(
+                                function (success) {
+                                    $cookies.email = success.data.data.value;
+                                },
+                                function (err) {
+                                    delete $cookies.email;
+                                    delete $cookies.projectID;
+                                    $location.path('/login');
+                                    $location.replace();
+                                    return $q.reject(err);
+                                });
+                        }]
+                }
+            })
+
             .when('/project/:projectID/datasets/:datasetName', {
               templateUrl: 'views/datasetsBrowser.html',
               controller: 'ProjectCtrl as projectCtrl',

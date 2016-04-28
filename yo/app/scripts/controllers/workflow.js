@@ -19,7 +19,7 @@ angular.module('hopsWorksApp')
               console.log(success);
               self.workflows = success.data;
           },function (error) {
-              growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 10})
+              growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000})
           })
       }
       index();
@@ -34,5 +34,8 @@ angular.module('hopsWorksApp')
       };
       self.goToShow = function (id) {
           $location.path('project/' + projectId + '/workflows/' + id);
-      }
+      };
+      self.goToExecutions = function (id) {
+          $location.path('project/' + projectId + '/workflows/' + id + '/executions');
+      };
   }]);

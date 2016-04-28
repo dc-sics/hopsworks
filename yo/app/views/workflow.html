@@ -7,6 +7,23 @@
                 <div ng-controller="DatasetsCtrl as datasetsCtrl">
 
                     <div ng-include="'navProject.html'"></div>
+                    <div class="content-wrapper">
+                        <h3>
+                            <div class="col-lg-3" style="margin-top: -17px; margin-left: 13px;">
+                                <button class="btn btn-sm btn-info" ng-click="projectCtrl.goToWorklows()" dropdown-toggle="" type="button" id="newWorkflow" aria-haspopup="true" aria-expanded="true">
+                                    Back
+                                </button>
+                            </div>
+                            <div class="col-lg-3 pull-right" style="margin-top: -17px; margin-left: 13px;">
+                                <div ng-controller="WorkflowExecutionCtrl as workflowExecutionCtrl">
+                                    <button class="btn btn-sm btn-success pull-right" ng-click="workflowExecutionCtrl.create()" dropdown-toggle="" type="button" id="newExecution" aria-haspopup="true" aria-expanded="true">
+                                        Run
+                                    </button>
+                                </div>
+                            </div>
+                        </h3>
+                    </div>
+
                     <div id="workflow">
                         <div id="options" style="overflow:scroll;">
                             <form class="form-horizontal">

@@ -259,12 +259,4 @@ public abstract  class Node implements Serializable {
         this.externalId = this.getOozieId();
     }
 
-//    @PreUpdate
-//    public void updateTimeStamps() {
-//        Date date = new Date();
-//        this.updatedAt = date;
-//        this.workflow.setUpdatedAt(date);
-//
-//    }
-
 }
