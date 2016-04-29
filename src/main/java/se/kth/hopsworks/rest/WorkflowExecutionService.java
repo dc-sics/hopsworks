@@ -1,6 +1,7 @@
 package se.kth.hopsworks.rest;
 
 import org.apache.oozie.client.OozieClientException;
+import org.codehaus.jackson.map.ObjectMapper;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
@@ -20,7 +21,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 
 
 @RequestScoped
@@ -78,14 +81,43 @@ public class WorkflowExecutionService {
         WorkflowExecution execution = workflowExecutionFacade.find(id, workflow);
         if (execution == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-                    ResponseMessages.WORKFLOW_NOT_FOUND);
+                    ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
-        if(execution.getJobId() != null){
-            workflowJobFacade.find(execution.getJobId()).getActions();
-            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowJobFacade.find(execution.getJobId())).build();
+        WorkflowJob job = execution.getJob();
+        if(job != null){
+            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(job).build();
         }else{
             return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
         }
+
+    }
+
+    @GET
+    @Path("{id}/logs")
+    @Produces(MediaType.APPLICATION_JSON)
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    public Response logs(
+            @PathParam("id") Integer id) throws AppException {
+        WorkflowExecution execution = workflowExecutionFacade.find(id, workflow);
+        WorkflowJob  job = execution.getJob();
+        if (execution == null) {
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                    ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
+        }
+        if(job == null){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                    ResponseMessages.WOKFLOW_JOB_NOT_FOUND);
+        }
+        String log;
+        try{
+            Map<String, String> logs = oozieFacade.getLogs(execution);
+            log = new ObjectMapper().writeValueAsString(logs).toString();
+        }catch (OozieClientException | IOException e){
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                    "");
+        }
+
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(log).build();
 
     }
 

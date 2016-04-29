@@ -17,6 +17,7 @@ import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.logging.Logger;
@@ -78,6 +79,47 @@ public class OozieFacade {
 
     public OozieFacade(){
         nodeIds = new HashSet<String>();
+    }
+
+    public Map<String, String> getLogs(WorkflowExecution execution) throws IOException, OozieClientException{
+        OozieClient client = new OozieClient(OOZIE_URL);
+        String path = "/Workflows/" + execution.getUser().getUsername() + "/" + execution.getWorkflow().getName() + "/" + execution.getWorkflow().getUpdatedAt().getTime() + "/";
+        DistributedFileSystemOps dfsOps = dfs.getDfsOps();
+        PrintStream ps;
+
+        Map<String, String> logs = new HashMap<String, String>();
+
+        String defaultLog = client.getJobLog(execution.getJobId());
+
+
+        if(!dfsOps.exists(path.concat("/logs/default.log")) || !execution.getJob().isDone()){
+            ps = new PrintStream(dfsOps.create(path.concat("/logs/default.log")));
+            ps.print(defaultLog);
+            ps.flush();
+            ps.close();
+        }
+
+        if(!dfsOps.exists(path.concat("/logs/error.log")) || !execution.getJob().isDone()){
+            ps = new PrintStream(dfsOps.create(path.concat("/logs/error.log")));
+            client.getJobErrorLog(execution.getJobId(), ps);
+            ps.flush();
+            ps.close();
+        }
+        String errorLog = dfsOps.cat(path.concat("/logs/error.log"));
+
+        if(!dfsOps.exists(path.concat("/logs/audit.log")) || !execution.getJob().isDone()){
+            ps = new PrintStream(dfsOps.create(path.concat("/logs/audit.log")));
+            client.getJobAuditLog(execution.getJobId(), ps);
+            ps.flush();
+            ps.close();
+        }
+
+        String auditLog = dfsOps.cat(path.concat("/logs/audit.log"));
+
+        logs.put("default", defaultLog);
+        logs.put("error", errorLog);
+        logs.put("audit", auditLog);
+        return logs;
     }
     @Asynchronous
     public void run(WorkflowExecution workflowExecution){

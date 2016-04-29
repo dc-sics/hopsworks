@@ -170,4 +170,8 @@ public class ResponseMessages {
           = "Node not found.";
   public final static String EDGE_NOT_FOUND
           = "Edge not found.";
+public final static String WOKFLOW_EXECUTION_NOT_FOUND
+        = "Execution not found.";
+public final static String WOKFLOW_JOB_NOT_FOUND
+        = "Job not found.";
 }

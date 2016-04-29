@@ -62,6 +62,7 @@ module.exports = function (config) {
       'bower_components/jstree/dist/jstree.js',
       'bower_components/recase/recase.js',
       'bower_components/node-uuid/uuid.js',
+      'bower_components/cytoscape-qtip/cytoscape-qtip.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'app/scripts/**/*.js',

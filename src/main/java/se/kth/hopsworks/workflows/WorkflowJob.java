@@ -110,6 +110,18 @@ public class WorkflowJob implements Serializable {
         return result;
     }
 
+    @OneToOne(cascade = CascadeType.ALL,
+            mappedBy = "job")
+    private WorkflowExecution execution;
+
+    public WorkflowExecution getExecution() {
+        return execution;
+    }
+
+    public Boolean isDone(){
+        return !(this.status.toLowerCase() == "running" || this.status.toLowerCase() == "prep");
+    }
+
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "job")
     private Collection<WorkflowAction> actions;
     @XmlElement(name = "actions")

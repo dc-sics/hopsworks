@@ -132,4 +132,11 @@ public class WorkflowExecution implements Serializable {
         this.workflow = workflow;
     }
 
+    @OneToOne(fetch=FetchType.LAZY)
+    @PrimaryKeyJoinColumn(name="job_id")
+    private WorkflowJob job;
+
+    public WorkflowJob getJob() {
+        return job;
+    }
 }
