@@ -3,6 +3,7 @@ package se.kth.hopsworks.workflows.nodes;
 import org.apache.hadoop.fs.Path;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.w3c.dom.Element;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
@@ -16,6 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.UUID;
 
 
 @Entity
@@ -23,7 +25,9 @@ import java.util.Iterator;
 public class SparkCustomNode extends Node {
 
     public SparkCustomNode(){
-        super();
+        this.setId(UUID.randomUUID().toString());
+        this.setType("spark-custom-node");
+        this.setData(new ObjectMapper().createObjectNode());
     }
 
     @XmlElement(name = "jar")

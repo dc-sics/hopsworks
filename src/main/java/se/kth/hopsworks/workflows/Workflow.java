@@ -118,6 +118,8 @@ public class Workflow implements Serializable {
     @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "workflow")
     @OrderBy("workflowTimestamp DESC")
     private List<WorkflowExecution> workflowExecutions;
+    @JsonIgnore
+    @XmlTransient
     public List<WorkflowExecution> getWorkflowExecutions() {
         return workflowExecutions;
     }

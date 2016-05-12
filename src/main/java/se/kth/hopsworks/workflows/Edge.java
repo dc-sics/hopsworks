@@ -36,6 +36,7 @@ public class Edge implements Serializable {
 
     public Edge() {
         this.edgePK = new EdgePK();
+        this.setId(UUID.randomUUID().toString());
     }
 
     public Edge(EdgePK edgePK, String type) {
@@ -88,6 +89,7 @@ public class Edge implements Serializable {
 
     public void setWorkflow(Workflow workflow) {
         this.workflow = workflow;
+        this.edgePK.setWorkflowId(workflow.getId());
     }
 
     @Basic(optional = false)

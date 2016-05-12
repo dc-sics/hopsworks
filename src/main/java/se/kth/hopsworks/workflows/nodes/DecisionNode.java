@@ -1,6 +1,8 @@
 package se.kth.hopsworks.workflows.nodes;
 
 import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 import org.w3c.dom.Element;
 import se.kth.hopsworks.workflows.Edge;
 import se.kth.hopsworks.workflows.NodePK;
@@ -12,18 +14,19 @@ import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+import java.util.UUID;
 
 @Entity
 @XmlRootElement
 public class DecisionNode extends Node {
-    public DecisionNode(){}
+    public DecisionNode(){
+        this.setId(UUID.randomUUID().toString());
+        this.setType("decision-node");
+        this.setData(new ObjectMapper().createObjectNode());
+    }
 
     @JsonIgnore
     @XmlTransient
-    public Boolean getDefaultBoolean() {
-        return this.getData().get("default").getValueAsBoolean(true);
-    }
-
     public Node getDefaultNode(){
         Node defaultNode = null;
         for(Edge edge: this.getOutEdges()){
@@ -31,6 +34,11 @@ public class DecisionNode extends Node {
         }
         return defaultNode;
     }
+
+    public void setTargetNodeId(String id){
+        ((ObjectNode)this.getData()).put("targetNodeId", id);
+    }
+
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException {
         if(execution.hasNodeId(this.getOozieId())) return null;
         Element action = execution.getDoc().createElement("decision");

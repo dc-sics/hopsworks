@@ -59,7 +59,7 @@ public class WorkflowExecutionService {
 
     private Workflow workflow;
 
-    public WorkflowExecutionService(){
+    public WorkflowExecutionService() {
 
     }
 
@@ -68,7 +68,8 @@ public class WorkflowExecutionService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response index() throws AppException {
         Collection<WorkflowExecution> executions = workflow.getWorkflowExecutions();
-        GenericEntity<Collection<WorkflowExecution>> executionsList = new GenericEntity<Collection<WorkflowExecution>>(executions) {};
+        GenericEntity<Collection<WorkflowExecution>> executionsList = new GenericEntity<Collection<WorkflowExecution>>(executions) {
+        };
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(executionsList).build();
     }
 
@@ -84,9 +85,9 @@ public class WorkflowExecutionService {
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
         WorkflowJob job = execution.getJob();
-        if(job != null){
+        if (job != null) {
             return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(job).build();
-        }else{
+        } else {
             return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
         }
 
@@ -99,20 +100,21 @@ public class WorkflowExecutionService {
     public Response logs(
             @PathParam("id") Integer id) throws AppException {
         WorkflowExecution execution = workflowExecutionFacade.find(id, workflow);
-        WorkflowJob  job = execution.getJob();
+        WorkflowJob job = execution.getJob();
         if (execution == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
-        if(job == null){
+        if (job == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_JOB_NOT_FOUND);
         }
         String log;
-        try{
+        try {
             Map<String, String> logs = oozieFacade.getLogs(execution);
             log = new ObjectMapper().writeValueAsString(logs).toString();
-        }catch (OozieClientException | IOException e){
+        } catch (OozieClientException | IOException e) {
+            //ADD MESSAGE
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     "");
         }
@@ -127,7 +129,6 @@ public class WorkflowExecutionService {
     public Response create(
             @Context HttpServletRequest req) throws AppException {
         Users user = userBean.findByEmail(req.getRemoteUser());
-        String path = "/Workflows/" + user.getUsername() + "/" + workflow.getName() + "/" + workflow.getUpdatedAt().getTime() + "/";
         WorkflowExecution workflowExecution = new WorkflowExecution();
         workflowExecution.setWorkflowId(workflow.getId());
         workflowExecution.setWorkflow(workflow);

@@ -1,11 +1,21 @@
 package se.kth.hopsworks.workflows;
 
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import se.kth.hopsworks.workflows.nodes.*;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import javax.ws.rs.ProcessingException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathException;
+import javax.xml.xpath.XPathFactory;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -30,7 +40,11 @@ public class NodeFacade extends AbstractFacade<Node> {
     public Node findById(NodePK id) {
         TypedQuery<Node> query =  em.createNamedQuery("Node.findById", Node.class);
         query.setParameter("nodePK", id);
-        return query.getSingleResult();
+        try {
+            return query.getSingleResult();
+        }catch(NoResultException e){
+            return null;
+        }
     }
 
     public NodeFacade() {
@@ -68,5 +82,125 @@ public class NodeFacade extends AbstractFacade<Node> {
         Node n = findById(node.getNodePK());
         em.refresh(n);
         return n;
+    }
+
+    public Node buildXmlNode(Element elem, Collection<Edge> edges, Workflow workflow) throws XPathException {
+        Node node = null, inNode;
+        Edge edge;
+        NodeList nodes;
+        Element child, child2;
+        XPath xPath = XPathFactory.newInstance().newXPath();
+        if(!elem.getNodeName().equals("start")){
+            node = findById(new NodePK(elem.getAttribute("name"), workflow.getId()));
+            if(node != null) return node;
+        }
+        switch (elem.getNodeName()){
+            case "start":
+                node = new RootNode();
+                node.setWorkflow(workflow);
+                persist(node);
+                node = refresh(node);
+
+                edge = new Edge();
+                edge.setSourceId(node.getId());
+                edge.setTargetId(elem.getAttribute("to"));
+                edges.add(edge);
+                break;
+            case "end":
+                node = new EndNode();
+                node.setId(elem.getAttribute("name"));
+                node.setWorkflow(workflow);
+                persist(node);
+                break;
+            case "decision":
+                node = new DecisionNode();
+                node.setWorkflow(workflow);
+                node.setId(elem.getAttribute("name"));
+                persist(node);
+                node = refresh(node);
+
+                child = (Element)elem.getChildNodes().item(0);
+                nodes = child.getElementsByTagName("case");
+
+                for(int j = 0; j < nodes.getLength(); j++){
+
+                    child = (Element) nodes.item(j);
+                    inNode = findById(new NodePK(child.getAttribute("to"), workflow.getId()));
+                    if(inNode == null){
+                        child2 = (Element) xPath.compile("//*[@name='" +child.getAttribute("to")+ "']").evaluate(elem, XPathConstants.NODE);
+                        inNode = buildXmlNode(child2, edges, workflow);
+                    }
+                    inNode.setDecision(child.getTextContent());
+                    merge(inNode);
+                    edge = new Edge();
+                    edge.setSourceId(node.getId());
+                    edge.setTargetId(child.getAttribute("to"));
+                    edges.add(edge);
+                }
+
+                child = (Element)elem.getChildNodes().item(0);
+                child = (Element)child.getElementsByTagName("default").item(0);
+                inNode = findById(new NodePK(child.getAttribute("to"), workflow.getId()));
+                if(inNode == null){
+                    child2 = (Element) xPath.compile("//*[@name='" +child.getAttribute("to")+ "']").evaluate(elem, XPathConstants.NODE);
+                    inNode = buildXmlNode(child2, edges, workflow);
+                }
+                ((DecisionNode) node).setTargetNodeId(inNode.getId());
+                edge = new Edge();
+                edge.setType("default-decision-edge");
+                edge.setSourceId(node.getId());
+                edge.setTargetId(child.getAttribute("to"));
+                edges.add(edge);
+                break;
+            case "fork":
+                node = new ForkNode();
+                node.setWorkflow(workflow);
+                node.setId(elem.getAttribute("name"));
+                persist(node);
+                node = refresh(node);
+
+                for(int j = 0; j < elem.getChildNodes().getLength(); j++){
+                    child = (Element)elem.getChildNodes().item(j);
+                    edge = new Edge();
+                    edge.setSourceId(node.getId());
+                    edge.setTargetId(child.getAttribute("start"));
+                    edges.add(edge);
+                }
+
+                break;
+            case "join":
+                node = new JoinNode();
+                node.setWorkflow(workflow);
+                node.setId(elem.getAttribute("name"));
+                persist(node);
+                node = refresh(node);
+
+                edge = new Edge();
+                edge.setSourceId(node.getId());
+                edge.setTargetId(elem.getAttribute("to"));
+                edges.add(edge);
+                break;
+            case "action":
+                if(elem.getElementsByTagName("spark").getLength() == 1) node = new SparkCustomNode();
+                if(elem.getElementsByTagName("email").getLength() == 1) node = new EmailNode();
+                if(node == null) throw new ProcessingException("Unsuported Action");
+
+                node.setId(elem.getAttribute("name"));
+                node.setWorkflow(workflow);
+                persist(node);
+                node = refresh(node);
+
+                child = (Element) elem.getElementsByTagName("ok").item(0);
+                edge = new Edge();
+                edge.setSourceId(node.getId());
+                edge.setTargetId(child.getAttribute("to"));
+                edges.add(edge);
+                break;
+            case "kill":
+                break;
+            default:
+                throw new ProcessingException("Unsuported Action");
+        }
+        return node;
     }
 }

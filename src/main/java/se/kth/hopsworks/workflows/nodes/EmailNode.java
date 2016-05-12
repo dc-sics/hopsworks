@@ -1,5 +1,6 @@
 package se.kth.hopsworks.workflows.nodes;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.w3c.dom.Element;
 import se.kth.hopsworks.workflows.OozieFacade;
 import se.kth.hopsworks.workflows.Node;
@@ -8,11 +9,16 @@ import javax.persistence.*;
 import javax.ws.rs.ProcessingException;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.UUID;
 
 @Entity
 @XmlRootElement
 public class EmailNode extends Node {
-    public EmailNode(){}
+    public EmailNode(){
+        this.setId(UUID.randomUUID().toString());
+        this.setType("email-node");
+        this.setData(new ObjectMapper().createObjectNode());
+    }
 
     @XmlElement(name = "to")
     public String getTo() {
