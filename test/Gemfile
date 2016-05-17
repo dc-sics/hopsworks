@@ -1,0 +1,8 @@
+# frozen_string_literal: true
+# A sample Gemfile
+source "https://rubygems.org"
+
+gem "rspec", "3.4.0"
+gem 'airborne', '0.2.5'
+gem 'byebug'
+# gem "factory_girl", "~> 4"

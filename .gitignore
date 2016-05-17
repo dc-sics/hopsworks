@@ -96,3 +96,6 @@ node_modules
 ## File-based project format:
 *.ipr
 *.iws
+
+## Test Gemfile.lock
+test/Gemfile.lock

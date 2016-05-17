@@ -26,6 +26,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import org.apache.hadoop.security.AccessControlException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
 import se.kth.bbc.activity.ActivityFacade;
 import se.kth.bbc.jobs.quota.YarnRunningPrice;
 import se.kth.bbc.project.Project;
@@ -454,6 +456,9 @@ public class ProjectService {
         if (failedMembers != null) {
             json.setFieldErrors(failedMembers);
         }
+        ObjectNode data = ((ObjectNode)new ObjectMapper().valueToTree(project));
+        data.remove("inode");
+        json.setData(data);
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.CREATED).
             entity(json).build();
     }
