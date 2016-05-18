@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 @RequestScoped
-@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class EdgeService {
     private final static Logger logger = Logger.getLogger(EdgeService.class.

@@ -5,7 +5,9 @@ import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
+import org.codehaus.jackson.node.ObjectNode;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
 import se.kth.hopsworks.workflows.OozieFacade;
 import se.kth.hopsworks.workflows.Node;
@@ -30,10 +32,55 @@ public class SparkCustomNode extends Node {
         this.setData(new ObjectMapper().createObjectNode());
     }
 
+    public SparkCustomNode(Element elem){
+        this.setType("spark-custom-node");
+        this.setData(new ObjectMapper().createObjectNode());
+        this.setId(elem.getAttribute("name"));
+
+        this.setMainClass(elem.getElementsByTagName("class").item(0).getTextContent());
+        this.setJar(elem.getElementsByTagName("jar").item(0).getTextContent());
+        if(elem.getElementsByTagName("spark-opts").getLength() > 0)this.setOpts(elem.getElementsByTagName("spark-opts").item(0).getTextContent());
+
+        NodeList list;
+
+        list = elem.getElementsByTagName("arg");
+        for(int i=0; i < list.getLength(); i++){
+            this.addArgument(list.item(i).getTextContent());
+        }
+        list = elem.getElementsByTagName("job-xml");
+        for(int i=0; i < list.getLength(); i++){
+            this.addJobXmls(list.item(i).getTextContent());
+        }
+
+        list = elem.getElementsByTagName("delete");
+        for(int i=0; i < list.getLength(); i++){
+            this.addRmDirs(((Element)list.item(i)).getAttribute("path"));
+        }
+
+        list = elem.getElementsByTagName("mkdir");
+        for(int i=0; i < list.getLength(); i++){
+            this.addMkDirs(((Element)list.item(i)).getAttribute("path"));
+        }
+
+        list = elem.getElementsByTagName("property");
+        for(int i=0; i < list.getLength(); i++){
+            this.addConfigurations(list.item(i).getFirstChild().getTextContent(), list.item(i).getLastChild().getTextContent());
+        }
+
+
+
+        this.setId(elem.getAttribute("name"));
+    }
+
     @XmlElement(name = "jar")
     public String getJar() {
         if(this.getData().get("jar") == null) return null;
         return this.getData().get("jar").getValueAsText();
+    }
+
+    public void setJar(String jar){
+        ObjectNode data = (ObjectNode)this.getData();
+        data.put("jar", jar.replace("${nameNode}", ""));
     }
 
     @XmlElement(name = "mainClass")
@@ -41,6 +88,11 @@ public class SparkCustomNode extends Node {
         if(this.getData().get("mainClass") == null) return null;
         if(this.getData().get("mainClass").isArray()) return this.getData().get("mainClass").get(0).getValueAsText();
         return this.getData().get("mainClass").getValueAsText();
+    }
+
+    public void setMainClass(String mainClass){
+        ObjectNode data = (ObjectNode)this.getData();
+        data.put("mainClass", mainClass);
     }
 
     @XmlElement(name = "name")
@@ -58,6 +110,17 @@ public class SparkCustomNode extends Node {
         return this.getData().get("arguments").getElements();
     }
 
+    public void addArgument(String arg){
+        ArrayNode arguments;
+        if(this.getData().get("arguments") == null){
+            ObjectNode data = (ObjectNode)this.getData();
+            arguments = data.putArray("arguments");
+        }else{
+            arguments = (ArrayNode)this.getData().get("arguments");
+        }
+        arguments.add(arg);
+    }
+
     @JsonIgnore
     @XmlTransient
     public Iterator<JsonNode> getJobXmls() {
@@ -65,6 +128,17 @@ public class SparkCustomNode extends Node {
         if(!this.getData().get("jobXmls").isArray()) return null;
         return this.getData().get("jobXmls").getElements();
     }
+    public void addJobXmls(String jobXml){
+        ArrayNode jobXmls;
+        if(this.getData().get("jobXmls") == null){
+            ObjectNode data = (ObjectNode)this.getData();
+            jobXmls = data.putArray("jobXmls");
+        }else{
+            jobXmls = (ArrayNode)this.getData().get("jobXmls");
+        }
+        jobXmls.add(jobXml);
+    }
+
 
     @JsonIgnore
     @XmlTransient
@@ -72,6 +146,20 @@ public class SparkCustomNode extends Node {
         if(this.getData().get("configurations") == null) return null;
         if(!this.getData().get("configurations").isArray()) return null;
         return this.getData().get("configurations").getElements();
+    }
+
+    public void addConfigurations(String name, String value){
+        ArrayNode configurations, conf;
+        if(this.getData().get("configurations") == null){
+            ObjectNode data = (ObjectNode)this.getData();
+            configurations = data.putArray("configurations");
+        }else{
+            configurations = (ArrayNode)this.getData().get("configurations");
+        }
+        conf = configurations.arrayNode();
+        conf.add(name);
+        conf.add(value);
+        configurations.add(conf);
     }
 
     @JsonIgnore
@@ -82,12 +170,34 @@ public class SparkCustomNode extends Node {
         return this.getData().get("mkDirs").getElements();
     }
 
+    public void addMkDirs(String mkDir){
+        ArrayNode mkDirs;
+        if(this.getData().get("mkDirs") == null){
+            ObjectNode data = (ObjectNode)this.getData();
+            mkDirs = data.putArray("mkDirs");
+        }else{
+            mkDirs = (ArrayNode)this.getData().get("mkDirs");
+        }
+        mkDirs.add(mkDir);
+    }
+
     @JsonIgnore
     @XmlTransient
     public Iterator<JsonNode> getRmDirs() {
         if(this.getData().get("rmDirs") == null) return null;
         if(!this.getData().get("rmDirs").isArray()) return null;
         return this.getData().get("rmDirs").getElements();
+    }
+
+    public void addRmDirs(String rmDir){
+        ArrayNode rmDirs;
+        if(this.getData().get("rmDirs") == null){
+            ObjectNode data = (ObjectNode)this.getData();
+            rmDirs = data.putArray("rmDirs");
+        }else{
+            rmDirs = (ArrayNode)this.getData().get("rmDirs");
+        }
+        rmDirs.add(rmDir);
     }
 
     @JsonIgnore
@@ -98,6 +208,12 @@ public class SparkCustomNode extends Node {
 
         return this.getData().get("sparkOptions").getValueAsText();
     }
+
+    public void setOpts(String opts){
+        ObjectNode data = (ObjectNode)this.getData();
+        data.put("sparkOptions", opts);
+    }
+
 
     public Element getWorkflowElement(OozieFacade execution, Element root) throws ProcessingException{
 

@@ -4,15 +4,19 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import se.kth.hopsworks.controller.ResponseMessages;
+import se.kth.hopsworks.rest.AppException;
 import se.kth.hopsworks.workflows.nodes.*;
 import se.kth.kthfsdashboard.user.AbstractFacade;
 
+import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.ProcessingException;
+import javax.ws.rs.core.Response;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -119,8 +123,12 @@ public class NodeFacade extends AbstractFacade<Node> {
         Element child, child2;
         XPath xPath = XPathFactory.newInstance().newXPath();
         if(!elem.getNodeName().equals("start")){
-            node = findById(new NodePK(elem.getAttribute("name"), workflow.getId()));
-            if(node != null) return node;
+            try{
+                node = findById(new NodePK(elem.getAttribute("name"), workflow.getId()));
+                return node;
+            }catch(NoResultException e) {
+                node = null;
+            }
         }
         switch (elem.getNodeName()){
             case "start":
@@ -153,11 +161,14 @@ public class NodeFacade extends AbstractFacade<Node> {
                 for(int j = 0; j < nodes.getLength(); j++){
 
                     child = (Element) nodes.item(j);
-                    inNode = findById(new NodePK(child.getAttribute("to"), workflow.getId()));
-                    if(inNode == null){
+
+                    try{
+                        inNode = findById(new NodePK(child.getAttribute("to"), workflow.getId()));
+                    }catch(NoResultException e) {
                         child2 = (Element) xPath.compile("//*[@name='" +child.getAttribute("to")+ "']").evaluate(elem, XPathConstants.NODE);
                         inNode = buildXmlNode(child2, edges, workflow);
                     }
+
                     inNode.setDecision(child.getTextContent());
                     merge(inNode);
                     edge = new Edge();
@@ -168,11 +179,14 @@ public class NodeFacade extends AbstractFacade<Node> {
 
                 child = (Element)elem.getChildNodes().item(0);
                 child = (Element)child.getElementsByTagName("default").item(0);
-                inNode = findById(new NodePK(child.getAttribute("to"), workflow.getId()));
-                if(inNode == null){
+
+                try{
+                    inNode = findById(new NodePK(child.getAttribute("to"), workflow.getId()));
+                }catch(NoResultException e) {
                     child2 = (Element) xPath.compile("//*[@name='" +child.getAttribute("to")+ "']").evaluate(elem, XPathConstants.NODE);
                     inNode = buildXmlNode(child2, edges, workflow);
                 }
+
                 ((DecisionNode) node).setTargetNodeId(inNode.getId());
                 edge = new Edge();
                 edge.setType("default-decision-edge");
@@ -209,7 +223,7 @@ public class NodeFacade extends AbstractFacade<Node> {
                 edges.add(edge);
                 break;
             case "action":
-                if(elem.getElementsByTagName("spark").getLength() == 1) node = new SparkCustomNode();
+                if(elem.getElementsByTagName("spark").getLength() == 1) node = new SparkCustomNode(elem);
                 if(elem.getElementsByTagName("email").getLength() == 1) node = new EmailNode();
                 if(node == null) throw new ProcessingException("Unsuported Action");
 

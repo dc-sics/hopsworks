@@ -27,7 +27,7 @@ import java.util.Map;
 
 
 @RequestScoped
-@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class WorkflowExecutionService {
 
