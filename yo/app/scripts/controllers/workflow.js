@@ -12,8 +12,8 @@ angular.module('hopsWorksApp')
       function ($routeParams, $location, growl, WorkflowService, ModalService) {
     var self = this;
       self.workflows = [];
-      var projectId = $routeParams.projectID
-
+      var projectId = $routeParams.projectID;
+      var workflowId = $routeParams.workflowID;
       var index = function(){
           WorkflowService.index(projectId).then(function(success){
               console.log(success);
@@ -38,4 +38,8 @@ angular.module('hopsWorksApp')
       self.goToExecutions = function (id) {
           $location.path('project/' + projectId + '/workflows/' + id + '/executions');
       };
+
+      if(workflowId){
+          window.workflows.init();
+      }
   }]);

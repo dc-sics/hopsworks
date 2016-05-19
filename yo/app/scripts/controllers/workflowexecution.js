@@ -14,6 +14,7 @@ angular.module('hopsWorksApp')
           self.executions = [];
           var projectId = $routeParams.projectID;
           var workflowId = $routeParams.workflowID;
+          var executionId = $routeParams.executionID;
 
           var index = function(){
               WorkflowExecutionService.index(projectId, workflowId).then(function(success){
@@ -41,5 +42,9 @@ angular.module('hopsWorksApp')
           }
           self.getWorkflowId = function(){
               return workflowId;
+          }
+
+          if(executionId){
+              window.workflows.image();
           }
       }]);

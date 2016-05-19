@@ -1,5 +1,16 @@
 require 'airborne'
 require 'byebug'
+require 'active_record'
+ActiveRecord::Base.establish_connection ({
+  :adapter => "mysql2",
+  :host => "bbc1.sics.se",
+  :port => "13007",
+  :username => "kthfs",
+  :password => "kthfs",
+  :database => "hopsworks"})
+
+Dir[File.join(File.dirname(__FILE__), 'factories', '**', '*.rb')].each { |f| require f }
+
 Dir[File.join(File.dirname(__FILE__), 'helpers', '**', '*.rb')].each { |f| require f }
 
 RSpec.configure do |config|

@@ -741,10 +741,10 @@
         var form = $('<form class="form-horizontal"></form>')
         $.each(node.outgoers("edge") ,function(i, edge){
             var ele = edge.target()
-            var shorId = (ele.id().length > 8) ? ele.id().substr(ele.id().length - 5) : ele.id()
+            var shortId = (ele.id().length > 8) ? ele.id().substr(ele.id().length - 5) : ele.id()
 
             if(edge.data("type") !== "default-decision-edge"){
-                var input = textInput(ele, "text", shorId, "decision")
+                var input = textInput(ele, "text", shortId, "decision")
                 form.append(input)
                 //   var parentDiv = input.find('input').parent()
                 //   var checked = node.data("default") || false
@@ -1236,14 +1236,18 @@
         },
         {
             selector: '.fork-node',
-            style: {
-                'content': '\uf085'
+            css: {
+                'label': function(ele){
+                    return content('\uf085 ' ,ele)
+                }
             }
         },
         {
             selector: '.join-node',
-            style: {
-                'content': '\uf013'
+            css: {
+                'label': function(ele){
+                    return content('\uf013 ' ,ele)
+                }
             }
         }
     ]
