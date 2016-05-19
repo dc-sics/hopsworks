@@ -1,5 +1,7 @@
 package se.kth.hopsworks.workflows;
 
+import io.hops.hdfs.HdfsLeDescriptors;
+import io.hops.hdfs.HdfsLeDescriptorsFacade;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.oozie.client.OozieClient;
 import org.apache.oozie.client.OozieClientException;
@@ -10,6 +12,7 @@ import org.w3c.dom.ls.LSSerializer;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 
+import javax.annotation.PostConstruct;
 import javax.ejb.Asynchronous;
 import javax.ejb.EJB;
 import javax.ejb.LocalBean;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
 import java.util.logging.Logger;
+import se.kth.hopsworks.util.Settings;
 
 @Stateless
 @LocalBean
@@ -29,15 +33,27 @@ public class OozieFacade {
     private static final Logger logger = Logger.getLogger(OozieFacade.class.
             getName());
 
-    private static String OOZIE_URL = "http://10.0.2.15:11000/oozie/";
-    private static String JOB_TRACKER = "hdfs://10.0.2.15:8032";
-    private static String NAME_NODE = "hdfs://10.0.2.15:8020";
 
     @EJB
     private WorkflowExecutionFacade workflowExecutionFacade;
 
     @EJB
     private DistributedFsService dfs;
+
+    @EJB
+    private Settings settings;
+
+    @EJB
+    private HdfsLeDescriptorsFacade hdfsLeDescriptorsFacade;
+
+    private String OOZIE_URL;
+    private String JOB_TRACKER;
+
+    @PostConstruct
+    public void init() {
+        OOZIE_URL = "http://" + settings.getOozieIp() + ":11000/oozie/";
+        JOB_TRACKER = "hdfs://" + settings.getJhsIp() + ":8032";
+    }
 
     @PersistenceContext(unitName = "kthfsPU")
     private EntityManager em;
@@ -124,6 +140,11 @@ public class OozieFacade {
     @Asynchronous
     public void run(WorkflowExecution workflowExecution){
         try {
+            String namenode;
+            HdfsLeDescriptors nn = hdfsLeDescriptorsFacade.findEndpoint();
+            if (nn == null) throw new OozieClientException("404", "Missing name node");
+            namenode = nn.getHostname();
+
             this.path = "/Workflows/" + workflowExecution.getUser().getUsername() + "/" + workflowExecution.getWorkflow().getName() + "/" + workflowExecution.getWorkflow().getUpdatedAt().getTime() + "/";
             OozieClient client = new OozieClient(OOZIE_URL);
             Properties conf = client.createConfiguration();
@@ -131,7 +152,7 @@ public class OozieFacade {
             conf.setProperty(OozieClient.LIBPATH, "/user/glassfish/workflows/lib");
             conf.setProperty(OozieClient.USE_SYSTEM_LIBPATH, String.valueOf(Boolean.TRUE));
             conf.setProperty("jobTracker", JOB_TRACKER);
-            conf.setProperty("nameNode", NAME_NODE);
+            conf.setProperty("nameNode", namenode);
             conf.setProperty("sparkMaster", "yarn-client");
             conf.setProperty("sparkMode", "client");
             Workflow workflow = workflowExecution.getWorkflow();

@@ -2,9 +2,12 @@ package se.kth.hopsworks.rest;
 
 
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.io.IOUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.eclipse.persistence.exceptions.DatabaseException;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
 import se.kth.bbc.project.Project;
@@ -40,6 +43,7 @@ import javax.xml.xpath.XPathException;
 import javax.xml.xpath.XPathFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -138,24 +142,21 @@ public class WorkflowService {
 
     @POST
     @Path("/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response create(
-            @Context HttpServletRequest req) throws AppException {
-
-
-        String xml = new String()
-                .replaceAll("\n", "")
-                .replaceAll(">\\s*<", "><");
+            @FormDataParam("file") InputStream uploadedInputStream,
+            @FormDataParam("file") FormDataContentDisposition fileDetail) throws AppException {
 
         Workflow workflow = new Workflow();
         workflow.setProjectId(this.project.getId());
-
-        /**/
-        xml = xml.concat("<workflow-app name=\"bwork\" xmlns=\"uri:oozie:workflow:0.5\"><start to=\"ForkNode_e42a40bd-d385-4fd8-98ea-ad7363bdd08c\"/><fork name=\"ForkNode_e42a40bd-d385-4fd8-98ea-ad7363bdd08c\"><path start=\"SparkCustomN_0f2da6cf-aaa7-4f5a-96ba-bbd3b9b5a102\"/><path start=\"SparkCustomN_87a05d79-fc0d-4016-85c7-ba6c87c78ab2\"/></fork><action name=\"SparkCustomN_0f2da6cf-aaa7-4f5a-96ba-bbd3b9b5a102\"><spark xmlns=\"uri:oozie:spark-action:0.1\"><job-tracker>${jobTracker}</job-tracker><name-node>${nameNode}</name-node><prepare><delete path=\"/Projects/oozie/Resources/out\"/><mkdir path=\"/Projects/oozie/Resources/out\"/></prepare><master>${sparkMaster}</master><configuration><property><name>conf_name</name><value>conf_val</value></property></configuration><mode>${sparkMode}</mode><name/><class>org.apache.oozie.example.SparkFileCopy</class><jar>${nameNode}/Workflows/meb10000/bwork/1461855739000/lib/oozie-examples.jar</jar><spark-opts>--executor-memory 20G --num-executors 50</spark-opts><arg>/Projects/oozie/Resources/in/data.txt</arg><arg>/Projects/oozie/Resources/out</arg></spark><ok to=\"JoinNode_82e872a3-be2a-41cb-a9c4-5ebaa4033214\"/><error to=\"kill\"/></action><action name=\"SparkCustomN_87a05d79-fc0d-4016-85c7-ba6c87c78ab2\"><spark xmlns=\"uri:oozie:spark-action:0.1\"><job-tracker>${jobTracker}</job-tracker><name-node>${nameNode}</name-node><prepare/><master>${sparkMaster}</master><mode>${sparkMode}</mode><name/><class>org.apache.spark.examples.SparkPi</class><jar>${nameNode}/Workflows/meb10000/bwork/1461855739000/lib/spark-examples-1.5.2-hadoop2.4.0.jar</jar><spark-opts/></spark><ok to=\"JoinNode_82e872a3-be2a-41cb-a9c4-5ebaa4033214\"/><error to=\"kill\"/></action><join name=\"JoinNode_82e872a3-be2a-41cb-a9c4-5ebaa4033214\" to=\"DecisionNode_5f43385d-95bb-4f97-8425-ea6b82e972ef\"/><decision name=\"DecisionNode_5f43385d-95bb-4f97-8425-ea6b82e972ef\"><switch><case to=\"SparkCustomN_1318d8d2-79d3-4d38-87e3-ece59ffbdf9e\">${fs:fileSize('/usr/foo/myinputdir') gt 10 * GB}</case><default to=\"end\"/></switch></decision><action name=\"SparkCustomN_1318d8d2-79d3-4d38-87e3-ece59ffbdf9e\"><spark xmlns=\"uri:oozie:spark-action:0.1\"><job-tracker>${jobTracker}</job-tracker><name-node>${nameNode}</name-node><prepare/><master>${sparkMaster}</master><mode>${sparkMode}</mode><name/><class>org.apache.spark.examples.SparkPi</class><jar>${nameNode}/Workflows/meb10000/dwork/1461782319000/lib/spark-examples-1.5.2-hadoop2.4.0.jar</jar><spark-opts/></spark><ok to=\"end\"/><error to=\"kill\"/></action><kill name=\"kill\"><message>Workflow failed, error message[${wf:errorMessage(wf:lastErrorNode())}]</message></kill><end name=\"end\"/></workflow-app>");
-        /**/
-
         try {
+            String xml = IOUtils.toString(uploadedInputStream, "utf-8")
+                    .replaceAll("\n", "")
+                    .replaceAll("\\s\\s+"," ")
+                    .replaceAll(">\\s*<", "><");
+
             nodeFacade.buildXml(xml, workflow);
         }catch(ParserConfigurationException | SAXException | ProcessingException | IOException | XPathException e){
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),

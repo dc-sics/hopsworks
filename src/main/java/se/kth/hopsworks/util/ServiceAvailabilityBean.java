@@ -21,6 +21,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.impl.YarnClientImpl;
+import org.apache.oozie.client.OozieClient;
 import org.elasticsearch.ElasticsearchTimeoutException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
@@ -123,6 +124,14 @@ public class ServiceAvailabilityBean {
     // TODO
 // Check Ooozie
     // TODO
+
+    try{
+      OozieClient oozieClient = new OozieClient("http://" + this.settings.getOozieIp() + ":11000/oozie/");
+      oozieClient.getSystemMode();
+      this.oozie = true;
+    }catch(Exception e){
+      this.oozie = false;
+    }
   }
 
   @PostConstruct

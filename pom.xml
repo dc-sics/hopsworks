@@ -181,7 +181,7 @@
     </dependency>
 
     <dependency>
-      <groupId>io.hops</groupId>
+      <groupId>org.apache.oozie</groupId>
       <artifactId>oozie-client</artifactId>
       <version>4.2.0</version>
     </dependency>
