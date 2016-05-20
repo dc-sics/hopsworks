@@ -38,4 +38,14 @@ module WorkflowHelper
     target = create_node(project_id, id)
     {id: random_id, sourceId: source[:id], targetId: target[:id]}
   end
+
+  def edit_node(project_id, node, params)
+    put "/hopsworks/api/project/#{project_id}/workflows/#{node[:workflowId]}/nodes/#{node[:id]}", params
+    json_body
+  end
+
+  def reload_workflow(workflow)
+    get "/hopsworks/api/project/#{workflow[:projectId]}/workflows/#{workflow[:id]}"
+    json_body
+  end
 end

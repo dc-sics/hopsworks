@@ -52,7 +52,8 @@ public class OozieFacade {
     @PostConstruct
     public void init() {
         OOZIE_URL = "http://" + settings.getOozieIp() + ":11000/oozie/";
-        JOB_TRACKER = "hdfs://" + settings.getJhsIp() + ":8032";
+//        JOB_TRACKER = settings.getJhsIp() + ":8032";
+        JOB_TRACKER = "10.0.2.15:8032";
     }
 
     @PersistenceContext(unitName = "kthfsPU")
@@ -143,13 +144,13 @@ public class OozieFacade {
             String namenode;
             HdfsLeDescriptors nn = hdfsLeDescriptorsFacade.findEndpoint();
             if (nn == null) throw new OozieClientException("404", "Missing name node");
-            namenode = nn.getHostname();
-
+            namenode = "hdfs://" + nn.getHostname();
+            this.nodeIds = new HashSet<String>();
             this.path = "/Workflows/" + workflowExecution.getUser().getUsername() + "/" + workflowExecution.getWorkflow().getName() + "/" + workflowExecution.getWorkflow().getUpdatedAt().getTime() + "/";
             OozieClient client = new OozieClient(OOZIE_URL);
             Properties conf = client.createConfiguration();
             conf.setProperty(OozieClient.APP_PATH, "${nameNode}" + path);
-            conf.setProperty(OozieClient.LIBPATH, "/user/glassfish/workflows/lib");
+            conf.setProperty(OozieClient.LIBPATH, "/Workflows/lib");
             conf.setProperty(OozieClient.USE_SYSTEM_LIBPATH, String.valueOf(Boolean.TRUE));
             conf.setProperty("jobTracker", JOB_TRACKER);
             conf.setProperty("nameNode", namenode);

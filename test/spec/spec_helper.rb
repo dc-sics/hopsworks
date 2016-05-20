@@ -18,8 +18,8 @@ RSpec.configure do |config|
   config.include ProjectHelper
   config.include WorkflowHelper
   config.include FactoryHelper
-  config.before(:all) { clean_projects }
-  config.after(:all) { clean_projects }
+  # config.before(:all) { clean_projects }
+  # config.after(:all) { clean_projects }
 end
 
 Airborne.configure do |config|

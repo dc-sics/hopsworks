@@ -826,6 +826,14 @@
             type: "email",
             value:""
         },
+        cc:{
+            type: "email",
+            value:""
+        },
+        subject:{
+            type: "text",
+            value:""
+        },
         body:{
             type: "textarea",
             value:""

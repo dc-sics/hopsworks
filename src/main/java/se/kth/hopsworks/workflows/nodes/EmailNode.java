@@ -78,7 +78,7 @@ public class EmailNode extends Node {
         body.setTextContent(this.getBody());
         email.appendChild(body);
 
-        if(!this.getCC().isEmpty()){
+        if(this.getCC() != null && !this.getCC().isEmpty()){
             Element cc = execution.getDoc().createElement("cc");
             cc.setTextContent(this.getCC());
             email.appendChild(cc);

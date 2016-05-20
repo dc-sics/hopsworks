@@ -244,7 +244,7 @@ public class SparkCustomNode extends Node {
             Element del;
             while(rmDirs.hasNext()){
                 del = execution.getDoc().createElement("delete");
-                del.setAttribute("path", rmDirs.next().getValueAsText());
+                del.setAttribute("path", "${nameNode}" + rmDirs.next().getValueAsText());
                 prepare.appendChild(del);
             }
         }
@@ -253,7 +253,7 @@ public class SparkCustomNode extends Node {
             Element make;
             while(mkDirs.hasNext()){
                 make = execution.getDoc().createElement("mkdir");
-                make.setAttribute("path", mkDirs.next().getValueAsText());
+                make.setAttribute("path", "${nameNode}" + mkDirs.next().getValueAsText());
                 prepare.appendChild(make);
             }
         }
