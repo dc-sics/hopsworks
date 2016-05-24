@@ -52,8 +52,8 @@ public class OozieFacade {
     @PostConstruct
     public void init() {
         OOZIE_URL = "http://" + settings.getOozieIp() + ":11000/oozie/";
-//        JOB_TRACKER = settings.getJhsIp() + ":8032";
-        JOB_TRACKER = "10.0.2.15:8032";
+        JOB_TRACKER = settings.getJhsIp() + ":8032";
+//        JOB_TRACKER = "10.0.2.15:8032";
     }
 
     @PersistenceContext(unitName = "kthfsPU")

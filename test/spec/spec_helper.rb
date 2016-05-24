@@ -1,6 +1,10 @@
 require 'airborne'
 require 'byebug'
 require 'active_record'
+
+require 'dotenv'
+Dotenv.load
+
 ActiveRecord::Base.establish_connection ({
   :adapter => "mysql2",
   :host => "bbc1.sics.se",
@@ -18,8 +22,8 @@ RSpec.configure do |config|
   config.include ProjectHelper
   config.include WorkflowHelper
   config.include FactoryHelper
-  # config.before(:all) { clean_projects }
-  # config.after(:all) { clean_projects }
+  config.before(:all) { clean_database }
+  # config.after(:all) { clean_database }
 end
 
 Airborne.configure do |config|
