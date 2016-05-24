@@ -5,20 +5,17 @@
             <div class="overlay"></div>
             <div ng-controller="MetadataCtrl as metadataCtrl">
                 <div ng-controller="DatasetsCtrl as datasetsCtrl">
-                    <div ng-controller="WorkflowCtrl as workflowCtrl">
-
-                        <div ng-include="'navProject.html'"></div>
-                        <div class="content-wrapper">
-                            <h3>
-                                <div class="col-lg-3" style="margin-top: -17px; margin-left: 13px;">
-                                    <button class="btn btn-sm btn-info" ng-click="workflowCtrl.goToExecutions(workflowExecutionCtrl.getWorkflowId())" dropdown-toggle="" type="button" id="newWorkflow" aria-haspopup="true" aria-expanded="true">
-                                        Back
-                                    </button>
-                                </div>
-                            </h3>
-                        </div>
-                        <div id="workflow"></div>
+                    <div ng-include="'navProject.html'"></div>
+                    <div class="content-wrapper">
+                        <h3>
+                            <div class="col-lg-3" style="margin-top: -17px; margin-left: 13px;">
+                                <button class="btn btn-sm btn-info" ng-click="workflowExecutionCtrl.goToExecutions(workflowExecutionCtrl.getWorkflowId())" dropdown-toggle="" type="button" id="newWorkflow" aria-haspopup="true" aria-expanded="true">
+                                    Back
+                                </button>
+                            </div>
+                        </h3>
                     </div>
+                    <div id ="image" class="cy"></div>
                 </div>
             </div>
         </div>

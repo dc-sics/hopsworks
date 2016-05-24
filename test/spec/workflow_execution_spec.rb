@@ -99,6 +99,7 @@ describe "Workflow Execution" do
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_spark_workflow[:id]}/executions/#{id}"
             expect_json_types(id: :string, path: :string, status: :string, actions: :array)
             expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("spark") })
+            expect_json(actions: -> (value){  expect(value.map{|action| action[:node]}).not_to include(nil) })
             expect_status(200)
           end
         end
@@ -138,6 +139,7 @@ describe "Workflow Execution" do
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
             expect_json_types(id: :string, path: :string, status: :string, actions: :array)
             expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("email") })
+            expect_json(actions: -> (value){  expect(value.map{|action| action[:node]}).not_to include(nil) })
             expect_status(200)
           end
         end

@@ -44,7 +44,11 @@ angular.module('hopsWorksApp')
               return workflowId;
           }
 
+          self.goToExecutions = function (id) {
+              $location.path('project/' + projectId + '/workflows/' + id + '/executions');
+          };
+
           if(executionId){
-              window.workflows.image();
+              window.workflows.image('#image');
           }
       }]);

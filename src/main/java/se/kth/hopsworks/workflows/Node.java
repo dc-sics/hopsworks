@@ -265,4 +265,7 @@ public abstract  class Node implements Serializable {
         this.externalId = this.getOozieId();
     }
 
+    public String getExternalId(){
+        return this.externalId;
+    }
 }

@@ -68,6 +68,12 @@ describe 'nodes' do
           expect_json_types(id: :string, workflowId: :int, type: :string, data: :object)
           expect_status(200)
         end
+
+        it "should not be nil externalId" do
+          post "/hopsworks/api/project/#{project_id}/workflows/#{workflow[:id]}/nodes", valid_params
+          expect_status(200)
+          expect_json(externalId: -> (value){ expect(value).to_not be_nil})
+        end
       end
       context "with invalid params" do
         it "should fail" do
@@ -145,6 +151,14 @@ describe 'nodes' do
           expect_json(data: valid_params[:data])
           expect_status(200)
         end
+
+        it "should not be nil externalId" do
+          params = valid_params
+          put "/hopsworks/api/project/#{project_id}/workflows/#{workflow[:id]}/nodes/#{node[:id]}", params
+          expect_status(200)
+          expect_json(externalId: -> (value){ expect(value).to_not be_nil})
+        end
+
         it "should fail trying to update unexitising node" do
           id = create_node(project_id, workflow[:id])[:id]
           delete "/hopsworks/api/project/#{project_id}/workflows/#{workflow[:id]}/nodes/#{id}"

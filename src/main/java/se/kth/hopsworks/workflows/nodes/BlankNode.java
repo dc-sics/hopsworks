@@ -22,7 +22,7 @@ public class BlankNode extends Node {
     public Element getWorkflowElement(OozieFacade execution, Element root) throws UnsupportedOperationException{
         throw new UnsupportedOperationException("Blank node is not part of the Workflow");
     }
-    public String getOozieId(){
-        return null;
-    }
+//    public String getOozieId(){
+//        return null;
+//    }
 }

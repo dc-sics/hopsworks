@@ -419,6 +419,7 @@
         }
 
         var layoutOpts = function (){
+            var cy = _window.cy
             return {
                 animate: false,
                 name: 'dagre',
@@ -536,13 +537,18 @@
                         case "failed":
                         case "error":
                             node.addClass("error")
-                            var error = $.grep(actions, function(o){ return o.nodeId === action.transition})[0]
-                            if(error && (error.errorMessage || error.errorCode)){
+                            if(action && (action.errorMessage || action.errorCode)){
                                 node.qtip({
-                                    content: error.errorCode + ': ' + error.errorMessage
+                                    content: action.errorCode + ': ' + action.errorMessage
                                 });
+                            }else{
+                                var error = $.grep(actions, function(o){ return o.nodeId === action.transition})[0]
+                                if(error && (error.errorMessage || error.errorCode)){
+                                    node.qtip({
+                                        content: error.errorCode + ': ' + error.errorMessage
+                                    });
+                                }
                             }
-
                             break;
 
                         case "killed":
@@ -555,6 +561,7 @@
                                 if(action.transition === "*"){
                                     node.outgoers('edge').addClass("completed")
                                 }else{
+                                    if(!action.transition) return;
                                     var transition = (action.transition.indexOf("_") > 0) ? action.transition.split("_")[1] : action.transition
                                     node.edgesTo("#" + transition).addClass("completed")
                                 }
@@ -581,7 +588,7 @@
             }, 10000);
         }
         var image = function(target){
-            if(!target instanceof jQuery){
+            if(!(target instanceof jQuery)){
                 target = $(target)
             }
             var cy = _window.cy = cytoscape({
@@ -592,7 +599,7 @@
                 var nav = $('<div id="navigator" class="cytoscape-navigator mouseover-view"></div>')
                 target.append(nav)
             }
-            $('#cy').cyNavigator({container: '#navigator'})
+            $('#image').cyNavigator({container: '#navigator'})
             loadDefaults(cy)
 
             $.get("/hopsworks/api/project/:project_id/workflows/:workflow_id", function(data){
