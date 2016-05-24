@@ -50,8 +50,19 @@ describe "Workflow Execution" do
     end
     it "should have a valid spark node" do
       workflow = valid_spark_workflow
-      spark_node = workflow[:nodes].select{|node| node[:type] == "spark-custom-node"}[0]
-      expect(spark_node[:data]).to match(spark_node_data)
+      node = workflow[:nodes].select{|node| node[:type] == "spark-custom-node"}[0]
+      expect(node[:data]).to match(spark_node_data)
+    end
+
+    it "should have expected email workflow" do
+      workflow = valid_email_workflow
+      types = workflow[:nodes].map{|node| node[:type]}
+      expect(types).to contain_exactly("root-node", "email-node", "end-node")
+    end
+    it "should have a valid email node" do
+      workflow = valid_email_workflow
+      node = workflow[:nodes].select{|node| node[:type] == "email-node"}[0]
+      expect(node[:data]).to match(email_node_data)
     end
   end
 
@@ -84,9 +95,10 @@ describe "Workflow Execution" do
             post "/hopsworks/api/project/#{project_id}/workflows/#{valid_spark_workflow[:id]}/executions"
             expect_status(200)
             id = json_body[:id]
-            sleep(10.seconds)
+            sleep(15.seconds)
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_spark_workflow[:id]}/executions/#{id}"
             expect_json_types(id: :string, path: :string, status: :string, actions: :array)
+            expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("spark") })
             expect_status(200)
           end
         end
@@ -122,9 +134,10 @@ describe "Workflow Execution" do
             post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
             expect_status(200)
             id = json_body[:id]
-            sleep(10.seconds)
+            sleep(15.seconds)
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
             expect_json_types(id: :string, path: :string, status: :string, actions: :array)
+            expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("email") })
             expect_status(200)
           end
         end

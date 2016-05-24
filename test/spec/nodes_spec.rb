@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 describe 'nodes' do
   let(:project_id){ with_valid_project['id']}
   let(:workflow){with_valid_workflow(project_id)}

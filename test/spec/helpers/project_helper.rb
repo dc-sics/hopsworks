@@ -6,7 +6,6 @@ module ProjectHelper
   def create_project
     with_valid_session
     post "/hopsworks/api/project", {projectName: "project_#{short_random_id}", description:"", status: 0, services: ["JOBS","ZEPPELIN"], projectTeam:[], retentionPeriod: ""}
-    byebug
     JSON.parse json_body[:data]
   end
 

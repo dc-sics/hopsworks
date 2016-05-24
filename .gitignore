@@ -97,5 +97,6 @@ node_modules
 *.ipr
 *.iws
 
-## Test Gemfile.lock
+## Test Files
 test/Gemfile.lock
+test/.env

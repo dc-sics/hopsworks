@@ -1,5 +1,3 @@
-require 'spec_helper'
-
 describe 'projects' do
   describe "#create" do
     context 'without authentication' do

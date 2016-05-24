@@ -1,4 +1,3 @@
-require 'spec_helper'
 describe "session" do
   before(:each) do
     reset_session
