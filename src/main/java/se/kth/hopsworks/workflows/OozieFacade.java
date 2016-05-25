@@ -175,12 +175,9 @@ public class OozieFacade {
                 ps.print(lsSerializer.writeToString(this.doc));
                 ps.flush();
                 ps.close();
-
-
-                String jobId = client.run(conf);
-                workflowExecution.setJobId(jobId);
-
             }
+            String jobId = client.run(conf);
+            workflowExecution.setJobId(jobId);
         }catch (Exception e) {
             workflowExecution.setError(e.getMessage());
         }

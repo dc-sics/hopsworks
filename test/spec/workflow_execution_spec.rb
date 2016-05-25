@@ -134,12 +134,27 @@ describe "Workflow Execution" do
           it "should create a new job asyn" do
             post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
             expect_status(200)
+            expect_json_types(id: :int)
             id = json_body[:id]
             sleep(15.seconds)
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
             expect_json_types(id: :string, path: :string, status: :string, actions: :array)
             expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("email") })
             expect_json(actions: -> (value){  expect(value.map{|action| action[:node]}).not_to include(nil) })
+            expect_status(200)
+          end
+          it "should create a second new job asyn" do
+            post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
+            expect_status(200)
+            expect_json_types(id: :int)
+            sleep(15.seconds)
+            post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
+            expect_status(200)
+            expect_json_types(id: :int)
+            id = json_body[:id]
+            sleep(15.seconds)
+            get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
+            expect_json_types(id: :string, path: :string, status: :string, actions: :array)
             expect_status(200)
           end
         end
