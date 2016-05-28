@@ -23,7 +23,10 @@ angular.module('hopsWorksApp')
         return $http(regReq)
       },
       show: function(projectId, workflowId, id){
-        return $http.get('/api/project/'+ projectId + '/workflows/' + workflowId + '/executions' + id)
+        return $http.get('/api/project/'+ projectId + '/workflows/' + workflowId + '/executions/' + id)
+      },
+      log: function(projectId, workflowId, id){
+        return $http.get('/api/project/'+ projectId + '/workflows/' + workflowId + '/executions/' + id + "/logs")
       }
     }
   }]);

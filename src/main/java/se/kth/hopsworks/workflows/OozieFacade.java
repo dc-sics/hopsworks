@@ -2,6 +2,7 @@ package se.kth.hopsworks.workflows;
 
 import io.hops.hdfs.HdfsLeDescriptors;
 import io.hops.hdfs.HdfsLeDescriptorsFacade;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.oozie.client.OozieClient;
 import org.apache.oozie.client.OozieClientException;
@@ -100,20 +101,23 @@ public class OozieFacade {
 
     public Map<String, String> getLogs(WorkflowExecution execution) throws IOException, OozieClientException{
         OozieClient client = new OozieClient(OOZIE_URL);
-        String path = "/Workflows/" + execution.getUser().getUsername() + "/" + execution.getWorkflow().getName() + "/" + execution.getWorkflow().getUpdatedAt().getTime() + "/";
+        String path = "/Workflows/" + execution.getUser().getUsername() + "/" + execution.getWorkflow().getName() + "/" + execution.getWorkflowTimestamp().getTime() + "/";
         DistributedFileSystemOps dfsOps = dfs.getDfsOps();
         PrintStream ps;
 
         Map<String, String> logs = new HashMap<String, String>();
 
-        String defaultLog = client.getJobLog(execution.getJobId());
+        String defaultLog;
 
 
         if(!dfsOps.exists(path.concat("/logs/default.log")) || !execution.getJob().isDone()){
+            defaultLog = client.getJobLog(execution.getJobId());
             ps = new PrintStream(dfsOps.create(path.concat("/logs/default.log")));
             ps.print(defaultLog);
             ps.flush();
             ps.close();
+        }else{
+            defaultLog = dfsOps.cat(path.concat("/logs/default.log"));
         }
 
         if(!dfsOps.exists(path.concat("/logs/error.log")) || !execution.getJob().isDone()){

@@ -12,6 +12,7 @@ import se.kth.kthfsdashboard.user.AbstractFacade;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
+import javax.ejb.EJBException;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
@@ -79,11 +80,15 @@ public class WorkflowExecutionService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response show(
             @PathParam("id") Integer id) throws AppException {
-        WorkflowExecution execution = workflowExecutionFacade.find(id, workflow);
-        if (execution == null) {
+
+        WorkflowExecution execution;
+        try{
+            execution = workflowExecutionFacade.find(id, workflow);
+        }catch(EJBException e) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
+
         WorkflowJob job = execution.getJob();
         if (job != null) {
             return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(job).build();
@@ -99,12 +104,14 @@ public class WorkflowExecutionService {
     @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
     public Response logs(
             @PathParam("id") Integer id) throws AppException {
-        WorkflowExecution execution = workflowExecutionFacade.find(id, workflow);
-        WorkflowJob job = execution.getJob();
-        if (execution == null) {
+        WorkflowExecution execution;
+        try{
+            execution = workflowExecutionFacade.find(id, workflow);
+        }catch(EJBException e) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
+        WorkflowJob job = execution.getJob();
         if (job == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_JOB_NOT_FOUND);
@@ -114,9 +121,8 @@ public class WorkflowExecutionService {
             Map<String, String> logs = oozieFacade.getLogs(execution);
             log = new ObjectMapper().writeValueAsString(logs).toString();
         } catch (OozieClientException | IOException e) {
-            //ADD MESSAGE
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-                    "");
+                    e.getMessage());
         }
 
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(log).build();

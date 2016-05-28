@@ -26,6 +26,11 @@ angular.module('hopsWorksApp')
           }
           if(workflowId) index();
 
+          self.selectedIndex = -1;
+          self.selectedExecution = null;
+          self.selectedExecutionLogs = null;
+          self.hasSelectExecution = false;
+
           self.create = function(id){
               var wId = workflowId;
               if(id) wId = id;
@@ -47,6 +52,19 @@ angular.module('hopsWorksApp')
           self.goToExecutions = function (id) {
               $location.path('project/' + projectId + '/workflows/' + id + '/executions');
           };
+          self.selectIndex = function(index, execution){
+            self.hasSelectExecution = false;
+            WorkflowExecutionService.log(projectId, workflowId, execution.id).then(function(success){
+              self.selectedIndex = index;
+              self.selectedExecution = execution;
+              self.hasSelectExecution = true;
+              self.selectedExecutionLogs = success.data;
+              console.log(self.selectedExecution)
+              console.log(success)
+            },function (error) {
+                growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000})
+            })
+          }
 
           if(executionId){
               window.workflows.image('#image');

@@ -48,4 +48,23 @@ module WorkflowHelper
     get "/hopsworks/api/project/#{workflow[:projectId]}/workflows/#{workflow[:id]}"
     json_body
   end
+
+  def create_email_workflow(project_id)
+    workflow = with_valid_workflow(project_id)
+    types = workflow[:nodes].map{|node| node[:type]}
+    return workflow if types == ["root-node", "email-node", "end-node"]
+
+    node = workflow[:nodes].select{|node| node[:type] == "blank-node"}[0]
+    edit_node(project_id, node, {data: email_node_data, type: "email-node"})
+    reload_workflow(workflow)
+  end
+
+  def with_valid_email_execution(project_id, workflow_id=nil)
+    return @execution if @execution
+    workflow_id = create_email_workflow(project_id)[:id] unless workflow_id
+    post "/hopsworks/api/project/#{project_id}/workflows/#{workflow_id}/executions"
+    sleep(15.seconds)
+    @execution = json_body
+  end
+
 end

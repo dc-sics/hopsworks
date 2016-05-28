@@ -1,6 +1,7 @@
 describe "Workflow Execution" do
   let(:project_id){ with_valid_project['id']}
   let(:invalid_workflow){with_valid_workflow(project_id)}
+  let(:valid_email_execution){with_valid_email_execution(project_id, valid_email_workflow[:id])}
   let(:spark_node_data) do
     {
       mainClass: "org.apache.oozie.example.SparkFileCopy",
@@ -67,8 +68,73 @@ describe "Workflow Execution" do
   end
 
   before(:all){with_valid_project}
-  describe "for spark node" do
-    describe "#create" do
+
+  describe "show" do
+    context 'without authentication' do
+      around :example do |example|
+        valid_email_workflow
+        valid_email_execution
+        reset_session
+        example.run
+      end
+      it "should fail" do
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}"
+        expect_status(401)
+      end
+    end
+    context 'with authentication' do
+      before :all do
+        with_valid_session
+      end
+      it "should return the workflow" do
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}"
+        expect_json(errorMsg: -> (value){ expect(value).to be_nil})
+        expect_json_types(id: :string, path: :string, status: :string, actions: :array)
+        expect_status(200)
+      end
+      it "should fail trying to get unexitising workflow" do
+        id = Random.new.rand 100000
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
+        expect_json(errorMsg: 'Execution not found.')
+        expect_status(400)
+      end
+    end
+  end
+
+  describe "logs" do
+    context 'without authentication' do
+      around :example do |example|
+        valid_email_workflow
+        valid_email_execution
+        reset_session
+        example.run
+      end
+      it "should fail" do
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}/logs"
+        expect_status(401)
+      end
+    end
+    context 'with authentication' do
+      before :all do
+        with_valid_session
+      end
+      it "should return the workflow" do
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}/logs"
+        expect_json(errorMsg: -> (value){ expect(value).to be_nil})
+        expect_json_types(default: :string, error: :string, audit: :string)
+        expect_status(200)
+      end
+      it "should fail trying to get unexitising workflow" do
+        id = Random.new.rand 100000
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
+        expect_json(errorMsg: 'Execution not found.')
+        expect_status(400)
+      end
+    end
+  end
+
+  describe "#create" do
+    describe "for spark node" do
       context 'without authentication' do
         context "with valid params" do
           it "should fail" do
@@ -105,10 +171,8 @@ describe "Workflow Execution" do
         end
       end
     end
-  end
 
-  describe "for email node" do
-    describe "#create" do
+    describe "for email node" do
       context 'without authentication' do
         context "with valid params" do
           it "should fail" do
