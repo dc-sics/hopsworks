@@ -24,6 +24,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 
@@ -88,14 +90,7 @@ public class WorkflowExecutionService {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
-
-        WorkflowJob job = execution.getJob();
-        if (job != null) {
-            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(job).build();
-        } else {
-            return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
-        }
-
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
     }
 
     @GET
@@ -111,14 +106,14 @@ public class WorkflowExecutionService {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
-        WorkflowJob job = execution.getJob();
-        if (job == null) {
+        Collection<WorkflowJob> jobs = execution.getJobs();
+        if (jobs == null) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_JOB_NOT_FOUND);
         }
         String log;
         try {
-            Map<String, String> logs = oozieFacade.getLogs(execution);
+            List<Map<String, String>> logs = oozieFacade.getLogs(execution);
             log = new ObjectMapper().writeValueAsString(logs).toString();
         } catch (OozieClientException | IOException e) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -135,13 +130,20 @@ public class WorkflowExecutionService {
     public Response create(
             @Context HttpServletRequest req) throws AppException {
         Users user = userBean.findByEmail(req.getRemoteUser());
-        WorkflowExecution workflowExecution = new WorkflowExecution();
-        workflowExecution.setWorkflowId(workflow.getId());
-        workflowExecution.setWorkflow(workflow);
-        workflowExecution.setUser(user);
-        workflowExecution.setUserId(user.getUid());
-        workflowExecutionFacade.save(workflowExecution);
-        workflowExecutionFacade.flush();
+        WorkflowExecution workflowExecution;
+        if (workflow.getWorkflowExecutions().size() == 0 || !workflow.getUpdatedAt().equals(workflow.getWorkflowExecutions().get(0).getWorkflowTimestamp())) {
+            workflowExecution = new WorkflowExecution();
+            workflowExecution.setWorkflowId(workflow.getId());
+            workflowExecution.setWorkflow(workflow);
+            workflowExecution.setUser(user);
+            workflowExecution.setUserId(user.getUid());
+            workflowExecutionFacade.save(workflowExecution);
+            workflowExecutionFacade.flush();
+        }else{
+            workflowExecution = workflow.getWorkflowExecutions().get(0);
+        }
+
+
         this.oozieFacade.run(workflowExecution);
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowExecution).build();
     }

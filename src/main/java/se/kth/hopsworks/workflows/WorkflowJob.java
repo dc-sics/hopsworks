@@ -110,8 +110,8 @@ public class WorkflowJob implements Serializable {
         return result;
     }
 
-    @OneToOne(cascade = CascadeType.ALL,
-            mappedBy = "job")
+    @ManyToOne(cascade = CascadeType.ALL)
+    @PrimaryKeyJoinColumn(name="app_name")
     private WorkflowExecution execution;
 
     public WorkflowExecution getExecution() {

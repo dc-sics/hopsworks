@@ -88,6 +88,7 @@ describe "Workflow Execution" do
       end
       it "should return the workflow" do
         get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}"
+        puts json_body
         expect_json(errorMsg: -> (value){ expect(value).to be_nil})
         expect_json_types(id: :string, path: :string, status: :string, actions: :array)
         expect_status(200)
@@ -120,13 +121,13 @@ describe "Workflow Execution" do
       end
       it "should return the workflow" do
         get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}/logs"
-        expect_json(errorMsg: -> (value){ expect(value).to be_nil})
-        expect_json_types(default: :string, error: :string, audit: :string)
+        expect_json_types :array
+        expect_json_types('*', default: :string, error: :string, audit: :string, time: :string)
         expect_status(200)
       end
       it "should fail trying to get unexitising workflow" do
         id = Random.new.rand 100000
-        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
+        get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}/logs"
         expect_json(errorMsg: 'Execution not found.')
         expect_status(400)
       end

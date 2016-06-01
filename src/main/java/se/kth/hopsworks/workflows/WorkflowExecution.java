@@ -7,7 +7,11 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
+
 import se.kth.hopsworks.user.model.Users;
 
 @Entity
@@ -28,17 +32,6 @@ public class WorkflowExecution implements Serializable {
     private Integer id;
     public Integer getId() {
         return id;
-    }
-
-    @Basic(optional = false)
-    @Column(name = "job_id", nullable = false, length = 255)
-    private String jobId;
-    public String getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(String jobId) {
-        this.jobId = jobId;
     }
 
     @Basic(optional = false)
@@ -87,6 +80,22 @@ public class WorkflowExecution implements Serializable {
         this.error = error;
     }
 
+    @Basic(optional = false)
+    @Column(name = "snapshot", nullable = false)
+    private String snapshot;
+
+    public String getSnapshot() {
+        return snapshot;
+    }
+
+    public void setSnapshot(String snapshot) {
+        this.snapshot = snapshot;
+    }
+
+    public String getPath(){
+        return "/Workflows/" + this.getUser().getUsername() + "/" + this.getWorkflow().getName() + "/" + this.getWorkflowTimestamp().getTime() + "/";
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -132,11 +141,20 @@ public class WorkflowExecution implements Serializable {
         this.workflow = workflow;
     }
 
-    @OneToOne(fetch=FetchType.LAZY)
-    @PrimaryKeyJoinColumn(name="job_id")
-    private WorkflowJob job;
+    @OneToMany(cascade = CascadeType.REMOVE, mappedBy = "execution")
+    private Collection<WorkflowJob> jobs;
+    @JsonIgnore
+    @XmlTransient
+    public Collection<WorkflowJob> getJobs() {
+        return jobs;
+    }
 
-    public WorkflowJob getJob() {
-        return job;
+    @XmlElement(name = "JobIds")
+    public Set<String> getJobIds() {
+        Set<String> ids = new HashSet();
+        for(WorkflowJob job : this.jobs){
+            ids.add(job.getId());
+        }
+        return ids;
     }
 }

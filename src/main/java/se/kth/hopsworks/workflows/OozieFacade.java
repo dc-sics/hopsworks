@@ -6,8 +6,9 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.oozie.client.OozieClient;
 import org.apache.oozie.client.OozieClientException;
-import org.apache.oozie.client.WorkflowJob;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSSerializer;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
@@ -99,51 +100,56 @@ public class OozieFacade {
         nodeIds = new HashSet<String>();
     }
 
-    public Map<String, String> getLogs(WorkflowExecution execution) throws IOException, OozieClientException{
+    public List<Map<String, String>> getLogs(WorkflowExecution execution) throws IOException, OozieClientException{
         OozieClient client = new OozieClient(OOZIE_URL);
-        String path = "/Workflows/" + execution.getUser().getUsername() + "/" + execution.getWorkflow().getName() + "/" + execution.getWorkflowTimestamp().getTime() + "/";
+        String path = null;
         DistributedFileSystemOps dfsOps = dfs.getDfsOps();
         PrintStream ps;
 
-        Map<String, String> logs = new HashMap<String, String>();
+        List<Map<String, String>> logs = new ArrayList<Map<String, String>>();
+        Map<String, String> joblog;
 
         String defaultLog;
 
+        for(WorkflowJob job: execution.getJobs()){
+            joblog = new HashMap<String, String>();
+            path = execution.getPath().concat("/logs/" + job.getCreatedAt().getTime() + "default.log");
+            if(!dfsOps.exists(path) || !job.isDone()){
+                defaultLog = client.getJobLog(job.getId());
+                ps = new PrintStream(dfsOps.create(path));
+                ps.print(defaultLog);
+                ps.flush();
+                ps.close();
+            }else{
+                defaultLog = dfsOps.cat(path);
+            }
+            joblog.put("default", defaultLog);
 
-        if(!dfsOps.exists(path.concat("/logs/default.log")) || !execution.getJob().isDone()){
-            defaultLog = client.getJobLog(execution.getJobId());
-            ps = new PrintStream(dfsOps.create(path.concat("/logs/default.log")));
-            ps.print(defaultLog);
-            ps.flush();
-            ps.close();
-        }else{
-            defaultLog = dfsOps.cat(path.concat("/logs/default.log"));
+            path = execution.getPath().concat("/logs/" + job.getCreatedAt().getTime() + "error.log");
+            if(!dfsOps.exists(path) || !job.isDone()) {
+                ps = new PrintStream(dfsOps.create(path));
+                client.getJobErrorLog(job.getId(), ps);
+                ps.flush();
+                ps.close();
+            }
+            joblog.put("error", dfsOps.cat(path));
+
+            path = execution.getPath().concat("/logs/" + job.getCreatedAt().getTime() + "audit.log");
+            if(!dfsOps.exists(path) || !job.isDone()) {
+                ps = new PrintStream(dfsOps.create(path));
+                client.getJobAuditLog(job.getId(), ps);
+                ps.flush();
+                ps.close();
+            }
+            joblog.put("audit", dfsOps.cat(path));
+            joblog.put("time", job.getCreatedAt().toString());
+            logs.add(joblog);
         }
-
-        if(!dfsOps.exists(path.concat("/logs/error.log")) || !execution.getJob().isDone()){
-            ps = new PrintStream(dfsOps.create(path.concat("/logs/error.log")));
-            client.getJobErrorLog(execution.getJobId(), ps);
-            ps.flush();
-            ps.close();
-        }
-        String errorLog = dfsOps.cat(path.concat("/logs/error.log"));
-
-        if(!dfsOps.exists(path.concat("/logs/audit.log")) || !execution.getJob().isDone()){
-            ps = new PrintStream(dfsOps.create(path.concat("/logs/audit.log")));
-            client.getJobAuditLog(execution.getJobId(), ps);
-            ps.flush();
-            ps.close();
-        }
-
-        String auditLog = dfsOps.cat(path.concat("/logs/audit.log"));
-
-        logs.put("default", defaultLog);
-        logs.put("error", errorLog);
-        logs.put("audit", auditLog);
         return logs;
     }
     @Asynchronous
     public void run(WorkflowExecution workflowExecution){
+        String jobId = null;
         try {
             String namenode;
             HdfsLeDescriptors nn = hdfsLeDescriptorsFacade.findEndpoint();
@@ -170,6 +176,7 @@ public class OozieFacade {
                 dfsOps.close();
                 this.doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
                 workflow.makeWorkflowFile(this);
+                ((Element)this.doc.getElementsByTagName("workflow-app").item(0)).setAttribute("name", workflowExecution.getId().toString());
                 FSDataOutputStream fsStream = dfs.getDfsOps().create(path.concat("workflow.xml"));
                 DOMImplementationLS domImplementation = (DOMImplementationLS) this.doc.getImplementation();
                 LSSerializer lsSerializer = domImplementation.createLSSerializer();
@@ -179,15 +186,17 @@ public class OozieFacade {
                 ps.print(lsSerializer.writeToString(this.doc));
                 ps.flush();
                 ps.close();
+                workflowExecution.setWorkflowTimestamp(workflowExecution.getWorkflow().getUpdatedAt());
+                workflowExecution.setSnapshot(new ObjectMapper().valueToTree(workflow).toString());
             }
-            String jobId = client.run(conf);
-            workflowExecution.setJobId(jobId);
+            jobId = client.run(conf);
         }catch (Exception e) {
             workflowExecution.setError(e.getMessage());
         }
         finally {
-            if(workflowExecution.getError() == null && workflowExecution.getJobId() != null) {
-                workflowExecution.setWorkflowTimestamp(workflowExecution.getWorkflow().getUpdatedAt());
+            if(workflowExecution.getError() != null || jobId == null ) {
+                workflowExecution.setWorkflowTimestamp(null);
+                workflowExecution.setSnapshot(null);
             }
             workflowExecutionFacade.edit(workflowExecution);
 
@@ -195,10 +204,10 @@ public class OozieFacade {
 
     }
 
-    public WorkflowJob getJob(String id) throws OozieClientException{
-        OozieClient client = new OozieClient(OOZIE_URL);
-        WorkflowJob job = client.getJobInfo(id);
-
-        return job;
-    }
+//    public WorkflowJob getJob(String id) throws OozieClientException{
+//        OozieClient client = new OozieClient(OOZIE_URL);
+//        WorkflowJob job = client.getJobInfo(id);
+//
+//        return job;
+//    }
 }
