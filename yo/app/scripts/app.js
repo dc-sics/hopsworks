@@ -23,7 +23,7 @@ angular.module('hopsWorksApp', [
   'ngMessages',
   'as.sortable',
   'ngHamburger',
-  'ngclipboard',    
+  'ngclipboard',
   'isteven-multi-select',
   'angularUtils.directives.dirPagination',
   'angular-tour'
@@ -238,6 +238,48 @@ angular.module('hopsWorksApp', [
             .when('/project/:projectID/workflows/:workflowID/executions/:executionID', {
                 templateUrl: 'views/workflowExecution.html',
                 controller: 'WorkflowExecutionCtrl as workflowExecutionCtrl',
+                resolve: {
+                    auth: ['$q', '$location', 'AuthService', '$cookies',
+                        function ($q, $location, AuthService, $cookies) {
+                            return AuthService.session().then(
+                                function (success) {
+                                    $cookies.email = success.data.data.value;
+                                },
+                                function (err) {
+                                    delete $cookies.email;
+                                    delete $cookies.projectID;
+                                    $location.path('/login');
+                                    $location.replace();
+                                    return $q.reject(err);
+                                });
+                        }]
+                }
+            })
+
+            .when('/project/:projectID/workflows/:workflowID/executions/:executionID/jobs', {
+                templateUrl: 'views/workflowJobs.html',
+                controller: 'WorkflowJobCtrl as workflowJobCtrl',
+                resolve: {
+                    auth: ['$q', '$location', 'AuthService', '$cookies',
+                        function ($q, $location, AuthService, $cookies) {
+                            return AuthService.session().then(
+                                function (success) {
+                                    $cookies.email = success.data.data.value;
+                                },
+                                function (err) {
+                                    delete $cookies.email;
+                                    delete $cookies.projectID;
+                                    $location.path('/login');
+                                    $location.replace();
+                                    return $q.reject(err);
+                                });
+                        }]
+                }
+            })
+
+            .when('/project/:projectID/workflows/:workflowID/executions/:executionID/jobs/:jobID', {
+                templateUrl: 'views/workflowJob.html',
+                controller: 'WorkflowJobCtrl as workflowJobCtrl',
                 resolve: {
                     auth: ['$q', '$location', 'AuthService', '$cookies',
                         function ($q, $location, AuthService, $cookies) {

@@ -22,10 +22,10 @@ RSpec.configure do |config|
   config.include ProjectHelper
   config.include WorkflowHelper
   config.include FactoryHelper
-  config.before(:suite) do
-    clean_oozie
-    clean_database
-  end
+  # config.before(:suite) do
+  #   clean_oozie
+  #   clean_database
+  # end
   # config.after(:all) { clean_database }
 end
 

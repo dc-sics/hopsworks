@@ -24,7 +24,7 @@
                                   <thead>
                                   <tr>
                                       <th>ID</th>
-                                      <th>Job</th>
+                                      <th>Jobs</th>
                                       <th>Created At</th>
                                       <th>Error</th>
                                   </tr>
@@ -32,7 +32,7 @@
                                   <tbody>
                                   <tr ng-repeat="execution in workflowExecutionCtrl.executions" ng-click="workflowExecutionCtrl.selectIndex($index, execution)" ng-class="{'active':$index == workflowExecutionCtrl.selectedIndex}">
                                       <td>{{execution.id}}</td>
-                                      <td><a ng-click="workflowExecutionCtrl.goToShow(execution.id)" >{{execution.jobId}}</a></td>
+                                      <td><a ng-click="workflowExecutionCtrl.goToJobs(execution.id)" >Show</a></td>
                                       <td>{{execution.workflowTimestamp}}</td>
                                       <td>{{execution.error}}</td>
                                   </tr>
@@ -51,16 +51,52 @@
                               Default Logs</button></li>
                           <li><button class="btn btn-default"
                                       data-toggle="tab"
-                                      data-target="#errs"
+                                      data-target="#errors"
                                       >Error Logs</button></li>
                           <li><button class="btn btn-default"
                                       data-toggle="tab"
-                                      data-target="#audit"
+                                      data-target="#audits"
                                       >Audit Logs</button></li>
 
                         </ul>
 
                         <div class="tab-content" >
+                          <div id="logs" class="tab-pane fade in active">
+                            <accordion close-others="true">
+                              <accordion-group ng-repeat="item in workflowExecutionCtrl.selectedExecutionLogs" heading="{{item.time}}">
+                                <div style="overflow-y: auto">
+                                  <textarea class="form-control" rows="15" placeholer="No log information available" readonly>
+                                                {{item.default}}
+                                  </textarea>
+                                </div>
+                              </accordion-group>
+                            </accordion>
+                          </div>
+                          <div id="errors" class="tab-pane fade">
+                            <accordion close-others="true">
+                              <accordion-group ng-repeat="item in workflowExecutionCtrl.selectedExecutionLogs" heading="{{item.time}}">
+                                <div style="overflow-y: auto">
+                                  <textarea class="form-control" rows="15" placeholer="No error information available" readonly>
+                                                {{item.error}}
+                                  </textarea>
+                                </div>
+                              </accordion-group>
+                            </accordion>
+                          </div>
+                          <div id="audits" class="tab-pane fade">
+                            <accordion close-others="true">
+                              <accordion-group ng-repeat="item in workflowExecutionCtrl.selectedExecutionLogs" heading="{{item.time}}">
+                                <div style="overflow-y: auto">
+                                  <textarea class="form-control" rows="15" placeholer="No log information available" readonly>
+                                                {{item.audit}}
+                                  </textarea>
+                                </div>
+                              </accordion-group>
+                            </accordion>
+                          </div>
+                        </div>
+
+                        <!-- <div class="tab-content" >
                           <div id="logs" class="tab-pane fade in active">
                             <textarea class="form-control" rows="15" placeholer="No log information available" readonly>{{workflowExecutionCtrl.selectedExecutionLogs.default}}</textarea>
                           </div>
@@ -70,7 +106,7 @@
                           <div id="audit" class="tab-pane fade">
                             <textarea class="form-control" rows="15" placeholer="No audit information available" readonly>{{workflowExecutionCtrl.selectedExecutionLogs.audit}}</textarea>
                           </div>
-                        </div>
+                        </div> -->
 
                       </div>
                     </div>

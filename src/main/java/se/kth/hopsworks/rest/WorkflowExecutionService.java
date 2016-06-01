@@ -1,6 +1,7 @@
 package se.kth.hopsworks.rest;
 
 import org.apache.oozie.client.OozieClientException;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import se.kth.hopsworks.controller.ResponseMessages;
 import se.kth.hopsworks.filters.AllowedRoles;
@@ -16,6 +17,7 @@ import javax.ejb.EJBException;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -62,6 +64,9 @@ public class WorkflowExecutionService {
 
     private Workflow workflow;
 
+    @Inject
+    private WorkflowJobService workflowJobService;
+
     public WorkflowExecutionService() {
 
     }
@@ -90,7 +95,8 @@ public class WorkflowExecutionService {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
                     ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
         }
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(execution).build();
+        JsonNode json = new ObjectMapper().valueToTree(execution);
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json.toString()).build();
     }
 
     @GET
@@ -146,5 +152,21 @@ public class WorkflowExecutionService {
 
         this.oozieFacade.run(workflowExecution);
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(workflowExecution).build();
+    }
+
+    @Path("{id}/jobs")
+    @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+    public WorkflowJobService jobs(
+            @PathParam("id") Integer id) throws AppException {
+        WorkflowExecution execution;
+        try{
+            execution = workflowExecutionFacade.find(id, workflow);
+        }catch(EJBException e) {
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                    ResponseMessages.WOKFLOW_EXECUTION_NOT_FOUND);
+        }
+        this.workflowJobService.setWorkflowExecution(execution);
+
+        return this.workflowJobService;
     }
 }

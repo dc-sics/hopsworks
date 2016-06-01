@@ -187,7 +187,7 @@ public class OozieFacade {
                 ps.flush();
                 ps.close();
                 workflowExecution.setWorkflowTimestamp(workflowExecution.getWorkflow().getUpdatedAt());
-                workflowExecution.setSnapshot(new ObjectMapper().valueToTree(workflow).toString());
+                workflowExecution.setSnapshot(new ObjectMapper().valueToTree(workflow));
             }
             jobId = client.run(conf);
         }catch (Exception e) {

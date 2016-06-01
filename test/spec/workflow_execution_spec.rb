@@ -69,7 +69,7 @@ describe "Workflow Execution" do
 
   before(:all){with_valid_project}
 
-  describe "show" do
+  describe "#show" do
     context 'without authentication' do
       around :example do |example|
         valid_email_workflow
@@ -88,12 +88,12 @@ describe "Workflow Execution" do
       end
       it "should return the workflow" do
         get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{valid_email_execution[:id]}"
-        puts json_body
         expect_json(errorMsg: -> (value){ expect(value).to be_nil})
-        expect_json_types(id: :string, path: :string, status: :string, actions: :array)
+        expect_json_types(id: :int, workflowTimestamp: :int, userId: :int, jobIds: :array, snapshot: :object)
+        expect_json_keys('snapshot', [:edges, :nodes])
         expect_status(200)
       end
-      it "should fail trying to get unexitising workflow" do
+      it "should fail trying to get unexitising workflow execution" do
         id = Random.new.rand 100000
         get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
         expect_json(errorMsg: 'Execution not found.')
@@ -102,7 +102,7 @@ describe "Workflow Execution" do
     end
   end
 
-  describe "logs" do
+  describe "#logs" do
     context 'without authentication' do
       around :example do |example|
         valid_email_workflow
@@ -158,15 +158,16 @@ describe "Workflow Execution" do
             expect_status(200)
           end
 
-          it "should create a new job asyn" do
+          it "should increase job count" do
             post "/hopsworks/api/project/#{project_id}/workflows/#{valid_spark_workflow[:id]}/executions"
+            sleep(15.seconds)
+            post "/hopsworks/api/project/#{project_id}/workflows/#{valid_spark_workflow[:id]}/executions"
+            job_count = json_body[:jobIds].count
             expect_status(200)
             id = json_body[:id]
             sleep(15.seconds)
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_spark_workflow[:id]}/executions/#{id}"
-            expect_json_types(id: :string, path: :string, status: :string, actions: :array)
-            expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("spark") })
-            expect_json(actions: -> (value){  expect(value.map{|action| action[:node]}).not_to include(nil) })
+            expect_json_sizes(jobIds: job_count+1)
             expect_status(200)
           end
         end
@@ -196,30 +197,16 @@ describe "Workflow Execution" do
             expect_status(200)
           end
 
-          it "should create a new job asyn" do
+          it "should increase job count" do
             post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
+            sleep(15.seconds)
+            post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
+            job_count = json_body[:jobIds].count
             expect_status(200)
-            expect_json_types(id: :int)
             id = json_body[:id]
             sleep(15.seconds)
             get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
-            expect_json_types(id: :string, path: :string, status: :string, actions: :array)
-            expect_json(actions: -> (value){  expect(value.map{|action| action[:type]}).to include("email") })
-            expect_json(actions: -> (value){  expect(value.map{|action| action[:node]}).not_to include(nil) })
-            expect_status(200)
-          end
-          it "should create a second new job asyn" do
-            post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
-            expect_status(200)
-            expect_json_types(id: :int)
-            sleep(15.seconds)
-            post "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions"
-            expect_status(200)
-            expect_json_types(id: :int)
-            id = json_body[:id]
-            sleep(15.seconds)
-            get "/hopsworks/api/project/#{project_id}/workflows/#{valid_email_workflow[:id]}/executions/#{id}"
-            expect_json_types(id: :string, path: :string, status: :string, actions: :array)
+            expect_json_sizes(jobIds: job_count+1)
             expect_status(200)
           end
         end

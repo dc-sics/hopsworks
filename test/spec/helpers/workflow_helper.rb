@@ -49,6 +49,15 @@ module WorkflowHelper
     json_body
   end
 
+  def email_node_data
+      {
+        to: "#{random_id}@email.com",
+        subject: "test subject",
+        body: "Lorem ipsum"
+      }
+  end
+
+
   def create_email_workflow(project_id)
     workflow = with_valid_workflow(project_id)
     types = workflow[:nodes].map{|node| node[:type]}
@@ -59,12 +68,33 @@ module WorkflowHelper
     reload_workflow(workflow)
   end
 
+  def create_email_exection(project_id, workflow_id=nil)
+    workflow_id = create_email_workflow(project_id)[:id] unless workflow_id
+    post "/hopsworks/api/project/#{project_id}/workflows/#{workflow_id}/executions"
+    sleep(15.seconds)
+    json_body
+  end
+
   def with_valid_email_execution(project_id, workflow_id=nil)
     return @execution if @execution
     workflow_id = create_email_workflow(project_id)[:id] unless workflow_id
     post "/hopsworks/api/project/#{project_id}/workflows/#{workflow_id}/executions"
     sleep(15.seconds)
     @execution = json_body
+  end
+
+  def with_valid_workflow_job(project_id, workflow_id=nil, execution_id=nil )
+      workflow_id = create_email_workflow(project_id)[:id] unless workflow_id
+      execution_id = create_email_exection(project_id, workflow_id)[:id] unless execution_id
+      get "/hopsworks/api/project/#{project_id}/workflows/#{workflow_id}/executions/#{execution_id}"
+      job_id = json_body[:jobIds][0]
+      get "/hopsworks/api/project/#{project_id}/workflows/#{workflow_id}/executions/#{execution_id}/jobs/#{job_id}"
+      json_body
+  end
+
+  def with_valid_email_workflow(project_id)
+    return @email_workflow if @email_workflow
+    @email_workflow = create_email_workflow(project_id)
   end
 
 end

@@ -45,6 +45,10 @@ angular.module('hopsWorksApp')
           self.goToShow = function (id) {
               $location.path('project/' + projectId + '/workflows/' + workflowId + '/executions/' + id);
           }
+
+          self.goToJobs = function (id) {
+              $location.path('project/' + projectId + '/workflows/' + workflowId + '/executions/' + id + '/jobs');
+          }
           self.getWorkflowId = function(){
               return workflowId;
           }
@@ -64,9 +68,5 @@ angular.module('hopsWorksApp')
             },function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000})
             })
-          }
-
-          if(executionId){
-              window.workflows.image('#image');
           }
       }]);

@@ -1,5 +1,6 @@
 package se.kth.hopsworks.workflows;
 
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -80,15 +81,15 @@ public class WorkflowExecution implements Serializable {
         this.error = error;
     }
 
-    @Basic(optional = false)
-    @Column(name = "snapshot", nullable = false)
-    private String snapshot;
+    @Column(name = "snapshot")
+    @Convert(converter = NodeDataConverter.class)
+    private JsonNode snapshot;
 
-    public String getSnapshot() {
+    public JsonNode getSnapshot() {
         return snapshot;
     }
 
-    public void setSnapshot(String snapshot) {
+    public void setSnapshot(JsonNode snapshot) {
         this.snapshot = snapshot;
     }
 
@@ -149,7 +150,7 @@ public class WorkflowExecution implements Serializable {
         return jobs;
     }
 
-    @XmlElement(name = "JobIds")
+    @XmlElement(name = "jobIds")
     public Set<String> getJobIds() {
         Set<String> ids = new HashSet();
         for(WorkflowJob job : this.jobs){
