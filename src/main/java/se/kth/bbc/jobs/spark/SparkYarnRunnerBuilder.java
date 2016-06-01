@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
+import se.kth.bbc.jobs.jobhistory.JobType;
 import se.kth.bbc.jobs.yarn.YarnRunner;
 import se.kth.hopsworks.controller.LocalResourceDTO;
 import se.kth.hopsworks.util.Settings;
@@ -109,12 +110,13 @@ public class SparkYarnRunnerBuilder {
 //    builder.addToAppMasterEnvironment("SPARK_USER", );
     // TODO - Change spark user here
 //    builder.addToAppMasterEnvironment("SPARK_USER", Utils.getYarnUser());
-    if (classPath == null || classPath.isEmpty()) {
-      builder.addToAppMasterEnvironment("CLASSPATH", sparkClasspath);
-    } else {
-      builder.addToAppMasterEnvironment("CLASSPATH", classPath + ":"
-              + sparkClasspath);
-    }
+      //Removed local Spark classpath
+//    if (classPath == null || classPath.isEmpty()) {
+//      builder.addToAppMasterEnvironment("CLASSPATH", sparkClasspath);
+//    } else {
+//      builder.addToAppMasterEnvironment("CLASSPATH", classPath + ":"
+//              + sparkClasspath);
+//    }
     for (String key : envVars.keySet()) {
       builder.addToAppMasterEnvironment(key, envVars.get(key));
     }
@@ -150,7 +152,7 @@ public class SparkYarnRunnerBuilder {
     //Set app name
     builder.appName(jobName);
 
-    return builder.build(hadoopDir, sparkDir, nameNodeIpPort);
+    return builder.build(hadoopDir, sparkDir, nameNodeIpPort, JobType.SPARK);
   }
 
   public SparkYarnRunnerBuilder setJobName(String jobName) {
