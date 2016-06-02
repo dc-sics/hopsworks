@@ -500,31 +500,31 @@ public class ProjectController {
    * @param email
    * @param projectTeams
      * @return a list of user names that could not be added to the project team list.
-     */
+   */
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public List<String> addMembers(Project project, String email,
-      List<ProjectTeam> projectTeams) {
+          List<ProjectTeam> projectTeams) {
     List<String> failedList = new ArrayList<>();
     Users user = userBean.getUserByEmail(email);
     Users newMember;
     for (ProjectTeam projectTeam : projectTeams) {
       try {
         if (!projectTeam.getProjectTeamPK().getTeamMember().equals(user.
-            getEmail())) {
+                getEmail())) {
 
           //if the role is not properly set set it to the default resercher.
           if (projectTeam.getTeamRole() == null || (!projectTeam.getTeamRole().
-              equals(ProjectRoleTypes.DATA_SCIENTIST.getTeam())
-              && !projectTeam.
-              getTeamRole().equals(ProjectRoleTypes.DATA_OWNER.getTeam()))) {
+                  equals(ProjectRoleTypes.DATA_SCIENTIST.getTeam())
+                  && !projectTeam.
+                  getTeamRole().equals(ProjectRoleTypes.DATA_OWNER.getTeam()))) {
             projectTeam.setTeamRole(ProjectRoleTypes.DATA_SCIENTIST.getTeam());
           }
 
           projectTeam.setTimestamp(new Date());
           newMember = userBean.getUserByEmail(projectTeam.getProjectTeamPK().
-              getTeamMember());
+                  getTeamMember());
           if (newMember != null && !projectTeamFacade.isUserMemberOfProject(
-              project, newMember)) {
+                  project, newMember)) {
             //this makes sure that the member is added to the project sent as the
             //first param b/c the securty check was made on the parameter sent as path.
             projectTeam.getProjectTeamPK().setProjectId(project.getId());
@@ -542,6 +542,7 @@ public class ProjectController {
             logger.log(Level.FINE, "{0} - member added to project : {1}.",
                 new Object[]{newMember.getEmail(),
                   project.getName()});
+
             List<SshKeys> keys = sshKeysBean.findAllById(newMember.getUid());
             List<String> publicKeys = new ArrayList<>();
             for (SshKeys k : keys) {
@@ -549,15 +550,15 @@ public class ProjectController {
             }
 
             logActivity(ActivityFacade.NEW_MEMBER + projectTeam.
-                getProjectTeamPK().getTeamMember(),
-                ActivityFacade.FLAG_PROJECT, user, project);
+                    getProjectTeamPK().getTeamMember(),
+                    ActivityFacade.FLAG_PROJECT, user, project);
 //            createUserAccount(project, projectTeam, publicKeys, failedList);
           } else if (newMember == null) {
             failedList.add(projectTeam.getProjectTeamPK().getTeamMember()
-                + " was not found in the system.");
+                    + " was not found in the system.");
           } else {
             failedList.add(newMember.getEmail()
-                + " is already a member in this project.");
+                    + " is already a member in this project.");
           }
 
         }
