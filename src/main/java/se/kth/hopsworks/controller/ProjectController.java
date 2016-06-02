@@ -535,7 +535,6 @@ public class ProjectController {
               projectTeamFacade.removeProjectTeam(project, newMember);
               throw new EJBException("Could not add member to HDFS.");
             }
-        
             LocalhostServices.createUserCertificates(project.getName(), newMember.getUsername());
             
             certificateBean.putUserCerts(project.getName(), newMember.getUsername());
