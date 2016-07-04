@@ -41,6 +41,7 @@ public class Settings {
   private static final String VARIABLE_NDB_DIR = "ndb_dir";
   private static final String VARIABLE_MYSQL_DIR = "mysql_dir";
   private static final String VARIABLE_HADOOP_DIR = "hadoop_dir";
+  private static final String VARIABLE_HOPSWORKS_DIR = "hopsworks_dir";
   private static final String VARIABLE_CHARON_DIR = "charon_dir";
   private static final String VARIABLE_HIWAY_DIR = "hiway_dir";
   private static final String VARIABLE_YARN_DEFAULT_QUOTA = "yarn_default_quota";
@@ -49,9 +50,23 @@ public class Settings {
   private static final String VARIABLE_ADAM_USER = "adam_user";
   private static final String VARIABLE_ADAM_DIR = "adam_dir";
   private static final String VARIABLE_TWOFACTOR_AUTH = "twofactor_auth";
-
+  private static final String VARIABLE_KAFKA_DIR = "kafka_dir";
+  private static final String VARIABLE_KAFKA_USER = "kafka_user";
+  private static final String VARIABLE_ZK_DIR = "zk_dir";
+  private static final String VARIABLE_ZK_USER = "zk_user";
+  private static final String VARIABLE_ZK_IP = "zk_ip";
+  private static final String VARIABLE_KAFKA_IP = "kafka_ip";
+  private static final String VARIABLE_DRELEPHANT_IP = "drelephant_ip";
+  private static final String VARIABLE_DRELEPHANT_DB = "drelephant_db";
+  private static final String VARIABLE_DRELEPHANT_PORT = "drelephant_port";
+  private static final String VARIABLE_YARN_WEB_UI_IP = "yarn_ui_ip";
+  private static final String VARIABLE_YARN_WEB_UI_PORT = "yarn_ui_port";
+  
   public static final String ERASURE_CODING_CONFIG = "erasure-coding-site.xml";
-
+  
+  private static final String VARIABLE_KAFKA_NUM_PARTITIONS = "kafka_num_partitions";
+  private static final String VARIABLE_KAFKA_NUM_REPLICAS = "kafka_num_replicas";
+  
   private String setUserVar(String varName, String defaultValue) {
     Variables userName = findById(varName);
     if (userName != null && userName.getValue() != null && (userName.getValue().isEmpty() == false)) {
@@ -85,6 +100,29 @@ public class Settings {
     return defaultValue;
   }
 
+  private String setDbVar(String varName, String defaultValue) {
+    Variables ip = findById(varName);
+    if (ip != null && ip.getValue() != null) {
+      // TODO - check this is a valid DB name
+      String val = ip.getValue();
+      if (val != null && val.isEmpty() == false) {
+        return val;
+      }
+    }
+    return defaultValue;
+  }
+  
+  private int setIntVar(String varName, int defaultValue) {
+    Variables ip = findById(varName);
+    if (ip != null && ip.getValue() != null) {
+      String val = ip.getValue();
+      if (val != null && val.isEmpty() == false) {
+        return Integer.parseInt(val);
+      }
+    }
+    return defaultValue;
+  }
+
   private boolean cached = false;
 
   private void populateCache() {
@@ -102,16 +140,30 @@ public class Settings {
       ADAM_DIR = setDirVar(VARIABLE_ADAM_DIR, ADAM_DIR);
       MYSQL_DIR = setDirVar(VARIABLE_MYSQL_DIR, MYSQL_DIR);
       HADOOP_DIR = setDirVar(VARIABLE_HADOOP_DIR, HADOOP_DIR);
+      HOPSWORKS_DIR = setDirVar(VARIABLE_HOPSWORKS_DIR, HOPSWORKS_DIR);
       NDB_DIR = setDirVar(VARIABLE_NDB_DIR, NDB_DIR);
       ELASTIC_IP = setIpVar(VARIABLE_ELASTIC_IP, ELASTIC_IP);
       JHS_IP = setIpVar(VARIABLE_JHS_IP, JHS_IP);
       LIVY_IP = setIpVar(VARIABLE_LIVY_IP, LIVY_IP);
       OOZIE_IP = setIpVar(VARIABLE_OOZIE_IP, OOZIE_IP);
-      SPARK_HISTORY_SERVER_IP = setIpVar(VARIABLE_SPARK_HISTORY_SERVER_IP, SPARK_HISTORY_SERVER_IP);
+      SPARK_HISTORY_SERVER_IP = setIpVar(VARIABLE_SPARK_HISTORY_SERVER_IP, SPARK_HISTORY_SERVER_IP);	
+      ZK_IP = setIpVar(VARIABLE_ZK_IP, ZK_IP);
+      ZK_USER = setUserVar(VARIABLE_ZK_USER, ZK_USER);
+      ZK_DIR = setDirVar(VARIABLE_ZK_DIR, ZK_DIR);
+      DRELEPHANT_IP = setIpVar(VARIABLE_DRELEPHANT_IP, DRELEPHANT_IP);
+      DRELEPHANT_PORT = setIntVar(VARIABLE_DRELEPHANT_PORT, DRELEPHANT_PORT);
+      DRELEPHANT_DB = setDbVar(VARIABLE_DRELEPHANT_DB, DRELEPHANT_DB);
+      KAFKA_IP = setIpVar(VARIABLE_KAFKA_IP, KAFKA_IP);
+      KAFKA_USER = setUserVar(VARIABLE_KAFKA_USER, KAFKA_USER);
+      KAFKA_DIR = setDirVar(VARIABLE_KAFKA_DIR, KAFKA_DIR);
+      KAFKA_DEFAULT_NUM_PARTITIONS = setDirVar(VARIABLE_KAFKA_NUM_PARTITIONS, KAFKA_DEFAULT_NUM_PARTITIONS);
+      KAFKA_DEFAULT_NUM_REPLICAS = setDirVar(VARIABLE_KAFKA_NUM_REPLICAS, KAFKA_DEFAULT_NUM_REPLICAS);
       CHARON_DIR = setDirVar(VARIABLE_CHARON_DIR, CHARON_DIR);
       HIWAY_DIR = setDirVar(VARIABLE_HIWAY_DIR, HIWAY_DIR);
       YARN_DEFAULT_QUOTA = setDirVar(VARIABLE_YARN_DEFAULT_QUOTA, YARN_DEFAULT_QUOTA);
-      HDFS_DEFAULT_QUOTA = setDirVar(VARIABLE_HDFS_DEFAULT_QUOTA, HDFS_DEFAULT_QUOTA);
+      YARN_WEB_UI_IP = setIpVar(VARIABLE_YARN_WEB_UI_IP, YARN_WEB_UI_IP);
+      YARN_WEB_UI_PORT = setIntVar(VARIABLE_YARN_WEB_UI_PORT, YARN_WEB_UI_PORT);
+      HDFS_DEFAULT_QUOTA_MBs = setDirVar(VARIABLE_HDFS_DEFAULT_QUOTA, HDFS_DEFAULT_QUOTA_MBs);
       MAX_NUM_PROJ_PER_USER = setDirVar(VARIABLE_MAX_NUM_PROJ_PER_USER, MAX_NUM_PROJ_PER_USER);
       cached = true;
     }
@@ -139,6 +191,13 @@ public class Settings {
     return getCharonMountDir() + "/" + projectName;
   }
 
+
+  private static String GLASSFISH_DIR = "/srv/glassfish";
+
+  public static synchronized String getGlassfishDir() {
+    return GLASSFISH_DIR;
+  }
+
   
   
   private String TWOFACTOR_AUTH = "false";
@@ -156,6 +215,14 @@ public class Settings {
   public static final String SPARK_VERSION = "1.6.1";
   public static final String HOPS_VERSION = "2.4.0";
 
+  public static final String SPARK_HISTORY_SERVER_ENV = "spark.yarn.historyServer.address";
+  public static final String SPARK_NUMBER_EXECUTORS_ENV = "spark.executor.instances";
+  public static final String SPARK_DYNAMIC_ALLOC_ENV = "spark.dynamicAllocation.enabled";
+  public static final String SPARK_DYNAMIC_ALLOC_MIN_EXECS_ENV = "spark.dynamicAllocation.minExecutors";
+  public static final String SPARK_DYNAMIC_ALLOC_MAX_EXECS_ENV = "spark.dynamicAllocation.maxExecutors";
+  public static final String SPARK_DYNAMIC_ALLOC_INIT_EXECS_ENV = "spark.dynamicAllocation.initialExecutors";
+  public static final String SPARK_SHUFFLE_SERVICE = "spark.shuffle.service.enabled";
+  
   public synchronized String getSparkDir() {
     checkCache();
     return SPARK_DIR;
@@ -220,6 +287,13 @@ public class Settings {
     return HADOOP_DIR;
   }
 
+  private static String HOPSWORKS_DIR = "/srv/glassfish/domain1";
+
+  public synchronized String getHopsworksDir() {
+    checkCache();
+    return HOPSWORKS_DIR;
+  }
+
   //User under which yarn is run
   private String YARN_SUPERUSER = "glassfish";
 
@@ -268,11 +342,19 @@ public class Settings {
     return YARN_DEFAULT_QUOTA;
   }
 
-  private String HDFS_DEFAULT_QUOTA = "200";
+  private String YARN_WEB_UI_IP = "127.0.0.1";
+  private int YARN_WEB_UI_PORT = 8088;
 
-  public synchronized String getHdfsDefaultQuota() {
+  public synchronized String getYarnWebUIAddress() {
     checkCache();
-    return HDFS_DEFAULT_QUOTA;
+    return YARN_WEB_UI_IP + ":" + YARN_WEB_UI_PORT;
+  }
+
+  private String HDFS_DEFAULT_QUOTA_MBs = "200000";
+
+  public synchronized long getHdfsDefaultQuotaInMBs() {
+    checkCache();
+    return Long.parseLong(HDFS_DEFAULT_QUOTA_MBs);
   }
 
   private String MAX_NUM_PROJ_PER_USER = "5";
@@ -347,7 +429,10 @@ public class Settings {
   public static final String SPARK_LOCRSC_APP_JAR = "__app__.jar";
   public static final String SPARK_AM_MAIN = "org.apache.spark.deploy.yarn.ApplicationMaster";
   public static final String SPARK_DEFAULT_OUTPUT_PATH = "Logs/Spark/";
-
+  public static final String SPARK_CONFIG_FILE = "conf/spark-defaults.conf";
+  public static final int SPARK_MIN_EXECS = 1;
+  public static final int SPARK_MAX_EXECS = 8;
+  public static final int SPARK_INIT_EXECS = 1;
   //Flink constants
   public static final String FLINK_DEFAULT_OUTPUT_PATH = "Logs/Flink/";
   public static final String FLINK_DEFAULT_CONF_FILE = "flink-conf.yaml";
@@ -356,6 +441,7 @@ public class Settings {
   public static final String FLINK_LOCRSC_FLINK_JAR = "flink.jar";
   public static final String FLINK_LOCRSC_APP_JAR = "app.jar";
   public static final String FLINK_AM_MAIN = "org.apache.flink.yarn.ApplicationMaster";
+  public static final int FLINK_APP_MASTER_MEMORY = 768;
   
   public synchronized String getLocalFlinkJarPath() {
     return getFlinkDir()+ "/flink.jar";
@@ -430,7 +516,7 @@ public class Settings {
   public static final String ADAM_DEFAULT_HDFS_REPO = "/user/adam/repo/";
 
   public String getAdamJarHdfsPath() {
-    return "hdfs:///user/" + getAdamUser() + "/repo/adam-cli.jar";
+    return "hdfs:///user/" + getAdamUser() + "/adam-cli.jar";
   }
 
   //Directory names in HDFS
@@ -454,16 +540,15 @@ public class Settings {
     checkCache();
     return ELASTIC_IP;
   }
-
+	
   public static final int ELASTIC_PORT = 9300;
 
-  
-  // Spark
+   // Spark
   private String SPARK_HISTORY_SERVER_IP = "127.0.0.1";
 
   public synchronized String getSparkHistoryServerIp() {
     checkCache();
-    return SPARK_HISTORY_SERVER_IP;
+    return SPARK_HISTORY_SERVER_IP + ":18080";
   }  
   
   // Oozie
@@ -500,29 +585,104 @@ public class Settings {
     return LIVY_YARN_MODE;
   }     
   
+  public static final int ZK_PORT = 2181; 
+ 
+  // Zookeeper 
+  private String ZK_IP = "10.0.2.15";
+
+  public synchronized String getZkConnectStr() {
+    checkCache();
+    return ZK_IP+":"+ZK_PORT;
+  }
+
+  private String ZK_USER = "zk";
+  public synchronized String getZkUser() {
+    checkCache();
+    return ZK_USER;
+  }
+  
+  
+  // Kafka
+  private String KAFKA_IP = "10.0.2.15";
+  public static final int KAFKA_PORT = 9091;
+
+  public synchronized String getKafkaConnectStr() {
+    checkCache();
+    return KAFKA_IP+":"+KAFKA_PORT;
+  }
+  
+  private String KAFKA_USER = "kafka";
+  public synchronized String getKafkaUser() {
+    checkCache();
+    return KAFKA_USER;
+  }
+  
+  private String KAFKA_DIR = "/srv/kafka";
+  public synchronized String getKafkaDir() {
+    checkCache();
+   return KAFKA_DIR;
+ }
+  
+  private String KAFKA_DEFAULT_NUM_PARTITIONS = "2";
+  private String KAFKA_DEFAULT_NUM_REPLICAS = "1";
+
+   
+  public synchronized String getKafkaDefaultNumPartitions() {
+    checkCache();
+    return KAFKA_DEFAULT_NUM_PARTITIONS;
+  }
+
+  public synchronized String getKafkaDefaultNumReplicas() {
+    checkCache();
+    return KAFKA_DEFAULT_NUM_REPLICAS;
+  }
+ 
+  private String ZK_DIR = "/srv/zookeeper";
+  public synchronized String getZkDir() {
+    checkCache();
+    return ZK_DIR;
+  }
+  
+  // Dr Elephant
+  private String DRELEPHANT_IP = "127.0.0.1";
+  private String DRELEPHANT_DB = "hopsworks";
+  public static int DRELEPHANT_PORT = 11000;
+
+  public synchronized String getDrElephantUrl() {
+    checkCache();
+    return "http://" + DRELEPHANT_IP+":"+DRELEPHANT_PORT;
+  }
+
+  public synchronized String getDrElephantDb() {
+    checkCache();
+    return DRELEPHANT_DB;
+  }
+ 
+  
   // Hopsworks
   public static final Charset ENCODING = StandardCharsets.UTF_8;
   public static final String HOPS_USERNAME_SEPARATOR = "__";
   public static final String HOPS_USERS_HOMEDIR = "/srv/users/";
-  public static final String CA_DIR = "/srv/glassfish/domain1/config/ca/intermediate/";
+  public static String CA_DIR = Settings.HOPSWORKS_DIR + "/config/ca/intermediate/";
+  public static final String CA_CERT_DIR = CA_DIR + "certs/";
+  public static final String CA_KEY_DIR = CA_DIR + "private/";
+  public static final String SSL_CREATE_CERT_SCRIPTNAME = "createusercerts.sh";
+  public static final String SSL_DELETE_CERT_SCRIPTNAME = "deleteusercerts.sh";
+  public static final String SSL_DELETE_PROJECT_CERTS_SCRIPTNAME = "deleteprojectcerts.sh";
   public static final int USERNAME_LEN = 8;
   public static final int MAX_USERNAME_SUFFIX = 99;
   public static final int MAX_RETRIES = 500;
   public static final String META_NAME_FIELD = "name";
   public static final String META_DESCRIPTION_FIELD = "description";
-  public static final String META_DATA_FIELD = "EXTENDED_METADATA";
-  public static final String META_PROJECT_INDEX = "project";
-  public static final String META_DATASET_INDEX = "dataset";
-  public static final String META_PROJECT_PARENT_TYPE = "site";
-  public static final String META_PROJECT_CHILD_TYPE = "proj";
-  public static final String META_DATASET_PARENT_TYPE = "ds";
-  public static final String META_DATASET_CHILD_TYPE = "inode";
+  public static final String META_INDEX = "projects";
+  public static final String META_PROJECT_TYPE = "proj";
+  public static final String META_DATASET_TYPE = "ds";
+  public static final String META_INODE_TYPE = "inode";
   public static final String META_INODE_SEARCHABLE_FIELD = "searchable";
-  public static final String META_INODE_OPERATION_FIELD = "operation";
-
-  public static final int META_INODE_OPERATION_ADD = 0;
-  public static final int META_INODE_OPERATION_DELETE = 1;
-
+  public static final String META_PROJECT_ID_FIELD = "project_id";
+  public static final String META_ID = "_id";
+  public static final String META_DATA_FIELDS = "xattr.*";
+  
   //Filename conventions
   public static final String FILENAME_DISALLOWED_CHARS = " /\\?*:|'\"<>%()&;#";
   public static final String PRINT_FILENAME_DISALLOWED_CHARS
@@ -532,7 +692,16 @@ public class Settings {
 
   public static final String KAFKA_K_CERTIFICATE = "kafka_k_certificate";
   public static final String KAFKA_T_CERTIFICATE = "kafka_t_certificate";
-
+  
+  public static final String KAFKA_TMP_CERT_STORE_LOCAL = "/srv/glassfish/kafkacerts";
+  public static final String KAFKA_TMP_CERT_STORE_REMOTE = "/user/glassfish/kafkacerts";
+  
+  public static final String KAFKA_SESSIONID_ENV_VAR = "kafka.sessionid";
+  public static final String KAFKA_PROJECTID_ENV_VAR = "kafka.projectid";
+  public static final String KAFKA_BROKERADDR_ENV_VAR = "kafka.brokeraddress";
+//  public static final String KAFKA_K_CERTIFICATE_ENV_VAR = "kafka.key.certificate";
+//  public static final String KAFKA_T_CERTIFICATE_ENV_VAR = "kafka.trusted.certificate";
+//  
   // QUOTA
   public static final float DEFAULT_YARN_PRICE = 1.0f;
 

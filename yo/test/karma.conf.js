@@ -17,7 +17,7 @@ module.exports = function (config) {
     files: [
       // bower:js
       'bower_components/angular/angular.js',
-      'bower_components/jquery/dist/jquery.js',
+      'bower_components/jquery/jquery.js',
       'bower_components/bootstrap/dist/js/bootstrap.js',
       'bower_components/angular-animate/angular-animate.js',
       'bower_components/angular-aria/angular-aria.js',
@@ -53,7 +53,7 @@ module.exports = function (config) {
       'bower_components/angular-utils-pagination/dirPagination.js',
       'bower_components/cytoscape/dist/cytoscape.js',
       'bower_components/cytoscape-cxtmenu/cytoscape-cxtmenu.js',
-      'bower_components/js.cytoscape-navigator/cytoscape.js-navigator.js',
+      'bower_components/js.cytoscape-navigator/cytoscape-navigator.js',
       'bower_components/lodash/lodash.js',
       'bower_components/graphlib/dist/graphlib.core.js',
       'bower_components/dagre/dist/dagre.core.js',
@@ -67,6 +67,10 @@ module.exports = function (config) {
       'bower_components/qtip2/jquery.qtip.js',
       'bower_components/qtip2/basic/jquery.qtip.js',
       'bower_components/cytoscape-qtip/cytoscape-qtip.js',
+      'bower_components/angular-smart-table/dist/smart-table.js',
+      'bower_components/ng-prettyjson/src/ng-prettyjson.js',
+      'bower_components/ng-prettyjson/src/ng-prettyjson-tmpl.js',
+      'bower_components/angular-awesome-slider/dist/angular-awesome-slider.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'app/scripts/**/*.js',

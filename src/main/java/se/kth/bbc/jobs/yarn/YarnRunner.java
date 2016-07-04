@@ -48,6 +48,7 @@ import org.apache.hadoop.yarn.client.api.YarnClientApplication;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.codehaus.plexus.util.FileUtils;
 import se.kth.bbc.jobs.flink.FlinkYarnRunnerBuilder;
 import se.kth.bbc.jobs.jobhistory.JobType;
 import se.kth.bbc.lims.Utils;
@@ -203,9 +204,24 @@ public class YarnRunner {
             if(amArgs!=null && !amArgs.isEmpty()){
                 args = amArgs.trim().split(" ");
             }
+            /*Copy the appjar to the localOS as it is needed by the Flink client
+            *Create path in local /tmp to store the appjar
+            *To distinguish between jars for different job executions, add the 
+            *current system time in the filename. This jar is removed after
+            *the job is finished.*/
+            String localPathAppJarDir = "/tmp/"+appJarPath.substring(appJarPath.indexOf("Projects"), appJarPath.lastIndexOf("/"))+"/"+appId;
+            String appJarName = appJarPath.substring(appJarPath.lastIndexOf("/")).replace("/","");
+            File tmpDir = new File(localPathAppJarDir);
+            if(!tmpDir.exists()){
+                tmpDir.mkdir();
+            }
+            //Copy job jar locaclly so that Flink client has access to it
+            //in YarnRunner
+            FileSystem fs = FileSystem.get(conf);
+            fs.copyToLocalFile(new Path(appJarPath), new Path(localPathAppJarDir+ "/"+appJarName));
             //app.jar path 
-            File file = new File(appJarPath);
-         
+            File file = new File(localPathAppJarDir+ "/"+appJarName);
+           
             Path sessionFilesDir = new Path(localResourcesBasePath);
             org.apache.flink.configuration.Configuration flinkConf = new org.apache.flink.configuration.Configuration();
             FlinkYarnCluster cluster = new FlinkYarnCluster(yarnClient, appId, conf, flinkConf, sessionFilesDir, false);
@@ -241,7 +257,7 @@ public class YarnRunner {
             try {
                 List<URL> classpaths = new ArrayList<>();
                 //Copy Flink jar to local machine and pass it to the classpath
-                URL flinkURL = new File(localJarPath).toURI().toURL();
+                URL flinkURL = new File("/srv/flink/"+Settings.FLINK_LOCRSC_FLINK_JAR).toURI().toURL();
                 classpaths.add(flinkURL);
                 PackagedProgram program = new PackagedProgram(file, classpaths, args);
                 client.setPrintStatusDuringExecution(false);
@@ -251,6 +267,10 @@ public class YarnRunner {
                 cluster.stopAfterJob(jobId);
             } catch (ProgramInvocationException ex) {
                 logger.log(Level.SEVERE, "Error while Flink Client submits jobs: {0}", ex.getMessage());
+            } finally{
+              //Remove local flink app jar
+               FileUtils.deleteDirectory(localPathAppJarDir);
+               logger.log(Level.INFO, "Deleting local flink app jar:{0}",appJarPath);
             }
         }
         yarnClient.close();
@@ -503,12 +523,14 @@ public class YarnRunner {
   private void removeAllNecessary() throws IOException {
     FileSystem fs = FileSystem.get(conf);
     for (String s : filesToRemove) {
-      if (s.startsWith("hdfs:")) {
+      if (s.startsWith("hdfs:") && fs.exists(new Path(s))) {
         fs.delete(new Path(s), true);
+        
       } else {
         Files.deleteIfExists(Paths.get(s));
       }
-    }
+    } 
+    fs.close();
   }
 
   //---------------------------------------------------------------------------        
@@ -520,7 +542,6 @@ public class YarnRunner {
     this.jobType = builder.jobType;
     this.parallelism = builder.parallelism;
     this.appJarPath = builder.appJarPath;
-    this.localJarPath = builder.localJarPath;
     this.amQueue = builder.amQueue;
     this.amMemory = builder.amMemory;
     this.amVCores = builder.amVCores;
@@ -610,7 +631,6 @@ public class YarnRunner {
     //Flink parallelism
     private int parallelism;
     private String appJarPath;
-    private String localJarPath;//USed by Flink streaming job
     //Optional attributes
     // Queue for App master
     private String amQueue = "default"; //TODO: enable changing this, or infer from user data
@@ -747,12 +767,7 @@ public class YarnRunner {
     
     public void setAppJarPath(String path){
         this.appJarPath = path;
-    }
-
-    public void setLocalJarPath(String localJarPath) {
-        this.localJarPath = localJarPath;
-    }
-    
+    }    
     
     /**
      * Set the configuration of the Yarn Application to the values contained in the YarnJobConfiguration object. This

@@ -41,22 +41,22 @@ public class ProjectsManagementBean {
 
   private List<ProjectsManagement> allProjects;
 
-  private String hdfsquota;
-  private String hdfsNsquota;
+  private long hdfsquota = -1;
+  private long hdfsNsquota = 01;
 
-  public String getHdfsNsquota() {
+  public long getHdfsNsquota() {
     return hdfsNsquota;
   }
 
-  public void setHdfsNsquota(String hdfsNsquota) {
+  public void setHdfsNsquota(long hdfsNsquota) {
     this.hdfsNsquota = hdfsNsquota;
   }
 
-  public String getHdfsquota() {
+  public long getHdfsquota() {
     return hdfsquota;
   }
 
-  public void setHdfsquota(String hdfsquota) {
+  public void setHdfsquota(long hdfsquota) {
     this.hdfsquota = hdfsquota;
   }
 
@@ -80,66 +80,49 @@ public class ProjectsManagementBean {
   }
 
   public long getHdfsQuota(String projectname) throws IOException {
-    HdfsInodeAttributes quotas;
-    long quota = -1;
     try {
-      quotas = projectsManagementController.getHDFSQuotas(projectname);
-      BigInteger sz = quotas.getDsquota();
-      quota = sz.longValue();
-      this.hdfsquota = String.valueOf(quota);
+      HdfsInodeAttributes quotas = projectsManagementController.getHDFSQuotas(projectname);
+      this.hdfsquota = quotas.getDsquotaInMBs();
     } catch (AppException ex) {
       Logger.getLogger(ProjectsManagementBean.class.getName()).log(Level.SEVERE, null, ex);
     }
-    return quota;
+    return this.hdfsquota;
   }
 
   public long getHdfsNsQuota(String projectname) throws IOException {
-    HdfsInodeAttributes quotas;
-    long quota = 1000000;
     try {
-      quotas = projectsManagementController.getHDFSQuotas(projectname);
+      HdfsInodeAttributes quotas = projectsManagementController.getHDFSQuotas(projectname);
       BigInteger sz = quotas.getNsquota();
-      quota = sz.longValue();
-      this.hdfsNsquota = String.valueOf(quota);
+      this.hdfsNsquota = sz.longValue();
     } catch (AppException ex) {
       Logger.getLogger(ProjectsManagementBean.class.getName()).log(Level.SEVERE, null, ex);
     }
-    return quota;
+    return this.hdfsNsquota;
   }
 
   public long getHdfsNsUsed(String projectname) throws IOException {
-    HdfsInodeAttributes quotas;
-    long quota = -1;
+    long quota = -1l;
     try {
-      quotas = projectsManagementController.getHDFSQuotas(projectname);
+      HdfsInodeAttributes quotas = projectsManagementController.getHDFSQuotas(projectname);
       BigInteger sz = quotas.getNscount();
       quota = sz.longValue();
     } catch (AppException ex) {
       Logger.getLogger(ProjectsManagementBean.class.getName()).log(Level.SEVERE, null, ex);
     }
-//    this.hdfsquota = String.valueOf(quota);
-//    return (int) quota;
     return quota;
   }
 
   public long getHdfsUsed(String projectname) throws IOException {
-    HdfsInodeAttributes quotas;
-    long quota = -1;
+    long quota = -1l;
     try {
-      quotas = projectsManagementController.getHDFSQuotas(projectname);
-      BigInteger sz = quotas.getDiskspace();
-      quota = sz.longValue();
+      HdfsInodeAttributes quotas = projectsManagementController.getHDFSQuotas(projectname);
+      quota = quotas.getDiskspaceInMBs();
     } catch (AppException ex) {
       Logger.getLogger(ProjectsManagementBean.class.getName()).log(Level.SEVERE, null, ex);
     }
     return quota;
-
-//    return (int) projectsManagementController.getHDFSUsedSpaceQuota(projectname);
   }
-//  public HdfsInodeAttributes getHDFSQuotas(String projectname) throws AppException {
-//    return (int) projectsManagementController.getHDFSUsedSpaceQuota(projectname);
-//    return projectsManagementController.getHDFSQuotas(projectname);
-//  }
+
 
   public String getAction() {
     return action;
@@ -169,10 +152,8 @@ public class ProjectsManagementBean {
     } else {
       projectsManagementController.enableProject(row.getProjectname());
     }
-    projectsManagementController.changeYarnQuota(row.getProjectname(), row
-        .getYarnQuotaRemaining());
-    projectsManagementController.setHdfsSpaceQuota(row.getProjectname(),
-        Long.parseLong(hdfsquota));
+    projectsManagementController.changeYarnQuota(row.getProjectname(), row.getYarnQuotaRemaining());
+    projectsManagementController.setHdfsSpaceQuota(row.getProjectname(), this.hdfsquota);
   }
 
   public void onRowCancel(RowEditEvent event) {
