@@ -90,8 +90,10 @@ public class DistributedFsService {
    * @return DistributedFileSystemOps
    */
   public DistributedFileSystemOps getDfsOps() {
-    return new DistributedFileSystemOps(UserGroupInformation.createRemoteUser(
-            settings.getHdfsSuperUser()), conf);
+    // TODO - we shouldn't try and create a new superuser everytime we can to run an op as superuser!!
+//    return new DistributedFileSystemOps(UserGroupInformation.createRemoteUser(
+//            settings.getHdfsSuperUser()), conf);
+    return getDfsOps(settings.getHdfsSuperUser());
   }
 
   /**

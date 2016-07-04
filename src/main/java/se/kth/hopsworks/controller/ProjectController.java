@@ -143,8 +143,8 @@ public class ProjectController {
               newProject.getProjectName());
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               ResponseMessages.PROJECT_EXISTS);
-    } else if (dfs.getDfsOps().exists(File.separator + settings.DIR_ROOT
-            + File.separator + newProject.getProjectName())) {
+    } else if (dfs.getDfsOps().exists("/" + settings.DIR_ROOT
+            + "/" + newProject.getProjectName())) {
       logger.log(Level.WARNING, "Project with name {0} already exists in hdfs. "
               + "Possible inconsistency! project name not in database.",
               newProject.getProjectName());
