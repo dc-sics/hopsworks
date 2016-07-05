@@ -11,6 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
@@ -26,6 +28,8 @@ public class DistributedFileSystemOps {
   private static final Logger logger = Logger.getLogger(
           DistributedFileSystemOps.class.getName());
   
+  private static final long MB = 1024l*1024l;
+  
   private final DistributedFileSystem dfs;
   private Configuration conf;
   private String hadoopConfDir;
@@ -38,6 +42,7 @@ public class DistributedFileSystemOps {
    */
   public DistributedFileSystemOps(UserGroupInformation ugi, Configuration conf) {
     this.dfs = getDfs(ugi, conf);
+    this.conf = conf;
   }
 
   private DistributedFileSystem getDfs(UserGroupInformation ugi,
@@ -68,10 +73,8 @@ public class DistributedFileSystemOps {
     try (BufferedReader br = new BufferedReader(new InputStreamReader(dfs.
             open(file)));) {
       String line;
-      line = br.readLine();
-      while (line != null) {
+      while ((line = br.readLine()) != null) {
         out.append(line).append("\n");
-        line = br.readLine();
       }
       return out.toString();
     }
@@ -86,17 +89,7 @@ public class DistributedFileSystemOps {
    */
   public String cat(String file) throws IOException {
     Path path = new Path(file);
-    StringBuilder out = new StringBuilder();
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(dfs.
-            open(path)));) {
-      String line;
-      line = br.readLine();
-      while (line != null) {
-        out.append(line).append("\n");
-        line = br.readLine();
-      }
-      return out.toString();
-    }
+    return cat(path);
   }
 
   /**
@@ -134,7 +127,18 @@ public class DistributedFileSystemOps {
    * @throws java.io.IOException
    */
   public void touchz(Path location) throws IOException {
-    dfs.create(location);
+    dfs.create(location).close();
+  }
+  
+  /**
+   * List the statuses of the files/directories in the given path if the path 
+   * is a directory.
+   * @param location
+   * @return FileStatus[]
+   * @throws IOException 
+   */
+  public FileStatus[] listStatus(Path location) throws IOException {
+    return dfs.listStatus(location);
   }
 
   /**
@@ -147,7 +151,8 @@ public class DistributedFileSystemOps {
    * @throws IOException
    */
   public boolean rm(Path location, boolean recursive) throws IOException {
-    logger.log(Level.INFO, "dfs.toString() ----------- Deletenig as {0}", dfs.toString());
+    logger.log(Level.INFO, "Deletenig {0} as {1}", new Object[]{location.toString(),
+      dfs.toString()});
     if (dfs.exists(location)) {
       return dfs.delete(location, recursive);
     }
@@ -266,6 +271,23 @@ public class DistributedFileSystemOps {
       FileUtil.copy(dfs, src1, dfs, dst, false, conf);
     }
   }
+  
+  /**
+   * Creates a file and all parent dirs that does not exist and returns 
+   * an FSDataOutputStream
+   * @param path
+   * @return FSDataOutputStream
+   * @throws IOException 
+   */
+  public FSDataOutputStream create(String path) throws IOException {
+    Path dstPath = new Path(path);
+    String dirs = Utils.getDirectoryPart(path);
+    Path dirsPath = new Path(dirs);
+    if (!exists(dirs)) {
+      dfs.mkdirs(dirsPath);
+    }
+    return dfs.create(dstPath);
+  }
 
   /**
    * Set permission for path.
@@ -294,33 +316,56 @@ public class DistributedFileSystemOps {
 
   /**
    * 
-   * @param src
-   * @param diskspaceQuotaInBytes hdfs quota size in bytes
+   * @param src Path to directory we are setting the quota for
+   * @param diskspaceQuotaInMB hdfs quota size for disk space
    * @throws IOException 
    */
-  public void setQuota(Path src, long diskspaceQuotaInBytes) throws
+  public void setHdfsSpaceQuotaInMBs(Path src, long diskspaceQuotaInMB) throws
           IOException {
-    dfs.setQuota(src, HdfsConstants.QUOTA_DONT_SET, 1073741824 * diskspaceQuotaInBytes);
+    setHdfsQuota(src, HdfsConstants.QUOTA_DONT_SET, diskspaceQuotaInMB);
+  }
+  
+  /**
+   * 
+   * @param src
+   * @param numberOfFiles
+   * @param diskspaceQuotaInMB
+   * @throws IOException 
+   */
+  public void setHdfsQuota(Path src, long numberOfFiles, long diskspaceQuotaInMB) throws
+          IOException {
+    dfs.setQuota(src, numberOfFiles, DistributedFileSystemOps.MB * diskspaceQuotaInMB);
   }
 
   /**
    * 
    * @param path
-   * @return hdfs quota size in bytes
+   * @return hdfs quota size in GB
    * @throws IOException 
    */
-  public long getQuota(Path path) throws IOException {
-    return dfs.getContentSummary(path).getSpaceQuota() / 1073741824;
+  public long getHdfsSpaceQuotaInMbs(Path path) throws IOException {
+    return dfs.getContentSummary(path).getSpaceQuota() / DistributedFileSystemOps.MB;
   }
 
+  /**
+   * 
+   * @param path
+   * @return the number of files allowed to be created
+   * @throws IOException 
+   */
+  public long getHdfsNumFilesQuota(Path path) throws IOException {
+    return dfs.getContentSummary(path).getQuota();
+  }
+  
+  
   /**
    * 
    * @param path
    * @return number of bytes stored in this subtree in bytes
    * @throws IOException 
    */
-  public long getUsedQuota(Path path) throws IOException {
-    return dfs.getContentSummary(path).getSpaceConsumed() / 1073741824;
+  public long getUsedQuotaInMbs(Path path) throws IOException {
+    return dfs.getContentSummary(path).getSpaceConsumed() / DistributedFileSystemOps.MB;
   }
 
   public FSDataInputStream open(Path location) throws IOException {
@@ -392,6 +437,10 @@ public class DistributedFileSystemOps {
    */
   public FsPermission getParentPermission(Path path) throws IOException {
     Path location = new Path(path.toUri());
+    if (dfs.exists(location)) {
+      location = location.getParent();
+      return dfs.getFileStatus(location).getPermission();
+    }
     while (!dfs.exists(location)) {
       location = location.getParent();
     }

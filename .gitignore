@@ -10,6 +10,9 @@ buildNumber.properties
 
 scripts/private_key
 
+yo/app/index.html
+yo/app/karma.conf.js
+
 ### NetBeans ###
 */nbproject/
 */build/
@@ -93,3 +96,6 @@ node_modules
 ## File-based project format:
 *.ipr
 *.iws
+
+###########glassfish##############
+src/main/setup/glassfish-resources.xml

@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import se.kth.bbc.jobs.AsynchronousJobExecutor;
 import se.kth.bbc.jobs.cuneiform.model.CuneiformJobConfiguration;
 import se.kth.bbc.jobs.cuneiform.model.WorkflowDTO;
+import se.kth.bbc.jobs.jobhistory.JobType;
 import se.kth.bbc.jobs.model.description.JobDescription;
 import se.kth.bbc.jobs.yarn.YarnJob;
 import se.kth.bbc.jobs.yarn.YarnRunner;
@@ -54,13 +55,19 @@ public final class CuneiformJob extends YarnJob {
    * @param job
    * @param services
    * @param user
+   * @param jobUser
+   * @param hadoopDir
+   * @param sparkDir
+   * @param hiwayDir
+   * @param nameNodeIpPort
+   * @param kafkaAddress
    * @throws IllegalArgumentException If the given JobDescription does not
    * contain a CuneiformJobConfiguration object.
    */
   public CuneiformJob(JobDescription job,
-          AsynchronousJobExecutor services, Users user, String hadoopDir, String sparkDir, String hiwayDir,
-          String nameNodeIpPort) {
-    super(job, services, user, hadoopDir, nameNodeIpPort);
+          AsynchronousJobExecutor services, Users user, String jobUser, String hadoopDir, String sparkDir, String hiwayDir,
+          String nameNodeIpPort, String kafkaAddress) {
+    super(job, services, user, jobUser, hadoopDir, nameNodeIpPort, kafkaAddress);
     if (!(job.getJobConfig() instanceof CuneiformJobConfiguration)) {
       throw new IllegalArgumentException(
               "The jobconfiguration in JobDescription must be of type CuneiformJobDescription. Received: "
@@ -193,7 +200,7 @@ public final class CuneiformJob extends YarnJob {
 
     try {
       //Get the YarnRunner instance
-      runner = b.build(hadoopDir, sparkDir, nameNodeIpPort);
+      runner = b.build(hadoopDir, sparkDir, nameNodeIpPort, JobType.CUNEIFORM);
     } catch (IOException ex) {
       logger.log(Level.SEVERE,
               "Unable to create temp directory for logs.",

@@ -26,7 +26,6 @@ import se.kth.bbc.security.ua.SecurityQuestion;
 import se.kth.bbc.security.ua.UserAccountsEmailMessages;
 import se.kth.bbc.security.auth.AuthenticationConstants;
 import se.kth.bbc.security.auth.QRCodeGenerator;
-import se.kth.bbc.security.ua.BBCGroup;
 import se.kth.bbc.security.ua.PeopleAccountStatus;
 import se.kth.bbc.security.ua.SecurityUtils;
 import se.kth.bbc.security.ua.UserManager;
@@ -66,7 +65,8 @@ public class UsersController {
   private byte[] qrCode;
 
   public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws
-          AppException, SocketException, NoSuchAlgorithmException //      , IOException, UnsupportedEncodingException, WriterException, MessagingException 
+          AppException, SocketException, NoSuchAlgorithmException 
+//      , IOException, UnsupportedEncodingException, WriterException, MessagingException 
   {
     if (userValidator.isValidEmail(newUser.getEmail())
             && userValidator.isValidPassword(newUser.getChosenPassword(),
@@ -85,12 +85,11 @@ public class UsersController {
       String otpSecret = SecurityUtils.calculateSecretKey();
       String activationKey = SecurityUtils.getRandomPassword(64);
 
+      // 
       String uname = generateUsername(newUser.getEmail());
 
       List<BbcGroup> groups = new ArrayList<>();
 
-      // add the guest default role so if a user can still browse the platform
-      groups.add(groupBean.findByGroupName(BBCGroup.BBC_GUEST.name()));
 
       Users user = new Users();
       user.setUsername(uname);
@@ -98,7 +97,7 @@ public class UsersController {
       user.setFname(newUser.getFirstName());
       user.setLname(newUser.getLastName());
       user.setMobile(newUser.getTelephoneNum());
-      user.setStatus(PeopleAccountStatus.VERIFIED_ACCOUNT.getValue());
+      user.setStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT.getValue());
       user.setSecret(otpSecret);
       user.setOrcid("-");
       user.setMobile(newUser.getTelephoneNum());
@@ -154,18 +153,12 @@ public class UsersController {
                 AccountsAuditActions.SUCCESS.name(), "", user, req);
         am.registerAccountChange(user, AccountsAuditActions.QRCODE.name(),
                 AccountsAuditActions.SUCCESS.name(), "", user, req);
-        am.registerRoleChange(user, RolesAuditActions.ADDROLE.name(),
-                RolesAuditActions.SUCCESS.name(), BBCGroup.BBC_GUEST.name(),
-                user, req);
       } catch (WriterException | MessagingException | IOException ex) {
 
         am.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
                 AccountsAuditActions.FAILED.name(), "", user, req);
         am.registerAccountChange(user, AccountsAuditActions.QRCODE.name(),
                 AccountsAuditActions.FAILED.name(), "", user, req);
-        am.registerRoleChange(user, RolesAuditActions.ADDROLE.name(),
-                RolesAuditActions.FAILED.name(), BBCGroup.BBC_GUEST.name(), user,
-                req);
 
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(),
@@ -201,8 +194,6 @@ public class UsersController {
       String uname = generateUsername(newUser.getEmail());
       List<BbcGroup> groups = new ArrayList<>();
 
-      // add the guest default role so if a user can still browse the platform
-      groups.add(groupBean.findByGroupName(BBCGroup.BBC_GUEST.name()));
 
       Users user = new Users();
       user.setUsername(uname);
@@ -210,7 +201,7 @@ public class UsersController {
       user.setFname(newUser.getFirstName());
       user.setLname(newUser.getLastName());
       user.setMobile(newUser.getTelephoneNum());
-      user.setStatus(PeopleAccountStatus.VERIFIED_ACCOUNT.getValue());
+      user.setStatus(PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT.getValue());
       user.setSecret(otpSecret);
       user.setOrcid("-");
       user.setMobile(newUser.getTelephoneNum());
@@ -266,16 +257,10 @@ public class UsersController {
         userBean.persist(user);
         am.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
                 AccountsAuditActions.SUCCESS.name(), "", user, req);
-        am.registerRoleChange(user, RolesAuditActions.ADDROLE.name(),
-                RolesAuditActions.SUCCESS.name(), BBCGroup.BBC_GUEST.name(),
-                user, req);
       } catch (MessagingException ex) {
 
         am.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
                 AccountsAuditActions.FAILED.name(), "", user, req);
-        am.registerRoleChange(user, RolesAuditActions.ADDROLE.name(),
-                RolesAuditActions.FAILED.name(), BBCGroup.BBC_GUEST.name(), user,
-                req);
 
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(),
@@ -445,6 +430,13 @@ public class UsersController {
     }
   }
 
+   public void setUserIsOnline(Users user , int status) {
+    if (user != null) {
+      user.setIsonline(status);
+      userBean.update(user);
+    }
+  }
+    
   public SshKeyDTO addSshKey(int id, String name, String sshKey) {
     SshKeys key = new SshKeys();
     key.setSshKeysPK(new SshKeysPK(id, name));
@@ -467,41 +459,40 @@ public class UsersController {
   }
   
   public  String generateUsername(String email) {
-    int count = 0;
-    int digit = 0;
+    Integer count = 0;
     String uname = getUsernameFromEmail(email);
     Users user = userBean.findByUsername(uname);
     String suffix = "";
-    Random r = new Random();
     if (user == null) {
       return uname;
     }
 
-    while (user != null) {
-      if (count > 100) {
-        digit++;
-        count = 0;
-      }      
-      suffix = ""+r.nextInt(Settings.MAX_USERNAME_SUFFIX + digit);
-      uname = uname.substring(0, (Settings.MAX_USERNAME_LEN - suffix.length()));
-      user = userBean.findByUsername(uname + suffix);
+    String testUname = "";
+    while (user != null && count < 100) {
+      suffix = count.toString();
+      testUname = uname.substring(0, (Settings.USERNAME_LEN - suffix.length()));
+      user = userBean.findByUsername(testUname + suffix);
       count++;
     }
-    return uname + suffix;
+    if (count == 100) {
+      throw new IllegalStateException("You cannot register with this email address. Pick another.");
+    }
+    return testUname + suffix;
   }
   
   private String getUsernameFromEmail(String email) {
-        String username = email.substring(0, email.lastIndexOf("@"));
+    String username = email.substring(0, email.lastIndexOf("@"));
     if (username.contains(".")) {
       username = username.replace(".", "_");
     }
     if (username.contains("__")) {
       username = username.replace("__", "_");
     }
-    if (username.length() > Settings.MAX_USERNAME_LEN) {
-      username = username.substring(0,Settings.MAX_USERNAME_LEN-1);
-    } else if (username.length() < Settings.MAX_USERNAME_LEN) {
-      while (username.length() < Settings.MAX_USERNAME_LEN) {
+    if (username.length() > Settings.USERNAME_LEN) {
+      username = username.substring(0,Settings.USERNAME_LEN);
+    } 
+    if (username.length() < Settings.USERNAME_LEN) {
+      while (username.length() < Settings.USERNAME_LEN) {
         username += "0";
       }
     }

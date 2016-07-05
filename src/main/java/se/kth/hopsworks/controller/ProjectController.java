@@ -1,4 +1,4 @@
-package se.kth.hopsworks.controller;
+  package se.kth.hopsworks.controller;
 
 import io.hops.bbc.ConsentStatus;
 import java.io.File;
@@ -14,9 +14,10 @@ import javax.ejb.*;
 import javax.ws.rs.core.Response;
 
 import io.hops.bbc.ProjectPaymentAction;
+import io.hops.hdfs.HdfsLeDescriptors;
+import io.hops.hdfs.HdfsLeDescriptorsFacade;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -33,14 +34,16 @@ import se.kth.bbc.project.ProjectRoleTypes;
 import se.kth.bbc.project.ProjectTeam;
 import se.kth.bbc.project.ProjectTeamFacade;
 import se.kth.bbc.project.ProjectTeamPK;
-import se.kth.bbc.project.YarnProjectsQuota;
-import se.kth.bbc.project.YarnProjectsQuotaFacade;
+import se.kth.bbc.jobs.quota.YarnProjectsQuota;
+import se.kth.bbc.jobs.quota.YarnProjectsQuotaFacade;
+import se.kth.bbc.jobs.quota.YarnRunningPrice;
 import se.kth.bbc.project.fb.Inode;
 import se.kth.bbc.project.fb.InodeFacade;
 import se.kth.bbc.project.fb.InodeView;
 import se.kth.bbc.project.services.ProjectServiceEnum;
 import se.kth.bbc.project.services.ProjectServiceFacade;
 import se.kth.bbc.security.ua.UserManager;
+import se.kth.hopsworks.certificates.UserCertsFacade;
 import se.kth.hopsworks.dataset.Dataset;
 import se.kth.hopsworks.dataset.DatasetFacade;
 import se.kth.hopsworks.filters.AllowedRoles;
@@ -53,7 +56,9 @@ import se.kth.hopsworks.user.model.SshKeys;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.users.SshkeysFacade;
 import se.kth.hopsworks.util.ConfigFileGenerator;
+import se.kth.hopsworks.util.LocalhostServices;
 import se.kth.hopsworks.util.Settings;
+import se.kth.hopsworks.zeppelin.server.ZeppelinConfigFactory;
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -93,6 +98,12 @@ public class ProjectController {
   private DistributedFsService dfs;
   @EJB
   private Settings settings;
+  @EJB
+  private ZeppelinConfigFactory zeppelinConfFactory;
+  @EJB
+  private HdfsLeDescriptorsFacade hdfsLeDescriptorFacade;
+  @EJB
+  private UserCertsFacade userCertsFacade;
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -103,13 +114,14 @@ public class ProjectController {
    * project.
    * <p>
    * This needs to be an atomic operation (all or nothing) REQUIRES_NEW will
-   * make sure a new transaction is created even
-   * if this method is called from within a transaction.
+   * make sure a new transaction is created
+   * even if this method is called from within a transaction.
    * <p/>
    * @param newProject
    * @param email
    * @return
    * @throws IllegalArgumentException if the project name already exists.
+   * @throws se.kth.hopsworks.rest.AppException
    * @throws IOException if the DIR associated with the project could not be
    * created. For whatever reason.
    */
@@ -117,9 +129,6 @@ public class ProjectController {
   public Project createProject(ProjectDTO newProject, String email) throws
           IOException, AppException {
     Users user = userBean.getUserByEmail(email);
-//    //if there is no project by the same name in the system and project name is valid
-//    if (FolderNameValidator.isValidName(newProject.getProjectName())
-//            && !projectFacade.projectExists(newProject.getProjectName())) {
 
     if (!FolderNameValidator.isValidName(newProject.getProjectName())) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -130,7 +139,14 @@ public class ProjectController {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               ResponseMessages.NUM_PROJECTS_LIMIT_REACHED);
     } else if (projectFacade.projectExists(newProject.getProjectName())) {
-      logger.log(Level.SEVERE, "Project with name {0} already exists!",
+      logger.log(Level.INFO, "Project with name {0} already exists!",
+              newProject.getProjectName());
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_EXISTS);
+    } else if (dfs.getDfsOps().exists(File.separator + settings.DIR_ROOT
+            + File.separator + newProject.getProjectName())) {
+      logger.log(Level.WARNING, "Project with name {0} already exists in hdfs. "
+              + "Possible inconsistency! project name not in database.",
               newProject.getProjectName());
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               ResponseMessages.PROJECT_EXISTS);
@@ -143,8 +159,6 @@ public class ProjectController {
        */
       String projectPath = mkProjectDIR(newProject.getProjectName());
       if (projectPath != null) {
-
-        fileOps.setMetaEnabled(projectPath);
 
         //Create a new project object
         Date now = new Date();
@@ -178,7 +192,7 @@ public class ProjectController {
                         .getYarnDefaultQuota()), 0));
         this.yarnProjectsQuotaFacade.flushEm();
         //Add the activity information
-        logActivity(ActivityFacade.NEW_PROJECT,
+        logActivity(ActivityFacade.NEW_PROJECT + project.getName(),
                 ActivityFacade.FLAG_PROJECT, user, project);
         //update role information in project
         addProjectOwner(project.getId(), user.getEmail());
@@ -194,8 +208,8 @@ public class ProjectController {
 
   /**
    * Project default datasets Logs and Resources need to be created in a
-   * separate transaction after the project creation
-   * is complete.
+   * separate transaction after the project
+   * creation is complete.
    * <p/>
    * @param username
    * @param project
@@ -277,7 +291,12 @@ public class ProjectController {
 
     if (addedService) {
       Users user = userBean.getUserByEmail(userEmail);
-      logActivity(ActivityFacade.ADDED_SERVICES, ActivityFacade.FLAG_PROJECT,
+      String servicesString = "";
+      for (int i = 0; i < services.size(); i++) {
+        servicesString = servicesString + services.get(i).name() + " ";
+      }
+      logActivity(ActivityFacade.ADDED_SERVICES + servicesString,
+              ActivityFacade.FLAG_PROJECT,
               user, project);
 //      if (sshAdded == true) {
 //        try {
@@ -389,7 +408,6 @@ public class ProjectController {
       FsPermission fsPermission = new FsPermission(FsAction.ALL, FsAction.ALL,
               FsAction.ALL); // permission 777 so any one can creat a project.
       fsOps.setPermission(location, fsPermission);
-      fileOps.setMetaEnabled(File.separator + rootDir);
     } else {
       rootDirCreated = true;
     }
@@ -405,12 +423,9 @@ public class ProjectController {
     String projectPath = File.separator + rootDir + File.separator + project;
 
     //Create first the projectPath
-    projectDirCreated = fileOps.mkDir(projectPath);
+    projectDirCreated = fileOps.mkDir(projectPath); //fails here
 
-    //Set default space quota in GB_IN_BYTES
-    ProjectController.this.setHdfsSpaceQuota(new Path(projectPath), Long.
-            parseLong(settings
-                    .getHdfsDefaultQuota()));
+    ProjectController.this.setHdfsSpaceQuotaInMBs(projectName, settings.getHdfsDefaultQuotaInMBs());
 
     //create the rest of the child folders if any
     if (projectDirCreated && !fullProjectPath.equals(projectPath)) {
@@ -468,6 +483,7 @@ public class ProjectController {
       if (success) {
         hdfsUsersBean.deleteProjectGroupsRecursive(project, dsInProject);
         hdfsUsersBean.deleteProjectUsers(project, projectTeam);
+        zeppelinConfFactory.deleteZeppelinConfDir(project.getName());
         //projectPaymentsHistoryFacade.remove(projectPaymentsHistory);
         yarnProjectsQuotaFacade.remove(yarnProjectsQuota);
       }
@@ -476,15 +492,21 @@ public class ProjectController {
       //projectPaymentsHistoryFacade.remove(projectPaymentsHistory);
       yarnProjectsQuotaFacade.remove(yarnProjectsQuota);
     }
-    logger.log(Level.FINE, "{0} - project removed.", project.getName());
+
+    // TODO: DELETE THE KAFKA TOPICS
+    userCertsFacade.removeAllCertsOfAProject(project.getName());
+
+    LocalhostServices.deleteProjectCertificates(settings.getHopsworksDir(),
+            project.getName());
+    logger.log(Level.INFO, "{0} - project removed.", project.getName());
 
     return success;
   }
 
   /**
    * Adds new team members to a project(project) - bulk persist if team role not
-   * specified or not in (Data owner or Data
-   * scientist)defaults to Data scientist
+   * specified or not in (Data owner or
+   * Data scientist)defaults to Data scientist
    * <p/>
    *
    * @param project
@@ -527,10 +549,15 @@ public class ProjectController {
               projectTeamFacade.removeProjectTeam(project, newMember);
               throw new EJBException("Could not add member to HDFS.");
             }
+            LocalhostServices.createUserCertificates(settings.getHopsworksDir(),
+                    project.getName(), newMember.getUsername());
+
+            userCertsFacade.putUserCerts(project.getName(), newMember.
+                    getUsername());
+
             logger.log(Level.FINE, "{0} - member added to project : {1}.",
                     new Object[]{newMember.getEmail(),
                       project.getName()});
-
             List<SshKeys> keys = sshKeysBean.findAllById(newMember.getUid());
             List<String> publicKeys = new ArrayList<>();
             for (SshKeys k : keys) {
@@ -555,6 +582,9 @@ public class ProjectController {
                 + "could not be added. Try again later.");
         logger.log(Level.SEVERE, "Adding  team member {0} to members failed",
                 projectTeam.getProjectTeamPK().getTeamMember());
+      } catch (IOException ex) {
+        Logger.getLogger(ProjectController.class.getName()).log(Level.SEVERE,
+                null, ex);
       }
     }
     return failedList;
@@ -652,20 +682,30 @@ public class ProjectController {
     }
 
     //send the project back to client
-//    getYarnQuota(name)
-    return new ProjectDTO(project, inode.getId(), services, projectTeam, kids, 0);
+    String quota = getYarnQuota(name);
+    return new ProjectDTO(project, inode.getId(), services, projectTeam, kids,
+            quota);
   }
 
-  public Integer getYarnQuota(String name) {
+  public String getYarnQuota(String name) {
     YarnProjectsQuota yarnQuota = yarnProjectsQuotaFacade.
             findByProjectName(name);
-    return yarnQuota.getQuotaRemaining();
+    if (yarnQuota != null) {
+      return Float.toString(yarnQuota.getQuotaRemaining());
+    }
+    return "";
   }
-
+  
+  
+  public void setHdfsSpaceQuotaInMBs(String projectname, long diskspaceQuotaInMB)
+          throws IOException {
+    dfs.getDfsOps().setHdfsSpaceQuotaInMBs(new Path(settings.getProjectPath(projectname)), diskspaceQuotaInMB);
+  }
+  
 //  public Long getHdfsSpaceQuotaInBytes(String name) throws AppException {
 //    String path = settings.getProjectPath(name);
 //    try {
-//      long quota = dfs.getDfsOps().getQuota(new Path(path));
+//      long quota = dfs.getDfsOps().getHdfsSpaceQuotaInMbs(new Path(path));
 //      logger.log(Level.INFO, "HDFS Quota for {0} is {1}", new Object[]{path, quota});
 //      return quota;
 //    } catch (IOException ex) {
@@ -679,6 +719,7 @@ public class ProjectController {
     if (res == null) {
       return new HdfsInodeAttributes(inodeId);
     }
+    
     return res;
   }
 
@@ -686,7 +727,7 @@ public class ProjectController {
 //    String path = settings.getProjectPath(name);
 //
 //    try {
-//      long usedQuota = dfs.getDfsOps().getUsedQuota(new Path(path));
+//      long usedQuota = dfs.getDfsOps().getUsedQuotaInMbs(new Path(path));
 //      logger.log(Level.INFO, "HDFS Quota for {0} is {1}", new Object[]{path, usedQuota});
 //      return usedQuota;
 //    } catch (IOException ex) {
@@ -838,16 +879,44 @@ public class ProjectController {
     return path.substring(startIndex + 1, endIndex);
   }
 
-  private void setHdfsSpaceQuota(Path src, long diskspaceQuotaInBytes)
-          throws IOException {
-    dfs.getDfsOps().setQuota(src, diskspaceQuotaInBytes);
+
+  public void addExampleJarToExampleProject(String username, Project project) {
+
+    Users user = userBean.getUserByEmail(username);
+    try {
+      datasetController.createDataset(user, project, "TestJob",
+              "jar file to calculate pi", -1, false, true);
+    } catch (IOException ex) {
+      Logger.getLogger(ProjectController.class.getName()).
+              log(Level.SEVERE, null, ex);
+    }
+    try {
+      String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
+      HdfsLeDescriptors hdfsLeDescriptors = hdfsLeDescriptorFacade.
+              findEndpoint();
+      File file = new File(settings.getSparkDir() + "/lib/spark-examples-"
+              + Settings.SPARK_VERSION + "-hadoop" + Settings.HOPS_VERSION
+              + ".jar");
+      dfs.getDfsOps(hdfsUser).copyToHDFSFromLocal(false, file.getAbsolutePath(),
+              File.separator + Settings.DIR_ROOT + File.separator + project.
+              getName() + "/TestJob/");
+
+    } catch (IOException ex) {
+      Logger.getLogger(ProjectController.class.getName()).
+              log(Level.SEVERE, null, ex);
+    }
+
   }
 
-  public void setHdfsSpaceQuota(String projectname, long diskspaceQuotaInGB)
-          throws IOException {
-    long diskspaceQuotaInBytes = diskspaceQuotaInGB * 1024 * 1024 * 1024;
-    dfs.getDfsOps().setQuota(new Path(settings.getProjectPath(
-            projectname)), diskspaceQuotaInBytes);
+  public YarnRunningPrice getYarnPrice() {
+    YarnRunningPrice price = yarnProjectsQuotaFacade.getPrice();
+    if (price == null) {
+      price = new YarnRunningPrice();
+      price.setPrice(Settings.DEFAULT_YARN_PRICE);
+      price.setTime(System.currentTimeMillis());
+      price.setId("-1");
+    }
+    return price;
   }
 
 }

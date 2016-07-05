@@ -1,9 +1,5 @@
 package se.kth.hopsworks.controller;
 
-/**
- * @author André<amore@kth.se>
- * @author Ermias<ermiasg@kth.se>
- */
 public class ResponseMessages {
 
   //response for validation error
@@ -86,7 +82,7 @@ public class ResponseMessages {
   public final static String FOLDER_NAME_NOT_SET
           = "Name cannot be empty.";
   public final static String FOLDER_NAME_TOO_LONG
-          = "Name cannot be longer than 24 characters.";
+          = "Name cannot be longer than 88 characters.";
   public final static String FOLDER_NAME_CONTAIN_DISALLOWED_CHARS
           = "Name cannot contain any of the characters ";
   public final static String FOLDER_NAME_ENDS_WITH_DOT
@@ -141,6 +137,10 @@ public class ResponseMessages {
           = "The shared dataset has been removed from this project.";
   public final static String DATASET_NOT_FOUND
           = "DataSet not found.";
+  public final static String DATASET_ALREADY_PUBLIC
+          = "DataSet is already public.";
+  public final static String DATASET_NOT_PUBLIC
+          = "DataSet is not public.";
 
   //Metadata
   public final static String TEMPLATE_INODEID_EMPTY
@@ -157,4 +157,7 @@ public class ResponseMessages {
           = "Elasticsearch type does not exist";
   public final static String ELASTIC_SERVER_NOT_AVAILABLE
           = "The Elasticsearch Server is either down or misconfigured.";
+  
+  public final static String JOB_DETAILS
+          = "Details for a job";
 }

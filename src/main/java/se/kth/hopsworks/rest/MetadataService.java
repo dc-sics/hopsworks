@@ -49,7 +49,7 @@ import se.kth.hopsworks.util.Settings;
  * @author vangelis
  */
 @Path("/metadata")
-@RolesAllowed({"SYS_ADMIN", "BBC_USER"})
+@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Produces(MediaType.APPLICATION_JSON)
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -99,6 +99,7 @@ public class MetadataService {
     }
 
     this.uploader.setUploadPath(this.path);
+    this.uploader.setIsTemplate(true);
 
     return this.uploader;
   }

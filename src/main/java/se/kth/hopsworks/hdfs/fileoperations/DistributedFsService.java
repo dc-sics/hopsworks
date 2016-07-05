@@ -9,8 +9,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.ejb.DependsOn;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -40,6 +43,7 @@ public class DistributedFsService {
 
   @PostConstruct
   public void init() {
+    System.setProperty("hadoop.home.dir", settings.getHadoopDir());
     hadoopConfDir = settings.getHadoopConfDir();
     //Get the configuration file at found path
     File hadoopConfFile = new File(hadoopConfDir, "core-site.xml");
@@ -138,12 +142,25 @@ public class DistributedFsService {
    * @param path
    * @return
    */
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public boolean isDir(String path) {
     Inode i = inodes.getInodeAtPath(path);
     if (i != null) {
       return i.isDir();
     }
     return false;
+  }
+  
+  /**
+   * Get the inode for a given path.
+   * <p/>
+   * @param path
+   * @return
+   */
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public Inode getInode(String path) {
+    Inode i = inodes.getInodeAtPath(path);
+    return i;
   }
 
   /**
@@ -154,6 +171,7 @@ public class DistributedFsService {
    * @return A list of filenames, empty if the given path does not have
    * children.
    */
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public List<String> getChildNames(String path) {
     Inode inode = inodes.getInodeAtPath(path);
     if (inode.isDir()) {

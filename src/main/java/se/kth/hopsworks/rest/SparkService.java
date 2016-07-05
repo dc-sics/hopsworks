@@ -1,7 +1,6 @@
 package se.kth.hopsworks.rest;
 
 import com.google.common.base.Strings;
-import io.hops.hdfs.HdfsLeDescriptors;
 import io.hops.hdfs.HdfsLeDescriptorsFacade;
 import java.io.IOException;
 import java.util.List;
@@ -36,6 +35,7 @@ import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.hdfsUsers.controller.HdfsUsersController;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.users.UserFacade;
+import se.kth.hopsworks.util.Settings;
 
 /**
  * Service offering functionality to run a Spark fatjar job.
@@ -65,7 +65,7 @@ public class SparkService {
   private HdfsUsersController hdfsUsersBean;
   @EJB
   private HdfsLeDescriptorsFacade hdfsLeDescriptorsFacade;
-
+  
   private Project project;
 
   SparkService setProject(Project project) {
@@ -117,7 +117,11 @@ public class SparkService {
     Users user = userFacade.findByEmail(email);
     String username = hdfsUsersBean.getHdfsUserName(project, user);
     try {
+          
       SparkJobConfiguration config = sparkController.inspectJar(path, username);
+      //SparkJobConfiguration config = sparkController.inspectJar(path, username, req.getSession().getId());
+      //Add SESSIONID to config so that the Job can access Kafka endpoint
+      config.setjSessionId(req.getSession().getId());
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
           entity(config).build();
     } catch (AccessControlException ex) {
@@ -159,12 +163,12 @@ public class SparkService {
       String email = sc.getUserPrincipal().getName();
       Users user = userFacade.findByEmail(email);
       String path = config.getJarPath();
-      if (!path.startsWith("hdfs")) {
-        path = "hdfs://" + path;
-      }
-      HdfsLeDescriptors hdfsLeDescriptors = hdfsLeDescriptorsFacade.findEndpoint();
-      path = path.replaceFirst("hdfs:/*Projects",
-          "hdfs://" + hdfsLeDescriptors.getHostname() + "/Projects");
+//      if (!path.startsWith("hdfs")) {
+//        path = "hdfs://" + path;
+//      }
+//      HdfsLeDescriptors hdfsLeDescriptors = hdfsLeDescriptorsFacade.findEndpoint();
+//      path = path.replaceFirst("hdfs:/*Projects",
+//          "hdfs://" + hdfsLeDescriptors.getHostname() + "/Projects");
 
       if (user == null) {
         //Should not be possible, but, well...
@@ -174,8 +178,9 @@ public class SparkService {
       if (Strings.isNullOrEmpty(config.getAppName())) {
         config.setAppName("Untitled Spark job");
       }
+      
       JobDescription created = jobController.createJob(user, project, config);
-      activityFacade.persistActivity(ActivityFacade.CREATED_JOB, project, email);
+      activityFacade.persistActivity(ActivityFacade.CREATED_JOB + created.getName(), project, email);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
           entity(created).build();
     }
