@@ -22,8 +22,14 @@ angular.module('hopsWorksApp', [
   'ngMaterial',
   'ngMessages',
   'as.sortable',
+  'ngHamburger',
+  'ngclipboard',    
   'isteven-multi-select',
-  'angularUtils.directives.dirPagination'
+  'angularUtils.directives.dirPagination',
+  'angular-tour',
+  'smart-table',
+  'ngPrettyJson',
+  'angularAwesomeSlider'  
 ])
     .config(['$routeProvider', '$httpProvider', '$compileProvider', 'flowFactoryProvider',
       function ($routeProvider, $httpProvider, $compileProvider, flowFactoryProvider) {
@@ -170,7 +176,7 @@ angular.module('hopsWorksApp', [
               }
             })
 
-            .when('/project/:projectID/datasets/:datasetName', {
+            .when('/project/:projectID/datasets/:datasetName/:fileName*?', { 
               templateUrl: 'views/datasetsBrowser.html',
               controller: 'ProjectCtrl as projectCtrl',
               resolve: {
@@ -312,6 +318,26 @@ angular.module('hopsWorksApp', [
             })
             .when('/project/:projectID/biobanking', {
               templateUrl: 'views/biobanking.html',
+              controller: 'ProjectCtrl as projectCtrl',
+              resolve: {
+                auth: ['$q', '$location', 'AuthService', '$cookies',
+                  function ($q, $location, AuthService, $cookies) {
+                    return AuthService.session().then(
+                        function (success) {
+                          $cookies.email = success.data.data.value;
+                        },
+                        function (err) {
+                          delete $cookies.email;
+                          delete $cookies.projectID;
+                          $location.path('/login');
+                          $location.replace();
+                          return $q.reject(err);
+                        });
+                  }]
+              }
+            })
+            .when('/project/:projectID/kafka', {
+              templateUrl: 'views/kafka.html',
               controller: 'ProjectCtrl as projectCtrl',
               resolve: {
                 auth: ['$q', '$location', 'AuthService', '$cookies',

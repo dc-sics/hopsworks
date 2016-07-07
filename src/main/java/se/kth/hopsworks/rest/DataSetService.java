@@ -1,5 +1,6 @@
 package se.kth.hopsworks.rest;
 
+import io.hops.hdfs.HdfsLeDescriptorsFacade;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -56,6 +58,7 @@ import se.kth.hopsworks.dataset.DatasetRequest;
 import se.kth.hopsworks.dataset.DatasetRequestFacade;
 import se.kth.hopsworks.filters.AllowedRoles;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
+import se.kth.hopsworks.hdfs.fileoperations.MoveDTO;
 import se.kth.hopsworks.hdfsUsers.controller.HdfsUsersController;
 import se.kth.hopsworks.meta.db.TemplateFacade;
 import se.kth.hopsworks.meta.entity.Template;
@@ -107,8 +110,9 @@ public class DataSetService {
   private Settings settings;
   @Inject
   private DownloadService downloader;
+  @EJB
+  private HdfsLeDescriptorsFacade hdfsLeDescriptorsFacade;
 
-  
   private Integer projectId;
   private Project project;
   private String path;
@@ -146,7 +150,7 @@ public class DataSetService {
     for (Dataset ds : dsInProject) {
       parent = inodes.findParent(ds.getInode());
       inodeView = new InodeView(parent, ds, projPath + "/" + ds.getInode()
-          .getInodePK().getName());
+              .getInodePK().getName());
       user = userfacade.findByUsername(inodeView.getOwner());
       if (user != null) {
         inodeView.setOwner(user.getFname() + " " + user.getLname());
@@ -157,7 +161,7 @@ public class DataSetService {
 
     GenericEntity<List<InodeView>> inodViews
             = new GenericEntity<List<InodeView>>(kids) {
-            };
+    };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodViews).build();
@@ -184,15 +188,11 @@ public class DataSetService {
     List<Inode> cwdChildren;
     try {
       cwdChildren = inodes.getChildren(fullpath);
-    } catch (IllegalArgumentException ex) {
-      logger.log(Level.WARNING, "Trying to access children of file.", ex);
-      throw new AppException(Response.Status.NO_CONTENT.getStatusCode(),
-              "Cannot list the directory contents of a regular file.");
     } catch (FileNotFoundException ex) {
-      logger.log(Level.WARNING, "Trying to access non-existent path.", ex);
+      logger.log(Level.WARNING, ex.getMessage(), ex);
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-              "Path not found.");
-    }
+              ex.getMessage());
+    } 
     List<InodeView> kids = new ArrayList<>();
     InodeView inodeView;
     Users user;
@@ -207,12 +207,12 @@ public class DataSetService {
       kids.add(inodeView);
     }
 
-    GenericEntity<List<InodeView>> inodViews
+    GenericEntity<List<InodeView>> inodeViews
             = new GenericEntity<List<InodeView>>(kids) {
-            };
+    };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            inodViews).build();
+            inodeViews).build();
   }
 
   @POST
@@ -258,6 +258,8 @@ public class DataSetService {
     DatasetRequest dsReq = datasetRequest.findByProjectAndDataset(proj, ds);
 
     Dataset newDS = new Dataset(inode, proj);
+    newDS.setShared(true);
+
     if (dataSet.getDescription() != null) {
       newDS.setDescription(dataSet.getDescription());
     }
@@ -496,18 +498,91 @@ public class DataSetService {
     }
     //remove the group associated with this dataset if the dataset is toplevel ds 
     if (filePath.endsWith(this.dataset.getInode().getInodePK().getName())) {
-        hdfsUsersBean.deleteDatasetGroup(this.dataset);
+      hdfsUsersBean.deleteDatasetGroup(this.dataset);
     }
     json.setSuccessMessage(ResponseMessages.DATASET_REMOVED_FROM_HDFS);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             json).build();
   }
 
+  /**
+   * Move and Rename operations handled here
+   *
+   * @param path - the relative path from the project directory (excluding the
+   * project directory). Not the full path
+   * @param dto
+   * @param sc
+   * @return
+   * @throws AppException
+   * @throws AccessControlException
+   */
+//  @Path("move/{inodeId}/{path: .+}")
+  @POST
+  @Path("move")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public Response moveFile(
+          //      @PathParam("inodeId") Integer inodeId,
+          //      @PathParam("path") String path, 
+          @Context SecurityContext sc, @Context HttpServletRequest req,
+          MoveDTO dto) throws
+          AppException, AccessControlException {
+    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    String username = hdfsUsersBean.getHdfsUserName(project, user);
+
+    int inodeId = dto.getInodeId();
+    String path = dto.getDestPath();
+    if (path == null) {
+      path = "";
+    }
+
+    if (path.startsWith("/Projects/" + this.project.getName())) {
+      path = path.replaceFirst("/Projects/" + this.project.getName(), "");
+    }
+
+    path = getFullPath(path);
+
+    try {
+      boolean exists = this.fileOps.exists(path);
+
+      Inode sourceInode = inodes.findById(inodeId);
+
+      if (sourceInode == null) {
+        throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                "Cannot find file/folder you are trying to move. Has it been deleted?");
+      }
+      dfs.getDfsOps(username).moveWithinHdfs(new org.apache.hadoop.fs.Path(
+              inodes.getPath(sourceInode)),
+              new org.apache.hadoop.fs.Path(path));
+
+      String message = "";
+      JsonResponse response = new JsonResponse();
+
+      //if it exists and it's not a dir, it must be a file
+      if (exists) {
+        throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                "Destination already exists - cannot move there.");
+      }
+
+      message = "Moved";
+      response.setSuccessMessage(message);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+              entity(response).build();
+
+    } catch (IOException ex) {
+      logger.log(Level.SEVERE, null, ex);
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "The parent folders for the destination do not exist. Create them first.");
+    }
+
+  }
+
   @GET
   @Path("fileExists/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-  public Response checkFileExist(@PathParam("path") String path,
+  public Response checkFileExists(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
@@ -594,10 +669,9 @@ public class DataSetService {
     try {
 
       String blocks = this.fileOps.getFileBlocks(path);
-      String response = blocks;
 
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-              entity(response).build();
+              entity(blocks).build();
 
     } catch (IOException ex) {
       logger.log(Level.SEVERE, null, ex);
@@ -665,7 +739,7 @@ public class DataSetService {
             = (ErasureCodeJobConfiguration) JobConfiguration.JobConfigurationFactory.
             getJobConfigurationTemplate(JobType.ERASURE_CODING);
     ecConfig.setFilePath(path);
-    System.out.println("PREparing for erasure coding");
+    System.out.println("Preparing for erasure coding");
 
     //persist the job in the database
     JobDescription jobdesc = this.jobcontroller.createJob(user, project,
@@ -673,7 +747,7 @@ public class DataSetService {
     System.out.println("job persisted in the database");
     //instantiate the job
     ErasureCodeJob encodeJob = new ErasureCodeJob(jobdesc, this.async, user,
-            settings.getHadoopDir());
+            settings.getHadoopDir(), hdfsLeDescriptorsFacade.getSingleEndpoint());
     //persist a job execution instance in the database and get its id
     Execution exec = encodeJob.requestExecutionId();
     System.out.println("\nSTarting the erasure coding job\n");
@@ -723,7 +797,7 @@ public class DataSetService {
 
     this.uploader.setPath(path);
     this.uploader.setUsername(username);
-
+    this.uploader.setIsTemplate(false);
     return this.uploader;
   }
 
@@ -768,6 +842,7 @@ public class DataSetService {
     while (path.startsWith("/")) {
       path = path.substring(1);
     }
+
     String dsName;
     String projectName;
     String[] parts = path.split(File.separator);
@@ -808,6 +883,75 @@ public class DataSetService {
     }
     return File.separator + Settings.DIR_ROOT + File.separator
             + path;
+  }
+
+  @GET
+  @Path("/makePublic/{inodeId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response makePublic(@PathParam("inodeId") Integer inodeId,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+    JsonResponse json = new JsonResponse();
+    if (inodeId == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "Incomplete request!");
+    }
+    Inode inode = inodes.findById(inodeId);
+    if (inode == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_FOUND);
+    }
+
+    Dataset ds = datasetFacade.findByProjectAndInode(this.project, inode);
+    if (ds == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_FOUND);
+    }
+    if (ds.isPublicDs()) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_ALREADY_PUBLIC);
+    }
+    ds.setPublicDs(true);
+    datasetFacade.merge(ds);
+    datasetFacade.merge(ds);
+    json.setSuccessMessage("The Dataset is now public.");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            json).build();
+  }
+
+  @GET
+  @Path("/removePublic/{inodeId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response removePublic(@PathParam("inodeId") Integer inodeId,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+    JsonResponse json = new JsonResponse();
+    if (inodeId == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "Incomplete request!");
+    }
+    Inode inode = inodes.findById(inodeId);
+    if (inode == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_FOUND);
+    }
+
+    Dataset ds = datasetFacade.findByProjectAndInode(this.project, inode);
+    if (ds == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_FOUND);
+    }
+    if (ds.isPublicDs() == false) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NOT_PUBLIC);
+    }
+    ds.setPublicDs(false);
+    datasetFacade.merge(ds);
+    json.setSuccessMessage("The Dataset is no longer public.");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            json).build();
   }
 
 }
