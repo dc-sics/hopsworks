@@ -14,6 +14,7 @@ import se.kth.bbc.jobs.spark.SparkJob;
 import se.kth.bbc.jobs.spark.SparkYarnRunnerBuilder;
 import se.kth.bbc.lims.Utils;
 import se.kth.hopsworks.controller.LocalResourceDTO;
+import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
 import se.kth.hopsworks.user.model.Users;
 import se.kth.hopsworks.util.Settings;
 
@@ -48,7 +49,7 @@ public class AdamJob extends SparkJob {
   }
   
   @Override
-  protected void runJob() {
+  protected void runJob(DistributedFileSystemOps udfso) {
     //Try to start the AM
     boolean proceed = startApplicationMaster();
     //If success: monitor running job
@@ -60,7 +61,7 @@ public class AdamJob extends SparkJob {
     if (!proceed) {
       return;
     }
-    copyLogs();
+    copyLogs(udfso);
     makeOutputAvailable();
     updateState(getFinalState());
   }
@@ -102,7 +103,7 @@ public class AdamJob extends SparkJob {
   }
   
   @Override
-  protected boolean setupJob() {
+  protected boolean setupJob(DistributedFileSystemOps dfso) {
     //Get to starting the job
     List<String> missingArgs = checkIfRequiredPresent(jobconfig); //thows an IllegalArgumentException if not ok.
     if (!missingArgs.isEmpty()) {

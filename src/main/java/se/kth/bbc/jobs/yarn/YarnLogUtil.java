@@ -8,13 +8,11 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ejb.EJBException;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.logaggregation.AggregatedLogFormat;
 import org.apache.hadoop.yarn.logaggregation.AggregatedLogFormat.ContainerLogsReader;
-import se.kth.bbc.project.fb.Inode;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFileSystemOps;
 import se.kth.hopsworks.hdfs.fileoperations.DistributedFsService;
 
@@ -82,7 +80,7 @@ public class YarnLogUtil {
   private static void writeLogs(DistributedFileSystemOps dfs, String[] srcs,
           PrintStream writer, String desiredLogType) {
     ArrayList<AggregatedLogFormat.LogKey> containerNames = new ArrayList<>();
-    AggregatedLogFormat.LogReader reader = null;
+    LogReader reader = null;
     DataInputStream valueStream;
     AggregatedLogFormat.LogKey key = new AggregatedLogFormat.LogKey();
     AggregatedLogFormat.ContainerLogsReader logReader = null;
@@ -92,14 +90,15 @@ public class YarnLogUtil {
         location = new Path(src);
         LOGGER.log(Level.INFO, "Copying log from {0}", src);
         try {
-          reader = new AggregatedLogFormat.LogReader(dfs.getConf(),
+          reader = new LogReader(dfs.getConf(), dfs,
                   new Path(src));
           valueStream = reader.next(key);
           while (valueStream != null) {
             containerNames.add(key);
             valueStream = reader.next(key);
           }
-          reader = new AggregatedLogFormat.LogReader(dfs.getConf(),
+          reader.close();
+          reader = new LogReader(dfs.getConf(), dfs,
                   new Path(src));
         } catch (FileNotFoundException e) {
           LOGGER.log(Level.SEVERE,
@@ -141,20 +140,21 @@ public class YarnLogUtil {
 
   private static boolean logsReady(DistributedFileSystemOps dfs, String src) {
     ArrayList<AggregatedLogFormat.LogKey> containerNames = new ArrayList<>();
-    AggregatedLogFormat.LogReader reader = null;
+    LogReader reader = null;
     DataInputStream valueStream;
     AggregatedLogFormat.LogKey key = new AggregatedLogFormat.LogKey();
     AggregatedLogFormat.ContainerLogsReader logReader = null;
     try {
         try {
-          reader = new AggregatedLogFormat.LogReader(dfs.getConf(),
+          reader = new LogReader(dfs.getConf(), dfs,
                   new Path(src));
           valueStream = reader.next(key);
           while (valueStream != null) {
             containerNames.add(key);
             valueStream = reader.next(key);
           }
-          reader = new AggregatedLogFormat.LogReader(dfs.getConf(),
+          reader.close();
+          reader = new LogReader(dfs.getConf(), dfs,
                   new Path(src));
         } catch (FileNotFoundException e) {
           return false;
@@ -326,7 +326,7 @@ public class YarnLogUtil {
 
   private static long getFileLen(String path, DistributedFileSystemOps dfs) {
     Path location = new Path(path);
-    FileStatus[] fileStatus;
+    FileStatus fileStatus;
     try {
       if (!dfs.exists(path)) {
         return 0l;
@@ -334,14 +334,14 @@ public class YarnLogUtil {
       if (dfs.isDir(path)) {
         return 0l;
       }
-      fileStatus = dfs.listStatus(location);
-      if (fileStatus == null || fileStatus.length == 0) {
+      fileStatus = dfs.getFileStatus(location);
+      if (fileStatus == null) {
         return 0l;
       }
     } catch (IOException ex) {
       return 0l;
     }
-    return fileStatus[0].getLen();
+    return fileStatus.getLen();
   }
 
   private static boolean logFilesReady(String[] paths,
@@ -351,36 +351,23 @@ public class YarnLogUtil {
     boolean ready = false;
     for (String path : paths) {
       Path location = new Path(path);
-      FileStatus[] fileStatus;
+      FileStatus fileStatus;
       if (!dfs.exists(path)) {
         return false;
       }
       if (dfs.isDir(path)) {
         return false;
       }
-      fileStatus = dfs.listStatus(location);
-      if (fileStatus == null || fileStatus.length == 0) {
+      fileStatus = dfs.getFileStatus(location);
+      if (fileStatus == null) {
         return false;
       }
-      if (fileStatus[0].getLen() == 0l) {
+      if (fileStatus.getLen() == 0l) {
         return false;
       }
       if (!logsReady(dfs, path)) {
         return false;
       }
-//      Inode i;
-//      try {
-//        i = fsService.getInode(path);
-//      } catch (EJBException e) {
-//        return false;
-//      }
-//
-//      if (i == null) {
-//        return false;
-//      }
-//      if (i.getUnderConstruction() == 1) {
-//        return false;
-//      }
       ready = true;
     }
     return ready;
