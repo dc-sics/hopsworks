@@ -19,15 +19,16 @@ import se.kth.hopsworks.util.Settings;
  * <p/>
  * @author stig
  */
-public final class SparkJob extends YarnJob {
+public class SparkJob extends YarnJob {
 
   private static final Logger logger = Logger.
       getLogger(SparkJob.class.getName());
 
   private final SparkJobConfiguration jobconfig; //Just for convenience
   private final String sparkDir;
-  private final String sparkUser; //must be glassfish
-
+  private final String sparkUser;
+  //Declare builder here as it is also used by AdamJob
+  protected SparkYarnRunnerBuilder builder;
   /**
    *
    * @param job
@@ -62,42 +63,45 @@ public final class SparkJob extends YarnJob {
     if (jobconfig.getAppName() == null || jobconfig.getAppName().isEmpty()) {
       jobconfig.setAppName("Untitled Spark Job");
     }
-    SparkYarnRunnerBuilder runnerbuilder = new SparkYarnRunnerBuilder(
+    //If builder is not null, then it has been initialized by AdamJob
+    if(builder == null){
+    builder = new SparkYarnRunnerBuilder(
         jobconfig.getJarPath(), jobconfig.getMainClass());
-    runnerbuilder.setJobName(jobconfig.getAppName());
+    }
+    builder.setJobName(jobconfig.getAppName());
     //Check if the user provided application arguments
     if(jobconfig.getArgs() != null && !jobconfig.getArgs().isEmpty()){
             String[] jobArgs = jobconfig.getArgs().trim().split(" ");
-            runnerbuilder.addAllJobArgs(jobArgs);
+            builder.addAllJobArgs(jobArgs);
     }  
     //Set spark runner options
-    runnerbuilder.setExecutorCores(jobconfig.getExecutorCores());
-    runnerbuilder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
-    runnerbuilder.setNumberOfExecutors(jobconfig.getNumberOfExecutors());
+    builder.setExecutorCores(jobconfig.getExecutorCores());
+    builder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
+    builder.setNumberOfExecutors(jobconfig.getNumberOfExecutors());
     if(jobconfig.isDynamicExecutors()){
-      runnerbuilder.setDynamicExecutors(jobconfig.isDynamicExecutors());
-      runnerbuilder.setNumberOfExecutorsMin(jobconfig.getSelectedMinExecutors());
-      runnerbuilder.setNumberOfExecutorsMax(jobconfig.getSelectedMaxExecutors());
-      runnerbuilder.setNumberOfExecutorsInit(jobconfig.getNumberOfExecutorsInit());
+      builder.setDynamicExecutors(jobconfig.isDynamicExecutors());
+      builder.setNumberOfExecutorsMin(jobconfig.getSelectedMinExecutors());
+      builder.setNumberOfExecutorsMax(jobconfig.getSelectedMaxExecutors());
+      builder.setNumberOfExecutorsInit(jobconfig.getNumberOfExecutorsInit());
     }
     //Set Yarn running options
-    runnerbuilder.setDriverMemoryMB(jobconfig.getAmMemory());
-    runnerbuilder.setDriverCores(jobconfig.getAmVCores());
-    runnerbuilder.setDriverQueue(jobconfig.getAmQueue());
-    runnerbuilder.setSparkHistoryServerIp(jobconfig.getHistoryServerIp());
-    runnerbuilder.setSessionId(jobconfig.getSessionId());
-    runnerbuilder.setKafkaAddress(kafkaAddress);
+    builder.setDriverMemoryMB(jobconfig.getAmMemory());
+    builder.setDriverCores(jobconfig.getAmVCores());
+    builder.setDriverQueue(jobconfig.getAmQueue());
+    builder.setSparkHistoryServerIp(jobconfig.getHistoryServerIp());
+    builder.setSessionId(jobconfig.getSessionId());
+    builder.setKafkaAddress(kafkaAddress);
     
-    runnerbuilder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));
+    builder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));
     //Set project specific resources
-    runnerbuilder.addExtraFiles(projectLocalResources);
+    builder.addExtraFiles(projectLocalResources);
     if(jobSystemProperties != null && !jobSystemProperties.isEmpty()){
       for(Entry<String,String> jobSystemProperty: jobSystemProperties.entrySet()){
-        runnerbuilder.addSystemProperty(jobSystemProperty.getKey(), jobSystemProperty.getValue());
+        builder.addSystemProperty(jobSystemProperty.getKey(), jobSystemProperty.getValue());
       }
     }
     try {
-      runner = runnerbuilder.
+      runner = builder.
           getYarnRunner(jobDescription.getProject().getName(),
               sparkUser, jobUser, hadoopDir, sparkDir, nameNodeIpPort);
 
