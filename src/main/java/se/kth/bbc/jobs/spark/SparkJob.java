@@ -26,9 +26,10 @@ public class SparkJob extends YarnJob {
 
   private final SparkJobConfiguration jobconfig; //Just for convenience
   private final String sparkDir;
-  private final String sparkUser;
-  //Declare builder here as it is also used by AdamJob
-  protected SparkYarnRunnerBuilder builder;
+
+  private final String sparkUser; //must be glassfish
+  protected SparkYarnRunnerBuilder runnerbuilder;
+  
   /**
    *
    * @param job
@@ -63,17 +64,19 @@ public class SparkJob extends YarnJob {
     if (jobconfig.getAppName() == null || jobconfig.getAppName().isEmpty()) {
       jobconfig.setAppName("Untitled Spark Job");
     }
-    //If builder is not null, then it has been initialized by AdamJob
-    if(builder == null){
-    builder = new SparkYarnRunnerBuilder(
+    //If runnerbuilder is not null, it has been instantiated by child class,
+    //i.e. AdamJob
+    if(runnerbuilder==null){
+      runnerbuilder = new SparkYarnRunnerBuilder(
         jobconfig.getJarPath(), jobconfig.getMainClass());
+        runnerbuilder.setJobName(jobconfig.getAppName());
+      //Check if the user provided application arguments
+      if(jobconfig.getArgs() != null && !jobconfig.getArgs().isEmpty()){
+              String[] jobArgs = jobconfig.getArgs().trim().split(" ");
+              runnerbuilder.addAllJobArgs(jobArgs);
+      }  
     }
-    builder.setJobName(jobconfig.getAppName());
-    //Check if the user provided application arguments
-    if(jobconfig.getArgs() != null && !jobconfig.getArgs().isEmpty()){
-            String[] jobArgs = jobconfig.getArgs().trim().split(" ");
-            builder.addAllJobArgs(jobArgs);
-    }  
+   
     //Set spark runner options
     builder.setExecutorCores(jobconfig.getExecutorCores());
     builder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
@@ -85,21 +88,23 @@ public class SparkJob extends YarnJob {
       builder.setNumberOfExecutorsInit(jobconfig.getNumberOfExecutorsInit());
     }
     //Set Yarn running options
-    builder.setDriverMemoryMB(jobconfig.getAmMemory());
-    builder.setDriverCores(jobconfig.getAmVCores());
-    builder.setDriverQueue(jobconfig.getAmQueue());
-    builder.setSparkHistoryServerIp(jobconfig.getHistoryServerIp());
-    builder.setSessionId(jobconfig.getSessionId());
-    builder.setKafkaAddress(kafkaAddress);
+    runnerbuilder.setDriverMemoryMB(jobconfig.getAmMemory());
+    runnerbuilder.setDriverCores(jobconfig.getAmVCores());
+    runnerbuilder.setDriverQueue(jobconfig.getAmQueue());
+    runnerbuilder.setSparkHistoryServerIp(jobconfig.getHistoryServerIp());
+
+    runnerbuilder.setSessionId(jobconfig.getSessionId());
+    runnerbuilder.setKafkaAddress(kafkaAddress);
     
-    builder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));
-    //Set project specific resources
-    builder.addExtraFiles(projectLocalResources);
+    runnerbuilder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));
+    //Set project specific resources, i.e. Kafka certificates
+    runnerbuilder.addExtraFiles(projectLocalResources);
     if(jobSystemProperties != null && !jobSystemProperties.isEmpty()){
       for(Entry<String,String> jobSystemProperty: jobSystemProperties.entrySet()){
         builder.addSystemProperty(jobSystemProperty.getKey(), jobSystemProperty.getValue());
       }
     }
+
     try {
       runner = builder.
           getYarnRunner(jobDescription.getProject().getName(),

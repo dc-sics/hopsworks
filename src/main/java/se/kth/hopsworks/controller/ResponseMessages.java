@@ -158,7 +158,6 @@ public class ResponseMessages {
   public final static String ELASTIC_SERVER_NOT_AVAILABLE
           = "The Elasticsearch Server is either down or misconfigured.";
 
-
   //Workflow
   public final static String WORKFLOW_NOT_FOUND
           = "Workflow not found.";
@@ -166,8 +165,11 @@ public class ResponseMessages {
           = "Node not found.";
   public final static String EDGE_NOT_FOUND
           = "Edge not found.";
-public final static String WOKFLOW_EXECUTION_NOT_FOUND
+  public final static String WOKFLOW_EXECUTION_NOT_FOUND
         = "Execution not found.";
-public final static String WOKFLOW_JOB_NOT_FOUND
+  public final static String WOKFLOW_JOB_NOT_FOUND
         = "Job not found.";
+  
+  public final static String JOB_DETAILS
+          = "Details for a job";
 }
