@@ -78,14 +78,14 @@ public class SparkJob extends YarnJob {
     }
    
     //Set spark runner options
-    builder.setExecutorCores(jobconfig.getExecutorCores());
-    builder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
-    builder.setNumberOfExecutors(jobconfig.getNumberOfExecutors());
+    runnerbuilder.setExecutorCores(jobconfig.getExecutorCores());
+    runnerbuilder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
+    runnerbuilder.setNumberOfExecutors(jobconfig.getNumberOfExecutors());
     if(jobconfig.isDynamicExecutors()){
-      builder.setDynamicExecutors(jobconfig.isDynamicExecutors());
-      builder.setNumberOfExecutorsMin(jobconfig.getSelectedMinExecutors());
-      builder.setNumberOfExecutorsMax(jobconfig.getSelectedMaxExecutors());
-      builder.setNumberOfExecutorsInit(jobconfig.getNumberOfExecutorsInit());
+      runnerbuilder.setDynamicExecutors(jobconfig.isDynamicExecutors());
+      runnerbuilder.setNumberOfExecutorsMin(jobconfig.getSelectedMinExecutors());
+      runnerbuilder.setNumberOfExecutorsMax(jobconfig.getSelectedMaxExecutors());
+      runnerbuilder.setNumberOfExecutorsInit(jobconfig.getNumberOfExecutorsInit());
     }
     //Set Yarn running options
     runnerbuilder.setDriverMemoryMB(jobconfig.getAmMemory());
@@ -101,12 +101,12 @@ public class SparkJob extends YarnJob {
     runnerbuilder.addExtraFiles(projectLocalResources);
     if(jobSystemProperties != null && !jobSystemProperties.isEmpty()){
       for(Entry<String,String> jobSystemProperty: jobSystemProperties.entrySet()){
-        builder.addSystemProperty(jobSystemProperty.getKey(), jobSystemProperty.getValue());
+        runnerbuilder.addSystemProperty(jobSystemProperty.getKey(), jobSystemProperty.getValue());
       }
     }
 
     try {
-      runner = builder.
+      runner = runnerbuilder.
           getYarnRunner(jobDescription.getProject().getName(),
               sparkUser, jobUser, hadoopDir, sparkDir, nameNodeIpPort);
 

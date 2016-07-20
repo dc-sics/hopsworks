@@ -35,7 +35,7 @@ public class ServiceAvailabilityBean {
 
   private final static Logger logger = Logger.getLogger(ServiceAvailabilityBean.class.getName());
 
-  private static long INTERVAL_MS_BETWEEN_SERVICE_CHECKS = 10 * 1000l;
+  private static long INTERVAL_MS_BETWEEN_SERVICE_CHECKS = 30 * 1000l;
 
   private boolean elasticsearch;
   private boolean namenode;
