@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.client.api.impl.YarnClientImpl;
+import org.apache.oozie.client.OozieClient;
 import org.apache.zookeeper.ZooKeeper;
 import org.elasticsearch.ElasticsearchTimeoutException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -39,7 +40,7 @@ public class ServiceAvailabilityBean {
 
   private final static Logger logger = Logger.getLogger(ServiceAvailabilityBean.class.getName());
 
-  private static long INTERVAL_MS_BETWEEN_SERVICE_CHECKS = 10 * 1000l;
+  private static long INTERVAL_MS_BETWEEN_SERVICE_CHECKS = 30 * 1000l;
   
   public int zkSessionTimeoutMs = 30 * 1000;//30 seconds
 
@@ -128,6 +129,22 @@ public class ServiceAvailabilityBean {
     } catch (final ElasticsearchTimeoutException e) {
       elasticsearch = false;
     }
+
+// Check P2P Downloader
+    // TODO - Call some REST API
+// Check Livy
+    // TODO
+// Check Ooozie
+    // TODO
+
+    try{
+      OozieClient oozieClient = new OozieClient("http://" + this.settings.getOozieIp() + ":11000/oozie/");
+      oozieClient.getSystemMode();
+      this.oozie = true;
+    }catch(Exception e){
+      this.oozie = false;
+    }
+  }
     
     
         try {
