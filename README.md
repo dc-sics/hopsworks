@@ -1,4 +1,6 @@
 # HopsWorks
+
+[![Join the chat at https://gitter.im/hopshadoop/hopsworks](https://badges.gitter.im/hopshadoop/hopsworks.svg)](https://gitter.im/hopshadoop/hopsworks?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 HopsWorks Big data Management Platform
 
 #### Build Requirements (for Ubuntu)
