@@ -54,7 +54,13 @@
         </a>
       </li>
 
-
+      
+      <li ng-click="projectCtrl.goToService('Airpal')" ng-show="projectCtrl.showAirpal()">
+        <a>
+          Airpal<img class="pull-right" style="margin-left:10px" height="25" src="images/presto.png"/> 
+        </a>
+      </li>
+      
       <li ng-click="projectCtrl.goToTensorflow()" ng-show="projectCtrl.showTensorflow()">
         <a>
           Tensorflow

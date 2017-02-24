@@ -30,7 +30,7 @@ angular.module('hopsWorksApp')
 
             // We could instead implement a service to get all the available types but this will do it for now
 //              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
-            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
+            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'AIRPAL'];
             $scope.activeService = "home";
 
             self.alreadyChoosenServices = [];
@@ -232,6 +232,7 @@ angular.module('hopsWorksApp')
               $location.path('project/' + self.pId + '/' + serviceName);
             }
 
+
             self.goToDatasets = function () {
               self.goToUrl('datasets');
             };
@@ -369,6 +370,10 @@ angular.module('hopsWorksApp')
             self.showWorkflows = function () {
               return showService("Workflows");
             };
+            
+            self.showAirpal = function () {
+              return showService("Airpal");
+            };
 
             self.getRole = function () {
               UserService.getRole(self.pId).then(
@@ -435,20 +440,20 @@ angular.module('hopsWorksApp')
               }
             };
 
-            $scope.data = [
-              [65, 59, 90, 81, 56, 55, 40],
-              [28, 48, 40, 19, 96, 27, 100]
-            ];
-
-            $scope.labels2 = ["January", "February", "March", "April", "May", "June", "July"];
-            $scope.series = ['Fileoperations', 'Querys'];
-            $scope.data2 = [
-              [65, 59, 80, 81, 56, 55, 40],
-              [28, 48, 40, 19, 86, 27, 90]
-            ];
-            $scope.onClick = function (points, evt) {
-              console.log(points, evt);
-            };
+//            $scope.data = [
+//              [65, 59, 90, 81, 56, 55, 40],
+//              [28, 48, 40, 19, 96, 27, 100]
+//            ];
+//
+//            $scope.labels2 = ["January", "February", "March", "April", "May", "June", "July"];
+//            $scope.series = ['Fileoperations', 'Querys'];
+//            $scope.data2 = [
+//              [65, 59, 80, 81, 56, 55, 40],
+//              [28, 48, 40, 19, 86, 27, 90]
+//            ];
+//            $scope.onClick = function (points, evt) {
+//              console.log(points, evt);
+//            };
 
             /**
              * http://stackoverflow.com/questions/10015027/javascript-tofixed-not-rounding/32605063#32605063

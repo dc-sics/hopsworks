@@ -9,6 +9,8 @@ public enum ProjectServiceEnum {
   TENSORFLOW("Tensorflow"),
   HISTORY("History"),
   JUPYTER("Jupyter"),
+  AIRPAL("Airpal"),
+  //  BIOBANKING("Biobanking"),
   JOBS("Jobs");
 
   private final String readable;

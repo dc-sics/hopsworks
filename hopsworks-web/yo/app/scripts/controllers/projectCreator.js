@@ -15,11 +15,12 @@ angular.module('hopsWorksApp')
             self.projectTeam = [];
 //            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'WORKFLOWS'];
 //            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
-            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
+            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER','AIRPAL'];
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'WORKFLOWS'];
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
-            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
+            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER','AIRPAL'];
+
 
             self.projectName = '';
             self.projectDesc = '';

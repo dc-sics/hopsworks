@@ -168,5 +168,33 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>airpal-ui</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation> 
+      <properties>
+        <airpal-ui-version>2.2.8</airpal-ui-version>
+      </properties>
+      <build> 
+        <plugins>   
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-war-plugin</artifactId>
+            <version>2.6</version>
+            <configuration>
+              <warName>${project.build.finalName}</warName>
+              <webappDirectory>${basedir}/target/${project.build.finalName}</webappDirectory>
+              <webResources>
+                <webResource>
+                  <directory>/home/ermiasg/NetBeansProjects/airpal/build/resources/main/assets</directory>
+                  <targetPath>airpal</targetPath>
+                </webResource>
+              </webResources>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
