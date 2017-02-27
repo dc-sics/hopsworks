@@ -174,10 +174,29 @@
         <activeByDefault>true</activeByDefault>
       </activation> 
       <properties>
-        <airpal-ui-version>2.2.8</airpal-ui-version>
+        <airpal-ui-version>0.1.0</airpal-ui-version>
       </properties>
       <build> 
         <plugins>   
+          <plugin>
+            <groupId>com.googlecode.maven-download-plugin</groupId>
+            <artifactId>download-maven-plugin</artifactId>
+            <version>1.2.1</version>
+            <executions>
+              <execution>
+                <id>airpal-ui</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>wget</goal>
+                </goals>
+                <configuration>
+                  <url>http://snurran.sics.se/hops/airpal-ui-${airpal-ui-version}.tar.gz</url>
+                  <unpack>true</unpack>
+                  <outputDirectory>${project.build.directory}/airpal</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-war-plugin</artifactId>
@@ -187,7 +206,7 @@
               <webappDirectory>${basedir}/target/${project.build.finalName}</webappDirectory>
               <webResources>
                 <webResource>
-                  <directory>/home/ermiasg/NetBeansProjects/airpal/build/resources/main/assets</directory>
+                  <directory>${project.build.directory}/airpal/airpal-ui-${airpal-ui-version}/assets</directory>
                   <targetPath>airpal</targetPath>
                 </webResource>
               </webResources>
