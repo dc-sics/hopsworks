@@ -11,6 +11,19 @@ public class ApplicationConfig extends ResourceConfig {
    * adding manually all the restful services of the application.
    */
   public ApplicationConfig() {
+    register(io.hops.hopsworks.api.airpal.resources.ExecuteResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.FilesResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.HealthResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.PingResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.QueriesResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.QueryResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.RedirectRootResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.ResultsPreviewResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.S3FilesResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.SessionResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.TablesResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.UserResource.class);
+    register(io.hops.hopsworks.api.airpal.resources.UsersResource.class);
     register(io.hops.hopsworks.api.agent.AgentResource.class);
     register(io.hops.hopsworks.api.elastic.ElasticService.class);
     register(io.hops.hopsworks.api.exception.mapper.AccessControlExceptionMapper.class);

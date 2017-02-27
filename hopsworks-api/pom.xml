@@ -103,6 +103,20 @@
       <artifactId>guava</artifactId>
       <version>18.0</version>
     </dependency>
+    <!--Airpal dependencies -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.16.14</version>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.secnod.shiro</groupId>
+      <artifactId>shiro-jersey</artifactId>
+      <version>0.2.0</version>
+      <type>jar</type>
+    </dependency>
+    <!--end Airpal dependencies -->
     <dependency>
       <groupId>javax</groupId>
       <artifactId>javaee-web-api</artifactId>
