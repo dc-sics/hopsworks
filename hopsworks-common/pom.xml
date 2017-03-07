@@ -82,6 +82,11 @@
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.apache.avro/avro -->
     <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.2</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.avro</groupId>
       <artifactId>avro</artifactId>
       <version>1.7.7</version>
