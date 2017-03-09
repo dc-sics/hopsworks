@@ -158,19 +158,26 @@ public abstract class YarnJob extends HopsJob {
       serviceProps.setProjectId(jobDescription.getProject().getId());
       serviceProps.setProjectName(jobDescription.getProject().getName());
       serviceProps.setJobName(jobDescription.getName());
+      
+      boolean certificatesCopied = false;
+      
       Iterator<ProjectServices> iter = projectServices.iterator();
       while (iter.hasNext()) {
         ProjectServices projectService = iter.next();
-        HopsUtils.copyUserKafkaCerts(services.getUserCerts(), projectService.
+        
+        if (!certificatesCopied) {
+          HopsUtils.copyUserKafkaCerts(services.getUserCerts(), projectService.
                   getProject(), user.getUsername(),
-                  services.getSettings().getHopsworksTmpCertDir(),
-                  Settings.TMP_CERT_STORE_REMOTE, jobDescription.getJobType(),
-                  dfso, projectLocalResources, jobSystemProperties,
-                  nameNodeIpPort);
-        serviceProps.setKeystorePwd(services.getSettings().
-                  getHopsworksMasterPasswordSsl());
-        serviceProps.setTruststorePwd(services.getSettings().
-                  getHopsworksMasterPasswordSsl());
+              services.getSettings().getHopsworksTmpCertDir(),
+              Settings.TMP_CERT_STORE_REMOTE, jobDescription.getJobType(),
+              dfso, projectLocalResources, jobSystemProperties,
+              nameNodeIpPort);
+          serviceProps.setKeystorePwd(services.getSettings().
+              getHopsworksMasterPasswordSsl());
+          serviceProps.setTruststorePwd(services.getSettings().
+              getHopsworksMasterPasswordSsl());
+          certificatesCopied = true;
+        }
         //If the project is of type KAFKA
         if (projectService.getProjectServicesPK().getService()
                 == ProjectServiceEnum.KAFKA && (jobDescription.getJobType()
