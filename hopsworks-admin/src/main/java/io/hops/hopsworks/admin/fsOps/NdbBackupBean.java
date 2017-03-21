@@ -17,6 +17,7 @@
  */
 package io.hops.hopsworks.admin.fsOps;
 
+import io.hops.hopsworks.common.dao.ndb.NdbBackup;
 import io.hops.hopsworks.common.util.Settings;
 import org.primefaces.event.RowEditEvent;
 

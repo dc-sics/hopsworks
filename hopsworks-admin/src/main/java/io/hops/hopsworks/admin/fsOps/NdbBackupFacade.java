@@ -17,6 +17,7 @@
  */
 package io.hops.hopsworks.admin.fsOps;
 
+import io.hops.hopsworks.common.dao.ndb.NdbBackup;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;

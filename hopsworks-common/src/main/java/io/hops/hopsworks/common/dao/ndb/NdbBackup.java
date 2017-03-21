@@ -1,4 +1,4 @@
-package io.hops.hopsworks.admin.fsOps;
+package io.hops.hopsworks.common.dao.ndb;
 
 import java.io.Serializable;
 import java.util.Date;
