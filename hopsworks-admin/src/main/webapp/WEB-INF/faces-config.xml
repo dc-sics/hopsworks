@@ -176,6 +176,11 @@
       <redirect/>
     </navigation-case>
     <navigation-case>
+      <from-outcome>ndbBackups</from-outcome>
+      <to-view-id>/security/protected/admin/ndbBackups.xhtml</to-view-id>
+      <redirect/>
+    </navigation-case>
+    <navigation-case>
       <from-outcome>mobUsers</from-outcome>
       <to-view-id>/security/protected/admin/mobileUsers.xhtml</to-view-id>
       <redirect/>
