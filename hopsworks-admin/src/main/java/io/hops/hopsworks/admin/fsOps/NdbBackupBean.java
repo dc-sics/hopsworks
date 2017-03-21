@@ -26,11 +26,12 @@ import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@ManagedBean(name = "ndbbackup")
+@ManagedBean(name = "ndbBackupBean")
 @ViewScoped
 public class NdbBackupBean {
 
@@ -45,9 +46,9 @@ public class NdbBackupBean {
 
   public String action;
 
-  private List<NdbBackup> filteredBackups;
+  private List<NdbBackup> filteredBackups = new ArrayList<NdbBackup>();
 
-  private List<NdbBackup> allBackups;
+  private List<NdbBackup> allBackups = new ArrayList<NdbBackup>();
 
   public void setFilteredBackups(List<NdbBackup> filteredBackups) {
     this.filteredBackups = filteredBackups;
@@ -62,8 +63,9 @@ public class NdbBackupBean {
   }
 
   public List<NdbBackup> getAllBackups() {
-    if (allBackups == null) {
-      allBackups = ndbBackupFacade.findAll();
+    List<NdbBackup> all = ndbBackupFacade.findAll();
+    if (all != null) {
+      allBackups = all;
     }
     return allBackups;
   }
@@ -85,7 +87,7 @@ public class NdbBackupBean {
   public void onRowCancel(RowEditEvent event) {
   }
 
-  public int restoreBackup(Integer backupId) {
+  public int restore(Integer backupId) {
 
     String prog = settings.getNdbDir() + "/ndb/scripts/backup-restore.sh";
     int exitValue;
@@ -115,12 +117,17 @@ public class NdbBackupBean {
 
     NdbBackup backup = ndbBackupFacade.findHighestBackupId();
     if (backup != null) {
-      String[] command = {prog, backup.getBackupId().toString()};
+      Integer id = backup.getBackupId() + 1;
+      String[] command = {prog, id.toString()};
       ProcessBuilder pb = new ProcessBuilder(command);
       try {
         Process p = pb.start();
         p.waitFor();
         exitValue = p.exitValue();
+        if (exitValue == 0) {
+          NdbBackup newBackup = new NdbBackup(id);
+          ndbBackupFacade.persistBackup(backup);
+        }
       } catch (IOException | InterruptedException ex) {
 
         logger.log(Level.WARNING, "Problem starting a backup: {0}", ex.

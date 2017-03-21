@@ -52,6 +52,10 @@ public class NdbBackupFacade {
     }
   }
 
+  public void persistBackup(NdbBackup backup) {
+    em.persist(backup);
+  }
+
   public NdbBackup findHighestBackupId() {
     TypedQuery<NdbBackup> query = this.em.
             createNamedQuery("NdbBackup.findHighestBackupId", NdbBackup.class);
