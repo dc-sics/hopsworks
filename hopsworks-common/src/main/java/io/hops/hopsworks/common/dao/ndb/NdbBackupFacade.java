@@ -17,7 +17,6 @@
  */
 package io.hops.hopsworks.common.dao.ndb;
 
-import io.hops.hopsworks.common.dao.ndb.NdbBackup;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
