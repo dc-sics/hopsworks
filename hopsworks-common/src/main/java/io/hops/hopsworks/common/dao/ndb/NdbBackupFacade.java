@@ -15,7 +15,7 @@
  * express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.hops.hopsworks.admin.fsOps;
+package io.hops.hopsworks.common.dao.ndb;
 
 import io.hops.hopsworks.common.dao.ndb.NdbBackup;
 import javax.ejb.Stateless;
