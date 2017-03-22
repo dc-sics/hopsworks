@@ -57,6 +57,13 @@ public class NdbBackupFacade implements Serializable {
     em.persist(backup);
   }
 
+  public void removeBackup(int id) {
+    NdbBackup backup = find(id);
+    if (backup != null) {
+      em.remove(backup);
+    }
+  }
+
   public NdbBackup findHighestBackupId() {
     TypedQuery<NdbBackup> query = this.em.
             createNamedQuery("NdbBackup.findHighestBackupId", NdbBackup.class);

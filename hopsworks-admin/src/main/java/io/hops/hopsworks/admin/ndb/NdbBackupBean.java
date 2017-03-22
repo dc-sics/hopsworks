@@ -107,6 +107,9 @@ public class NdbBackupBean implements Serializable {
       Process p = pb.start();
       p.waitFor();
       exitValue = p.exitValue();
+      if (exitValue == 0) {
+        ndbBackupFacade.removeBackup(backupId);        
+      }
     } catch (IOException | InterruptedException ex) {
 
       logger.log(Level.SEVERE, "Problem removing the backup: {0}", ex.toString());
