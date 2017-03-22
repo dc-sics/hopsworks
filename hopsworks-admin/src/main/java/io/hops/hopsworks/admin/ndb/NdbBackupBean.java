@@ -30,7 +30,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.ejb.EJB;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.SessionScoped;
 import org.primefaces.event.RowEditEvent;
@@ -47,16 +51,7 @@ public class NdbBackupBean implements Serializable {
   @EJB
   private Settings settings;
 
-  private List<NdbBackup> filteredBackups = new ArrayList<NdbBackup>();
   public List<NdbBackup> allBackups = new ArrayList<>();
-
-  public void setFilteredBackups(List<NdbBackup> filteredBackups) {
-    this.filteredBackups = filteredBackups;
-  }
-
-  public List<NdbBackup> getFilteredBackups() {
-    return filteredBackups;
-  }
 
   public void setAllBackups(List<NdbBackup> allBackups) {
     this.allBackups = allBackups;
@@ -78,12 +73,13 @@ public class NdbBackupBean implements Serializable {
   public void onRowCancel(RowEditEvent event) {
   }
 
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public String restore(Integer backupId) {
 
-    String prog = settings.getNdbDir() + "/ndb/scripts/backup-restore.sh";
+    String prog = settings.getHopsworksDomainDir() + "/bin/ndb_backup.sh";
     int exitValue;
 
-    String[] command = {prog, backupId.toString()};
+    String[] command = {"/usr/bin/sudo", prog, "restore", backupId.toString()};
     ProcessBuilder pb = new ProcessBuilder(command);
 
     try {
@@ -92,26 +88,39 @@ public class NdbBackupBean implements Serializable {
       exitValue = p.exitValue();
     } catch (IOException | InterruptedException ex) {
 
-      logger.log(Level.WARNING, "Problem starting a backup: {0}", ex.
-              toString());
-      //if the pid file exists but we can not test if it is alive then
-      //we answer true, b/c pid files are deleted when a process is killed.
+      logger.log(Level.SEVERE, "Problem restoring a backup: {0}", ex.toString());
       return "RESTORE_FAILED";
     }
     return exitValue == 0 ? "RESTORE_OK" : "RESTORE_FAILED";
   }
 
-  public String startBackup() {
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public String remove(Integer backupId) {
 
-    String prog = settings.getNdbDir() + "/ndb/scripts/backup-start.sh";
+    String prog = settings.getHopsworksDomainDir() + "/bin/ndb_backup.sh";
     int exitValue;
 
-    NdbBackup backup = ndbBackupFacade.findHighestBackupId();
-    Integer id = 1;
-    if (backup != null) {
-      id = backup.getBackupId() + 1;
+    String[] command = {"/usr/bin/sudo", prog, "remove", backupId.toString()};
+    ProcessBuilder pb = new ProcessBuilder(command);
+
+    try {
+      Process p = pb.start();
+      p.waitFor();
+      exitValue = p.exitValue();
+    } catch (IOException | InterruptedException ex) {
+
+      logger.log(Level.SEVERE, "Problem removing the backup: {0}", ex.toString());
+      return "RESTORE_FAILED";
     }
-    String[] command = {prog, id.toString()};
+    return exitValue == 0 ? "RESTORE_OK" : "RESTORE_FAILED";
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public String startBackup() {
+    String prog = settings.getHopsworksDomainDir() + "/bin/ndb_backup.sh";
+    int exitValue;
+    Integer id = 1;
+    String[] command = {"/usr/bin/sudo", prog, "backup"};
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();
@@ -119,22 +128,27 @@ public class NdbBackupBean implements Serializable {
       BufferedReader br = new BufferedReader(new InputStreamReader(
               process.getInputStream(), Charset.forName("UTF8")));
       String line;
+      String pattern = "(.*)Backup (\\d+)(.*)";
+      Pattern r = Pattern.compile(pattern);
+      boolean foundId = false;
       while ((line = br.readLine()) != null) {
         logger.info(line);
+        Matcher m = r.matcher(line);
+        if (m.find()) {
+          id = Integer.parseInt(m.group(2));
+          foundId = true;
+        }
       }
 
       process.waitFor();
       exitValue = process.exitValue();
-      if (exitValue == 0) {
+      if (exitValue == 0 && foundId) {
         NdbBackup newBackup = new NdbBackup(id);
-        ndbBackupFacade.persistBackup(backup);
+        ndbBackupFacade.persistBackup(newBackup);
       }
     } catch (IOException | InterruptedException ex) {
-
-      logger.log(Level.WARNING, "Problem starting a backup: {0}", ex.
+      logger.log(Level.SEVERE, "Problem starting a backup: {0}", ex.
               toString());
-      //if the pid file exists but we can not test if it is alive then
-      //we answer true, b/c pid files are deleted when a process is killed.
       exitValue = -2;
     }
     if (exitValue == 0) {

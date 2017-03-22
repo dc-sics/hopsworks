@@ -29,7 +29,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
 @Stateless
-@TransactionAttribute(TransactionAttributeType.NEVER)
+@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
 public class NdbBackupFacade implements Serializable {
 
   private static final Logger logger = Logger.getLogger(
