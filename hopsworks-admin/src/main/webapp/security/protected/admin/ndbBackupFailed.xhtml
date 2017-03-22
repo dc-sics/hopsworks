@@ -34,29 +34,7 @@
             </div>
 
             <div class="content">
-
-              <h:form id="backupsForm" >
-                <h3 style="margin-top:0">
-                  <p:commandLink id="startBackup"
-                                 styleClass="ui-button-allow fa fa-check" 
-                                 action="#{ndbBackupBean.startBackup()}"
-                                 update="@form">Start Backup
-                    <p:confirm header="Start Backup" 
-                               message="Are you sure you want to start an online backup of MySQL Cluster?" 
-                               icon="ui-icon-alert" 
-                               />
-                  </p:commandLink>
-                </h3>
-                <p:confirmDialog global="true" severity="alert" showEffect="fade">
-                  <p:commandButton value="Yes" icon="ui-icon-check" styleClass="ui-confirmdialog-yes" type="submit"/>
-                  <p:commandButton value="No" icon="ui-icon-close" styleClass="ui-confirmdialog-no" type="button"/>
-                </p:confirmDialog>
-
-                <p:separator />
-
-                <p:growl id="msgs" showDetail="true"/>
-
-              </h:form>
+                  Backup/Restore Failed.
 
             </div>
           </div>
