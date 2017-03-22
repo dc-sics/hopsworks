@@ -846,7 +846,7 @@ public class Settings implements Serializable {
     return KAFKA_DIR;
   }
 
-  private String ANACONDA_DIR = "/opt/anaconda/anaconda/envs";
+  private String ANACONDA_DIR = "/srv/hops/anaconda/anaconda/envs";
 
   public synchronized String getAnacondaDir() {
     checkCache();
