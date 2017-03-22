@@ -17,23 +17,23 @@
  */
 package io.hops.hopsworks.admin.ndb;
 
-import io.hops.hopsworks.common.dao.ndb.NdbBackupFacade;
 import io.hops.hopsworks.common.dao.ndb.NdbBackup;
+import io.hops.hopsworks.common.dao.ndb.NdbBackupFacade;
 import io.hops.hopsworks.common.util.Settings;
-import org.primefaces.event.RowEditEvent;
-
-import javax.ejb.EJB;
-import javax.faces.bean.ManagedBean;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJB;
+import javax.faces.bean.ManagedBean;
 import javax.faces.bean.SessionScoped;
+import org.primefaces.event.RowEditEvent;
 
 @ManagedBean(name = "ndbBackupBean")
 @SessionScoped
-public class NdbBackupBean {
+public class NdbBackupBean implements Serializable {
 
   private static final Logger logger = Logger.getLogger(
           NdbBackupBean.class.getName());
@@ -44,10 +44,8 @@ public class NdbBackupBean {
   @EJB
   private Settings settings;
 
-  public String action;
-
 //  private List<NdbBackup> filteredBackups = new ArrayList<NdbBackup>();
-  private List<NdbBackup> allBackups = new ArrayList<>();
+  public List<NdbBackup> allBackups = new ArrayList<>();
 
 //  public void setFilteredBackups(List<NdbBackup> filteredBackups) {
 //    this.filteredBackups = filteredBackups;
@@ -68,15 +66,6 @@ public class NdbBackupBean {
     return allBackups;
   }
 
-  public String getAction() {
-    return action;
-  }
-
-  public void setAction(String action) {
-    this.action = action;
-  }
-
-//  , DistributedFileSystemOps dfso
   public void onRowEdit(RowEditEvent event)
           throws IOException {
 
