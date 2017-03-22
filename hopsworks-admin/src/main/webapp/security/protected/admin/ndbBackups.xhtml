@@ -58,8 +58,6 @@
 
                 <p:dataTable id="backupsTable" var="backup"
                              value="#{ndbBackupBean.allBackups}"
-                             filteredValue="#{ndbBackupBean.filteredBackups}"
-                             widgetVar="backupsTable"
                              emptyMessage="No backups found"
                              rowKey="#{backup.backupId}"
                              style="table-layout: fixed"

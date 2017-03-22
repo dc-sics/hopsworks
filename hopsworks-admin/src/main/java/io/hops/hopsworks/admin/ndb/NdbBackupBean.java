@@ -15,7 +15,7 @@
  * express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package io.hops.hopsworks.admin.fsOps;
+package io.hops.hopsworks.admin.ndb;
 
 import io.hops.hopsworks.common.dao.ndb.NdbBackupFacade;
 import io.hops.hopsworks.common.dao.ndb.NdbBackup;
@@ -46,17 +46,17 @@ public class NdbBackupBean {
 
   public String action;
 
-  private List<NdbBackup> filteredBackups = new ArrayList<NdbBackup>();
+//  private List<NdbBackup> filteredBackups = new ArrayList<NdbBackup>();
 
-  private List<NdbBackup> allBackups = new ArrayList<NdbBackup>();
+  private List<NdbBackup> allBackups = new ArrayList<>();
 
-  public void setFilteredBackups(List<NdbBackup> filteredBackups) {
-    this.filteredBackups = filteredBackups;
-  }
-
-  public List<NdbBackup> getFilteredBackups() {
-    return filteredBackups;
-  }
+//  public void setFilteredBackups(List<NdbBackup> filteredBackups) {
+//    this.filteredBackups = filteredBackups;
+//  }
+//
+//  public List<NdbBackup> getFilteredBackups() {
+//    return filteredBackups;
+//  }
 
   public void setAllBackups(List<NdbBackup> allBackups) {
     this.allBackups = allBackups;
