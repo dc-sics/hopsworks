@@ -69,7 +69,19 @@
                              paginatorTemplate="{CurrentPageReport}  {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
                              rowsPerPageTemplate="25,50,75,100,500">
 
-                  <p:column id="actionJobColumn" headerText="Restore" >                                                 
+                  <p:column id="backupIdCol" headerText="Backup ID" > 
+                    #{backup.backupId}
+                  </p:column>                  
+
+
+                  <p:column id="dateTaken"
+                            sortBy="#{backup.created}"
+                            headerText="Date taken"
+                            style=" font-size: 12px; text-align: left;">
+                    <h:outputText value="#{backup.created}" />
+                  </p:column>
+                  
+                  <p:column id="actionJobColumn" headerText="Restore" style="border: 10px; ">                                                 
                     <p:commandButton  action="#{ndbBackupBean.restore(backup.backupId)}" update="@form"  value="Restore Backup">
                       <p:confirm header="Restore Backup" 
                                  message="Do you want to delete your database and replace it with this backup?" 
@@ -80,15 +92,7 @@
                       <p:commandButton value="Yes" icon="ui-icon-check" styleClass="ui-confirmdialog-yes" type="submit"/>
                       <p:commandButton value="No" icon="ui-icon-close" styleClass="ui-confirmdialog-no" type="button"/>
                     </p:confirmDialog>
-                  </p:column>                  
-
-
-                  <p:column id="dateTaken"
-                            sortBy="#{backup.created}"
-                            headerText="Date taken"
-                            style=" font-size: 12px; text-align: left;">
-                    <h:outputText value="#{backup.created}" />
-                  </p:column>
+                  </p:column>                     
 
                 </p:dataTable>
               </h:form>

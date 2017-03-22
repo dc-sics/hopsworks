@@ -24,15 +24,15 @@ import org.primefaces.event.RowEditEvent;
 
 import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
-import javax.faces.bean.ViewScoped;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.faces.bean.SessionScoped;
 
 @ManagedBean(name = "ndbBackupBean")
-@ViewScoped
+@SessionScoped
 public class NdbBackupBean {
 
   private static final Logger logger = Logger.getLogger(
@@ -47,7 +47,6 @@ public class NdbBackupBean {
   public String action;
 
 //  private List<NdbBackup> filteredBackups = new ArrayList<NdbBackup>();
-
   private List<NdbBackup> allBackups = new ArrayList<>();
 
 //  public void setFilteredBackups(List<NdbBackup> filteredBackups) {
@@ -57,7 +56,6 @@ public class NdbBackupBean {
 //  public List<NdbBackup> getFilteredBackups() {
 //    return filteredBackups;
 //  }
-
   public void setAllBackups(List<NdbBackup> allBackups) {
     this.allBackups = allBackups;
   }

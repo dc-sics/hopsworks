@@ -17,6 +17,7 @@
  */
 package io.hops.hopsworks.common.dao.ndb;
 
+import java.io.Serializable;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -29,7 +30,7 @@ import javax.persistence.TypedQuery;
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
-public class NdbBackupFacade {
+public class NdbBackupFacade implements Serializable {
 
   private static final Logger logger = Logger.getLogger(
           NdbBackupFacade.class.getName());
