@@ -17,7 +17,6 @@ import io.hops.hopsworks.common.util.WebCommunication;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -168,20 +167,22 @@ public class PythonDepsFacade {
     condaEnvironmentOp(CondaOp.CREATE, project, pythonVersion, getHosts());
 
     List<PythonDep> all = new ArrayList<>();
-    AnacondaRepo repoUrl = getRepo(project, settings.getCondaChannelUrl(), true);
-    for (String k : libs.keySet()) {
-      PythonDep pd = getDep(repoUrl, k, libs.get(k), true, true);
-      pd.setStatus(PythonDepsFacade.CondaStatus.INSTALLED);
-      Collection<Project> projs = pd.getProjectCollection();
-      projs.add(project);
-      all.add(pd);
-    }
-    Collection<PythonDep> projDeps = project.getPythonDepCollection();
-    projDeps.addAll(all);
-    em.merge(project);
-    for (PythonDep p : all) {
-      em.persist(p);
-    }
+    //TODO(Theofilos): Comment out for now, until anaconda root environment is fixed
+
+//    AnacondaRepo repoUrl = getRepo(project, settings.getCondaChannelUrl(), true);
+//    for (String k : libs.keySet()) {
+//      PythonDep pd = getDep(repoUrl, k, libs.get(k), true, true);
+//      pd.setStatus(PythonDepsFacade.CondaStatus.INSTALLED);
+//      Collection<Project> projs = pd.getProjectCollection();
+//      projs.add(project);
+//      all.add(pd);
+//    }
+//    Collection<PythonDep> projDeps = project.getPythonDepCollection();
+//    projDeps.addAll(all);
+//    em.merge(project);
+//    for (PythonDep p : all) {
+//      em.persist(p);
+//    }
 
     projectFacade.enableConda(project);
     em.flush();
@@ -403,7 +404,7 @@ public class PythonDepsFacade {
     for (Host h : hosts) {
       CondaCommands cc = new CondaCommands(h, settings.getSparkUser(),
               op, CondaStatus.ONGOING, proj, "", "", "default",
-              Date.from(Instant.now()), arg);
+              new Date(), arg);
       em.persist(cc);
     }
   }
@@ -549,7 +550,7 @@ public class PythonDepsFacade {
       for (Host h : hosts) {
         CondaCommands cc = new CondaCommands(h, settings.getSparkUser(),
                 op, CondaStatus.ONGOING, proj, lib,
-                version, channelUrl, Date.from(Instant.now()), "");
+                version, channelUrl, new Date(), "");
         em.persist(cc);
       }
 //      kagentCalls(hosts, op, proj, dep);
