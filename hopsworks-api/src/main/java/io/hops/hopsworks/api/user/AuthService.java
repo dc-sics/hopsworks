@@ -229,7 +229,7 @@ public class AuthService {
           @Context HttpServletRequest req, @Context HttpHeaders httpHeaders)
           throws AppException, MessagingException {
 
-    if (sc.isUserInRole("HOPS_ADMIN")) {
+      if (sc.isUserInRole("HOPS_ADMIN")) {
       return Response.ok().build();
     }
     return Response.status(Response.Status.UNAUTHORIZED).build();
