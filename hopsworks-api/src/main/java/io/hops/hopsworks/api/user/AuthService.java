@@ -46,7 +46,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 @Path("/auth")
 @Stateless
-@Api(value = "Auth", description = "Authentication service")
+@Api(value = "Auth",
+        description = "Authentication service")
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class AuthService {
 
@@ -229,7 +230,7 @@ public class AuthService {
           @Context HttpServletRequest req, @Context HttpHeaders httpHeaders)
           throws AppException, MessagingException {
 
-      if (sc.isUserInRole("HOPS_ADMIN")) {
+    if (sc.isUserInRole("HOPS_ADMIN")) {
       return Response.ok().build();
     }
     return Response.status(Response.Status.UNAUTHORIZED).build();
