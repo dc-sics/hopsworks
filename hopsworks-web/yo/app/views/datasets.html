@@ -70,7 +70,7 @@
                                 {{dataset.name| limitTo: 17}}
                               </span>                          
                             <span class="glyphicon glyphicon-edit pull-right" ng-if="dataset.permission === 'rwxrwx--T'" data-toggle="tooltip"
-                                    title="This dataset is editable by other users."></span>
+                                    title="This dataset is editable by all project members."></span>
                               <br/>
                               <small><b>Owner:</b> 
                                 <span data-toggle="tooltip"
@@ -175,6 +175,7 @@
                             </a>
                           </li>
                           <li ng-if="dataset.name.indexOf('::') === -1" class="divider"></li>
+<!--
                           <li ng-if="dataset.name.indexOf('::') === -1" ng-show="projectCtrl.role === 'Data owner' && dataset.publicDs === false">
                             <a class="pointer"
                                role="menuitem"
@@ -184,6 +185,7 @@
                                 Compress</span>
                             </a>
                           </li>
+-->
                           <li ng-if="dataset.name.indexOf('::') === -1" ng-show="projectCtrl.role === 'Data owner' && dataset.publicDs === false">
                             <a class="pointer"
                                role="menuitem"
