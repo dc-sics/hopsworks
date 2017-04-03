@@ -162,7 +162,6 @@ angular.module('hopsWorksApp')
 
             }
 
-
             self.grafanaUI = function () {
               startLoading("Loading Grafana UI...");
               getAppId(grafanaUIInt);
@@ -201,7 +200,31 @@ angular.module('hopsWorksApp')
                 stopLoading();
               });
             }
-            
+
+            self.vizopsUI = function () {
+              getAppId(vizopsInt);
+            }
+
+            var vizopsInt = function () {
+                JobService.getAppInfo(self.projectId, self.appId).then(
+                    function (success) {
+                      var info = success.data;
+                      var appid = info.appId;
+                      var startTime = info.startTime;
+                      var finishTime = info.endTime;
+                      self.ui = info.appid;
+                      self.current = "vizopsUI";
+
+
+                      $timeout(stopLoading(), 1000);
+                    }, function (error) {
+                      growl.error(error.data.errorMsg, {title: 'Error fetching ui.',
+                      ttl: 15000});
+                      stopLoading();
+                });
+
+            }
+
             self.backToHome = function () {
               if (self.jobName != undefined && self.jobName != false && self.jobName != "") {
                 StorageService.store(self.projectId + "_jobui_" + self.jobName, self.job);
