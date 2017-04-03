@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.jobs.yarn;
 
+import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
 import io.hops.hopsworks.common.dao.project.service.ProjectServices;
@@ -32,6 +33,8 @@ import io.hops.hopsworks.common.jobs.execution.HopsJob;
 import io.hops.hopsworks.common.jobs.jobhistory.JobFinalStatus;
 import io.hops.hopsworks.common.jobs.jobhistory.JobState;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
+import org.apache.hadoop.fs.permission.FsAction;
+import org.apache.hadoop.fs.permission.FsPermission;
 
 public abstract class YarnJob extends HopsJob {
 
@@ -67,12 +70,12 @@ public abstract class YarnJob extends HopsJob {
    * YarnJobConfiguration object.
    */
   public YarnJob(JobDescription job, AsynchronousJobExecutor services,
-          Users user, String jobUser, String hadoopDir, String nameNodeIpPort) {
+      Users user, String jobUser, String hadoopDir, String nameNodeIpPort) {
     super(job, services, user, hadoopDir, nameNodeIpPort);
     if (!(job.getJobConfig() instanceof YarnJobConfiguration)) {
       throw new IllegalArgumentException(
-              "JobDescription must be a YarnJobConfiguration object. Received class: "
-              + job.getJobConfig().getClass());
+          "JobDescription must be a YarnJobConfiguration object. Received class: "
+          + job.getJobConfig().getClass());
     }
     LOG.log(Level.INFO, "Instantiating Yarn job as user: {0}", hdfsUser);
     this.jobSystemProperties = new HashMap<>();
@@ -117,7 +120,7 @@ public abstract class YarnJob extends HopsJob {
       DistributedFileSystemOps dfso) throws IllegalStateException {
     if (runner == null) {
       throw new IllegalStateException(
-              "The YarnRunner has not been initialized yet.");
+          "The YarnRunner has not been initialized yet.");
     }
     try {
       updateState(JobState.STARTING_APP_MASTER);
@@ -125,7 +128,7 @@ public abstract class YarnJob extends HopsJob {
           dfso, user.getUsername());
       started = true;
       updateExecution(null, -1, null, null, monitor.getApplicationId().
-              toString(), null, null, null, 0);
+          toString(), null, null, null, 0);
       return true;
     } catch (AccessControlException ex) {
       LOG.log(Level.SEVERE, "Permission denied:- {0}", ex.getMessage());
@@ -133,21 +136,20 @@ public abstract class YarnJob extends HopsJob {
       return false;
     } catch (YarnException | IOException | URISyntaxException e) {
       LOG.log(Level.SEVERE,
-              "Failed to start application master for execution "
-              + getExecution()
-              + ". Aborting execution",
-              e);
+          "Failed to start application master for execution "
+          + getExecution()
+          + ". Aborting execution",
+          e);
       writeLog("Failed to start application master for execution "
-              + getExecution()
-              + ". Aborting execution",
-              e, udfso);
+          + getExecution()
+          + ". Aborting execution",
+          e, udfso);
       try {
         runner.removeAllNecessary();
       } catch (IOException ex) {
         LOG.log(Level.WARNING, "Failed to remove files for failed execution "
             + getExecution());
-        writeLog("Failed to remove files for failed execution " +
-            getExecution(), ex, udfso);
+        writeLog("Failed to remove files for failed execution " + getExecution(), ex, udfso);
       }
       updateState(JobState.APP_MASTER_START_FAILED);
       return false;
@@ -158,36 +160,37 @@ public abstract class YarnJob extends HopsJob {
   protected boolean setupJob(DistributedFileSystemOps dfso) {
     //Check if this job is using Kakfa, and include certificate
     //in local resources
-    serviceProps = new ServiceProperties();
-    serviceProps.setRestEndpoint(services.getSettings().getRestEndpoint());
-    serviceProps.setElastic(new ElasticProperties(services.getSettings().getElasticEndpoint()));
-    serviceProps.setProjectId(jobDescription.getProject().getId());
-    serviceProps.setProjectName(jobDescription.getProject().getName());
-    serviceProps.setJobName(jobDescription.getName());
-    serviceProps.setKeystorePwd(services.getSettings().getHopsworksMasterPasswordSsl());
-    serviceProps.setTruststorePwd(services.getSettings().getHopsworksMasterPasswordSsl());
+    serviceProps = new ServiceProperties(services.getSettings().getHopsworksMasterPasswordSsl(),
+        services.getSettings().getHopsworksMasterPasswordSsl(), jobDescription.getProject().getId(),
+        jobDescription.getProject().getName(), services.getSettings().getRestEndpoint(), jobDescription.getName(),
+        new ElasticProperties(services.getSettings().getElasticEndpoint()));
+
+    if (jobDescription.getProject().getConda()) {
+      serviceProps.initAnaconda(services.getSettings().getAnacondaProjectDir(jobDescription.getProject().getName())
+          + File.separator + "bin" + File.separator + "python");
+    }
     Collection<ProjectServices> projectServices = jobDescription.getProject().
-            getProjectServicesCollection();
+        getProjectServicesCollection();
     if (projectServices != null && !projectServices.isEmpty()) {
       Iterator<ProjectServices> iter = projectServices.iterator();
       while (iter.hasNext()) {
         ProjectServices projectService = iter.next();
         //If the project is of type KAFKA
         if (projectService.getProjectServicesPK().getService()
-                == ProjectServiceEnum.KAFKA && (jobDescription.getJobType()
-                == JobType.FLINK || jobDescription.getJobType() == JobType.SPARK)
-                && jobDescription.getJobConfig() instanceof YarnJobConfiguration
-                && jobDescription.getJobConfig().getKafka() != null) {
+            == ProjectServiceEnum.KAFKA && (jobDescription.getJobType()
+            == JobType.FLINK || jobDescription.getJobType() == JobType.SPARK)
+            && jobDescription.getJobConfig() instanceof YarnJobConfiguration
+            && jobDescription.getJobConfig().getKafka() != null) {
           serviceProps.initKafka();
           //Set Kafka specific properties to serviceProps
           serviceProps.getKafka().setBrokerAddresses(services.getSettings().
-                  getKafkaConnectStr());
+              getKafkaConnectStr());
           serviceProps.getKafka().setRestEndpoint(services.getSettings().
-                  getRestEndpoint());
+              getRestEndpoint());
           serviceProps.getKafka().setTopics(jobDescription.getJobConfig().
-                  getKafka().getTopics());
+              getKafka().getTopics());
           serviceProps.getKafka().setProjectConsumerGroups(jobDescription.
-                  getProject().getName(), jobDescription.
+              getProject().getName(), jobDescription.
                   getJobConfig().getKafka().getConsumergroups());
           return true;
         }
@@ -340,10 +343,10 @@ public abstract class YarnJob extends HopsJob {
    * }
    * }
    */
-  
   final EnumSet<YarnApplicationState> finalAppState = EnumSet.of(
       YarnApplicationState.FINISHED, YarnApplicationState.FAILED,
       YarnApplicationState.KILLED);
+
   /**
    * Monitor the state of the job.
    * <p/>
@@ -354,7 +357,7 @@ public abstract class YarnJob extends HopsJob {
     try (YarnMonitor r = monitor.start()) {
       if (!started) {
         throw new IllegalStateException(
-                "Trying to monitor a job that has not been started!");
+            "Trying to monitor a job that has not been started!");
       }
       YarnApplicationState appState;
       FinalApplicationStatus finalAppStatus;
@@ -371,21 +374,21 @@ public abstract class YarnJob extends HopsJob {
         failures = 0;
       } catch (YarnException | IOException ex) {
         LOG.log(Level.WARNING,
-                "Failed to get application state for execution"
-                + getExecution(), ex);
+            "Failed to get application state for execution"
+            + getExecution(), ex);
         appState = null;
         failures = 1;
       }
 
       //Loop as long as the application is in a running/runnable state
       while (appState != YarnApplicationState.FAILED && appState
-              != YarnApplicationState.FINISHED && appState
-              != YarnApplicationState.KILLED && failures
-              <= DEFAULT_MAX_STATE_POLL_RETRIES) {
+          != YarnApplicationState.FINISHED && appState
+          != YarnApplicationState.KILLED && failures
+          <= DEFAULT_MAX_STATE_POLL_RETRIES) {
         //wait to poll another time
         long startTime = System.currentTimeMillis();
         while ((System.currentTimeMillis() - startTime)
-                < DEFAULT_POLL_TIMEOUT_INTERVAL * 1000) {
+            < DEFAULT_POLL_TIMEOUT_INTERVAL * 1000) {
           try {
             Thread.sleep(200);
           } catch (InterruptedException e) {
@@ -404,8 +407,8 @@ public abstract class YarnJob extends HopsJob {
         } catch (YarnException | IOException ex) {
           failures++;
           LOG.log(Level.WARNING,
-                  "Failed to get application state for execution "
-                  + getExecution() + ". Tried " + failures + " time(s).", ex);
+              "Failed to get application state for execution "
+              + getExecution() + ". Tried " + failures + " time(s).", ex);
         }
         //Remove local and hdfs files (localresources)this job uses
         if (!removedFiles && finalAppState.contains(appState)) {
@@ -414,8 +417,8 @@ public abstract class YarnJob extends HopsJob {
             removedFiles = true;
           } catch (IOException ex) {
             LOG.log(Level.SEVERE,
-                    "Exception while trying to delete job tmp files "
-                    + getExecution(), ex);
+                "Exception while trying to delete job tmp files "
+                + getExecution(), ex);
           }
         }
       }
@@ -423,8 +426,8 @@ public abstract class YarnJob extends HopsJob {
       if (failures > DEFAULT_MAX_STATE_POLL_RETRIES) {
         try {
           LOG.log(Level.SEVERE,
-                  "Killing application, {0}, because unable to poll for status.",
-                  getExecution());
+              "Killing application, {0}, because unable to poll for status.",
+              getExecution());
           r.cancelJob(r.getApplicationId().toString());
           updateState(JobState.KILLED);
           updateFinalStatus(JobFinalStatus.KILLED);
@@ -433,8 +436,8 @@ public abstract class YarnJob extends HopsJob {
           runner.removeAllNecessary();
         } catch (YarnException | IOException ex) {
           LOG.log(Level.SEVERE,
-                  "Failed to cancel execution, " + getExecution()
-                  + " after failing to poll for status.", ex);
+              "Failed to cancel execution, " + getExecution()
+              + " after failing to poll for status.", ex);
           updateState(JobState.FRAMEWORK_FAILURE);
           finalState = JobState.FRAMEWORK_FAILURE;
         }
@@ -448,6 +451,31 @@ public abstract class YarnJob extends HopsJob {
     }
   }
 
+  //TODO(Theofilos): Temporary fix for TensorFlowOnSpark. Should be removed.
+  /**
+   * Change the owner of all the files that are owned by the super user, to the one that ran the job.
+   * @param dfso 
+   */
+  private void fixOwner(DistributedFileSystemOps dfso) {
+    String projectName = jobDescription.getProject().getName();
+    Inode parent = services.getInodeFacade().getInodeAtPath("/Projects/" + projectName);
+    List<Inode> children = new ArrayList<>();
+    services.getInodeFacade().getAllChildren(parent, children);
+
+    for (Inode child : children) {
+      if (child.getHdfsUser() != null && child.getHdfsUser().getName().
+          equals(services.getSettings().getYarnSuperUser())) {
+        try {
+          org.apache.hadoop.fs.Path path = new org.apache.hadoop.fs.Path(services.getInodeFacade().getPath(child));
+          dfso.setOwner(path, jobUser, child.getHdfsGroup().getName());
+          dfso.setPermission(path, new FsPermission(FsAction.ALL, FsAction.READ_EXECUTE, FsAction.NONE));
+        } catch (IOException ex) {
+          LOG.log(Level.WARNING, "Could not fix owner of inode:{0}, {1}", new Object[]{child.getId(), ex.getMessage()});
+        }
+      }
+    }
+  }
+  
   /**
    * Copy the AM logs to their final destination.
    *
@@ -457,70 +485,70 @@ public abstract class YarnJob extends HopsJob {
     try {
       if (stdOutFinalDestination != null && !stdOutFinalDestination.isEmpty()) {
         stdOutFinalDestination = stdOutFinalDestination + getExecution().
-                getAppId()
-                + File.separator + "stdout.log";
+            getAppId()
+            + File.separator + "stdout.log";
         if (!runner.areLogPathsHdfs() && !runner.areLogPathsAggregated()) {
           udfso.copyToHDFSFromLocal(true, runner.
-                  getStdOutPath(),
-                  stdOutFinalDestination);
+              getStdOutPath(),
+              stdOutFinalDestination);
         } else if (runner.areLogPathsAggregated()) {
           String[] desiredLogTypes = {"out"};
           YarnLogUtil.copyAggregatedYarnLogs(
-                  udfso, runner.
+              udfso, runner.
                   getStdOutPath(),
-                  stdOutFinalDestination, desiredLogTypes);
+              stdOutFinalDestination, desiredLogTypes);
 
         } else {
           udfso.renameInHdfs(
-                  runner.
+              runner.
                   getStdOutPath(),
-                  stdOutFinalDestination);
+              stdOutFinalDestination);
         }
       }
       if (stdErrFinalDestination != null && !stdErrFinalDestination.isEmpty()) {
         stdErrFinalDestination = stdErrFinalDestination + getExecution().
-                getAppId()
-                + File.separator + "stderr.log";
+            getAppId()
+            + File.separator + "stderr.log";
         if (!runner.areLogPathsHdfs() && !runner.areLogPathsAggregated()) {
           udfso.copyToHDFSFromLocal(true, runner.
-                  getStdErrPath(),
-                  stdErrFinalDestination);
+              getStdErrPath(),
+              stdErrFinalDestination);
         } else if (runner.areLogPathsAggregated()) {
           String[] desiredLogTypes = {"err", ".log"};
           YarnLogUtil.copyAggregatedYarnLogs(
-                  udfso, runner.
+              udfso, runner.
                   getStdOutPath(),
-                  stdErrFinalDestination, desiredLogTypes);
+              stdErrFinalDestination, desiredLogTypes);
         } else {
           udfso.renameInHdfs(
-                  runner.
+              runner.
                   getStdErrPath(),
-                  stdErrFinalDestination);
+              stdErrFinalDestination);
         }
       }
       updateExecution(null, -1, stdOutFinalDestination, stdErrFinalDestination,
-              null, null, null, null, 0);
+          null, null, null, null, 0);
     } catch (IOException e) {
       LOG.log(Level.SEVERE,
-              "Exception while trying to write logs for execution "
-              + getExecution() + " to HDFS.", e);
+          "Exception while trying to write logs for execution "
+          + getExecution() + " to HDFS.", e);
     }
   }
 
-  protected void writeLog(String message, Exception exception, DistributedFileSystemOps udfso){
-    
+  protected void writeLog(String message, Exception exception, DistributedFileSystemOps udfso) {
+
     Date date = new Date();
     String dateString = date.toString();
     dateString = dateString.replace(" ", "_").replace(":", "-");
     stdErrFinalDestination = stdErrFinalDestination + jobDescription.getName() + dateString + "/stderr.log";
-    YarnLogUtil.writeLog(udfso ,stdErrFinalDestination, message, exception);
+    YarnLogUtil.writeLog(udfso, stdErrFinalDestination, message, exception);
     updateExecution(null, -1, null, stdErrFinalDestination,
-              null, null, null, null, 0);
+        null, null, null, null, 0);
   }
-  
+
   @Override
   protected void runJob(DistributedFileSystemOps udfso,
-          DistributedFileSystemOps dfso) {
+      DistributedFileSystemOps dfso) {
     // Try to start the AM
     boolean proceed = startApplicationMaster(udfso, dfso);
 
@@ -535,6 +563,9 @@ public abstract class YarnJob extends HopsJob {
     updateState(JobState.AGGREGATING_LOGS);
     copyLogs(udfso);
     updateState(getFinalState());
+    if(jobDescription.getJobConfig().getType() == JobType.TFSPARK){
+      fixOwner(dfso);
+    }
   }
 
   @Override
@@ -557,7 +588,7 @@ public abstract class YarnJob extends HopsJob {
           yarnClient.close();
         } catch (IOException ex) {
           LOG.log(Level.WARNING,
-                  "Could not close yarn client for killing yarn job");
+              "Could not close yarn client for killing yarn job");
         }
       }
     }

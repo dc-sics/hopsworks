@@ -78,6 +78,9 @@
 .file.greyed {
   background-color: #f3f3f4;
 }
+.file.notAccepted {
+  background-color: #fff7f7;
+}
 
 .file .icon, .file .image {
   height: 100px;
@@ -105,6 +108,7 @@
   padding: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .file .file-name .selected {

@@ -143,6 +143,7 @@ public class DataSetService {
   }
 
   @GET
+  @Path("/getContent/")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response findDataSetsInProjectID(
@@ -164,6 +165,9 @@ public class DataSetService {
       } else {
         projPath = Settings.getProjectPath(this.project.getName());
       }
+      List<Dataset> inodeOccurrence = datasetFacade.
+              findByInodeId(ds.geInodeId());
+      int sharedWith = inodeOccurrence.size() - 1; // -1 for ds itself 
       inodeView = new InodeView(parent, ds, projPath + File.separator + ds.
               getInode()
               .getInodePK().getName());
@@ -172,6 +176,7 @@ public class DataSetService {
         inodeView.setOwner(user.getFname() + " " + user.getLname());
         inodeView.setEmail(user.getEmail());
       }
+      inodeView.setSharedWith(sharedWith);
       kids.add(inodeView);
       if (inodeView.getName().
               equals(Settings.DefaultDataset.NOTEBOOKS.getName())) {
@@ -220,7 +225,7 @@ public class DataSetService {
    * @throws AppException
    */
   @GET
-  @Path("/{path: .+}")
+  @Path("/getContent/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response getDirContent(
@@ -254,6 +259,36 @@ public class DataSetService {
             inodeViews).build();
   }
 
+  @GET
+  @Path("/getFile/{path: .+}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public Response getFile(@PathParam("path") String path,
+      @Context SecurityContext sc) throws
+      AppException, AccessControlException {
+    String fullpath = getFullPath(path);
+    Inode inode = inodes.getInodeAtPath(fullpath);
+
+    if(inode==null){
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),ResponseMessages.DATASET_NOT_FOUND);
+    }
+    
+    InodeView inodeView;
+    Users user;
+
+    inodeView = new InodeView(inode, fullpath + "/" + inode.getInodePK().getName());
+    user = userfacade.findByUsername(inodeView.getOwner());
+    if (user != null) {
+      inodeView.setOwner(user.getFname() + " " + user.getLname());
+      inodeView.setEmail(user.getEmail());
+    }
+
+    GenericEntity<InodeView> inodeViews
+        = new GenericEntity<InodeView>(inodeView) {};
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+        inodeViews).build();
+  }
+  
   @POST
   @Path("/shareDataSet")
   @Produces(MediaType.APPLICATION_JSON)
@@ -330,47 +365,47 @@ public class DataSetService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             json).build();
   }
-  
+
   @POST
   @Path("/unshareDataSet")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response unshareDataSet(
-      DataSetDTO dataSets,
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) throws AppException,
-      AccessControlException {
+          DataSetDTO dataSets,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException,
+          AccessControlException {
 
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
     JsonResponse json = new JsonResponse();
     Inode parent = inodes.getProjectRoot(this.project.getName());
     if (dataSets == null || dataSets.getName() == null || dataSets.getName().
-        isEmpty()) {
+            isEmpty()) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.DATASET_NAME_EMPTY);
+              ResponseMessages.DATASET_NAME_EMPTY);
     }
     if (dataSets.getProjectIds() == null || dataSets.getProjectIds().isEmpty()) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "No project selected.");
+              "No project selected.");
     }
     for (int projectId : dataSets.getProjectIds()) {
       Project proj = projectFacade.find(projectId);
       if (proj == null) {
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-            ResponseMessages.PROJECT_NOT_FOUND);
+                ResponseMessages.PROJECT_NOT_FOUND);
       }
       Inode inode = inodes.findByInodePK(parent, dataSets.getName(),
-          HopsUtils.dataSetPartitionId(parent, dataSets.getName()));
+              HopsUtils.dataSetPartitionId(parent, dataSets.getName()));
       Dataset ds = datasetFacade.findByProjectAndInode(this.project, inode);
       if (ds == null) {//if parent id and project are not the same it is a shared ds.
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-            "You can not unshare this dataset you are not the owner.");
+                "You can not unshare this dataset you are not the owner.");
       }
 
       Dataset dst = datasetFacade.findByProjectAndInode(proj, inode);
       if (dst == null) {//proj already have the dataset.
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-            "Dataset not shared with " + proj.getName());
+                "Dataset not shared with " + proj.getName());
       }
 
       hdfsUsersBean.unshareDataset(proj, ds);
@@ -378,11 +413,11 @@ public class DataSetService {
       datasetFacade.removeDataset(dst);
 
       activityFacade.persistActivity(ActivityFacade.UNSHARED_DATA + dataSets.
-          getName() + " with project " + proj.getName(), project, user);
+              getName() + " with project " + proj.getName(), project, user);
     }
     json.setSuccessMessage("The Dataset was successfully unshared.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        json).build();
+            json).build();
   }
 
   @POST
@@ -390,36 +425,36 @@ public class DataSetService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response getProjectSharedWith(
-      DataSetDTO dataSet,
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) throws AppException,
-      AccessControlException {
+          DataSetDTO dataSet,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException,
+          AccessControlException {
 
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
     JsonResponse json = new JsonResponse();
     Inode parent = inodes.getProjectRoot(this.project.getName());
     if (dataSet == null || dataSet.getName() == null || dataSet.getName().
-        isEmpty()) {
+            isEmpty()) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.DATASET_NAME_EMPTY);
+              ResponseMessages.DATASET_NAME_EMPTY);
     }
     if (dataSet.getProjectId() == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "No project selected.");
+              "No project selected.");
     }
     Project proj = projectFacade.find(dataSet.getProjectId());
     if (proj == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.PROJECT_NOT_FOUND);
+              ResponseMessages.PROJECT_NOT_FOUND);
     }
 
-    List<Project> list = datasetFacade.findProjectSharedWith(project, dataSet.getName());
+    List<Project> list = datasetFacade.findProjectSharedWith(project, dataSet.
+            getName());
     GenericEntity<List<Project>> projects = new GenericEntity<List<Project>>(
-        list) {
-    };
+            list) {};
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        projects).build();
+            projects).build();
   }
 
   @POST
@@ -427,26 +462,26 @@ public class DataSetService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response makeEditable(
-      DataSetDTO dataSet,
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) throws AppException,
-      AccessControlException {
+          DataSetDTO dataSet,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException,
+          AccessControlException {
 
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
     JsonResponse json = new JsonResponse();
     Inode parent = inodes.getProjectRoot(this.project.getName());
     if (dataSet == null || dataSet.getName() == null || dataSet.getName().
-        isEmpty()) {
+            isEmpty()) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.DATASET_NAME_EMPTY);
+              ResponseMessages.DATASET_NAME_EMPTY);
     }
 
     Inode inode = inodes.findByInodePK(parent, dataSet.getName(),
-        HopsUtils.dataSetPartitionId(parent, dataSet.getName()));
+            HopsUtils.dataSetPartitionId(parent, dataSet.getName()));
     Dataset ds = datasetFacade.findByProjectAndInode(this.project, inode);
     if (ds == null) {//if parent id and project are not the same it is a shared ds.
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "You can not make this dataset editable you are not the owner.");
+              "You can not make this dataset editable you are not the owner.");
     }
 
     DistributedFileSystemOps udfso = null;
@@ -454,16 +489,16 @@ public class DataSetService {
       String username = hdfsUsersBean.getHdfsUserName(project, user);
       udfso = dfs.getDfsOps(username);
       FsPermission fsPermission = new FsPermission(FsAction.ALL, FsAction.ALL,
-          FsAction.NONE, true);
+              FsAction.NONE, true);
       datasetController.changePermission(inodes.getPath(inode),
-          user, project, fsPermission, udfso);
+              user, project, fsPermission, udfso);
     } catch (AccessControlException ex) {
       throw new AccessControlException(
-          "Permission denied: Can not change the permission of this file.");
+              "Permission denied: Can not change the permission of this file.");
     } catch (IOException e) {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-          getStatusCode(), "Error while creating directory: " + e.
-          getLocalizedMessage());
+              getStatusCode(), "Error while creating directory: " + e.
+              getLocalizedMessage());
     } finally {
       if (udfso != null) {
         udfso.close();
@@ -472,9 +507,64 @@ public class DataSetService {
 
     json.setSuccessMessage("The Dataset was successfully made editable.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        json).build();
+            json).build();
   }
-  
+
+  @POST
+  @Path("/removeEditable")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response removeEditable(
+          DataSetDTO dataSet,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException,
+          AccessControlException {
+
+    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    JsonResponse json = new JsonResponse();
+    Inode parent = inodes.getProjectRoot(this.project.getName());
+    if (dataSet == null || dataSet.getName() == null || dataSet.getName().
+            isEmpty()) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.DATASET_NAME_EMPTY);
+    }
+
+    Inode inode = inodes.findByInodePK(parent, dataSet.getName(),
+            HopsUtils.dataSetPartitionId(parent, dataSet.getName()));
+    Dataset ds = datasetFacade.findByProjectAndInode(this.project, inode);
+    if (ds == null) {//if parent id and project are not the same it is a shared ds.
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "You can not make this dataset editable you are not the owner.");
+    }
+
+    DistributedFileSystemOps udfso = null;
+    try {
+      String username = hdfsUsersBean.getHdfsUserName(project, user);
+      udfso = dfs.getDfsOps(username);
+      FsPermission fsPermission = new FsPermission(FsAction.ALL,
+              FsAction.READ_EXECUTE,
+              FsAction.NONE, true);
+      datasetController.recursiveChangeOwnershipAndPermission(inodes.getPath(
+              inode),
+              user, fsPermission, udfso);
+    } catch (AccessControlException ex) {
+      throw new AccessControlException(
+              "Permission denied: Can not change the permission of this file.");
+    } catch (IOException e) {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+              getStatusCode(), "Error while creating directory: " + e.
+              getLocalizedMessage());
+    } finally {
+      if (udfso != null) {
+        udfso.close();
+      }
+    }
+
+    json.setSuccessMessage("The Dataset was successfully made editable.");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            json).build();
+  }
+
   @GET
   @Path("/accept/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -778,8 +868,8 @@ public class DataSetService {
     String destProject = "";
     String destDir = dto.getDestPath();
     //If destDir does not start with /Project, moving is in the same project
-    if (!destDir.startsWith("/Projects/")){
-      destDir = "/Projects/"+project.getName()+"/"+destDir;
+    if (!destDir.startsWith("/Projects/")) {
+      destDir = "/Projects/" + project.getName() + "/" + destDir;
     }
     if (destDir.startsWith("/Projects/") && sourcePath.startsWith("/Projects/")) {
       destDir = destDir.replace("/Projects/", "");
@@ -1023,7 +1113,7 @@ public class DataSetService {
     Response.ResponseBuilder response = Response.ok();
     return response.build();
   }
-
+  
   @GET
   @Path("filePreview/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)

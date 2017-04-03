@@ -313,8 +313,10 @@ public class Settings implements Serializable {
   //PySpark properties
   public static final String SPARK_APP_NAME_ENV = "spark.app.name";
   public static final String SPARK_EXECUTORENV_PYTHONPATH = "spark.executorEnv.PYTHONPATH";
+  public static final String SPARK_EXECUTORENV_LD_LIBRARY_PATH = "spark.executorEnv.LD_LIBRARY_PATH";
   public static final String SPARK_YARN_IS_PYTHON_ENV = "spark.yarn.isPython";
   public static final String SPARK_PYTHONPATH = "PYTHONPATH";
+  public static final String SPARK_PYSPARK_PYTHON = "PYSPARK_PYTHON";
   
   //Spark log4j and metrics properties
   public static final String SPARK_LOG4J_CONFIG = "log4j.configuration";
@@ -335,7 +337,9 @@ public class Settings implements Serializable {
   public static final String SPARK_PY_MAINCLASS = "org.apache.spark.deploy.PythonRunner";
   public static final String PYSPARK_ZIP = "pyspark.zip";
   public static final String PYSPARK_PY4J = "py4j-0.10.4-src.zip";
-
+  public static final String TFSPARK_PYTHON_ZIP = "Python.zip";
+  public static final String TFSPARK_PYTHON_NAME = "Python";
+  public static final String TFSPARK_ZIP = "tfspark.zip";
   public synchronized String getSparkDir() {
     checkCache();
     return SPARK_DIR;
@@ -628,6 +632,10 @@ public class Settings implements Serializable {
   public static String getHdfsSparkJarPath(String sparkUser) {
     return hdfsSparkJarPath(sparkUser);
   }
+  
+  public static String getPySparkLibsPath(String sparkUser) {
+    return "hdfs:///user/" + sparkUser;
+  }
 
   public static String getSparkLog4JPath(String sparkUser) {
     return "hdfs:///user/" + sparkUser + "/log4j.properties";
@@ -846,11 +854,20 @@ public class Settings implements Serializable {
     return KAFKA_DIR;
   }
 
-  private String ANACONDA_DIR = "/srv/hops/anaconda/anaconda/envs";
+  private String ANACONDA_DIR = "/srv/hops/anaconda/anaconda";
 
   public synchronized String getAnacondaDir() {
     checkCache();
     return ANACONDA_DIR;
+  }
+  
+  /**
+   * Constructs the path to the project environment in Anaconda
+   * @param projectName
+   * @return 
+   */
+  public String getAnacondaProjectDir(String projectName){
+    return getAnacondaDir() + File.separator + "envs" + File.separator + projectName;
   }
 
   private String ANACONDA_ENV = "kagent";
@@ -978,6 +995,7 @@ public class Settings implements Serializable {
   public static final String META_DATASET_TYPE = "ds";
   public static final String META_INODE_TYPE = "inode";
   public static final String META_PROJECT_ID_FIELD = "project_id";
+  public static final String META_DATASET_ID_FIELD = "dataset_id";
   public static final String META_ID = "_id";
   public static final String META_DATA_NESTED_FIELD = "xattr";
   public static final String META_DATA_FIELDS = META_DATA_NESTED_FIELD + ".*";

@@ -108,7 +108,7 @@
                                           jobsCtrl.showLogs(job.id);
                                           $event.stopPropagation();"
                           class="btn btn-danger btn-sm"
-                          style="min-width: 64px; width: 60%;">
+                           style="min-width: 64px; width: 60%;">
                           <span class="glyphicon glyphicon-stop" aria-hidden="true" ng-show="jobsCtrl.getJobClickStatus(job.id)==='running'"></span>
                           <span class="fa fa-spinner fa-spin" aria-hidden="true" ng-show="jobsCtrl.getJobClickStatus(job.id)==='stopping'" ></span>
                           Stop
@@ -341,7 +341,7 @@
                         </textarea>
                         <div ng-show="item.logPath !== undefined" contenteditable="false" class="form-control" rows="15" placeholer="No log information available" readonly>
                           {{item.log}}
-                          <a href="#{{item.logPath}}">here!</a>
+                          <a href="#!{{item.logPath}}">here!</a>
                         </div>
                       </div>
                     </div>
@@ -366,7 +366,7 @@
                         </textarea>
                         <div ng-show="item.errPath !== undefined" contenteditable="false" class="form-control" rows="15" placeholer="No error information available" readonly>
                           {{item.err}}
-                          <a href="#{{item.errPath}}">here!</a>
+                          <a href="#!{{item.errPath}}">here!</a>
                         </div>
                       </div>
                     </div>
