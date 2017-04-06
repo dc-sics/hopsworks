@@ -201,6 +201,7 @@ angular.module('hopsWorksApp')
             }
 
             self.vizopsUI = function () {
+              startLoading("Loading Vizops UI...");
               getAppId(vizopsInt);
             }
 
@@ -231,7 +232,10 @@ angular.module('hopsWorksApp')
               var ifram = document.getElementById('ui_iframe');
               if (self.current === "grafanaUI") {
                 self.grafanaUI();
+              } else if (self.current === "vizopsUI") {
+                self.vizopsUI();
               }
+
               if (ifram !== null) {
                 ifram.contentWindow.location.reload();
               }
