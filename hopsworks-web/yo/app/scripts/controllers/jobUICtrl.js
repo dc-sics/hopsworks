@@ -4,9 +4,9 @@
  */
 angular.module('hopsWorksApp')
         .controller('JobUICtrl', ['$scope', '$timeout', 'growl', 'JobService', '$interval', 'StorageService',
-          '$routeParams', '$route', '$location', 'KibanaService', '$sce',
+          '$routeParams', '$route', '$location', 'KibanaService', 'InfluxDBService', '$sce',
           function ($scope, $timeout, growl, JobService, $interval, StorageService,
-                  $routeParams, $route, $location, KibanaService, $sce) {
+                  $routeParams, $route, $location, KibanaService, InfluxDBService, $sce) {
 
             var self = this;
             self.job;
@@ -205,15 +205,11 @@ angular.module('hopsWorksApp')
             }
 
             var vizopsInt = function () {
-                JobService.getAppInfo(self.projectId, self.appId).then(
+                InfluxDBService.getInfluxDBVersion(self.projectId, self.appId).then(
                     function (success) {
-                      var info = success.data;
-                      var appid = info.appId;
-                      var startTime = info.startTime;
-                      var finishTime = info.endTime;
-                      self.ui = info.appid;
+                      var version = success.data;
+                      self.ui = version;
                       self.current = "vizopsUI";
-
 
                       $timeout(stopLoading(), 1000);
                     }, function (error) {

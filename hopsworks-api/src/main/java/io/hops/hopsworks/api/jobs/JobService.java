@@ -104,6 +104,8 @@ public class JobService {
   private AdamService adam;
   @Inject
   private FlinkService flink;
+  @Inject
+  private InfluxDBService influxdb;
   @EJB
   private JobController jobController;
   @EJB
@@ -303,7 +305,7 @@ public class JobService {
    /**
    * Get the Job UI url for the specified job
    * <p>
-   * @param jobId
+   * @param appId
    * @param sc
    * @param req
    * @return url
@@ -358,7 +360,7 @@ public class JobService {
   /**
    * Get the Yarn UI url for the specified job
    * <p>
-   * @param jobId
+   * @param appId
    * @param sc
    * @param req
    * @return url
@@ -398,7 +400,7 @@ public class JobService {
   /**
    * Get application run info for the specified job
    * <p>
-   * @param jobId
+   * @param appId
    * @param sc
    * @param req
    * @return url
@@ -474,7 +476,7 @@ public class JobService {
    * Get the job ui for the specified job.
    * This act as a proxy to get the job ui from yarn
    * <p>
-   * @param jobId
+   * @param appId
    * @param param
    * @param sc
    * @param req
@@ -1145,7 +1147,11 @@ public class JobService {
 
   @Path("/flink")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public FlinkService flink() {
-    return this.flink.setProject(project);
+  public FlinkService flink() { return this.flink.setProject(project); }
+
+  @Path("/{appId}/influxdb")
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public InfluxDBService influxdb(@PathParam("appId") String appId) {
+    return this.influxdb.setAppId(appId);
   }
 }
