@@ -205,23 +205,15 @@ angular.module('hopsWorksApp')
             self.vizopsUI = function () {
               startLoading("Loading Vizops UI...");
               getAppId(vizopsInt);
-            }
+            };
 
             var vizopsInt = function () {
-                InfluxDBService.getInfluxDBVersion(self.projectId, self.appId).then(
-                    function (success) {
-                      var version = success.data;
-                      self.ui = version;
-                      self.current = "vizopsUI";
-
-                      $timeout(stopLoading(), 1000);
-                    }, function (error) {
-                      growl.error(error.data.errorMsg, {title: 'Error fetching ui.',
-                      ttl: 15000});
-                      stopLoading();
-                });
-
-            }
+                self.ui = "vizz";
+                self.current = "vizopsUI";
+                InfluxDBService.init(self.projectId, self.appId);
+                // The rest of the logic is handled by InfluxDBCtrl.js
+                stopLoading();
+            };
 
             self.backToHome = function () {
               if (self.jobName != undefined && self.jobName != false && self.jobName != "") {

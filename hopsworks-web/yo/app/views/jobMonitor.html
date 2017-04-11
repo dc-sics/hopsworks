@@ -75,7 +75,9 @@
               </div>
               <div ng-if="jobUICtrl.ui === ''">This job has not run yet</div>
               <div ng-if="jobUICtrl.current === 'vizopsUI'">
-                <div ng-include="'views/vizops.html'"></div>
+                <div ng-controller="InfluxDBCtrl as influxDBCtrl">
+                  <div ng-include="'views/vizops.html'"></div>
+                </div>
               </div>
 
               <h3 class="text-muted" style="text-align: center;" ng-show="jobsCtrl.jobs.length < 1">
