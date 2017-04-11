@@ -15,14 +15,10 @@ angular.module('hopsWorksApp')
             getAppId : function() {
                 return this.appId;
             },
-            getInfluxDBVersion: function(projectId, appId) {
-                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/influxdb/info');
-            },
-            getSparkMetrics: function(sparkAppId) {
-                return 'sparkMetrics';
-            },
-            getYarnMetrics: function() {
-                return 'yarnMetrics';
+            getSparkMetrics: function(projectId, appId, startTime) {
+                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/spark?' +
+                            'field=total_used,heap_used&startTime=' + startTime + '&service=driver';
+                return $http.get(query);
             }
         };
 
