@@ -19,6 +19,10 @@ angular.module('hopsWorksApp')
                 self.charts = [];
                 self.values = [];
 
+                var counter = 1;
+                var total_used = [];
+                var heap_used = [];
+
                 // graph initialization
                 $scope.options = {
                             chart: {
@@ -75,40 +79,7 @@ angular.module('hopsWorksApp')
                             }
                         };
 
-                        $scope.data = sinAndCos();
-
-                        /*Random Data Generator */
-                        function sinAndCos() {
-                            var sin = [],sin2 = [],
-                                cos = [];
-
-                            //Data is represented as an array of {x,y} pairs.
-                            for (var i = 0; i < 100; i++) {
-                                sin.push({x: i, y: Math.sin(i/10)});
-                                sin2.push({x: i, y: i % 10 == 5 ? null : Math.sin(i/10) *0.25 + 0.5});
-                                cos.push({x: i, y: .5 * Math.cos(i/10+ 2) + Math.random() / 10});
-                            }
-
-                            //Line chart data should be sent as an array of series objects.
-                            return [
-                                {
-                                    values: sin,      //values - represents the array of {x,y} data points
-                                    key: 'Sine Wave', //key  - the name of the series.
-                                    color: '#ff7f0e'  //color - optional: choose your own line color.
-                                },
-                                {
-                                    values: cos,
-                                    key: 'Cosine Wave',
-                                    color: '#2ca02c'
-                                },
-                                {
-                                    values: sin2,
-                                    key: 'Another sine wave',
-                                    color: '#7777ff',
-                                    area: true      //area - set to true if you want this line to turn into a filled area chart.
-                                }
-                            ];
-                        };
+                $scope.data = [];
 
                 // http://jsbin.com/yevopawiwe/edit?html,js,output
                 var updateData = function() {
@@ -118,7 +89,7 @@ angular.module('hopsWorksApp')
                             if (success.status === 200) {
                                 var info = success.data;
                                 self.startTime = +info.lastMeasurementTimestamp;
-                                //updateGraph(info);
+                                updateGraph(info);
                             } // dont do anything if response 204, no results
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching spark metrics.', ttl: 15000});
@@ -127,26 +98,29 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateGraph = function(data) {
-                    self.myChart.data.labels.push(data.series.values.map(
-                      function(x) {
-                        return +x.split(' ')[0];
-                      })
-                    );
-                    // update data of the first dataset
-                    self.myChart.data.datasets[0].data.push(data.series.values.map(
-                      function(x) {
-                        return +x.split(' ')[1];
-                      }
-                    ));
-                    // update data of the first dataset
-                    self.myChart.data.datasets[1].data.push(data.series.values.map(
-                      function(x) {
-                        return +x.split(' ')[2];
-                      }
-                    ));
+                    total_used.push({x: counter, y: Math.random(1)});
+                    heap_used.push({x: counter, y: Math.random(1)});
 
-                    self.myChart.update();
+                    if (total_used.length > 20) {
+                        total_used.shift();
+                        heap_used.shift();
+                    }
 
+                    $scope.data = [
+                        {
+                            values: total_used,
+                            key: 'Total used',
+                            color: '#ff7f0e'
+                        },
+                        {
+                            values: heap_used,
+                            key: 'Heap used',
+                            color: '#7777ff',
+                            area: true
+                        }
+                    ];
+
+                    counter++;
                 };
 
                 var init = function() {
