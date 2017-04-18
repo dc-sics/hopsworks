@@ -24,6 +24,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @RequestScoped
@@ -50,34 +52,43 @@ public class InfluxDBService {
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response info(
           @QueryParam("startTime") String startTime,
-          @QueryParam("field") List<String> field,
+          @QueryParam("fields") List<String> fields,
           @QueryParam("service") String service,
           @Context SecurityContext sc, @Context HttpServletRequest req) throws
           AppException, AccessControlException {
-    // /spark?field=total_used,heap_used&startTime=1491827969000&service=driver
+    // e.g. /spark?fields=total_used,heap_used&startTime=1491827969000&service=driver
     InfluxDB influxdb = InfluxDBFactory.connect(settings.
             getInfluxDBAddress(), settings.getInfluxDBUser(), settings.
             getInfluxDBPW());
-
-    String fields = String.join(",", field);
+    Response httpResponse = null;
 
     StringBuffer query = new StringBuffer();
-    query.append("select " + String.join(",", field) + " from spark ");
+    query.append("select " + String.join(",", fields) + " from spark ");
     query.append("where appid=\'" + this.appId + "\' ");
     query.append("and service=\'" + service + "\' ");
     query.append("and time > " + startTime);
+    query.append("ms");
+
+    LOGGER.log(Level.INFO, "Sending query: " + query.toString());
 
     Query q = new Query(query.toString(), "graphite");
-    QueryResult response = influxdb.query(q);
+    QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
     List<QueryResult.Result> results = response.getResults();
-    QueryResult.Series series = results.get(0).getSeries().get(0);
 
-    InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
-    influxResults.setSeries(series);
+    if (results.get(0).getSeries() != null) {
+      QueryResult.Series series = results.get(0).getSeries().get(0);
+      InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
+      influxResults.setSeries(series);
+
+      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+              entity(influxResults).build();
+    } else {
+      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
+              entity("").build();
+    }
 
     influxdb.close();
 
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-            entity(influxResults).build();
+    return httpResponse;
   }
 }

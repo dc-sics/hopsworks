@@ -33,7 +33,8 @@ angular.module('hopsWorksApp', [
   'vAccordion',
   'md.data.table',
   'rzModule',
-  'isteven-multi-select'
+  'isteven-multi-select',
+  'nvd3'
 ])
         .config(['$routeProvider', '$httpProvider', '$compileProvider', 'flowFactoryProvider', 'accordionConfig',
           function ($routeProvider, $httpProvider, $compileProvider, flowFactoryProvider, accordionConfig) {

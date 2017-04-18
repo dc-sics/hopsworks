@@ -17,7 +17,7 @@ angular.module('hopsWorksApp')
             },
             getSparkMetrics: function(projectId, appId, startTime) {
                 var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/spark?' +
-                            'field=total_used,heap_used&startTime=' + startTime + '&service=driver';
+                            'fields=total_used,heap_used&startTime=' + startTime + '&service=driver';
                 return $http.get(query);
             }
         };
