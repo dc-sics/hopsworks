@@ -43,6 +43,7 @@ import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -283,7 +284,6 @@ public class JobService {
   /**
    * Get the projectName for the specified projectId
    * <p>
-   * @param jobId
    * @param sc
    * @param req
    * @return url
@@ -832,7 +832,7 @@ public class JobService {
           if (e.getStdoutPath() != null && !e.getStdoutPath().isEmpty() && dfso.
                   exists(hdfsLogPath)) {
             if (dfso.listStatus(new org.apache.hadoop.fs.Path(
-                    hdfsLogPath))[0].getLen() > 5000000l) {
+                    hdfsLogPath))[0].getLen() > Settings.getJobLogsDisplaySize()) {
               stdPath = e.getStdoutPath().split(this.project.getName())[1];
               arrayObjectBuilder.add("log",
                       "Log is too big to display. Please retrieve it by clicking ");
@@ -863,7 +863,7 @@ public class JobService {
           if (e.getStderrPath() != null && !e.getStderrPath().isEmpty() && dfso.
                   exists(hdfsErrPath)) {
             if (dfso.listStatus(new org.apache.hadoop.fs.Path(
-                    hdfsErrPath))[0].getLen() > 5000000l) {
+                    hdfsErrPath))[0].getLen() > Settings.getJobLogsDisplaySize()) {
               stdPath = e.getStderrPath().split(this.project.getName())[1];
               arrayObjectBuilder.add("err",
                       "Log is too big to display. Please retrieve it by clicking ");
@@ -1041,10 +1041,16 @@ public class JobService {
     } else {
       try {
         LOGGER.log(Level.INFO, "Request to delete job name ={0} job id ={1}",
-                new Object[]{job.getName(), job.getId()});
-//        executionController.kill(job, user);
+            new Object[]{job.getName(), job.getId()});
+        
+        for (Iterator<Execution> execsIter = job.getExecutionCollection().iterator(); execsIter.hasNext();) {
+          if (execsIter.next().getState() == JobState.RUNNING) {
+            throw new AppException(Response.Status.FORBIDDEN.getStatusCode(),
+                "Job is still running, please stop it first by clicking the Stop button");
+          }
+        }
+        elasticController.deleteJobLogs(project.getName(), "logs", Settings.getJobLogsIdField(),job.getId());
         jobFacade.removeJob(job);
-        elasticController.deleteJobLogs(project.getName(), "logs", job.getId());
         LOGGER.log(Level.INFO, "Deleted job name ={0} job id ={1}",
                 new Object[]{job.getName(), job.getId()});
         JsonResponse json = new JsonResponse();
@@ -1059,7 +1065,7 @@ public class JobService {
                 new Object[]{job.getName(), job.getId()});
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), ex.getMessage());
-      }
+      } 
     }
   }
 
