@@ -1,5 +1,15 @@
-<div id="charts">
-  <div class="row">
-    <nvd3 options="options" data="data" class="with-3d-shadow with-transitions"></nvd3>
-  </div>
+<div id="headers">
+  <h3>{{influxDBCtrl.jobName}}&nbsp;<small>{{influxDBCtrl.appId}}</small></h3>
 </div>
+
+<div id="charts">
+  <div class="container-fluid">
+    <div class="row">
+
+      <div class="col-md-12">
+        <nvd3 options="options" data="data" class="with-3d-shadow with-transitions"></nvd3>
+      </div>
+
+    </div>
+  </div> <!-- class:container fluid end -->
+</div> <!-- id:charts end -->
