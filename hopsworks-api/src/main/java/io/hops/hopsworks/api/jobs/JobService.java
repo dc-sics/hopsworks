@@ -40,13 +40,18 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.InetAddress;
 import java.net.URLEncoder;
+import java.util.Map;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.HashMap;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -444,21 +449,49 @@ public class JobService {
                 getInfluxDBAddress(), settings.getInfluxDBUser(), settings.
                 getInfluxDBPW());
 
-        Query query = new Query("SELECT * FROM /" + appId
-                + ".*.executor.threadpool.activeTasks/ limit 1", "graphite");
+        // Transform application_1493112123688_0001 to 1493112123688_0001
+        // application_ = 12 chars
+        String timestamp_attempt = appId.substring(12);
+
+        Query query = new Query("show tag values from nodemanager with key=\"source\" " +
+                "where source =~ /^.*" + timestamp_attempt + ".*$/", "graphite");
         QueryResult queryResult = influxDB.query(query);
 
-        influxDB.close();
-
         int nbExecutors = 0;
+        HashMap<Integer, List<String>> executorInfo = new HashMap<>();
+
         if (queryResult != null && queryResult.getResults() != null
                 && queryResult.getResults().get(0) != null && queryResult.
                 getResults().get(0).getSeries() != null) {
-          nbExecutors = queryResult.getResults().get(0).getSeries().size();
+          List<List<Object>> values = queryResult.getResults().get(0).getSeries().get(0).getValues();
+          nbExecutors = values.size();
+          for (int i = 0; i < nbExecutors; i++) {
+            executorInfo.put(i, Stream.of(Objects.toString(values.get(i).get(1))).collect(Collectors.toList()));
+          }
         }
 
+        /*
+            At this point executor info contains the keys and a list with a single value, the YARN container id
+         */
+
+        for (Map.Entry<Integer, List<String>> entry : executorInfo.entrySet()) {
+          query = new Query("select MilliVcoreUsageAvgMilliVcores, hostname from nodemanager where source = \'" +
+                            entry.getValue().get(0) + "\' limit 1", "graphite");
+          queryResult = influxDB.query(query);
+
+          if (queryResult != null && queryResult.getResults() != null
+                  && queryResult.getResults().get(0) != null && queryResult.
+                  getResults().get(0).getSeries() != null) {
+            List<List<Object>> values = queryResult.getResults().get(0).getSeries().get(0).getValues();
+            String hostname = Objects.toString(values.get(0).get(2)).split("=")[1];
+            entry.getValue().add(hostname);
+          }
+        }
+
+        influxDB.close();
+
         AppInfoDTO appInfo = new AppInfoDTO(appId, startTime,
-                running, endTime, nbExecutors);
+                running, endTime, nbExecutors, executorInfo);
 
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
                 entity(appInfo).build();

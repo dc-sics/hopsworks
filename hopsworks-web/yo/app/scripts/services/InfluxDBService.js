@@ -19,6 +19,11 @@ angular.module('hopsWorksApp')
                 var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/spark?' +
                             'fields=' + fields.join(',') + '&startTime=' + startTime + '&service=' + service;
                 return $http.get(query);
+            },
+            getTelegrafMetrics: function(projectId, appId, fields, service) {
+                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/telegraf?' +
+                            'fields=' + fields.join(',') + '&startTime=' + startTime + '&service=' + service;
+                return $http.get(query);
             }
         };
 

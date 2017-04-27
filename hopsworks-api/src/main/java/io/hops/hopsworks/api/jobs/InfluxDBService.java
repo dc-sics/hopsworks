@@ -69,9 +69,56 @@ public class InfluxDBService {
     query.append("and time > " + startTime);
     query.append("ms");
 
-    LOGGER.log(Level.INFO, "Sending query: " + query.toString());
+    LOGGER.log(Level.INFO, "Influxdb:Spark - Sending query: " + query.toString());
 
     Query q = new Query(query.toString(), "graphite");
+    QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
+    List<QueryResult.Result> results = response.getResults();
+
+    if (results.get(0).getSeries() != null) {
+      QueryResult.Series series = results.get(0).getSeries().get(0);
+      InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
+      influxResults.setSeries(series);
+
+      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+              entity(influxResults).build();
+    } else {
+      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
+              entity("").build();
+    }
+
+    influxdb.close();
+
+    return httpResponse;
+  }
+
+  @GET
+  @Path("/telegraf")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response info(
+          @QueryParam("fields") List<String> fields,
+          @QueryParam("measurement") String measurement,
+          @QueryParam("host") String host,
+          @QueryParam("startTime") String startTime,
+          @Context SecurityContext sc, @Context HttpServletRequest req) throws
+          AppException, AccessControlException {
+    // Query by using host and time from any table on telegraf database
+    // e.g. /telegraf?fields=bytes_recv,bytes_sent&startTime=1491827969000&host=vagrant
+    InfluxDB influxdb = InfluxDBFactory.connect(settings.
+            getInfluxDBAddress(), settings.getInfluxDBUser(), settings.
+            getInfluxDBPW());
+    Response httpResponse = null;
+
+    StringBuffer query = new StringBuffer();
+    query.append("select " + String.join(",", fields) + " from " + measurement + " ");
+    query.append("where host=\'" + host + "\' ");
+    query.append("and time > " + startTime);
+    query.append("ms");
+
+    LOGGER.log(Level.INFO, "Influxdb:telegraf:" + measurement + "-Sending query: " + query.toString());
+
+    Query q = new Query(query.toString(), "telegraf");
     QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
     List<QueryResult.Result> results = response.getResults();
 

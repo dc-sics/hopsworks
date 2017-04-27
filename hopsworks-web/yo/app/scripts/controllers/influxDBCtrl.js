@@ -78,9 +78,11 @@ angular.module('hopsWorksApp')
                     JobService.getAppInfo(self.projectId, self.appId).then(
                         function(success) {
                             var info = success.data;
+                            console.log(info);
                             self.startTime = info.startTime;
                             self.endTime = info.endTime;
                             self.now = info.now;
+                            // TODO use info.now to call the endpoints only once and skip polling
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
