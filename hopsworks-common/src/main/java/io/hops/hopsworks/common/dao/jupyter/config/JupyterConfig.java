@@ -391,6 +391,8 @@ public class JupyterConfig {
                       "pyFiles", this.pyFiles,
                       "yarn_queue", "default",
                       "jupyter_home", this.confDirPath,
+                      "jupyter_home", this.confDirPath,
+                      "project", this.projectName,
                       "hadoop_home", this.settings.getHadoopDir()
               );
       createdSparkmagic = ConfigFileGenerator.createConfigFile(

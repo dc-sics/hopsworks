@@ -54,7 +54,9 @@
   "queue": "%%yarn_queue%%",
   "archives": [%%archives%%],
   "jars": [%%jars%%],
-  "pyFiles": [%%pyFiles%%]
+  "pyFiles": [%%pyFiles%%],
+  "conf" : { "spark.yarn.stagingDir": "/Projects/%%project%%/Resources",
+             "spark.dynamicAllocation.enabled" : "true"}
 },
 
 "use_auto_viz": true,
