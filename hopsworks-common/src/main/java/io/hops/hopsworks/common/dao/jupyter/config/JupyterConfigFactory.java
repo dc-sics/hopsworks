@@ -184,7 +184,7 @@ public class JupyterConfigFactory {
   }
 
   /**
-   * 
+   *
    * This method will stop any running server for this hdfsUser, and start
    * a new one.
    *
@@ -224,7 +224,7 @@ public class JupyterConfigFactory {
     Process process = null;
     int port = 0;
     JupyterConfig jc = null;
-    
+
     // kill any running servers for this user, clear cached entries
     hdfsuserConfCache.remove(hdfsUser);
     if (runningServers.containsKey(hdfsUser)) {
@@ -242,20 +242,8 @@ public class JupyterConfigFactory {
       } else {
         port = ThreadLocalRandom.current().nextInt(40000, 59999);
       }
-//      boolean alreadyAllocated = false;
-//      for (JupyterConfig tmp : hdfsuserConfCache.values()) {
-//        if (tmp.getPort() == port) {
-//          alreadyAllocated = true;
-//          break;
-//        }
-//      }
-//      if (alreadyAllocated) {
-//        maxTries--;
-//        continue;
-//      }
-//      port = Settings.JUPYTER_PORT;
       jc = new JupyterConfig(project.getName(), hdfsUser, hdfsLeFacade.
-              getActiveNN().getHostname(), settings, port, driverCores,
+              getSingleEndpoint(), settings, port, driverCores,
               driverMemory, numExecutors, executorCores, executorMemory, gpus,
               archives, jars, files, pyFiles);
       hdfsuserConfCache.put(hdfsUser, jc);
@@ -268,11 +256,14 @@ public class JupyterConfigFactory {
       env.put("JUPYTER_CONFIG_DIR", jc.getConfDirPath());
       env.put("JUPYTER_RUNTIME_DIR", jc.getRunDirPath());
       env.put("LD_LIBRARY_PATH", "$LD_LIBRARY_PATH:" + settings.getHadoopDir()
-              + "/lib/native");
+              + "/lib/native:/usr/local/cuda/lib64:/usr/local/lib:/usr/lib");
       env.put("CLASSPATH", "$CLASSPATH:" + getHadoopClasspath());
       env.put("HADOOP_HOME", settings.getHadoopDir());
+      env.put("HADOOP_CONF_DIR", settings.getHadoopDir() + "/etc/hadoop");
       env.put("JAVA_HOME", settings.getJavaHome());
       env.put("SPARKMAGIC_CONF_DIR", jc.getConfDirPath());
+      env.put("PYSPARK_PYTHON", jc.getSettings().getAnacondaProjectDir(jc.getProjectName())+"/bin/python");
+      env.put("PYLIB", jc.getSettings().getAnacondaProjectDir(jc.getProjectName())+"/lib");
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       try {
         // Send both stdout and stderr to the same stream

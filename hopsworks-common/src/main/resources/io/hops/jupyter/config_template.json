@@ -55,8 +55,17 @@
   "archives": [%%archives%%],
   "jars": [%%jars%%],
   "pyFiles": [%%pyFiles%%],
-  "conf" : { "spark.yarn.stagingDir": "/Projects/%%project%%/Resources",
-             "spark.dynamicAllocation.enabled" : "true"}
+  "conf" : { "spark.yarn.stagingDir": "hdfs://%%nn_endpoint%%/Projects/%%project%%/Resources",
+             "spark.blockManager.port" : "38000",
+             "spark.broadcast.port" : "38001",
+             "spark.driver.port" : "38002",
+             "spark.executor.port" : "38003",
+             "spark.fileserver.port" : "38004",
+             "spark.replClassServer.port" : "38005"
+             "spark.yarn.appMasterEnv.PYSPARK_PYTHON" : "%%pyspark_bin%%"
+             "spark.yarn.appMasterEnv.PYSPARK3_PYTHON" : "%%pyspark_bin%%"
+             "spark.executorEnv.PYSPARK_PYTHON" : "%%pyspark_bin%%"
+             "spark.executorEnv.PYSPARK3_PYTHON" : "%%pyspark_bin%%"
 },
 
 "use_auto_viz": true,

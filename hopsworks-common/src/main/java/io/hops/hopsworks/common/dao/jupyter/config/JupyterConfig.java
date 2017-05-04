@@ -59,14 +59,16 @@ public class JupyterConfig {
   private String jars;
   private String files;
   private String pyFiles;
+  private String nameNodeEndpoint;
 
-  JupyterConfig(String projectName, String hdfsUser, String nameNodeHostname,
+  JupyterConfig(String projectName, String hdfsUser, String nameNodeEndpoint,
           Settings settings, int port, int driverCores, String driverMemory,
           int numExecutors, int executorCores, String executorMemory, int gpus,
           String archives, String jars, String files, String pyFiles)
           throws AppException {
     this.projectName = projectName;
     this.hdfsUser = hdfsUser;
+    this.nameNodeEndpoint = nameNodeEndpoint;
     boolean newDir = false;
     boolean newFile = false;
     this.settings = settings;
@@ -92,7 +94,7 @@ public class JupyterConfig {
     libDirPath = projectUserDirPath + File.separator + "lib";
     try {
       newDir = createJupyterDirs();//creates the necessary folders for the project in /srv/zeppelin
-      createConfigFiles(nameNodeHostname, port);
+      createConfigFiles(nameNodeEndpoint, port);
     } catch (Exception e) {
       if (newDir) { // if the folder was newly created delete it
         removeProjectDirRecursive();
@@ -315,7 +317,7 @@ public class JupyterConfig {
             Files.delete(file);
             return FileVisitResult.CONTINUE;
           }
-          
+
           @Override
           public FileVisitResult postVisitDirectory(Path dir, IOException exc)
                   throws IOException {
@@ -338,7 +340,7 @@ public class JupyterConfig {
   }
 
   // returns true if one of the conf files were created anew 
-  private boolean createConfigFiles(String nameNodeHostname, Integer port)
+  private boolean createConfigFiles(String nameNodeEndpoint, Integer port)
           throws
           IOException {
     File jupyter_config_file = new File(confDirPath + JUPYTER_NOTEBOOK_CONFIG);
@@ -354,7 +356,7 @@ public class JupyterConfig {
       if (System.getenv().containsKey("LD_LIBRARY_PATH")) {
         ldLibraryPath = System.getenv("LD_LIBRARY_PATH");
       }
-      String[] nn = nameNodeHostname.split(":");
+      String[] nn = nameNodeEndpoint.split(":");
       String nameNodeIp = nn[0];
       String nameNodePort = nn[1];
 
@@ -375,6 +377,13 @@ public class JupyterConfig {
     }
     if (!sparkmagic_config_file.exists()) {
 
+//                   "spark.eventLog.enabled" : "true",
+//             "spark.eventLog.dir" : "/user/%%spark_user%%/eventlog",
+//             "spark.dynamicAllocation.enabled" : "%%dynamic_executors%%",
+//             "spark.dynamicAllocation.initialExecutors" : "%%initial_executors%%",
+//             "spark.dynamicAllocation.minExecutors" : "%%min_executors%%",
+//             "spark.dynamicAllocation.maxExecutors" : "%%max_executors%%",
+//             "spark.yarn.historyServer.address" : "%%sparkhistoryserver_ip%%",
       StringBuilder sparkmagic_sb = ConfigFileGenerator.
               instantiateFromTemplate(
                       ConfigFileGenerator.SPARKMAGIC_CONFIG_TEMPLATE,
@@ -385,6 +394,10 @@ public class JupyterConfig {
                       "num_executors", this.numExecutors.toString(),
                       "executor_cores", this.executorCores.toString(),
                       "executor_memory", this.executorMemory,
+                      "dynamic_executors", "true",
+                      "min_executors", new Integer(1).toString(),
+                      "initial_executors", new Integer(1).toString(),
+                      "max_executors", new Integer(50).toString(),
                       "archives", this.archives,
                       "jars", this.jars,
                       "files", this.files,
@@ -393,7 +406,13 @@ public class JupyterConfig {
                       "jupyter_home", this.confDirPath,
                       "jupyter_home", this.confDirPath,
                       "project", this.projectName,
-                      "hadoop_home", this.settings.getHadoopDir()
+                      "nn_endpoint", this.nameNodeEndpoint,
+                      "spark_user", this.settings.getSparkUser(),
+                      "hadoop_home", this.settings.getHadoopDir(),
+                      "pyspark_bin", this.settings.getAnacondaProjectDir(
+                              projectName) + "/bin/python",
+                      "sparkhistoryserver_ip", this.settings.
+                      getSparkHistoryServerIp()
               );
       createdSparkmagic = ConfigFileGenerator.createConfigFile(
               sparkmagic_config_file,
