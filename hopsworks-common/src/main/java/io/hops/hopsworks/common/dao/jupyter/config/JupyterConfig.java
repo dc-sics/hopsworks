@@ -16,6 +16,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.core.Response;
@@ -39,6 +42,7 @@ public class JupyterConfig {
   private final Settings settings;
   private final String projectName;
   private final String hdfsUser;
+  private final String projectPath;
   private final String projectUserDirPath;
   private final String confDirPath;
   private final String notebookDirPath;
@@ -48,6 +52,7 @@ public class JupyterConfig {
   private final String libDirPath;
   private final int port;
   private long pid;
+  private String secret;
   private String token;
   private String driverMemory;
   private Integer driverCores;
@@ -61,7 +66,8 @@ public class JupyterConfig {
   private String pyFiles;
   private String nameNodeEndpoint;
 
-  JupyterConfig(String projectName, String hdfsUser, String nameNodeEndpoint,
+  JupyterConfig(String projectName, String secret, String hdfsUser,
+          String nameNodeEndpoint,
           Settings settings, int port, int driverCores, String driverMemory,
           int numExecutors, int executorCores, String executorMemory, int gpus,
           String archives, String jars, String files, String pyFiles)
@@ -72,6 +78,7 @@ public class JupyterConfig {
     boolean newDir = false;
     boolean newFile = false;
     this.settings = settings;
+    this.secret = secret;
     this.port = port;
     this.driverMemory = driverMemory;
     this.driverCores = driverCores;
@@ -83,9 +90,10 @@ public class JupyterConfig {
     this.jars = jars;
     this.files = files;
     this.pyFiles = pyFiles;
-    projectUserDirPath = settings.getJupyterDir() + File.separator
+    projectPath = settings.getJupyterDir() + File.separator
             + Settings.DIR_ROOT + File.separator + this.projectName
             + File.separator + hdfsUser;
+    projectUserDirPath = projectPath + File.separator + secret;
     confDirPath = projectUserDirPath + File.separator + "conf";
     notebookDirPath = projectUserDirPath + File.separator + "notebooks";
     runDirPath = projectUserDirPath + File.separator + "run";
@@ -111,28 +119,18 @@ public class JupyterConfig {
     }
   }
 
-//  public JupyterConfig(JupyterConfig jConf) {
-//    this.projectName = jConf.getProjectName();
-//    this.settings = jConf.getSettings();
-//    this.hdfsUser = jConf.getHdfsUser();
-//    this.projectUserDirPath = jConf.getProjectDirPath();
-//    this.confDirPath = jConf.getConfDirPath();
-//    this.notebookDirPath = jConf.getNotebookDirPath();
-//    this.runDirPath = jConf.getRunDirPath();
-//    this.binDirPath = jConf.getBinDirPath();
-//    this.logDirPath = jConf.getLogDirPath();
-//    this.libDirPath = jConf.getLibDirPath();
-//    this.port = jConf.getPort();
-//    this.pid = jConf.getPid();
-//    this.token = jConf.getToken();
-//    this.driverCores = jConf.getDriverCores();
-//    this.driverMemory = jConf.getDriverMemory();
-//    this.numExecutors = jConf.getNumExecutors();
-//    this.executorCores = jConf.getExecutorCores();
-//    this.executorMemory = jConf.getExecutorMemory();
-//    this.gpus = jConf.getGpus();
-//    this.arc = jConf.getGpus();
-//  }
+  public String getProjectPath() {
+    return projectPath;
+  }
+
+  public String getSecret() {
+    return secret;
+  }
+
+  public void setSecret(String secret) {
+    this.secret = secret;
+  }
+
   public int getNumExecutors() {
     return numExecutors;
   }
@@ -304,11 +302,11 @@ public class JupyterConfig {
   }
 
   //returns true if the project dir was created 
-  private boolean createJupyterDirs() {
-    File projectDir = new File(projectUserDirPath);
-    if (projectDir.exists()) {
+  private boolean createJupyterDirs() throws IOException {
+    File projectDir = new File(projectPath);
+    if (projectDir.exists()) {       // delete all existing project dirs
       // http://stackoverflow.com/questions/779519/delete-directories-recursively-in-java/27917071#27917071
-      Path directory = Paths.get(projectUserDirPath);
+      Path directory = Paths.get(projectPath);
       try {
         Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
           @Override
@@ -331,10 +329,29 @@ public class JupyterConfig {
       }
     }
     boolean newProjectDir = projectDir.mkdirs();
+    File baseDir = new File(projectUserDirPath);
+    baseDir.mkdirs();
+    // Set owner persmissions
+    Set<PosixFilePermission> perms = new HashSet<>();
+    //add owners permission
+    perms.add(PosixFilePermission.OWNER_READ);
+    perms.add(PosixFilePermission.OWNER_WRITE);
+    perms.add(PosixFilePermission.OWNER_EXECUTE);
+    //add group permissions
+//        perms.add(PosixFilePermission.GROUP_READ);
+    perms.add(PosixFilePermission.GROUP_WRITE);
+    perms.add(PosixFilePermission.GROUP_EXECUTE);
+    //add others permissions
+//        perms.add(PosixFilePermission.OTHERS_READ);
+//        perms.add(PosixFilePermission.OTHERS_WRITE);
+//        perms.add(PosixFilePermission.OTHERS_EXECUTE);
+
+    Files.setPosixFilePermissions(Paths.get(projectPath), perms);
+
     new File(confDirPath + "/custom").mkdirs();
     new File(notebookDirPath).mkdirs();
     new File(runDirPath).mkdirs();
-    new File(binDirPath).mkdirs();
+//    new File(binDirPath).mkdirs();
     new File(logDirPath).mkdirs();
     return newProjectDir;
   }
@@ -443,27 +460,15 @@ public class JupyterConfig {
   }
 
   private boolean removeProjectDirRecursive() {
-    File projectDir = new File(projectUserDirPath);
+    File projectDir = new File(projectPath);
     if (!projectDir.exists()) {
       return true;
     }
     boolean ret = false;
-    File lib = new File(libDirPath);
-    //symlinks must be deleted before we recursive delete the project dir.
-    int retry = 0;
-    while (lib.exists()) {
-      if (lib.exists()) {
-        lib.delete();
-      }
-      retry++;
-      if (retry > DELETE_RETRY) {
-        LOGGGER.log(Level.SEVERE, "Could not delete zeppelin project folder.");
-        return false;
-      }
-    }
     try {
       ret = ConfigFileGenerator.deleteRecursive(projectDir);
     } catch (FileNotFoundException ex) {
+      // do nothing
     }
     return ret;
   }

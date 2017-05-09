@@ -31,12 +31,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.GenericEntity;
+import org.apache.commons.codec.digest.DigestUtils;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -109,7 +111,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) {};
+            = new GenericEntity<List<JupyterProject>>(listServers) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
   }
@@ -155,13 +157,24 @@ public class JupyterService {
               Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
               "Could not find your username. Report a bug.");
     }
+
+    boolean enabled = project.getConda();
+    if (!enabled) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "First enable Anaconda. Click on 'Settings -> Python'");
+    }
+
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
     if (jp == null) {
       HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
 
+      String secret = DigestUtils.sha256Hex(Integer.toString(
+              ThreadLocalRandom.current().nextInt()));
       JupyterDTO dto;
       try {
-        dto = jupyterConfigFactory.startServer(project, hdfsUser,
+
+        dto = jupyterConfigFactory.startServerAsJupyterUser(project, secret,
+                hdfsUser,
                 jupyterConfig.getDriverCores(), jupyterConfig.getDriverMemory(),
                 jupyterConfig.getNumExecutors(),
                 jupyterConfig.getExecutorCores(), jupyterConfig.
@@ -181,14 +194,18 @@ public class JupyterService {
                 "Incomplete request!");
       }
 
-      jp = jupyterFacade.saveServer(project, dto.getPort(), user.getId(), dto.
-              getToken(), dto.getPid(), dto.getDriverCores(), dto.
-              getDriverMemory(), dto.getNumExecutors(), dto.getExecutorCores(),
-              dto.getExecutorMemory(), dto.getGpus(), dto.getArchives(), dto.
-              getJars(), dto.getFiles(), dto.getPyFiles());
+      jp = jupyterFacade.
+              saveServer(project, secret, dto.getPort(), user.getId(), dto.
+                      getToken(), dto.getPid(), dto.getDriverCores(), dto.
+                      getDriverMemory(), dto.getNumExecutors(), dto.
+                      getExecutorCores(),
+                      dto.getExecutorMemory(), dto.getGpus(), dto.getArchives(),
+                      dto.
+                      getJars(), dto.getFiles(), dto.getPyFiles());
 
       if (jp == null) {
-        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                getStatusCode(),
                 "Could not save Jupyter Settings.");
       }
     }
@@ -208,28 +225,18 @@ public class JupyterService {
     }
 
     String hdfsUser = getHdfsUser(sc);
-    if (!jupyterConfigFactory.stopServer(hdfsUser)) {
-      try {
-        // The server may have been restarted and the caches are empty.
-        // We need to stop the jupyter notebook server with the PID
-        // If we can't stop the server, delete the Entity bean anyway
-        JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
-        if (jp == null) {
-          throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-                  "No Jupyter Notebook server to stop");
-        }
-        Long pid = jp.getPid();
-        ProcessBuilder ps = new ProcessBuilder("kill", pid.toString());
-        Process pr = ps.start();
-        pr.waitFor();
-      } catch (IOException ex) {
-        Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
-                ex);
-      } catch (InterruptedException ex) {
-        Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
-                ex);
-      }
+//    if (!jupyterConfigFactory.stopServerJupyterUser(hdfsUser)) {
+    // The server may have been restarted and the caches are empty.
+    // We need to stop the jupyter notebook server with the PID
+    // If we can't stop the server, delete the Entity bean anyway
+    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+    if (jp == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "No Jupyter Notebook server to stop");
     }
+    Long pid = jp.getPid();
+    jupyterConfigFactory.stopServerJupyterUser(pid);
+//    }
     jupyterFacade.removeNotebookServer(hdfsUser);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
