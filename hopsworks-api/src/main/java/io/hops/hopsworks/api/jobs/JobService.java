@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -455,7 +456,7 @@ public class JobService {
 
         Query query = new Query("show tag values from nodemanager with key=\"source\" " +
                 "where source =~ /^.*" + timestamp_attempt + ".*$/", "graphite");
-        QueryResult queryResult = influxDB.query(query);
+        QueryResult queryResult = influxDB.query(query, TimeUnit.MILLISECONDS);
 
         int nbExecutors = 0;
         HashMap<Integer, List<String>> executorInfo = new HashMap<>();
@@ -474,10 +475,13 @@ public class JobService {
             At this point executor info contains the keys and a list with a single value, the YARN container id
          */
 
+        String vCoreTemp = null;
+        HashMap<String, String> hostnameVCoreCache = new HashMap<>();
+
         for (Map.Entry<Integer, List<String>> entry : executorInfo.entrySet()) {
           query = new Query("select MilliVcoreUsageAvgMilliVcores, hostname from nodemanager where source = \'" +
                             entry.getValue().get(0) + "\' limit 1", "graphite");
-          queryResult = influxDB.query(query);
+          queryResult = influxDB.query(query, TimeUnit.MILLISECONDS);
 
           if (queryResult != null && queryResult.getResults() != null
                   && queryResult.getResults().get(0) != null && queryResult.
@@ -485,6 +489,25 @@ public class JobService {
             List<List<Object>> values = queryResult.getResults().get(0).getSeries().get(0).getValues();
             String hostname = Objects.toString(values.get(0).get(2)).split("=")[1];
             entry.getValue().add(hostname);
+
+            if (!hostnameVCoreCache.containsKey(hostname)) {
+              // Not in cache, get the vcores of the host machine
+              query = new Query("select AllocatedVCores+AvailableVCores from nodemanager " +
+                      "where hostname =~ /.*" + hostname + ".*/ limit 1", "graphite");
+              queryResult = influxDB.query(query, TimeUnit.MILLISECONDS);
+
+              if (queryResult != null && queryResult.getResults() != null
+                      && queryResult.getResults().get(0) != null && queryResult.
+                      getResults().get(0).getSeries() != null) {
+                values = queryResult.getResults().get(0).getSeries().get(0).getValues();
+                vCoreTemp = Objects.toString(values.get(0).get(1));
+                entry.getValue().add(vCoreTemp);
+                hostnameVCoreCache.put(hostname, vCoreTemp); // cache it
+              }
+            } else {
+              // It's a hit, skip the database query
+              entry.getValue().add(hostnameVCoreCache.get(hostname));
+            }
           }
         }
 

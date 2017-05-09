@@ -20,9 +20,15 @@ angular.module('hopsWorksApp')
                             'fields=' + fields.join(',') + '&startTime=' + startTime + '&service=' + service;
                 return $http.get(query);
             },
-            getTelegrafMetrics: function(projectId, appId, fields, service) {
-                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/telegraf?' +
-                            'fields=' + fields.join(',') + '&startTime=' + startTime + '&service=' + service;
+            getTelegrafCPUMetrics: function(projectId, appId, fields, host, startTime, endTime) {
+                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/tgcpu?' +
+                            'fields=' + fields.join(',') + '&host=' + host +
+                            '&startTime=' + startTime + '&endTime=' + endTime;
+                return $http.get(query);
+            },
+            getNodemanagerMetrics: function(projectId, appId, startTime, fields, container) {
+                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/nodemanager?' +
+                            'fields=' + fields.join(',') + '&container=' + container + '&startTime=' + startTime;
                 return $http.get(query);
             }
         };

@@ -50,16 +50,15 @@ public class InfluxDBService {
   @Path("/spark")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response info(
+  public Response getSparkMetrics(
           @QueryParam("startTime") String startTime,
           @QueryParam("fields") List<String> fields,
           @QueryParam("service") String service,
           @Context SecurityContext sc, @Context HttpServletRequest req) throws
           AppException, AccessControlException {
     // e.g. /spark?fields=total_used,heap_used&startTime=1491827969000&service=driver
-    InfluxDB influxdb = InfluxDBFactory.connect(settings.
-            getInfluxDBAddress(), settings.getInfluxDBUser(), settings.
-            getInfluxDBPW());
+    InfluxDB influxdb = InfluxDBFactory.connect(settings.getInfluxDBAddress(),
+            settings.getInfluxDBUser(), settings.getInfluxDBPW());
     Response httpResponse = null;
 
     StringBuffer query = new StringBuffer();
@@ -93,32 +92,77 @@ public class InfluxDBService {
   }
 
   @GET
-  @Path("/telegraf")
+  @Path("/tgcpu")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response info(
+  public Response getTelegrafMetrics(
           @QueryParam("fields") List<String> fields,
-          @QueryParam("measurement") String measurement,
           @QueryParam("host") String host,
           @QueryParam("startTime") String startTime,
+          @QueryParam("endTime") String endTime,
           @Context SecurityContext sc, @Context HttpServletRequest req) throws
           AppException, AccessControlException {
-    // Query by using host and time from any table on telegraf database
-    // e.g. /telegraf?fields=bytes_recv,bytes_sent&startTime=1491827969000&host=vagrant
-    InfluxDB influxdb = InfluxDBFactory.connect(settings.
-            getInfluxDBAddress(), settings.getInfluxDBUser(), settings.
-            getInfluxDBPW());
+    // Query the CPU measurement by using hostname and time from any table on telegraf database
+    // e.g. /tgcpu?fields=usage_user,usage_idle,usage_iowait&startTime=1491827969000&host=vagrant
+    //      &endTime=1491827984000
+    InfluxDB influxdb = InfluxDBFactory.connect(settings.getInfluxDBAddress(),
+            settings.getInfluxDBUser(), settings.getInfluxDBPW());
     Response httpResponse = null;
 
     StringBuffer query = new StringBuffer();
-    query.append("select " + String.join(",", fields) + " from " + measurement + " ");
+    query.append("select " + String.join(",", fields) + " from cpu ");
     query.append("where host=\'" + host + "\' ");
+    query.append("and cpu=\'cpu-total\' ");
+    query.append("and time > " + startTime + "ms ");
+    query.append("and time < " + endTime + "ms");
+
+    LOGGER.log(Level.INFO, "Influxdb:telegraf:cpu-Sending query: " + query.toString());
+
+    Query q = new Query(query.toString(), "telegraf");
+    QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
+    List<QueryResult.Result> results = response.getResults();
+
+    if (results.get(0).getSeries() != null) {
+      QueryResult.Series series = results.get(0).getSeries().get(0);
+      InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
+      influxResults.setSeries(series);
+
+      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+              entity(influxResults).build();
+    } else {
+      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
+              entity("").build();
+    }
+
+    influxdb.close();
+
+    return httpResponse;
+  }
+
+  @GET
+  @Path("/nodemanager")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response getNodemanagerMetrics(
+          @QueryParam("fields") List<String> fields,
+          @QueryParam("container") String container,
+          @QueryParam("startTime") String startTime,
+          @Context SecurityContext sc, @Context HttpServletRequest req) throws
+          AppException, AccessControlException {
+    // e.g. /nodemanager?fields=MilliVcoreUsageIMinMilliVcores&startTime=1491827969000&service=driver
+    InfluxDB influxdb = InfluxDBFactory.connect(settings.getInfluxDBAddress(),
+            settings.getInfluxDBUser(), settings.getInfluxDBPW());
+    Response httpResponse = null;
+
+    StringBuffer query = new StringBuffer();
+    query.append("select " + String.join(",", fields) + " from nodemanager ");
+    query.append("where source =~ /.*" + container + ".*/ ");
     query.append("and time > " + startTime);
     query.append("ms");
 
-    LOGGER.log(Level.INFO, "Influxdb:telegraf:" + measurement + "-Sending query: " + query.toString());
+    LOGGER.log(Level.INFO, "Influxdb:nodemanager - Sending query: " + query.toString());
 
-    Query q = new Query(query.toString(), "telegraf");
+    Query q = new Query(query.toString(), "graphite");
     QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
     List<QueryResult.Result> results = response.getResults();
 

@@ -6,9 +6,24 @@
   <div class="container-fluid">
     <div class="row">
 
-      <div class="col-md-12">
-        <nvd3 options="options" data="data" class="with-3d-shadow with-transitions"></nvd3>
+      <div class="col-md-5">
+        <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
+              class="with-3d-shadow with-transitions"></nvd3>
       </div>
+
+    </div>
+    <div class="row">
+
+      <div class="col-md-5">
+        <nvd3 id="hostCPU" options="optionsHostCPU" data="templateHostCPU"
+              class="with-3d-shadow with-transitions"></nvd3>
+      </div>
+    </div>
+
+      <!--<div class="col-md-6">
+        <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateHostCPU"
+              class="with-3d-shadow with-transitions"></nvd3>
+      </div>-->
 
     </div>
   </div> <!-- class:container fluid end -->

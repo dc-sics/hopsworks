@@ -14,62 +14,127 @@ angular.module('hopsWorksApp')
                 // Job details
                 self.jobName = $routeParams.name;
                 self.appId = ""; // startTime, endTime, now will be filled by init
-                self.startTime = -1;
-                self.endTime = -1;
-                self.now;
+                self.endTime = -1; // application completion time
+                self.now; // is the application running now?
+                // array of dictionaries: self.executorInfo.entry[executor].value[0: container, 1: hostname, 2: nm vcores]
+                self.executorInfo;
+                self.nbExecutors;
+                // a list of objects holding as a key the hostname and value the number of executors
+                // and whatever else comes up
+                self.hostnames = {};
 
-                // Graph options, see js/graph-settings.js
+                // Each graph will have its own startTimer - initialized by init to application's start time
+                self.startTimeMap = {
+                    'executorCPU': -1,
+                    'hostCPU': -1,
+                    'executorPerNode': -1,
+                    'taskPerNode': -1
+                };
 
-                // graph initialization
-                $scope.options = vizopsExecutorGraphOptions();
+                // For Graph options, see js/graph-settings.js
 
-                $scope.data = [
-                    {
-                        values: [],
-                        key: 'Total used',
-                        color: '#ff7f0e'
-                    },
-                    {
-                        values: [],
-                        key: 'Heap used',
-                        color: '#7777ff',
-                        area: true
-                    }
-                ];
+                // graph initialization - per graph
+                // EXECUTOR CPU GRAPH
+                $scope.optionsExecutorCPU = vizopsExecutorCPUOptions();
+                $scope.templateExecutorCPU = [];
+                // HOST CPU GRAPH
+                $scope.optionsHostCPU = vizopsHostCPUOptions();
+                $scope.templateHostCPU = [];
+                // Executor per node
+                $scope.optionsExecutorPerNode = vizopsExecutorsPerNodeOptions();
+                $scope.templateExecutorPerNode = [];
+                // Tasks per node
+                $scope.optionsTasksPerNode = [];
+                $scope.templateTasksPerNode = [];
 
-                var updateData = function() {
-                    // Fetch data from influx
-                    InfluxDBService.getSparkMetrics(self.projectId, self.appId, self.startTime,
-                                                    ['total_used', 'heap_used'], 'driver').then(
+                var updateGraphExecutorCPU = function() {
+                    /* ask for the metrics coming from all the containers, otherwise we would bombard
+                     the backend with nbExecutors requests. We choose the metrics for each executor
+                     from the results. application_1491828160189_0001 -> 1491828160189_0001
+                    */
+                    InfluxDBService.getNodemanagerMetrics(self.projectId, self.appId, self.startTimeMap['executorCPU'],
+                                                    ['MilliVcoreUsageIMinMilliVcores/' + (+self.executorInfo.entry[0].value[2]*1000),
+                                                     'source'],
+                                                    self.appId.substring(self.appId.indexOf('_') + 1)).then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data;
-                                self.startTime = +newData.lastMeasurementTimestamp;
-                                updateGraph(newData.series.values);
+                                self.startTimeMap['executorCPU'] = +newData.lastMeasurementTimestamp;
+
+                                var metrics = newData.series.values;
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+                                    var executorID = +splitEntry[2].charAt(splitEntry[2].length - 1);
+
+                                    $scope.templateExecutorCPU[executorID - 1].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                }
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
-                            growl.error(error.data.errorMsg, {title: 'Error fetching spark metrics.', ttl: 15000});
+                            growl.error(error.data.errorMsg, {title: 'Error fetching ExecutorCPU metrics.', ttl: 10000});
                         }
                     );
                 };
 
-                var updateGraph = function(newData) {
-                    var labels = newData.map(function(x) {
-                        return +x.split(' ')[0];
-                    });
+                var updateGraphHostCPU = function() {
+                    /*
+                        Telegraf will keep receiving data so we need to limit it. If it's the first time
+                        we call the backend then get the first few seconds, otherwise use the last
+                        measured time from executorCPU
+                    */
+                    var startTime = self.startTimeMap['hostCPU'], endTime = -1;
+                    if (self.startTimeMap['executorCPU'] === self.startTimeMap['hostCPU'])
+                        endTime = self.startTimeMap['hostCPU'] + 10000;
+                    else
+                        endTime = self.startTimeMap['executorCPU'] + 10000;
 
-                    var new_total_used = newData.map(function(x) {
-                        return +x.split(' ')[1];
-                    });
+                    // assume that the template has been created with the same sequence as the for loop
+                    var unique_hosts = Object.keys(self.hostnames);
+                    for(var host of unique_hosts) {
+                        // projectId, appId, fields, host, startTime, endTime
+                        InfluxDBService.getTelegrafCPUMetrics(self.projectId, self.appId, ['usage_user'],
+                                        host, startTime, endTime).then(
+                            function(success) {
+                                if (success.status === 200) { // new measurements
+                                    var newData = success.data;
+                                    self.startTimeMap['hostCPU'] = +newData.lastMeasurementTimestamp;
 
-                    var new_heap_used = newData.map(function(x) {
-                        return +x.split(' ')[2];
-                    });
+                                    var metrics = newData.series.values;
+                                    var labels = metrics.map(function(x) { return +x.split(' ')[0]; });
+                                    var cpu_usage = metrics.map(function(x) { return +x.split(' ')[1]; });
 
-                    for(var i = 0; i < labels.length; i++) {
-                        $scope.data[0].values.push({'x': labels[i], 'y': new_total_used[i]});
-                        $scope.data[1].values.push({'x': labels[i], 'y': new_heap_used[i]});
+                                    for(var i = 0; i < labels.length; i++) {
+                                        $scope.templateHostCPU[unique_hosts.indexOf(host)].values.push({'x': labels[i], 'y': cpu_usage[i]});
+                                    }
+                                } // dont do anything if response 204(no content), nothing new
+                            }, function(error) {
+                                growl.error(error.data.errorMsg, {title: 'Error fetching HostCPU metrics.', ttl: 10000});
+                            }
+                        );
                     }
+                };
+
+                var updateData = function() {
+                    // Call the new graph function here
+                    updateGraphExecutorCPU();
+                    updateGraphHostCPU();
+                };
+
+                var _extractHostnameInfoFromResponse = function(response) {
+                    // get the unique host names
+                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
+
+                    var result = {};
+                    for(var i = 0; i < hosts.length; i++) {
+                        result[hosts[i]] = [];
+                    }
+
+                    // and count the executors running on them
+                    for(var i = 0; i < response.entry.length; i++) {
+                        result[response.entry[i].value[1]].push(response.entry[i].key);
+                    }
+
+                    return result;
                 };
 
                 var init = function() {
@@ -78,11 +143,27 @@ angular.module('hopsWorksApp')
                     JobService.getAppInfo(self.projectId, self.appId).then(
                         function(success) {
                             var info = success.data;
-                            console.log(info);
-                            self.startTime = info.startTime;
+
+                            self.nbExecutors = info.nbExecutors;
+                            self.executorInfo = info.executorInfo;
                             self.endTime = info.endTime;
                             self.now = info.now;
+
+                            // Initialize the graph timers
+                            for (var key in self.startTimeMap) {
+                              if (self.startTimeMap.hasOwnProperty(key)) {
+                                self.startTimeMap[key] = info.startTime;
+                              }
+                            }
+
+                            // get the unique hostnames and the number of executors running on them
+                            self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
+                            var colorMap = vizopsMapColorExecutorsHost(self.hostnames);
+
                             // TODO use info.now to call the endpoints only once and skip polling
+                            $scope.templateExecutorCPU = vizopsExecutorCPUDataTemplate(self.nbExecutors, colorMap);
+                            $scope.templateHostCPU = vizopsHostCPUDataTemplate(Object.keys(self.hostnames), colorMap);
+                            // $scope.templateExecutorPerNode = vizopsExecutorsPerNodeTemplate();
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
