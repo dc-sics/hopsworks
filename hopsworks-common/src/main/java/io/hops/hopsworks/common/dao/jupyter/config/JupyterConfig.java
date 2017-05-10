@@ -266,7 +266,6 @@ public class JupyterConfig {
 
   public void clean() {
     cleanAndRemoveConfDirs();
-
   }
 
   public String getProjectName() {

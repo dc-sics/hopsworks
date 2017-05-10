@@ -147,7 +147,7 @@ angular.module('hopsWorksApp')
                 self.totalPages = Math.floor(self.activities.length / self.pageSize);
                 self.totalItems = self.activities.length;
               }, function (error) {
-                growl.info("Error" + error.data.errorMsg, {title: 'Error', ttl: 5000});
+                growl.error("Error" + error.data.errorMsg, {title: 'Error', ttl: 5000});
               });
             };
 
@@ -266,7 +266,7 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.goToUrl('jupyter');
                       }, function (error) {
-                      growl.error("Enable anaconda before running Jupyter.", 
+                      growl.info("Enable anaconda before running Jupyter.", 
                       {title: 'Enable Anaconda First', ttl: 2000});
                         $timeout(function () {
                           self.goToUrl('settings')

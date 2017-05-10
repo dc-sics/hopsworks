@@ -72,6 +72,9 @@ public class JupyterFacade {
   public boolean removeNotebookServer(String hdfsUsername) {
 
     JupyterProject jp = findByUser(hdfsUsername);
+    if (jp == null) {
+      return false;
+    }
     em.remove(jp);
     em.flush();
     return true;

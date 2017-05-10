@@ -33,10 +33,11 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.GenericEntity;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -111,7 +112,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) { };
+            = new GenericEntity<List<JupyterProject>>(listServers) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
   }
@@ -213,34 +214,61 @@ public class JupyterService {
             jp).build();
   }
 
-  @DELETE
+  @GET
+  @Path("/stopAdmin")
+  @Produces(MediaType.APPLICATION_JSON)
+  @RolesAllowed({"HOPS_ADMIN"})
+  public Response stopAdmin(@PathParam("hdfsUsername") String hdfsUsername,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+    stop(hdfsUsername);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  @GET
+  @Path("/stopDataOwner")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response stopDataOwner(@PathParam("hdfsUsername") String hdfsUsername,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+    stop(hdfsUsername);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  @GET
   @Path("/stop")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response stopNotebookServer(@Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
+    String hdfsUsername = getHdfsUser(sc);
+    stop(hdfsUsername);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  private void stop(String hdfsUser) throws AppException {
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");
     }
-
-    String hdfsUser = getHdfsUser(sc);
-//    if (!jupyterConfigFactory.stopServerJupyterUser(hdfsUser)) {
     // The server may have been restarted and the caches are empty.
     // We need to stop the jupyter notebook server with the PID
     // If we can't stop the server, delete the Entity bean anyway
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
     if (jp == null) {
+      jupyterConfigFactory.cleanup(hdfsUser);
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "No Jupyter Notebook server to stop");
     }
-    Long pid = jp.getPid();
-    jupyterConfigFactory.stopServerJupyterUser(pid);
-//    }
+    String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
+    jupyterConfigFactory.stopServerJupyterUser(projectPath, jp.getPid(), jp.
+            getPort());
     jupyterFacade.removeNotebookServer(hdfsUser);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
+  
+  
   private String getHdfsUser(SecurityContext sc) throws AppException {
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),

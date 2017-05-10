@@ -64,15 +64,7 @@ public class JupyterConfigFactory {
 
   @PreDestroy
   public void preDestroy() {
-//    for (Process p : runningServers.values()) {
-//      if (p != null) {
-//        this.killNotebookServer(p);
-//      }
-//    }
-//    for (JupyterConfig conf : hdfsuserConfCache.values()) {
-//      conf.clean();
-//    }
-//    hdfsuserConfCache.clear();
+
   }
 
   private void loadConfig() {
@@ -128,20 +120,14 @@ public class JupyterConfigFactory {
    * @param projectName
    * @param username
    */
-  public void removeFromCache(String hdfsUser) {
-//    Project project = projectBean.findByName(projectName);
-//    Users user = userFacade.findByEmail(username);
-//    HdfsUsers user = hdfsUsername.get(username);
-//    if (project == null || user == null) {
-//      return;
-//    }
-//    if (project == null || user == null) {
-//      return;
-//    }
-//    String hdfsUser = hdfsUsername.getHdfsUserName(project, user);
+  public void cleanup(String hdfsUser) throws AppException {
     JupyterConfig config = this.hdfsuserConfCache.remove(hdfsUser);
     if (config != null) {
+      long pid = config.getPid();
+      String projectPath = config.getProjectPath();
+      int port = config.getPort();
       config.clean();
+      stopServerJupyterUser(projectPath, pid, port);
     }
   }
 
@@ -158,18 +144,6 @@ public class JupyterConfigFactory {
 
     }
 
-//    JupyterConfig conf = hdfsuserConfCache.remove(project.getName());
-//    if (conf != null) {
-//      return conf.cleanAndRemoveConfDirs();
-//    }
-//    String projectDirPath = settings.getZeppelinDir() + File.separator
-//            + Settings.DIR_ROOT + File.separator + project.getName();
-//    File projectDir = new File(projectDirPath);
-//    String hdfsUser = hdfsUsername.getHdfsUserName(project, project.getOwner());
-//    if (projectDir.exists()) {
-//      conf = new JupyterConfig(project.getName(), hdfsUser, settings, null);
-//      return conf.cleanAndRemoveConfDirs();
-//    }
     return false;
   }
 
@@ -177,204 +151,6 @@ public class JupyterConfigFactory {
 
   }
 
-  /**
-   *
-   * This method will stop any running server for this hdfsUser, and start
-   * a new one.
-   *
-   * @param project
-   * @param hdfsUser
-   * @param driverCores
-   * @param driverMemory
-   * @param numExecutors
-   * @param executorCores
-   * @param executorMemory
-   * @param gpus
-   * @param archives
-   * @param jars
-   * @param files
-   * @param pyFiles
-   * @return token for the Notebook server
-   * @throws AppException
-   * @throws java.lang.InterruptedException
-   * @throws java.io.IOException
-   */
-//  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-//  public JupyterDTO startServer(Project project, String hdfsUser,
-//          int driverCores, String driverMemory, int numExecutors,
-//          int executorCores, String executorMemory, int gpus,
-//          String archives, String jars, String files, String pyFiles) throws
-//          AppException, InterruptedException, IOException {
-//
-//    JupyterProject jp = null;
-//    String token = null;
-//    HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
-//    if (user == null) {
-//      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-//              "Could not find hdfs user. Not starting Jupyter.");
-//    }
-//    // The Jupyter Notebook is running at: 
-//  http://localhost:8888/?token=c8de56fa4deed24899803e93c227592aef6538f93025fe01
-//    boolean failed = true;
-//    int maxTries = 50;
-//    Process process = null;
-//    int port = 0;
-//    JupyterConfig jc = null;
-//    long pid = 0;
-//
-//    // kill any running servers for this user, clear cached entries
-//    hdfsuserConfCache.remove(hdfsUser);
-//    if (runningServers.containsKey(hdfsUser)) {
-//      Process p = runningServers.get(hdfsUser);
-//      if (p != null) {
-//        p.destroyForcibly();
-//      }
-//      runningServers.remove(hdfsUser);
-//    }
-//
-//    while (failed && maxTries > 0) {
-//
-//      if (settings.getVagrantEnabled()) {
-//        port = 8888;
-//      } else {
-//        port = ThreadLocalRandom.current().nextInt(40000, 59999);
-//      }
-//      jc = new JupyterConfig(project.getName(), hdfsUser, hdfsLeFacade.
-//              getSingleEndpoint(), settings, port, driverCores,
-//              driverMemory, numExecutors, executorCores, executorMemory, gpus,
-//              archives, jars, files, pyFiles);
-//      hdfsuserConfCache.put(hdfsUser, jc);
-//
-//      String[] command = {"jupyter", "notebook"};
-//      ProcessBuilder pb = new ProcessBuilder(command);
-//      Map<String, String> env = pb.environment();
-//      env.put("JUPYTER_DATA_DIR", jc.getNotebookDirPath());
-//      env.put("JUPYTER_PATH", jc.getNotebookDirPath());
-//      env.put("JUPYTER_CONFIG_DIR", jc.getConfDirPath());
-//      env.put("JUPYTER_RUNTIME_DIR", jc.getRunDirPath());
-//      env.put("LD_LIBRARY_PATH", "$LD_LIBRARY_PATH:" + settings.getHadoopDir()
-//              + "/lib/native:/usr/local/cuda/lib64:/usr/local/lib:/usr/lib");
-//      env.put("CLASSPATH", "$CLASSPATH:" + getHadoopClasspath());
-//      env.put("HADOOP_HOME", settings.getHadoopDir());
-//      env.put("HADOOP_CONF_DIR", settings.getHadoopDir() + "/etc/hadoop");
-//      env.put("JAVA_HOME", settings.getJavaHome());
-//      env.put("SPARKMAGIC_CONF_DIR", jc.getConfDirPath());
-//      env.put("PYSPARK_PYTHON", jc.getSettings().getAnacondaProjectDir(jc.
-//              getProjectName()) + "/bin/python");
-//      env.put("PYLIB", jc.getSettings().getAnacondaProjectDir(jc.
-//              getProjectName()) + "/lib");
-//      String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
-//      String pidfile = jc.getRunDirPath() + "/jupyter.pid";
-//      try {
-//        // Send both stdout and stderr to the same stream
-//        pb.redirectErrorStream(true);
-//        pb.directory(new File(jc.getNotebookDirPath()));
-//
-//        process = pb.start();
-//
-//        final BufferedReader br = new BufferedReader(new InputStreamReader(
-//                process.getInputStream(), Charset.forName("UTF8")));
-//        String line;
-//// [I 11:59:16.597 NotebookApp] The Jupyter Notebook is running at: 
-//// http://localhost:8888/?token=c8de56fa4deed24899803e93c227592aef6538f93025fe01
-//        String pattern = "(.*)token=(.*)";
-//        Pattern r = Pattern.compile(pattern);
-//        boolean foundToken = false;
-//
-//        try (PrintWriter out = new PrintWriter(logfile)) {
-//          while (((line = br.readLine()) != null) && !foundToken) {
-//            logger.info(line);
-//            out.println(line);
-//            Matcher m = r.matcher(line);
-//            if (m.find()) {
-//              token = m.group(2);
-//              foundToken = true;
-//            }
-//          }
-//        }
-//        try (PrintWriter out = new PrintWriter(pidfile)) {
-//          while (((line = br.readLine()) != null)) {
-//            try {
-//              pid = Long.parseLong(line);
-//            } catch (NumberFormatException e) {
-//              // do nothing
-//            }
-//          }
-//        }
-//        // We need to start a thread to write the log to a file, otherwise
-//        // the process hangs. It's ok to create a thread in java ee, as long as 
-//        // it doesn't access Java EE beans/facades/resources.
-//   // http://stackoverflow.com/questions/34788234/how-to-create-threads-in-java-ee-environment
-//        // The thread will exit when it can no longer read from stout/stderr
-////        new Thread() {
-////          public void run() {
-////            String line = "";
-////            try (PrintWriter out = new PrintWriter(logfile)) {
-////              while (((line = br.readLine()) != null)) {
-////                out.println(line);
-////              }
-////            } catch (FileNotFoundException ex) {
-////              Logger.getLogger(JupyterConfigFactory.class.getName()).
-////                      log(Level.SEVERE, null, ex);
-////            } catch (IOException ex) {
-////              Logger.getLogger(JupyterConfigFactory.class.getName()).
-////                      log(Level.SEVERE, null, ex);
-////            }
-////          }
-////        }.start();
-//
-//        failed = false;
-//      } catch (Exception ex) {
-//        logger.log(Level.SEVERE, "Problem starting a jupyter server: {0}", ex.
-//                toString());
-//        if (process != null) {
-//          process.destroyForcibly();
-//        }
-//      }
-//      maxTries--;
-//    }
-//
-//    if (failed || token == null) {
-//      // cleanup
-//      if (jc != null) {
-////        jc.cleanAndRemoveConfDirs();
-//      }
-//      hdfsuserConfCache.remove(hdfsUser);
-//      return null;
-//    } else {
-////      jc.setPid(getPidOfProcess(process));
-//      jc.setPid(pid);
-//      jc.setToken(token);
-//    }
-//
-//    return new JupyterDTO(jc.getPort(), jc.getToken(), jc.getPid(), jc.
-//            getDriverCores(), jc.getDriverMemory(), jc.getNumExecutors(), jc.
-//            getExecutorCores(), jc.getExecutorMemory(), jc.getGpus(), jc.
-//            getArchives(), jc.getJars(), jc.getFiles(), jc.getPyFiles());
-//  }
-//  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-//  public boolean stopServer(String hdfsUser) throws AppException {
-//
-//    if (hdfsUser == null) {
-//      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-//              "Could not find a Jupyter Notebook server to delete.");
-//    }
-//
-//    JupyterConfig config = getFromCache(hdfsUser);
-//    Process p = runningServers.get(hdfsUser);
-//    if (config == null || p == null) {
-////      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-////              "Could not find a Jupyter Notebook server for this user to delete.");
-//      return false;
-//    }
-//    killNotebookServer(p);
-//    removeFromCache(hdfsUser);
-//    runningServers.remove(hdfsUser);
-//
-////    jupyterFacade.remove(jp);
-//    // delete JupyterProject entity bean
-//    return true;
-//  }
   public void stopServers(Project project) {
 
     // delete JupyterProject entity bean
@@ -470,7 +246,7 @@ public class JupyterConfigFactory {
     JupyterConfig jc = null;
 
     // kill any running servers for this user, clear cached entries
-    removeFromCache(hdfsUser);
+    cleanup(hdfsUser);
 
     while (!foundToken && maxTries > 0) {
       // use pidfile to kill any running servers
@@ -572,11 +348,33 @@ public class JupyterConfigFactory {
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public void stopServerJupyterUser(Long pid) throws AppException {
+  public String getJupyterHome(String hdfsUser, JupyterProject jp) throws
+          AppException {
+    if (jp == null) {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+              getStatusCode(),
+              "Couldn't resolve JUPYTER_HOME using DB.");
+    }
+    String projectPath = settings.getJupyterDir() + File.separator
+            + Settings.DIR_ROOT + File.separator + jp.getProjectId().getName()
+            + File.separator + hdfsUser + File.separator + jp.getSecret();
+
+    return projectPath;
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public void stopServerJupyterUser(String projectPath, Long pid, Integer port)
+          throws AppException {
+    if (projectPath == null || pid == null || port == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.
+              getStatusCode(),
+              "Invalid arguments when stopping the Jupyter Server.");
+    }
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
     int exitValue;
     Integer id = 1;
-    String[] command = {"/usr/bin/sudo", prog, "stop", pid.toString()};
+    String[] command = {"/usr/bin/sudo", prog, "stop", projectPath, 
+      pid.toString(), port.toString()};
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();
