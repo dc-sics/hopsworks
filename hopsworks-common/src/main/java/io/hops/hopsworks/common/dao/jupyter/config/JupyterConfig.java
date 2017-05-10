@@ -333,7 +333,7 @@ public class JupyterConfig {
     // Set owner persmissions
     Set<PosixFilePermission> perms = new HashSet<>();
     //add owners permission
-    perms.add(PosixFilePermission.OWNER_READ);
+//    perms.add(PosixFilePermission.OWNER_READ);
     perms.add(PosixFilePermission.OWNER_WRITE);
     perms.add(PosixFilePermission.OWNER_EXECUTE);
     //add group permissions
