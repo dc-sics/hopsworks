@@ -5,6 +5,22 @@
     <param-value>Development</param-value>
   </context-param>
   <servlet>
+    <servlet-name>AirpalProxyServlet</servlet-name>
+    <servlet-class>io.hops.hopsworks.api.airpal.proxy.AirpalProxyServlet</servlet-class>
+    <init-param>
+      <param-name>targetUri</param-name>
+      <param-value>http://localhost:5601/</param-value>
+    </init-param>
+    <init-param>
+      <param-name>log</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AirpalProxyServlet</servlet-name>
+    <url-pattern>/airpal/*</url-pattern>
+  </servlet-mapping>
+  <servlet>
     <servlet-name>Faces Servlet</servlet-name>
     <servlet-class>javax.faces.webapp.FacesServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
