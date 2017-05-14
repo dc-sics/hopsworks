@@ -1,13 +1,13 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('AirpalCtrl', ['$scope', '$routeParams','$route',
-          function ($scope, $routeParams, $route) {
+        .controller('AirpalCtrl', ['$scope', '$routeParams','$route','$sce',
+          function ($scope, $routeParams, $route, $sce) {
 
             var self = this;
 
             self.getAirpalURL = function () {
-              return getLocationBase() + "/airpal";
+              return $sce.trustAsResourceUrl("http://bbc2.sics.se:64364/app");
             };
           }]);
 
