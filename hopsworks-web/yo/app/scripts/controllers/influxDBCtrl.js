@@ -11,6 +11,7 @@ angular.module('hopsWorksApp')
 
                 var self = this;
                 self.projectId = $routeParams.projectID;
+                self.updateLabel = vizopsGetUpdateLabel();
                 // Job details
                 self.jobName = $routeParams.name;
                 self.appId = ""; // startTime, endTime, now will be filled by init
@@ -27,6 +28,7 @@ angular.module('hopsWorksApp')
                 self.startTimeMap = {
                     'executorCPU': -1,
                     'hostCPU': -1,
+                    'executorMemory': -1,
                     'executorPerNode': -1,
                     'taskPerNode': -1
                 };
@@ -40,6 +42,9 @@ angular.module('hopsWorksApp')
                 // HOST CPU GRAPH
                 $scope.optionsHostCPU = vizopsHostCPUOptions();
                 $scope.templateHostCPU = [];
+                // Executor MEMORY GRAPH
+                $scope.optionsExecutorMemory = vizopsExecutorMemoryOptions();
+                $scope.templateExecutorMemory = [];
                 // Executor per node
                 $scope.optionsExecutorPerNode = vizopsExecutorsPerNodeOptions();
                 $scope.templateExecutorPerNode = [];
@@ -114,9 +119,37 @@ angular.module('hopsWorksApp')
                     }
                 };
 
+                var updateGraphExecutorMemory = function() {
+                    // Executor id 0 is the driver, 1+ the rest
+                    for(var i = 0; i < self.nbExecutors; i++) {
+                        var service = (i === 0) ? 'driver' : '' + i;
+                        InfluxDBService.getSparkMetrics(self.projectId, self.appId, self.startTimeMap['executorMemory'],
+                                                        ['heap_used', 'service'], service).then(
+                            function(success) {
+                                if (success.status === 200) { // new measurements
+                                    var newData = success.data;
+                                    self.startTimeMap['executorMemory'] = +newData.lastMeasurementTimestamp;
+
+                                    var metrics = newData.series.values;
+
+                                    for(var i = 0; i < metrics.length; i++) {
+                                        var splitEntry = metrics[i].split(' ');
+                                        var executorID = (splitEntry[2] === 'driver') ? 0 : +splitEntry[2];
+
+                                        $scope.templateExecutorMemory[executorID].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    }
+                                } // dont do anything if response 204(no content), nothing new
+                            }, function(error) {
+                                growl.error(error.data.errorMsg, {title: 'Error fetching ExecutorMemory metrics.', ttl: 10000});
+                            }
+                        );
+                    }
+                };
+
                 var updateData = function() {
                     // Call the new graph function here
                     updateGraphExecutorCPU();
+                    updateGraphExecutorMemory();
                     updateGraphHostCPU();
                 };
 
@@ -129,7 +162,7 @@ angular.module('hopsWorksApp')
                         result[hosts[i]] = [];
                     }
 
-                    // and count the executors running on them
+                    // and add the executors running on them
                     for(var i = 0; i < response.entry.length; i++) {
                         result[response.entry[i].value[1]].push(response.entry[i].key);
                     }
@@ -163,7 +196,8 @@ angular.module('hopsWorksApp')
                             // TODO use info.now to call the endpoints only once and skip polling
                             $scope.templateExecutorCPU = vizopsExecutorCPUDataTemplate(self.nbExecutors, colorMap);
                             $scope.templateHostCPU = vizopsHostCPUDataTemplate(Object.keys(self.hostnames), colorMap);
-                            // $scope.templateExecutorPerNode = vizopsExecutorsPerNodeTemplate();
+                            $scope.templateExecutorMemory = vizopsExecutorMemoryDataTemplate(self.nbExecutors, colorMap);
+                            $scope.templateExecutorPerNode = vizopsExecutorsPerNodeTemplate(self.hostnames, colorMap);
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
@@ -172,7 +206,6 @@ angular.module('hopsWorksApp')
 
                 init();
 
-                // Every X seconds retrieve the new data
                 self.poller = $interval(function () {
                     updateData();
                 }, vizopsUpdateInterval());

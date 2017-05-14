@@ -1,8 +1,10 @@
 // Settings file used by vizops, loaded by each graph
 
 var vizopsUpdateInterval = function() { return 2000; }
-var _getUpdateLabel = function() { return '(' + vizopsUpdateInterval()/1000 + ' s)'; };
-var _getColor = d3.range(20).map(d3.scale.category20());
+var vizopsGetUpdateLabel = function() { return '(' + vizopsUpdateInterval()/1000 + ' s)'; };
+var _getColor = ['#8c510a','#bf812d', '#2166ac', '#b2182b', '#543005',
+                 '#35978f','#01665e','#003c30','#40004b', '#d6604d', '#762a83',
+                 '#9970ab','#c2a5cf','#5aae61','#1b7837','#00441b'];
 
 var vizopsMapColorExecutorsHost = function(hostnames) {
     var result = {}, i = 0;
@@ -173,6 +175,74 @@ var vizopsHostCPUDataTemplate = function(hostnames, colorMap) {
     return template;
 };
 
+// Executor MEMORY SETUP
+var vizopsExecutorMemoryOptions = function() {
+    return {
+        chart: {
+            "type": "lineWithFocusChart",
+            "interpolate": "monotone",
+            "height": 450,
+            "margin": {
+                "top": 20,
+                "right": 30,
+                "bottom": 60,
+                "left": 80
+            },
+            "x": function(d){ return d.x; },
+            "y": function(d){ return d.y; },
+            "duration": 500,
+            "useInteractiveGuideline": true,
+            "xAxis": {
+              "axisLabel": "Time",
+              "rotateLabels": -35,
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "x2Axis": {
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "yAxis": {
+              "axisLabel": "Memory",
+              "rotateYLabel": true,
+              "tickFormat": function(d) {
+                var prefix = d3.formatPrefix(d),
+                    format = d3.format(".0f");
+                return format(prefix.scale(d)) + prefix.symbol + 'B';
+              }
+            },
+            "y2Axis": {}
+        },
+        title: {
+            enable: true,
+            text: 'Executor Memory usage'
+        }
+    };
+};
+
+var vizopsExecutorMemoryDataTemplate = function(nbExecutors, colorMap) {
+    var template = [
+           {
+               values: [],
+               key: 'driver',
+               color: colorMap['0']
+           }
+        ];
+
+    // ignore the driver
+    for(var i = 1; i < nbExecutors; i++) {
+        template.push({
+            values: [],
+            key: 'executor_' + i,
+            color: colorMap['' + i]
+        });
+    }
+
+    return template;
+};
+
 // Executors on each node setup
 var vizopsExecutorsPerNodeOptions = function() {
     return {
@@ -184,10 +254,10 @@ var vizopsExecutorsPerNodeOptions = function() {
                     "bottom": 60,
                     "left": 80
                 },
-                "height": 300,
+                "height": 200,
                 "duration": 500,
                 "labelThreshold": 0.01,
-                "showLabels": true,
+                "showLabels": false,
                 "labelSunbeamLayout": true,
                 "x": function(d){return d.key;},
                 "y": function(d){return d.y;},
@@ -207,24 +277,18 @@ var vizopsExecutorsPerNodeOptions = function() {
         };
 };
 
-var vizopsExecutorsPerNodeTemplate = function() {
-    /* Pie chart data look like this:
-     [
-        {
-            key: "One",
-            y: 5
-        },
-        {
-            key: "Two",
-            y: 2
-        }
-    ]
-    Key: hostname
-    y: executors running on that host
-    */
-    var template = [
-
-    ];
+/*
+    @arg(hostnames): a dictionary with keys hostnames and a list of executors running on them
+*/
+var vizopsExecutorsPerNodeTemplate = function(hostnames, colorMap) {
+    var template = [];
+    for (var key in hostnames) {
+        template.push({
+            'key': key,
+            'y': hostnames[key].length,
+            'color': colorMap[key]
+        });
+    }
 
     return template;
 };

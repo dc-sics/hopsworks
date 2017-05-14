@@ -64,7 +64,7 @@ public class InfluxDBService {
     StringBuffer query = new StringBuffer();
     query.append("select " + String.join(",", fields) + " from spark ");
     query.append("where appid=\'" + this.appId + "\' ");
-    query.append("and service=\'" + service + "\' ");
+    query.append("and service =~ /.*" + service + ".*/ ");
     query.append("and time > " + startTime);
     query.append("ms");
 

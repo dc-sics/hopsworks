@@ -1,8 +1,37 @@
+<style>
+  .border {
+    border-radius: 1px;
+    box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.5);
+    background: #F5F2F2;
+    text-align: center;
+    padding: 8px;
+    margin: 30px;
+  }
+</style>
+
 <div id="headers">
-  <h3>{{influxDBCtrl.jobName}}&nbsp;<small>{{influxDBCtrl.appId}}</small></h3>
+  <h3>{{influxDBCtrl.jobName}}&nbsp;
+    <small>{{influxDBCtrl.appId}}</small>
+  </h3>
 </div>
 
-<div id="charts">
+<div id="body" style="background:#ffffff !important; border-radius: 7px; padding: 20px">
+
+  <div class="row">
+
+    <div class="col-md-2">
+      <md-card>
+        <md-card-title>
+          <md-card-title-text>
+            <span class="md-headline strong">Total executors</span>
+            <span class="md-subhead">{{influxDBCtrl.nbExecutors}}</span>
+          </md-card-title-text>
+        </md-card-title>
+      </md-card>
+    </div>
+
+  </div>
+
   <div class="container-fluid">
     <div class="row">
 
@@ -11,20 +40,27 @@
               class="with-3d-shadow with-transitions"></nvd3>
       </div>
 
-    </div>
+      <div class="col-md-5">
+        <nvd3 id="executorMemory" options="optionsExecutorMemory" data="templateExecutorMemory"
+              class="with-3d-shadow with-transitions"></nvd3>
+      </div>
+
+      <div class="col-md-2">
+        <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateExecutorPerNode"
+              class="with-3d-shadow with-transitions"></nvd3>
+      </div>
+
+    </div> <!-- row -->
+
     <div class="row">
 
       <div class="col-md-5">
         <nvd3 id="hostCPU" options="optionsHostCPU" data="templateHostCPU"
               class="with-3d-shadow with-transitions"></nvd3>
       </div>
-    </div>
 
-      <!--<div class="col-md-6">
-        <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateHostCPU"
-              class="with-3d-shadow with-transitions"></nvd3>
-      </div>-->
+    </div> <!-- row -->
 
     </div>
   </div> <!-- class:container fluid end -->
-</div> <!-- id:charts end -->
+</div> <!-- id:body end -->
