@@ -92,8 +92,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.json.JSONObject;
 
-
-
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class ProjectController {
@@ -262,7 +260,8 @@ public class ProjectController {
         throw ex;
       } catch (IOException ex) {
         cleanup(project, jsessionidsso);
-        LOGGER.log(Level.SEVERE, "An error occurend when creating the project: "+ex.getMessage(), ex);
+        LOGGER.log(Level.SEVERE, "An error occurend when creating the project: "
+                + ex.getMessage(), ex);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "An error occurend when creating the project");
       }
@@ -283,7 +282,8 @@ public class ProjectController {
         //create certificate for this user
         createCertificates(project, owner);
       } catch (IOException | EJBException ex) {
-        LOGGER.log(Level.SEVERE, "Error while creating certificates: " + ex.getMessage(), ex);
+        LOGGER.log(Level.SEVERE, "Error while creating certificates: " + ex.
+                getMessage(), ex);
         cleanup(project, jsessionidsso);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "Error while creating certificates");
@@ -296,7 +296,8 @@ public class ProjectController {
         hdfsUsersBean.addProjectFolderOwner(project, dfso);
         createProjectLogResources(owner, project, dfso, udfso);
       } catch (IOException | EJBException ex) {
-        LOGGER.log(Level.SEVERE, "Error while creating project sub folders: "+ex.getMessage(), ex);
+        LOGGER.log(Level.SEVERE, "Error while creating project sub folders: "
+                + ex.getMessage(), ex);
         cleanup(project, jsessionidsso);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "Error while creating project sub folders");
@@ -334,7 +335,8 @@ public class ProjectController {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-  private void verifyProject(Project project, DistributedFileSystemOps dfso, String sessionId)
+  private void verifyProject(Project project, DistributedFileSystemOps dfso,
+          String sessionId)
           throws AppException {
     //proceed to all the verrifications and set up local variable    
     //  verify that the project folder does not exist
@@ -434,7 +436,12 @@ public class ProjectController {
           IOException {
     LocalhostServices.
             createUserCertificates(settings.getIntermediateCaDir(), project.
-                    getName(), owner.getUsername());
+                    getName(), owner.getUsername(),
+                    owner.getAddress().getCountry(),
+                    owner.getAddress().getCity(),
+                    owner.getOrganization().getOrgName(),
+                    owner.getEmail(),
+                    owner.getOrcid());
     userCertsFacade.putUserCerts(project.getName(), owner.getUsername());
   }
 
@@ -595,9 +602,11 @@ public class ProjectController {
           DistributedFileSystemOps dfso, DistributedFileSystemOps udfso) throws
           ProjectInternalFoldersFailedException, AppException {
     try {
-      udfso.copyInHdfs(new Path(settings.getSparkLog4JPath()), new Path("/Projects/" + project.getName()
+      udfso.copyInHdfs(new Path(settings.getSparkLog4JPath()), new Path(
+              "/Projects/" + project.getName()
               + "/" + Settings.DefaultDataset.RESOURCES));
-      udfso.copyInHdfs(new Path(settings.getSparkMetricsPath()), new Path("/Projects/" + project.getName()
+      udfso.copyInHdfs(new Path(settings.getSparkMetricsPath()), new Path(
+              "/Projects/" + project.getName()
               + "/" + Settings.DefaultDataset.RESOURCES));
     } catch (IOException e) {
       throw new ProjectInternalFoldersFailedException(
@@ -742,7 +751,8 @@ public class ProjectController {
    * @param projectId
    * @throws AppException if the project could not be found.
    */
-  public void removeProject(String userMail, int projectId, String sessionId) throws AppException {
+  public void removeProject(String userMail, int projectId, String sessionId)
+          throws AppException {
 
     Project project = projectFacade.find(projectId);
     if (project == null) {
@@ -769,15 +779,18 @@ public class ProjectController {
       try {
         //Restart zeppelin so interpreters shut down
         Response resp = ClientBuilder.newClient()
-            .target(settings.getRestEndpoint() + "/hopsworks-api/api/zeppelin/" + project.getId()
-                + "/interpreter/restart")
-            .request()
-            .cookie("JSESSIONIDSSO", sessionId)
-            .method("GET");
-        LOGGER.log(Level.INFO, "Zeppelin resp:"+resp.getStatus()+", with session:"+sessionId);
+                .target(settings.getRestEndpoint()
+                        + "/hopsworks-api/api/zeppelin/" + project.getId()
+                        + "/interpreter/restart")
+                .request()
+                .cookie("JSESSIONIDSSO", sessionId)
+                .method("GET");
+        LOGGER.log(Level.INFO, "Zeppelin resp:" + resp.getStatus()
+                + ", with session:" + sessionId);
         if (resp.getStatus() != 200) {
-          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
-              "Error while closing zeppelin interpreters, please close them manually");
+          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                  getStatusCode(),
+                  "Error while closing zeppelin interpreters, please close them manually");
         }
         //remove from project_team so that nobody can see the project anymore
         updateProjectTeamRole(project, ProjectRoleTypes.UNDER_REMOVAL);
@@ -793,13 +806,15 @@ public class ProjectController {
             Collections.sort(jobExecs, new Comparator<Execution>() {
               @Override
               public int compare(Execution lhs, Execution rhs) {
-                return lhs.getId() > rhs.getId() ? -1 : (lhs.getId() < rhs.getId()) ? 1 : 0;
+                return lhs.getId() > rhs.getId() ? -1 : (lhs.getId() < rhs.
+                        getId()) ? 1 : 0;
               }
             });
-            rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill " + jobExecs.get(0).getAppId());
+            rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill "
+                    + jobExecs.get(0).getAppId());
           }
         }
-        
+
         List<HdfsUsers> usersToClean = getUsersToClean(project);
         List<HdfsGroups> groupsToClean = getGroupsToClean(project);
         removeProjectInt(project, usersToClean, groupsToClean);
@@ -812,7 +827,8 @@ public class ProjectController {
             LOGGER.log(Level.SEVERE, null, ex1);
           }
         } else {
-          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "error while removing project");
+          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                  getStatusCode(), "error while removing project");
         }
       }
     }
@@ -832,17 +848,16 @@ public class ProjectController {
               + project.getName();
       Path location = new Path(path);
       if (dfso.exists(path)) {
-        dfso.setOwner(location, settings.getHdfsSuperUser(), settings.getHdfsSuperUser());
+        dfso.setOwner(location, settings.getHdfsSuperUser(), settings.
+                getHdfsSuperUser());
       }
 
       Path dumy = new Path("/tmp/" + project.getName());
       if (dfso.exists(dumy.toString())) {
-        dfso.setOwner(dumy, settings.getHdfsSuperUser(), settings.getHdfsSuperUser());
+        dfso.setOwner(dumy, settings.getHdfsSuperUser(), settings.
+                getHdfsSuperUser());
       }
 
-      
-      
-      
       //remove kafka topics
       removeKafkaTopics(project);
 
@@ -868,7 +883,8 @@ public class ProjectController {
         }
 
         //Clean up tmp certificates dir from hdfs
-        String tmpCertsDir = settings.getHdfsTmpCertDir() + "/" + hdfsUser.getName();
+        String tmpCertsDir = settings.getHdfsTmpCertDir() + "/" + hdfsUser.
+                getName();
         if (dfso.exists(tmpCertsDir)) {
           dfso.rm(new Path(tmpCertsDir), true);
         }
@@ -1029,7 +1045,12 @@ public class ProjectController {
             try {
               LocalhostServices.createUserCertificates(settings.
                       getIntermediateCaDir(),
-                      project.getName(), newMember.getUsername());
+                      project.getName(), newMember.getUsername(),
+                      newMember.getAddress().getCountry(),
+                      newMember.getAddress().getCity(),
+                      newMember.getOrganization().getOrgName(),
+                      newMember.getEmail(),
+                      newMember.getOrcid());
               userCertsFacade.putUserCerts(project.getName(), newMember.
                       getUsername());
             } catch (IOException ex) {
@@ -1480,7 +1501,8 @@ public class ProjectController {
       }
     } else if (TourProjectType.KAFKA.equals(projectType)) {
       // Get the JAR from /user/<super user>
-      String kafkaExampleSrc = "/user/" + settings.getHdfsSuperUser() + "/" + Settings.HOPS_KAFKA_TOUR_JAR;
+      String kafkaExampleSrc = "/user/" + settings.getHdfsSuperUser() + "/"
+              + Settings.HOPS_KAFKA_TOUR_JAR;
       String kafkaExampleDst = "/" + Settings.DIR_ROOT + "/" + project.getName()
               + "/TestJob/" + Settings.HOPS_KAFKA_TOUR_JAR;
       try {
