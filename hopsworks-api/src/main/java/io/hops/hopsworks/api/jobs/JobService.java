@@ -45,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1096,12 +1095,12 @@ public class JobService {
         LOGGER.log(Level.INFO, "Request to delete job name ={0} job id ={1}",
             new Object[]{job.getName(), job.getId()});
         
-        for (Iterator<Execution> execsIter = job.getExecutionCollection().iterator(); execsIter.hasNext();) {
-          if (execsIter.next().getState() == JobState.RUNNING) {
-            throw new AppException(Response.Status.FORBIDDEN.getStatusCode(),
-                "Job is still running, please stop it first by clicking the Stop button");
-          }
-        }
+//        for (Iterator<Execution> execsIter = job.getExecutionCollection().iterator(); execsIter.hasNext();) {
+//          if (execsIter.next().getState() == JobState.RUNNING) {
+//            throw new AppException(Response.Status.FORBIDDEN.getStatusCode(),
+//                "Job is still running, please stop it first by clicking the Stop button");
+//          }
+//        }
         elasticController.deleteJobLogs(project.getName(), "logs", Settings.getJobLogsIdField(),job.getId());
         jobFacade.removeJob(job);
         LOGGER.log(Level.INFO, "Deleted job name ={0} job id ={1}",
