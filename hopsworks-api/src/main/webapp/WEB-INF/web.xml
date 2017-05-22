@@ -30,6 +30,31 @@
     <servlet-name>KibanaProxyServlet</servlet-name>
     <url-pattern>/kibana</url-pattern>
   </servlet-mapping>
+  
+  
+<servlet>
+  <servlet-name>JupyterProxServlet</servlet-name>
+  <servlet-class>io.hops.hopsworks.api.jupyter.JupyterProxServlet</servlet-class>
+  <init-param>
+    <param-name>targetUri</param-name>
+    <param-value>http://localhost:{_port}/</param-value>
+  </init-param>
+  <init-param>
+    <param-name>log</param-name>
+    <param-value>true</param-value>
+  </init-param>
+</servlet>
+
+  <servlet-mapping>
+    <servlet-name>JupyterProxServlet</servlet-name>
+    <url-pattern>/jupyter/*</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>JupyterProxServlet</servlet-name>
+    <url-pattern>/jupyter</url-pattern>
+  </servlet-mapping>
+  
+  
   <!-- Grafana proxy servlet -->
   <servlet>
     <servlet-name>GrafanaProxyServlet</servlet-name>
