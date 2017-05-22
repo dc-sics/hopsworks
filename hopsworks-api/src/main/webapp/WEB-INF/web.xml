@@ -9,7 +9,7 @@
     <servlet-class>io.hops.hopsworks.api.airpal.proxy.AirpalProxyServlet</servlet-class>
     <init-param>
       <param-name>targetUri</param-name>
-      <param-value>http://localhost:5601/</param-value>
+      <param-value>http://localhost:5601/app</param-value>
     </init-param>
     <init-param>
       <param-name>log</param-name>
@@ -19,6 +19,18 @@
   <servlet-mapping>
     <servlet-name>AirpalProxyServlet</servlet-name>
     <url-pattern>/airpal/*</url-pattern>
+  </servlet-mapping>
+   <servlet>
+    <servlet-name>AirpalServlet</servlet-name>
+    <servlet-class>io.hops.hopsworks.api.airpal.proxy.AirpalServlet</servlet-class>
+    <init-param>
+      <param-name>log</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AirpalServlet</servlet-name>
+    <url-pattern>*/api/*</url-pattern>
   </servlet-mapping>
   <servlet>
     <servlet-name>Faces Servlet</servlet-name>
@@ -113,7 +125,7 @@
   <security-constraint>
     <display-name>Zeppelin SocketConstraint</display-name>
     <web-resource-collection>
-      <web-resource-name>ZeppelinWebSocket</web-resource-name>
+      <web-resource-name>ZeppelinWeb Socket</web-resource-name>
       <description>Security constraint for  Zeppelin websocket endpoint</description>
       <url-pattern>/zeppelin/ws/*</url-pattern>
       <http-method>GET</http-method>
