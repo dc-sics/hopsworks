@@ -33,8 +33,8 @@
   
   
 <servlet>
-  <servlet-name>JupyterProxServlet</servlet-name>
-  <servlet-class>io.hops.hopsworks.api.jupyter.JupyterProxServlet</servlet-class>
+  <servlet-name>JupyterProxyServlet</servlet-name>
+  <servlet-class>io.hops.hopsworks.api.jupyter.JupyterProxyServlet</servlet-class>
   <init-param>
     <param-name>targetUri</param-name>
     <param-value>http://localhost:{_port}/</param-value>
@@ -46,11 +46,11 @@
 </servlet>
 
   <servlet-mapping>
-    <servlet-name>JupyterProxServlet</servlet-name>
+    <servlet-name>JupyterProxyServlet</servlet-name>
     <url-pattern>/jupyter/*</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-    <servlet-name>JupyterProxServlet</servlet-name>
+    <servlet-name>JupyterProxyServlet</servlet-name>
     <url-pattern>/jupyter</url-pattern>
   </servlet-mapping>
   
