@@ -431,8 +431,13 @@ public class ProjectController {
   private void createCertificates(Project project, Users owner) throws
       IOException {
     LocalhostServices.
-        createUserCertificates(settings.getIntermediateCaDir(), project.
-            getName(), owner.getUsername());
+            createUserCertificates(settings.getIntermediateCaDir(), project.
+                    getName(), owner.getUsername(),
+                    owner.getAddress().getCountry(),
+                    owner.getAddress().getCity(),
+                    owner.getOrganization().getOrgName(),
+                    owner.getEmail(),
+                    owner.getOrcid());
     userCertsFacade.putUserCerts(project.getName(), owner.getUsername());
   }
 
@@ -741,7 +746,8 @@ public class ProjectController {
    * @param sessionId
    * @throws AppException if the project could not be found.
    */
-  public void removeProject(String userMail, int projectId, String sessionId) throws AppException {
+  public void removeProject(String userMail, int projectId, String sessionId)
+          throws AppException {
 
     Project project = projectFacade.find(projectId);
     if (project == null) {
@@ -801,10 +807,12 @@ public class ProjectController {
             Collections.sort(jobExecs, new Comparator<Execution>() {
               @Override
               public int compare(Execution lhs, Execution rhs) {
-                return lhs.getId() > rhs.getId() ? -1 : (lhs.getId() < rhs.getId()) ? 1 : 0;
+                return lhs.getId() > rhs.getId() ? -1 : (lhs.getId() < rhs.
+                        getId()) ? 1 : 0;
               }
             });
-            rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill " + jobExecs.get(0).getAppId());
+            rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill "
+                    + jobExecs.get(0).getAppId());
           }
         }
 
@@ -840,12 +848,14 @@ public class ProjectController {
           + project.getName();
       Path location = new Path(path);
       if (dfso.exists(path)) {
-        dfso.setOwner(location, settings.getHdfsSuperUser(), settings.getHdfsSuperUser());
+        dfso.setOwner(location, settings.getHdfsSuperUser(), settings.
+                getHdfsSuperUser());
       }
 
       Path dumy = new Path("/tmp/" + project.getName());
       if (dfso.exists(dumy.toString())) {
-        dfso.setOwner(dumy, settings.getHdfsSuperUser(), settings.getHdfsSuperUser());
+        dfso.setOwner(dumy, settings.getHdfsSuperUser(), settings.
+                getHdfsSuperUser());
       }
 
       //remove kafka topics
@@ -873,7 +883,8 @@ public class ProjectController {
         }
 
         //Clean up tmp certificates dir from hdfs
-        String tmpCertsDir = settings.getHdfsTmpCertDir() + "/" + hdfsUser.getName();
+        String tmpCertsDir = settings.getHdfsTmpCertDir() + "/" + hdfsUser.
+                getName();
         if (dfso.exists(tmpCertsDir)) {
           dfso.rm(new Path(tmpCertsDir), true);
         }
@@ -1034,8 +1045,13 @@ public class ProjectController {
             // TODO: This should now be a REST call
             try {
               LocalhostServices.createUserCertificates(settings.
-                  getIntermediateCaDir(),
-                  project.getName(), newMember.getUsername());
+                      getIntermediateCaDir(),
+                      project.getName(), newMember.getUsername(),
+                      newMember.getAddress().getCountry(),
+                      newMember.getAddress().getCity(),
+                      newMember.getOrganization().getOrgName(),
+                      newMember.getEmail(),
+                      newMember.getOrcid());
               userCertsFacade.putUserCerts(project.getName(), newMember.
                   getUsername());
             } catch (IOException ex) {
@@ -1486,7 +1502,8 @@ public class ProjectController {
       }
     } else if (TourProjectType.KAFKA.equals(projectType)) {
       // Get the JAR from /user/<super user>
-      String kafkaExampleSrc = "/user/" + settings.getHdfsSuperUser() + "/" + Settings.HOPS_KAFKA_TOUR_JAR;
+      String kafkaExampleSrc = "/user/" + settings.getHdfsSuperUser() + "/"
+              + Settings.HOPS_KAFKA_TOUR_JAR;
       String kafkaExampleDst = "/" + Settings.DIR_ROOT + "/" + project.getName()
           + "/TestJob/" + Settings.HOPS_KAFKA_TOUR_JAR;
       try {
