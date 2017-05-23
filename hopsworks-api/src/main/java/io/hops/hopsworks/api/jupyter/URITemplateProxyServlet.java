@@ -70,6 +70,7 @@ public class URITemplateProxyServlet extends ProxyServlet {
           getSimpleName() + ".queryString";
 
   protected String targetUriTemplate;//has {name} parts
+  protected String port;
 
   @Override
   protected void initTarget() throws ServletException {
@@ -119,11 +120,15 @@ public class URITemplateProxyServlet extends ProxyServlet {
     while (matcher.find()) {
       String arg = matcher.group(1);
       String replacement = params.remove(arg);//note we remove
-      if (replacement == null) {
+      if (replacement != null) {
+        matcher.appendReplacement(urlBuf, replacement);
+        port = replacement;
+      } else if (port != null) {
+        matcher.appendReplacement(urlBuf, port);
+      } else {
         throw new ServletException("Missing HTTP parameter " + arg
                 + " to fill the template");
       }
-      matcher.appendReplacement(urlBuf, replacement);
     }
     matcher.appendTail(urlBuf);
     String newTargetUri = urlBuf.toString();

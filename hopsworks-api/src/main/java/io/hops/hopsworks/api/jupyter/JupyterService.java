@@ -112,7 +112,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) {};
+            = new GenericEntity<List<JupyterProject>>(listServers) {  };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
   }
@@ -252,23 +252,18 @@ public class JupyterService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");
     }
-    // The server may have been restarted and the caches are empty.
     // We need to stop the jupyter notebook server with the PID
     // If we can't stop the server, delete the Entity bean anyway
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
-    if (jp == null) {
-      jupyterConfigFactory.cleanup(hdfsUser);
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "No Jupyter Notebook server to stop");
-    }
     String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
+
+    // stop the server, remove the user in this project's local dirs
     jupyterConfigFactory.stopServerJupyterUser(projectPath, jp.getPid(), jp.
             getPort());
+    // remove the reference to th e server in the DB.
     jupyterFacade.removeNotebookServer(hdfsUser);
   }
 
-  
-  
   private String getHdfsUser(SecurityContext sc) throws AppException {
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),

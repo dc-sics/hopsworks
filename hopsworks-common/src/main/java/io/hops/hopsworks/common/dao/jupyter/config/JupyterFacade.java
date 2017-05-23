@@ -12,8 +12,6 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.Settings;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -160,19 +158,16 @@ public class JupyterFacade {
           throws AppException {
     JupyterProject jp = null;
     String ip;
-    try {
-      ip = InetAddress.getLocalHost().getHostAddress();
+//    ip = settings.getHopsworksIp() + ":" + settings.getHopsworksPort();
+    ip = "localhost:" + settings.getHopsworksPort();
+//              InetAddress.getLocalHost().getHostAddress();
 
-      jp = new JupyterProject(project, secret, port, hdfsUserId, ip, token, pid,
-              driverCores, driverMemory, numExecutors, executorCores,
-              executorMemory, gpus,
-              archives, jars, files, pyFiles);
+    jp = new JupyterProject(project, secret, port, hdfsUserId, ip, token, pid,
+            driverCores, driverMemory, numExecutors, executorCores,
+            executorMemory, gpus,
+            archives, jars, files, pyFiles);
 
-      persist(jp);
-    } catch (UnknownHostException ex) {
-      Logger.getLogger(JupyterFacade.class.getName()).
-              log(Level.SEVERE, null, ex);
-    }
+    persist(jp);
     return jp;
   }
 

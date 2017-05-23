@@ -13,13 +13,14 @@ c.NotebookApp.contents_manager_class='hdfscontents.hdfsmanager.HDFSContentsManag
 #c.NotebookApp.password = u'%%hashed_password%%'
 
 
-c.NotebookApp.ip = '%%hopsworks_ip%%'
+#c.NotebookApp.ip = '%%hopsworks_ip%%'
+c.NotebookApp.ip = '127.0.0.1'
 c.NotebookApp.open_browser = False
 
 c.NotebookApp.port_retries = 0
 c.NotebookApp.port = %%port%%
 
-#c.NotebookApp.base_url='/hopsworks/jupyter/'
+c.NotebookApp.base_url='/hopsworks-api/jupyter/'
 
 #
 # Disable the default Python2 kernel

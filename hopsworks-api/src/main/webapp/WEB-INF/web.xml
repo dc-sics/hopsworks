@@ -37,7 +37,8 @@
   <servlet-class>io.hops.hopsworks.api.jupyter.JupyterProxyServlet</servlet-class>
   <init-param>
     <param-name>targetUri</param-name>
-    <param-value>http://localhost:{_port}/</param-value>
+    <!--<param-value>http://localhost:8888/hopsworks-api/jupyter</param-value>-->
+    <param-value>http://localhost:{_port}/hopsworks-api/jupyter</param-value>
   </init-param>
   <init-param>
     <param-name>log</param-name>
