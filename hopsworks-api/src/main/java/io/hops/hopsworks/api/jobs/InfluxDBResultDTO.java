@@ -10,27 +10,24 @@ public class InfluxDBResultDTO implements Serializable {
 
   private static final Long serialVersionUID = 1L;
 
-  private String lastMeasurementTimestamp;
-  private QueryResult.Series series;
-
-  public String getLastMeasurementTimestamp() {
-    return lastMeasurementTimestamp;
-  }
-
-  public void setLastMeasurementTimestamp(String lastMeasurementTimestamp) {
-    this.lastMeasurementTimestamp = lastMeasurementTimestamp;
-  }
-
-  public QueryResult.Series getSeries() {
-    return series;
-  }
-
-  public void setSeries(QueryResult.Series series) {
-    this.series = series;
-    this.lastMeasurementTimestamp = String.valueOf(series.getValues().get(series.getValues().size()-1).get(0));
-  }
+  private String query;
+  private QueryResult result;
 
   public InfluxDBResultDTO() {}
 
+  public QueryResult getResult() {
+    return result;
+  }
 
+  public void setResult(QueryResult result) {
+    this.result = result;
+  }
+
+  public void setQuery(String query) {
+    this.query = query;
+  }
+
+  public String getQuery() {
+    return query;
+  }
 }

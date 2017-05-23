@@ -19,11 +19,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,139 +47,52 @@ public class InfluxDBService {
   }
 
   @GET
-  @Path("/spark")
+  @Path("/{database}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response getSparkMetrics(
-          @QueryParam("startTime") String startTime,
-          @QueryParam("fields") List<String> fields,
-          @QueryParam("service") String service,
+  public Response getMetrics(
+          @PathParam("database") String database,
+          @QueryParam("columns") String columns,
+          @QueryParam("measurement") String measurement,
+          @QueryParam("tags") String tags,
+          @QueryParam("groupBy") String groupBy,
           @Context SecurityContext sc, @Context HttpServletRequest req) throws
           AppException, AccessControlException {
-    // e.g. /spark?fields=total_used,heap_used&startTime=1491827969000&service=driver
+
+    // TODO: FIX authentication, check if user has access to project
+    // https://github.com/influxdata/influxdb-java/blob/master/src/main/java/org/influxdb/dto/QueryResult.java
+
     InfluxDB influxdb = InfluxDBFactory.connect(settings.getInfluxDBAddress(),
             settings.getInfluxDBUser(), settings.getInfluxDBPW());
-    Response httpResponse = null;
+    Response response = null;
 
     StringBuffer query = new StringBuffer();
-    query.append("select " + String.join(",", fields) + " from spark ");
-    query.append("where appid=\'" + this.appId + "\' ");
-    query.append("and service =~ /.*" + service + ".*/ ");
-    query.append("and time > " + startTime);
-    query.append("ms");
+    query.append("select " + columns + " from " + measurement);
+    query.append(" where " + tags);
+    if (groupBy != null) query.append(" group by " + groupBy);
 
-    LOGGER.log(Level.INFO, "Influxdb:Spark - Sending query: " + query.toString());
+    LOGGER.log(Level.INFO, "Influxdb - Running query: " + query.toString());
 
-    Query q = new Query(query.toString(), "graphite");
-    QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
-    List<QueryResult.Result> results = response.getResults();
+    Query q = new Query(query.toString(), database);
+    QueryResult reply = influxdb.query(q, TimeUnit.MILLISECONDS);
 
-    if (results.get(0).getSeries() != null) {
-      QueryResult.Series series = results.get(0).getSeries().get(0);
+    if (reply.hasError()) {
+      response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).
+              entity(reply.getError()).build();
+    } else if (reply.getResults().get(0).getSeries() != null) {
       InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
-      influxResults.setSeries(series);
+      influxResults.setQuery(query.toString());
+      influxResults.setResult(reply);
 
-      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+      response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
               entity(influxResults).build();
     } else {
-      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
+      response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
               entity("").build();
     }
 
     influxdb.close();
 
-    return httpResponse;
-  }
-
-  @GET
-  @Path("/tgcpu")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response getTelegrafMetrics(
-          @QueryParam("fields") List<String> fields,
-          @QueryParam("host") String host,
-          @QueryParam("startTime") String startTime,
-          @QueryParam("endTime") String endTime,
-          @Context SecurityContext sc, @Context HttpServletRequest req) throws
-          AppException, AccessControlException {
-    // Query the CPU measurement by using hostname and time from any table on telegraf database
-    // e.g. /tgcpu?fields=usage_user,usage_idle,usage_iowait&startTime=1491827969000&host=vagrant
-    //      &endTime=1491827984000
-    InfluxDB influxdb = InfluxDBFactory.connect(settings.getInfluxDBAddress(),
-            settings.getInfluxDBUser(), settings.getInfluxDBPW());
-    Response httpResponse = null;
-
-    StringBuffer query = new StringBuffer();
-    query.append("select " + String.join(",", fields) + " from cpu ");
-    query.append("where host=\'" + host + "\' ");
-    query.append("and cpu=\'cpu-total\' ");
-    query.append("and time > " + startTime + "ms ");
-    query.append("and time < " + endTime + "ms");
-
-    LOGGER.log(Level.INFO, "Influxdb:telegraf:cpu-Sending query: " + query.toString());
-
-    Query q = new Query(query.toString(), "telegraf");
-    QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
-    List<QueryResult.Result> results = response.getResults();
-
-    if (results.get(0).getSeries() != null) {
-      QueryResult.Series series = results.get(0).getSeries().get(0);
-      InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
-      influxResults.setSeries(series);
-
-      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-              entity(influxResults).build();
-    } else {
-      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
-              entity("").build();
-    }
-
-    influxdb.close();
-
-    return httpResponse;
-  }
-
-  @GET
-  @Path("/nodemanager")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response getNodemanagerMetrics(
-          @QueryParam("fields") List<String> fields,
-          @QueryParam("container") String container,
-          @QueryParam("startTime") String startTime,
-          @Context SecurityContext sc, @Context HttpServletRequest req) throws
-          AppException, AccessControlException {
-    // e.g. /nodemanager?fields=MilliVcoreUsageIMinMilliVcores&startTime=1491827969000&service=driver
-    InfluxDB influxdb = InfluxDBFactory.connect(settings.getInfluxDBAddress(),
-            settings.getInfluxDBUser(), settings.getInfluxDBPW());
-    Response httpResponse = null;
-
-    StringBuffer query = new StringBuffer();
-    query.append("select " + String.join(",", fields) + " from nodemanager ");
-    query.append("where source =~ /.*" + container + ".*/ ");
-    query.append("and time > " + startTime);
-    query.append("ms");
-
-    LOGGER.log(Level.INFO, "Influxdb:nodemanager - Sending query: " + query.toString());
-
-    Query q = new Query(query.toString(), "graphite");
-    QueryResult response = influxdb.query(q, TimeUnit.MILLISECONDS);
-    List<QueryResult.Result> results = response.getResults();
-
-    if (results.get(0).getSeries() != null) {
-      QueryResult.Series series = results.get(0).getSeries().get(0);
-      InfluxDBResultDTO influxResults = new InfluxDBResultDTO();
-      influxResults.setSeries(series);
-
-      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-              entity(influxResults).build();
-    } else {
-      httpResponse = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).
-              entity("").build();
-    }
-
-    influxdb.close();
-
-    return httpResponse;
+    return response;
   }
 }

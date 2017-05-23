@@ -15,20 +15,12 @@ angular.module('hopsWorksApp')
             getAppId : function() {
                 return this.appId;
             },
-            getSparkMetrics: function(projectId, appId, startTime, fields, service) {
-                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/spark?' +
-                            'fields=' + fields.join(',') + '&startTime=' + startTime + '&service=' + service;
-                return $http.get(query);
-            },
-            getTelegrafCPUMetrics: function(projectId, appId, fields, host, startTime, endTime) {
-                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/tgcpu?' +
-                            'fields=' + fields.join(',') + '&host=' + host +
-                            '&startTime=' + startTime + '&endTime=' + endTime;
-                return $http.get(query);
-            },
-            getNodemanagerMetrics: function(projectId, appId, startTime, fields, container) {
-                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/nodemanager?' +
-                            'fields=' + fields.join(',') + '&container=' + container + '&startTime=' + startTime;
+            getMetrics: function(projectId, appId, database, columns, measurement, tags, groupBy) {
+                var query = '/api/project/' + projectId + '/jobs/' + appId + '/influxdb/' + database + '?' +
+                            'columns=' + columns + '&measurement=' + measurement + '&tags=' + tags;
+                if (groupBy) {
+                    query += '&groupBy=' + groupBy;
+                }
                 return $http.get(query);
             }
         };

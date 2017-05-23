@@ -1,66 +1,113 @@
-<style>
-  .border {
-    border-radius: 1px;
-    box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.5);
-    background: #F5F2F2;
-    text-align: center;
-    padding: 8px;
-    margin: 30px;
-  }
-</style>
-
-<div id="headers">
-  <h3>{{influxDBCtrl.jobName}}&nbsp;
-    <small>{{influxDBCtrl.appId}}</small>
-  </h3>
-</div>
-
 <div id="body" style="background:#ffffff !important; border-radius: 7px; padding: 20px">
-
   <div class="row">
-
-    <div class="col-md-2">
-      <md-card>
-        <md-card-title>
-          <md-card-title-text>
-            <span class="md-headline strong">Total executors</span>
-            <span class="md-subhead">{{influxDBCtrl.nbExecutors}}</span>
-          </md-card-title-text>
-        </md-card-title>
-      </md-card>
+    <div class="col-md-6" id="headers">
+      <h3>{{influxDBCtrl.jobName}}&nbsp;<small>{{influxDBCtrl.appId}}</small></h3>
     </div>
-
+    <div class="col-md-6 text-right">
+      <h3 ng-if="influxDBCtrl.now">Application running for minutes ({{influxDBCtrl.startTime | date:'medium'}})</h3>
+      <h3 ng-if="!influxDBCtrl.now">Application completed in forever ({{influxDBCtrl.startTime | date:'medium'}})</h3>
+    </div>
   </div>
 
-  <div class="container-fluid">
-    <div class="row">
+  <hr />
 
-      <div class="col-md-5">
-        <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
-              class="with-3d-shadow with-transitions"></nvd3>
-      </div>
+  <div class="row">
+    <uib-tabset active="active">
+      <uib-tab index="0" heading="Overview">
+        <div class="row">
 
-      <div class="col-md-5">
-        <nvd3 id="executorMemory" options="optionsExecutorMemory" data="templateExecutorMemory"
-              class="with-3d-shadow with-transitions"></nvd3>
-      </div>
+          <!-- Total executors card -->
+          <div class="col-md-2">
+            <md-card>
+              <md-card-title>
+                <md-card-title-text>
+                  <span class="md-headline strong">Total executors/Hosts</span>
+                  <span class="md-subhead">
+                    <b>{{influxDBCtrl.nbExecutors}}</b> executor(s) running on <b>{{influxDBCtrl.nbHosts}}</b> machine(s)
+                  </span>
+                </md-card-title-text>
+              </md-card-title>
+            </md-card>
+          </div> <!-- end: Total executors card -->
 
-      <div class="col-md-2">
-        <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateExecutorPerNode"
-              class="with-3d-shadow with-transitions"></nvd3>
-      </div>
+          <!-- Cluster CPU utilization card -->
+          <div class="col-md-2">
+            <md-card>
+              <md-card-title>
+                <md-card-title-text>
+                  <span class="md-headline strong">Cluster CPU utilization</span>
+                  <span class="md-subhead">50.4%</span>
+                </md-card-title-text>
+              </md-card-title>
+            </md-card>
+          </div> <!-- end: Cluster CPU utilization -->
 
-    </div> <!-- row -->
+          <!--<div class="col-md-2">
+            <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateExecutorPerNode"
+                  class="with-3d-shadow with-transitions"></nvd3>
+          </div>-->
 
-    <div class="row">
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <nvd3 id="totalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
+                class="with-3d-shadow with-transitions"></nvd3>
+          </div>
+          <div class="col-md-6">
+            <nvd3 id="totalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
+                  class="with-3d-shadow with-transitions"></nvd3>
+          </div>
+        </div>
+      </uib-tab>
+      <uib-tab index="1" heading="Driver">
+        <div class="container-fluid">
+          <div class="row">
 
-      <div class="col-md-5">
-        <nvd3 id="hostCPU" options="optionsHostCPU" data="templateHostCPU"
-              class="with-3d-shadow with-transitions"></nvd3>
-      </div>
+            <div class="col-md-5">
+              <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
 
-    </div> <!-- row -->
+            <div class="col-md-5">
+              <nvd3 id="executorMemory" options="optionsExecutorMemory" data="templateExecutorMemory"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
 
-    </div>
+          </div> <!-- row -->
+
+          <div class="row">
+
+            <div class="col-md-5">
+              <nvd3 id="hostCPU" options="optionsHostCPU" data="templateHostCPU"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+          </div> <!-- row -->
+
+        </div>
+      </uib-tab>
+      <uib-tab index="2" heading="Executor">
+        <div class="row">
+
+          <!-- Max executor memory card -->
+          <div class="col-md-2">
+            <md-card>
+              <md-card-title>
+                <md-card-title-text>
+                  <span class="md-headline strong">Max executor memory</span>
+                  <span class="md-subhead">
+                    <b>{{influxDBCtrl.maxUsedExecutorMem}}</b> of container's <b>{{influxDBCtrl.maxAvailableExecutorMem}}</b>
+                  </span>
+                </md-card-title-text>
+              </md-card-title>
+            </md-card>
+          </div> <!-- end: Total executors card -->
+
+        </div>
+      </uib-tab>
+      <uib-tab index="3" heading="Worker">Worker content</uib-tab>
+    </uib-tabset>
+  </div>
+
   </div> <!-- class:container fluid end -->
 </div> <!-- id:body end -->

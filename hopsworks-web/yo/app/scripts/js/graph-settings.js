@@ -2,9 +2,9 @@
 
 var vizopsUpdateInterval = function() { return 2000; }
 var vizopsGetUpdateLabel = function() { return '(' + vizopsUpdateInterval()/1000 + ' s)'; };
-var _getColor = ['#8c510a','#bf812d', '#2166ac', '#b2182b', '#543005',
-                 '#35978f','#01665e','#003c30','#40004b', '#d6604d', '#762a83',
-                 '#9970ab','#c2a5cf','#5aae61','#1b7837','#00441b'];
+var _getColor = ['#9a92e8','#d60606' ,'#025ced','#c67a0f', '#2166ac', '#b2182b', '#c60f0f',
+                 '#35978f','#01665e','#39d81a','#40004b', '#d6604d',
+                 '#9970ab','#c310d3','#5aae61','#1505aa'];
 
 var vizopsMapColorExecutorsHost = function(hostnames) {
     var result = {}, i = 0;
@@ -20,6 +20,129 @@ var vizopsMapColorExecutorsHost = function(hostnames) {
     }
 
     return result;
+};
+
+// OVERVIEW: Total active tasks running in the application
+var vizopsTotalActiveTasksOptions = function() {
+    return {
+        chart: {
+            "type": "lineChart",
+            "interpolate": "monotone",
+            "height": 450,
+            "margin": {
+                "top": 20,
+                "right": 30,
+                "bottom": 60,
+                "left": 80
+            },
+            "x": function(d){ return d.x; },
+            "y": function(d){ return d.y; },
+            "forceY": [0],
+            "duration": 500,
+            "showLegend": false,
+            "useInteractiveGuideline": true,
+            "xAxis": {
+              "axisLabel": "Time",
+              "rotateLabels": -35,
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "x2Axis": {
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "yAxis": {
+              "axisLabel": "Active tasks",
+              "rotateYLabel": true,
+              "tickFormat": function(d) {
+                return d3.format("d")(d); // TODO: update to d3.format("s") 10000 -> 10K etc
+              }
+            },
+            "y2Axis": {}
+        },
+        title: {
+            enable: true,
+            text: 'Total Active Tasks per 30s'
+        }
+    };
+};
+
+var vizopsTotalActiveTasksTemplate = function() {
+    return [
+        {
+            values: [],
+            key: 'active tasks',
+            color: _getColor[1]
+        }
+    ];
+};
+
+// OVERVIEW: Total completed tasks in the application
+var vizopsTotalCompletedTasksOptions = function() {
+    return {
+        chart: {
+            "type": "multiChart",
+            "interpolate": "monotone",
+            "height": 450,
+            "margin": {
+                "top": 20,
+                "right": 50,
+                "bottom": 60,
+                "left": 80
+            },
+            "x": function(d){ return d.x; },
+            "y": function(d){ return d.y; },
+            "duration": 500,
+            "showLegend": false,
+            "useInteractiveGuideline": true,
+            "xAxis": {
+              "axisLabel": "Time",
+              "rotateLabels": -35,
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "yAxis1": {
+              "axisLabel": "Task completion rate",
+              "rotateYLabel": true,
+              "tickFormat": function(d) {
+                return d3.format("d")(d);
+              }
+            },
+            "y2Axis2": {
+              "axisLabel": "Completed tasks",
+              "rotateYLabel": true,
+              "tickFormat": function(d) {
+                return d3.format("d")(d);
+              }
+            }
+        },
+        title: {
+            enable: true,
+            text: 'Completed Tasks overall'
+        }
+    };
+};
+
+var vizopsTotalCompletedTasksTemplate = function() {
+    return [
+        {
+            values: [],
+            key: 'rate of completion',
+            color: _getColor[1],
+            type: "line",
+            yAxis: 1
+        },
+        {
+            values: [],
+            key: 'completed tasks',
+            color: _getColor[2],
+            type: "line",
+            yAxis: 2
+        }
+    ];
 };
 
 // EXECUTOR CPU SETUP
@@ -243,6 +366,29 @@ var vizopsExecutorMemoryDataTemplate = function(nbExecutors, colorMap) {
     return template;
 };
 
+// Tasks per host setup
+var vizopsTaskPerHostOptions = function() {
+    return {
+        chart: {
+            "height": 450,
+            "margin": {
+              "top": 30,
+              "right": 60,
+              "bottom": 50,
+              "left": 70
+            },
+            "duration": 500,
+
+        },
+        title: {
+            enable: true,
+            text: 'Task distribution per node'
+        }
+    };
+};
+
+var vizopsTasksPerHostTemplate = function() { };
+
 // Executors on each node setup
 var vizopsExecutorsPerNodeOptions = function() {
     return {
@@ -254,7 +400,8 @@ var vizopsExecutorsPerNodeOptions = function() {
                     "bottom": 60,
                     "left": 80
                 },
-                "height": 200,
+                "height": 150,
+                "showLegend": false,
                 "duration": 500,
                 "labelThreshold": 0.01,
                 "showLabels": false,
@@ -277,9 +424,6 @@ var vizopsExecutorsPerNodeOptions = function() {
         };
 };
 
-/*
-    @arg(hostnames): a dictionary with keys hostnames and a list of executors running on them
-*/
 var vizopsExecutorsPerNodeTemplate = function(hostnames, colorMap) {
     var template = [];
     for (var key in hostnames) {

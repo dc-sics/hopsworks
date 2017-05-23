@@ -15,17 +15,26 @@ angular.module('hopsWorksApp')
                 // Job details
                 self.jobName = $routeParams.name;
                 self.appId = ""; // startTime, endTime, now will be filled by init
+                self.startTime = -1;
                 self.endTime = -1; // application completion time
                 self.now; // is the application running now?
                 // array of dictionaries: self.executorInfo.entry[executor].value[0: container, 1: hostname, 2: nm vcores]
                 self.executorInfo;
                 self.nbExecutors;
                 // a list of objects holding as a key the hostname and value the number of executors
-                // and whatever else comes up
                 self.hostnames = {};
+
+                // UI VARIABLES
+                self.nbHosts; // number of machines that ran application executors
+                // Executor TAB variables
+                self.maxUsedExecutorMem = "0.0";
+                self.maxAvailableExecutorMem = "0.0";
 
                 // Each graph will have its own startTimer - initialized by init to application's start time
                 self.startTimeMap = {
+                    'totalActiveTasksApp': -1,
+                    'totalCompletedTasksApp': -1,
+                    'maxMemoryExecutorCard': -1,
                     'executorCPU': -1,
                     'hostCPU': -1,
                     'executorMemory': -1,
@@ -33,9 +42,27 @@ angular.module('hopsWorksApp')
                     'taskPerNode': -1
                 };
 
+                // It is used to stop the update functions from calling the backend more times than needed
+                self.hasLoadedOnce = {
+                    'totalActiveTasksApp': false,
+                    'totalCompletedTasksApp': false,
+                    'maxMemoryExecutorCard': false,
+                    'executorCPU': false,
+                    'hostCPU': false,
+                    'executorMemory': false,
+                    'executorPerNode': false,
+                    'taskPerNode': false
+                };
+
                 // For Graph options, see js/graph-settings.js
 
                 // graph initialization - per graph
+                // OVERVIEW: Total active tasks for the whole application
+                $scope.optionsTotalActiveTasks = vizopsTotalActiveTasksOptions();
+                $scope.templateTotalActiveTasks = [];
+                // OVERVIEW: Total completed tasks for the whole application
+                $scope.optionsTotalCompletedTasks = vizopsTotalCompletedTasksOptions();
+                $scope.templateTotalCompletedTasks = [];
                 // EXECUTOR CPU GRAPH
                 $scope.optionsExecutorCPU = vizopsExecutorCPUOptions();
                 $scope.templateExecutorCPU = [];
@@ -52,15 +79,120 @@ angular.module('hopsWorksApp')
                 $scope.optionsTasksPerNode = [];
                 $scope.templateTasksPerNode = [];
 
+                var updateTotalActiveTasksOverview = function() {
+                    if (!self.now && self.hasLoadedOnce['totalActiveTasksApp'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\'' +
+                               ' and time > ' + self.startTimeMap['totalActiveTasksApp'] + 'ms';
+                    // app has finished running and we havent called the backend yet
+                    if (!self.now && !self.hasLoadedOnce['totalActiveTasksApp']) {
+                        tags += ' and time < ' + self.endTime + 'ms';
+                    } else if (self.now) {
+                        tags += ' and time < now()';
+                    }
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                                               'sum(threadpool_activeTasks)', 'spark', tags, 'time(30s)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
+
+                                self.startTimeMap['totalActiveTasksApp'] = _getLastTimestampFromSeries(newData);
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+
+                                    $scope.templateTotalActiveTasks[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                }
+
+                                self.hasLoadedOnce['totalActiveTasksApp'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching TotalActiveTasksApp metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateTotalCompletedTasksOverview = function() {
+                    if (!self.now && self.hasLoadedOnce['totalCompletedTasksApp'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\'' +
+                               ' and time > ' + self.startTimeMap['totalCompletedTasksApp'] + 'ms';
+                    // app has finished running and we havent called the backend yet
+                    if (!self.now && !self.hasLoadedOnce['totalCompletedTasksApp']) {
+                        tags += ' and time < ' + self.endTime + 'ms';
+                    } else if (self.now) {
+                        tags += ' and time < now()';
+                    }
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                                               'non_negative_derivative(max(threadpool_completeTasks)),max(threadpool_completeTasks)',
+                                               'spark', tags, 'time(30s), service fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series;
+                                self.startTimeMap['totalCompletedTasksApp'] = _getLastTimestampFromSeries(newData[0]);
+
+
+                                for(var i = 0; i < newData[0].values.length; i++) {
+                                    var timestamp = +newData[0].values[i].split(' ')[0];
+                                    var totals = _.reduce(newData, function(sum, serie) {
+                                        sum[0] += +serie.values[i].split(' ')[1];
+                                        sum[1] += +serie.values[i].split(' ')[2];
+                                        return sum;
+                                    }, [0, 0]);
+
+
+                                    $scope.templateTotalCompletedTasks[0].values.push({'x': timestamp, 'y': totals[0]}); // rate
+                                    $scope.templateTotalCompletedTasks[1].values.push({'x': timestamp, 'y': totals[1]}); // total
+                                }
+
+                                self.hasLoadedOnce['totalCompletedTasksApp'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching TotalCompletedTasksApp metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateMaxMemoryExecutor = function() {
+                    if (!self.now && self.hasLoadedOnce['maxMemoryExecutorCard'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\'' +
+                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                        'max(heap_used), heap_max, service', 'spark', tags).then(
+                    function(success) {
+                        if (success.status === 200) { // new measurements
+                            var newData = success.data.result.results[0].series[0];
+                            self.startTimeMap['maxMemoryExecutorCard'] = _getLastTimestampFromSeries(newData);
+
+                            self.maxUsedExecutorMem = d3.format(".4s")(newData.values[0].split(' ')[1]);
+                            self.maxAvailableExecutorMem = d3.format(".4s")(newData.values[0].split(' ')[2]);
+
+                            self.hasLoadedOnce['maxMemoryExecutorCard'] = true;
+                        } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching MaxExecMemory metric.', ttl: 10000});
+                        }
+                    );
+                };
+
                 var updateGraphExecutorCPU = function() {
                     /* ask for the metrics coming from all the containers, otherwise we would bombard
                      the backend with nbExecutors requests. We choose the metrics for each executor
                      from the results. application_1491828160189_0001 -> 1491828160189_0001
                     */
-                    InfluxDBService.getNodemanagerMetrics(self.projectId, self.appId, self.startTimeMap['executorCPU'],
-                                                    ['MilliVcoreUsageIMinMilliVcores/' + (+self.executorInfo.entry[0].value[2]*1000),
-                                                     'source'],
-                                                    self.appId.substring(self.appId.indexOf('_') + 1)).then(
+                    var tags = 'source =~ /.*' + (self.appId.substring(self.appId.indexOf('_') + 1)) + '.*/' +
+                               ' and time > ' + self.startTimeMap['executorCPU'] + 'ms';
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                        'MilliVcoreUsageIMinMilliVcores/' + (+self.executorInfo.entry[0].value[2]*1000) + ',source',
+                        'nodemanager', tags).then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data;
@@ -87,6 +219,7 @@ angular.module('hopsWorksApp')
                         we call the backend then get the first few seconds, otherwise use the last
                         measured time from executorCPU
                     */
+
                     var startTime = self.startTimeMap['hostCPU'], endTime = -1;
                     if (self.startTimeMap['executorCPU'] === self.startTimeMap['hostCPU'])
                         endTime = self.startTimeMap['hostCPU'] + 10000;
@@ -96,9 +229,9 @@ angular.module('hopsWorksApp')
                     // assume that the template has been created with the same sequence as the for loop
                     var unique_hosts = Object.keys(self.hostnames);
                     for(var host of unique_hosts) {
-                        // projectId, appId, fields, host, startTime, endTime
-                        InfluxDBService.getTelegrafCPUMetrics(self.projectId, self.appId, ['usage_user'],
-                                        host, startTime, endTime).then(
+                        // (projectId, appId, database, columns, measurement, tags, groupBy)
+                        var tags = 'host=\''+ host + '\' and time > ' + startTime + 'ms and time < ' + endTime + 'ms';
+                        InfluxDBService.getMetrics(self.projectId, self.appId, 'telegraf', 'usage_user', 'cpu', tags).then(
                             function(success) {
                                 if (success.status === 200) { // new measurements
                                     var newData = success.data;
@@ -122,9 +255,13 @@ angular.module('hopsWorksApp')
                 var updateGraphExecutorMemory = function() {
                     // Executor id 0 is the driver, 1+ the rest
                     for(var i = 0; i < self.nbExecutors; i++) {
+                        // (projectId, appId, database, columns, measurement, tags, groupBy)
                         var service = (i === 0) ? 'driver' : '' + i;
-                        InfluxDBService.getSparkMetrics(self.projectId, self.appId, self.startTimeMap['executorMemory'],
-                                                        ['heap_used', 'service'], service).then(
+                        var tags = 'appid=\'' + self.appId + '\' ' +
+                                    'and service =\''+ service + '\' ' +
+                                    'and time > ' + self.startTimeMap['executorMemory'] + 'ms';
+                        InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                                                        'heap_used, service', 'spark', tags).then(
                             function(success) {
                                 if (success.status === 200) { // new measurements
                                     var newData = success.data;
@@ -147,10 +284,19 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateData = function() {
-                    // Call the new graph function here
-                    updateGraphExecutorCPU();
+                    // Overview tab update functions
+                    updateTotalActiveTasksOverview();
+                    updateTotalCompletedTasksOverview();
+                    // Executor tab update functions
+                    updateMaxMemoryExecutor();
+                    /*updateGraphExecutorCPU();
                     updateGraphExecutorMemory();
-                    updateGraphHostCPU();
+                    updateGraphHostCPU();*/
+                };
+
+                var _getLastTimestampFromSeries = function(serie) {
+                    // Takes as an argument a single serie
+                    return +serie.values[serie.values.length - 1].split(' ')[0];
                 };
 
                 var _extractHostnameInfoFromResponse = function(response) {
@@ -179,6 +325,7 @@ angular.module('hopsWorksApp')
 
                             self.nbExecutors = info.nbExecutors;
                             self.executorInfo = info.executorInfo;
+                            self.startTime = info.startTime;
                             self.endTime = info.endTime;
                             self.now = info.now;
 
@@ -191,9 +338,12 @@ angular.module('hopsWorksApp')
 
                             // get the unique hostnames and the number of executors running on them
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
+                            self.nbHosts = Object.keys(self.hostnames).length;
+
                             var colorMap = vizopsMapColorExecutorsHost(self.hostnames);
 
-                            // TODO use info.now to call the endpoints only once and skip polling
+                            $scope.templateTotalActiveTasks = vizopsTotalActiveTasksTemplate();
+                            $scope.templateTotalCompletedTasks = vizopsTotalCompletedTasksTemplate();
                             $scope.templateExecutorCPU = vizopsExecutorCPUDataTemplate(self.nbExecutors, colorMap);
                             $scope.templateHostCPU = vizopsHostCPUDataTemplate(Object.keys(self.hostnames), colorMap);
                             $scope.templateExecutorMemory = vizopsExecutorMemoryDataTemplate(self.nbExecutors, colorMap);
