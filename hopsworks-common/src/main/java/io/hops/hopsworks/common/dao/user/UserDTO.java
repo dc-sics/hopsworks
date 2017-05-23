@@ -5,6 +5,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class UserDTO {
 
+  private String username;
   private String email;
   private String telephoneNum;
   private String firstName;
@@ -25,11 +26,13 @@ public class UserDTO {
   private String postCode;
   private String country;
   private int maxNumProjects;
+  private boolean testUser;
 
   public UserDTO() {
   }
 
   public UserDTO(Users user) {
+    this.username = user.getUsername();
     this.email = user.getEmail();
     this.firstName = user.getFname();
     this.lastName = user.getLname();
@@ -48,6 +51,10 @@ public class UserDTO {
     this.twoFactor = user.getTwoFactor();
     this.toursState = user.getToursState();
   }
+
+  public String getUsername() { return username; }
+
+  public void setUsername(String username) { this.username = username; }
 
   public String getEmail() {
     return email;
@@ -209,9 +216,17 @@ public class UserDTO {
     this.maxNumProjects = maxNumProjects;
   }
 
+  public boolean isTestUser() {
+    return testUser;
+  }
+
+  public void setTestUser(boolean testUser) {
+    this.testUser = testUser;
+  }
+
   @Override
   public String toString() {
-    return "UserDTO{" + "email=" + email + ", telephoneNum=" + telephoneNum
+    return "UserDTO{username=" + username + ", email=" + email + ", telephoneNum=" + telephoneNum
             + ", firstName=" + firstName + ", lastName=" + lastName
             + ", status=" + status + ", securityQuestion=" + securityQuestion
             + ", securityAnswer=" + securityAnswer + ", secret=" + secret

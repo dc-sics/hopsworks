@@ -182,15 +182,11 @@ public abstract class YarnJob extends HopsJob {
             && jobDescription.getJobConfig().getKafka() != null) {
           serviceProps.initKafka();
           //Set Kafka specific properties to serviceProps
-          serviceProps.getKafka().setBrokerAddresses(services.getSettings().
-              getKafkaConnectStr());
-          serviceProps.getKafka().setRestEndpoint(services.getSettings().
-              getRestEndpoint());
-          serviceProps.getKafka().setTopics(jobDescription.getJobConfig().
-              getKafka().getTopics());
-          serviceProps.getKafka().setProjectConsumerGroups(jobDescription.
-              getProject().getName(), jobDescription.
-                  getJobConfig().getKafka().getConsumergroups());
+          serviceProps.getKafka().setBrokerAddresses(services.getSettings().getKafkaConnectStr());
+          serviceProps.getKafka().setRestEndpoint(services.getSettings().getRestEndpoint());
+          serviceProps.getKafka().setTopics(jobDescription.getJobConfig().getKafka().getTopics());
+          serviceProps.getKafka().setProjectConsumerGroups(jobDescription.getProject().getName(), 
+              jobDescription.getJobConfig().getKafka().getConsumergroups());
           return true;
         }
       }
@@ -306,28 +302,16 @@ public abstract class YarnJob extends HopsJob {
    * @param udfso 
    */
   private void removeMarkerFile(DistributedFileSystemOps udfso) {
+    String marker = Settings.getJobMarkerFile(jobDescription, monitor.getApplicationId().toString());
     try {
-      //If application is not FINISHED or SUCCEEDED , try to delete a marker file if it exists
-      if (getFinalState() != JobState.FINISHED || JobFinalStatus.getJobFinalStatus(monitor.getFinalApplicationStatus())
-          != JobFinalStatus.SUCCEEDED) {
-        String marker = Settings.getJobMarkerFile(jobDescription, monitor.getApplicationId().
-            toString());
-        try {
-          if (udfso.exists(marker)) {
-            udfso.rm(new org.apache.hadoop.fs.Path(marker), false);
-          }
-        } catch (IOException ex) {
-          LOG.log(Level.WARNING, "Could not remove marker file for job:{0}, with appId:{1}, {2}", new Object[]{
-            jobDescription.getName(),
-            monitor.getApplicationId().
-            toString(), ex.getMessage()});
-        }
+      if (udfso.exists(marker)) {
+        udfso.rm(new org.apache.hadoop.fs.Path(marker), false);
       }
-    } catch (YarnException | IOException ex) {
-      LOG.log(Level.WARNING, "Could not remove marker file for job:{0}, with appId:{1}", new Object[]{jobDescription.
-        getName(),
+    } catch (IOException ex) {
+      LOG.log(Level.WARNING, "Could not remove marker file for job:{0}, with appId:{1}, {2}", new Object[]{
+        jobDescription.getName(),
         monitor.getApplicationId().
-        toString()});
+        toString(), ex.getMessage()});
     }
   }
 

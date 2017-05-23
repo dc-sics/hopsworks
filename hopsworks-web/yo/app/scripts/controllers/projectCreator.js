@@ -15,10 +15,11 @@ angular.module('hopsWorksApp')
             self.projectTeam = [];
 //            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'WORKFLOWS'];
 //            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
-            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
+            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'WORKFLOWS'];
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
-            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
+//            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
+            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
 
             self.projectName = '';
             self.projectDesc = '';
@@ -114,7 +115,7 @@ angular.module('hopsWorksApp')
                         if (success.errorMsg) {
                           growl.warning(success.errorMsg, {title: 'Error', ttl: 10000});
                         }
-                        if (success.fieldErrors.length > 0) {
+                        if (typeof success.fieldError !== 'undefined' && success.fieldErrors.length > 0) {
                           success.fieldErrors.forEach(function (entry) {
                             growl.warning(entry + ' could not be added', {title: 'Error', ttl: 10000});
                           });
