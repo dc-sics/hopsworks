@@ -1,0 +1,153 @@
+package io.hops.hopsworks.common.jobs.tensorflow;
+
+import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
+import io.hops.hopsworks.common.jobs.jobhistory.JobType;
+import io.hops.hopsworks.common.jobs.yarn.LocalResourceDTO;
+import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
+import io.hops.hopsworks.common.jobs.yarn.YarnRunner;
+import io.hops.hopsworks.common.util.Settings;
+import io.hops.tensorflow.Client;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ *
+ * <p>
+ */
+public class TensorFlowYarnRunnerBuilder {
+
+  //Necessary parameters
+  private final JobDescription jobDescription;
+  private final List<String> jobArgs = new ArrayList<>();
+  private String jobName = "Untitled TensorFlow Job";
+  private int numOfWorkers;
+  private int numOfPs;
+
+  private int workerMemory = 1024;
+  private int workerVCores = 1;
+  private int workerGPUs = 1;
+
+  private int amMemory = 1024; // in MB
+  private int amVCores = 1;
+  private String queue;
+  private ServiceProperties serviceProps;
+
+  private List<LocalResourceDTO> extraFiles = new ArrayList<>();
+
+  public TensorFlowYarnRunnerBuilder(JobDescription jobDescription) {
+    this.jobDescription = jobDescription;
+    TensorFlowJobConfiguration jobConfig = (TensorFlowJobConfiguration) jobDescription.getJobConfig();
+
+    if (jobConfig.getAppPath() == null || jobConfig.getAppPath().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Path to application executable cannot be empty!");
+    }
+  }
+
+  public YarnRunner getYarnRunner(String project, String sparkUser,
+      String jobUser, final String hadoopDir, final String nameNodeIpPort) throws IOException, Exception {
+    YarnRunner.Builder builder = new YarnRunner.Builder(Settings.SPARK_AM_MAIN);
+    JobType jobType = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getType();
+    builder.setJobType(jobType);
+    Client client = new Client();
+    client.setAmMemory(amMemory);
+    client.setAmVCores(amVCores);
+    client.setMemory(workerMemory);
+    client.setVcores(workerVCores);
+    client.setGpus(workerGPUs);
+    client.setQueue(queue);
+    client.setName(jobName);
+    client.setNumPses(numOfPs);
+    client.setNumWorkers(numOfWorkers);
+    String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
+    client.setMain(appPath);
+    client.setArguments((String[]) jobArgs.toArray());
+    client.setAmJar(Settings.getTensorFlowJarPath(jobUser));
+    
+    return builder.build(hadoopDir, null, nameNodeIpPort, JobType.TF);
+  }
+
+  public TensorFlowYarnRunnerBuilder addAllJobArgs(List<String> jobArgs) {
+    this.jobArgs.addAll(jobArgs);
+    return this;
+  }
+
+  public TensorFlowYarnRunnerBuilder addAllJobArgs(String[] jobArgs) {
+    this.jobArgs.addAll(Arrays.asList(jobArgs));
+    return this;
+  }
+
+  public TensorFlowYarnRunnerBuilder addJobArg(String jobArg) {
+    jobArgs.add(jobArg);
+    return this;
+  }
+
+  public void setExtraFiles(List<LocalResourceDTO> extraFiles) {
+    if (extraFiles == null) {
+      throw new IllegalArgumentException("Map of extra files cannot be null.");
+    }
+    this.extraFiles = extraFiles;
+  }
+
+  public void addExtraFile(LocalResourceDTO dto) {
+    if (dto.getName() == null || dto.getName().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Filename in extra file mapping cannot be null or empty.");
+    }
+    if (dto.getPath() == null || dto.getPath().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Location in extra file mapping cannot be null or empty.");
+    }
+    this.extraFiles.add(dto);
+  }
+
+  public void addExtraFiles(
+      List<LocalResourceDTO> projectLocalResources) {
+    if (projectLocalResources != null && !projectLocalResources.isEmpty()) {
+      this.extraFiles.addAll(projectLocalResources);
+    }
+  }
+
+  public void setJobName(String jobName) {
+    this.jobName = jobName;
+  }
+
+  public void setNumOfWorkers(int numOfWorkers) {
+    this.numOfWorkers = numOfWorkers;
+  }
+
+  public void setNumOfPs(int numOfPs) {
+    this.numOfPs = numOfPs;
+  }
+
+  public void setAmMemory(int amMemory) {
+    this.amMemory = amMemory;
+  }
+
+  public void setAmVCores(int amVCores) {
+    this.amVCores = amVCores;
+  }
+
+  public void setQueue(String queue) {
+    this.queue = queue;
+  }
+
+  public void setServiceProps(ServiceProperties serviceProps) {
+    this.serviceProps = serviceProps;
+  }
+
+  public void setWorkerMemory(int workerMemory) {
+    this.workerMemory = workerMemory;
+  }
+
+  public void setWorkerVCores(int workerVCores) {
+    this.workerVCores = workerVCores;
+  }
+
+  public void setWorkerGPUs(int workerGPUs) {
+    this.workerGPUs = workerGPUs;
+  }
+
+}

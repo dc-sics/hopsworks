@@ -616,7 +616,15 @@ public class Settings implements Serializable {
   public static final String FLINK_AM_MAIN
       = "org.apache.flink.yarn.ApplicationMaster";
   public static final int FLINK_APP_MASTER_MEMORY = 768;
-
+  
+  //TensorFlow constants
+  public static final String TENSORFLOW_DEFAULT_OUTPUT_PATH = "Logs/TensorFlow/";
+  public static final String TENSORFLOW_JAR = "hops-tensorflow-0.0.4-SNAPSHOT.jar";
+  
+  public static String getTensorFlowJarPath(String tfUser) {
+    return "hdfs:///user/" + tfUser+"/"+TENSORFLOW_JAR;
+  }
+  
   public synchronized String getLocalFlinkJarPath() {
     return getFlinkDir() + "/flink.jar";
   }
