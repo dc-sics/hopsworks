@@ -5,6 +5,7 @@ import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.hdfs.UserGroupInformationService;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
@@ -16,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
 
 /**
@@ -25,7 +27,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 @Stateless
 public class TensorFlowController {
 
-  private static final Logger LOG = Logger.getLogger(TensorFlowController.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(TensorFlowController.class.getName());
 
   @EJB
   private AsynchronousJobExecutor submitter;
@@ -48,7 +50,7 @@ public class TensorFlowController {
       throw new NullPointerException("Cannot run a null job.");
     } else if (user == null) {
       throw new NullPointerException("Cannot run a job as a null user.");
-    } else if (job.getJobType() != JobType.TF) {
+    } else if (job.getJobType() != JobType.TENSORFLOW) {
       throw new IllegalArgumentException(
           "Job configuration is not a TensorFlow job configuration.");
     }
@@ -68,7 +70,7 @@ public class TensorFlowController {
         }
       });
     } catch (InterruptedException ex) {
-      LOG.log(Level.SEVERE, null, ex);
+      LOGGER.log(Level.SEVERE, null, ex);
     }
     if (tfJob == null) {
       throw new NullPointerException("Could not instantiate Flink job.");
@@ -77,7 +79,7 @@ public class TensorFlowController {
     if (execution != null) {
       submitter.startExecution(tfJob);
     } else {
-      LOG.log(Level.SEVERE,
+      LOGGER.log(Level.SEVERE,
           "Failed to persist JobHistory. Aborting execution.");
       throw new IOException("Failed to persist JobHistory.");
     }
@@ -94,7 +96,7 @@ public class TensorFlowController {
       throw new NullPointerException("Cannot stop a null job.");
     } else if (user == null) {
       throw new NullPointerException("Cannot stop a job as a null user.");
-    } else if (job.getJobType() != JobType.TF) {
+    } else if (job.getJobType() != JobType.TENSORFLOW) {
       throw new IllegalArgumentException(
           "Job configuration is not a TensorFlow job configuration.");
     }
@@ -107,6 +109,39 @@ public class TensorFlowController {
 
     submitter.stopExecution(tfJob, appid);
 
+  }
+
+  /**
+   * Inspect the jar or.py on the given path for execution. Returns a
+   * SparkJobConfiguration object with a default
+   * configuration for this job.
+   * <p/>
+   * @param path
+   * @param username the user name in a project (projectName__username)
+   * @param dfso
+   * @return
+   * @throws org.apache.hadoop.security.AccessControlException
+   * @throws IOException
+   */
+  public TensorFlowJobConfiguration inspectProgram(String path, String username,
+      DistributedFileSystemOps dfso) throws
+      AccessControlException, IOException,
+      IllegalArgumentException {
+    LOGGER.log(Level.INFO, "Executing TensorFlow job by {0} at path: {1}",
+        new Object[]{username, path});
+    if (!path.endsWith(".py")) {
+      throw new IllegalArgumentException("Path does not point to a .py file.");
+    }
+//    HdfsLeDescriptors hdfsLeDescriptors = hdfsLeDescriptorsFacade.findEndpoint();
+//    // If the hdfs endpoint (ip:port - e.g., 10.0.2.15:8020) is missing, add it.
+//    path = path.replaceFirst("hdfs:/*Projects",
+//        "hdfs://" + hdfsLeDescriptors.getHostname() + "/Projects");
+    LOGGER.log(Level.INFO, "Really executing TensorFlow job by {0} at path: {1}",
+        new Object[]{username, path});
+    TensorFlowJobConfiguration config = new TensorFlowJobConfiguration();
+
+    config.setAppPath(path);
+    return config;
   }
 
 }

@@ -6,7 +6,7 @@ import io.hops.hopsworks.common.jobs.yarn.LocalResourceDTO;
 import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
 import io.hops.hopsworks.common.jobs.yarn.YarnRunner;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.tensorflow.Client;
+//import io.hops.tensorflow.Client;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,22 +51,22 @@ public class TensorFlowYarnRunnerBuilder {
     YarnRunner.Builder builder = new YarnRunner.Builder(Settings.SPARK_AM_MAIN);
     JobType jobType = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getType();
     builder.setJobType(jobType);
-    Client client = new Client();
-    client.setAmMemory(amMemory);
-    client.setAmVCores(amVCores);
-    client.setMemory(workerMemory);
-    client.setVcores(workerVCores);
-    client.setGpus(workerGPUs);
-    client.setQueue(queue);
-    client.setName(jobName);
-    client.setNumPses(numOfPs);
-    client.setNumWorkers(numOfWorkers);
-    String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
-    client.setMain(appPath);
-    client.setArguments((String[]) jobArgs.toArray());
-    client.setAmJar(Settings.getTensorFlowJarPath(jobUser));
-    
-    return builder.build(hadoopDir, null, nameNodeIpPort, JobType.TF);
+//    Client client = new Client();
+//    client.setAmMemory(amMemory);
+//    client.setAmVCores(amVCores);
+//    client.setMemory(workerMemory);
+//    client.setVcores(workerVCores);
+//    client.setGpus(workerGPUs);
+//    client.setQueue(queue);
+//    client.setName(jobName);
+//    client.setNumPses(numOfPs);
+//    client.setNumWorkers(numOfWorkers);
+//    String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
+//    client.setMain(appPath);
+//    client.setArguments((String[]) jobArgs.toArray());
+//    client.setAmJar(Settings.getTensorFlowJarPath(jobUser));
+//    
+    return builder.build(hadoopDir, null, nameNodeIpPort, JobType.TENSORFLOW);
   }
 
   public TensorFlowYarnRunnerBuilder addAllJobArgs(List<String> jobArgs) {

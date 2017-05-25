@@ -109,6 +109,8 @@ public class JobService {
   private AdamService adam;
   @Inject
   private FlinkService flink;
+  @Inject
+  private TensorFlowService tensorflow;
   @EJB
   private JobController jobController;
   @EJB
@@ -1212,7 +1214,13 @@ public class JobService {
   public SparkService tfspark() {
     return this.spark.setProject(project);
   }
-
+  
+  @Path("/tensorflow")
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public TensorFlowService tensorflow() {
+    return this.tensorflow.setProject(project);
+  }
+  
   @Path("/adam")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public AdamService adam() {

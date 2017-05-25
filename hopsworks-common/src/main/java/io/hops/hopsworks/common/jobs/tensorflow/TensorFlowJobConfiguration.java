@@ -20,7 +20,6 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
   private int numOfWorkers = 0;
   private int workerMemory = 1024;
   private int workerVCores = 1;
-  private int workerGPUs = 1;
 
   private String anacondaDir;
 
@@ -31,7 +30,7 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
   protected static final String KEY_NUM_WORKERS = "NUM_WORKERS";
   protected static final String KEY_WORKER_MEMORY = "NUM_WORKER_MEMORY";
   protected static final String KEY_WORKER_VCORES = "NUM_WORKER_VCORES";
-  protected static final String KEY_WORKER_GPUS = "NUM_WORKER_GPUS";
+  protected static final String KEY_GPUS = "NUM_GPUS";
 
   protected static final String KEY_PYTHON_DIR = "PYSPARK_PYTHON";
 
@@ -113,17 +112,9 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
     this.workerVCores = workerVCores;
   }
 
-  public int getWorkerGPUs() {
-    return workerGPUs;
-  }
-
-  public void setWorkerGPUs(int workerGPUs) {
-    this.workerGPUs = workerGPUs;
-  }
-
   @Override
   public JobType getType() {
-    return JobType.TF;
+    return JobType.TENSORFLOW;
   }
 
   @Override
@@ -141,8 +132,8 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
     obj.set(KEY_NUM_WORKERS, "" + numOfWorkers);
     obj.set(KEY_WORKER_MEMORY, "" + workerMemory);
     obj.set(KEY_WORKER_VCORES, "" + workerVCores);
-    obj.set(KEY_WORKER_GPUS, "" + workerGPUs);
-    obj.set(KEY_TYPE, JobType.TF.name());
+    obj.set(KEY_GPUS, "" + numOfGPUs);
+    obj.set(KEY_TYPE, JobType.TENSORFLOW.name());
     obj.set(KEY_PYTHON_DIR, getAnacondaDir() + "/bin/python");
     return obj;
   }
@@ -152,12 +143,12 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
       IllegalArgumentException {
     //First: make sure the given object is valid by getting the type and AdamCommandDTO
     JobType type;
-    String jsonArgs, jsonApppath, jsonNumPs, jsonNumWorkers, jsonWorkerMemory, jsonWorkerVCores, jsonWorkerGPUs;
+    String jsonArgs, jsonApppath, jsonNumPs, jsonNumWorkers, jsonWorkerMemory, jsonWorkerVCores, jsonGPUs;
     try {
       String jsonType = json.getString(KEY_TYPE);
       type = JobType.valueOf(jsonType);
-      if (type != JobType.TF) {
-        throw new IllegalArgumentException("JobType must be:" + JobType.TF);
+      if (type != JobType.TENSORFLOW) {
+        throw new IllegalArgumentException("JobType must be:" + JobType.TENSORFLOW);
       }
       //First: fields that can be null or empty
       jsonArgs = json.getString(KEY_ARGS, null);
@@ -166,7 +157,7 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
       jsonNumWorkers = json.getString(KEY_NUM_WORKERS);
       jsonWorkerMemory = json.getString(KEY_WORKER_MEMORY);
       jsonWorkerVCores = json.getString(KEY_WORKER_VCORES);
-      jsonWorkerGPUs = json.getString(KEY_WORKER_GPUS);
+      jsonGPUs = json.getString(KEY_GPUS);
     } catch (Exception e) {
       throw new IllegalArgumentException(
           "Cannot convert object into TensorFlowJobConfiguration.", e);
@@ -182,7 +173,7 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
     this.numOfWorkers = Integer.parseInt(jsonNumWorkers);
     this.workerMemory = Integer.parseInt(jsonWorkerMemory);
     this.workerVCores = Integer.parseInt(jsonWorkerVCores);
-    this.workerGPUs = Integer.parseInt(jsonWorkerGPUs);
+    this.numOfGPUs = Integer.parseInt(jsonGPUs);
   }
 
 }

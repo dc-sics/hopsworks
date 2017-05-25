@@ -1,7 +1,6 @@
 package io.hops.hopsworks.api.jobs;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -21,57 +20,52 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.util.JsonResponse;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.TopicDTO;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
-import io.hops.hopsworks.common.dao.tensorflow.TensorflowFacade;
 import io.hops.hopsworks.common.dao.tensorflow.TfResourceCluster;
 import io.hops.hopsworks.common.dao.user.UserFacade;
-import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
-import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
-import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
+import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.jobs.tensorflow.TensorFlowController;
+import io.hops.hopsworks.common.jobs.tensorflow.TensorFlowJobConfiguration;
+import java.io.IOException;
+import java.util.logging.Level;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
-//import org.apache.avro.Schema;
+import org.apache.hadoop.security.AccessControlException;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
-public class TensorflowService {
+public class TensorFlowService {
 
-  private final static Logger LOGGER = Logger.getLogger(TensorflowService.class.
-          getName());
+  private final static Logger LOGGER = Logger.getLogger(TensorFlowService.class.getName());
 
   @EJB
   private ProjectFacade projectFacade;
   @EJB
-  private UserManager userBean;
-  @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
-  private AsynchronousJobExecutor async;
+  private UserFacade userFacade;
   @EJB
-  private UserFacade userfacade;
+  private TensorFlowController tensorflowController;
   @EJB
-  private KafkaFacade kafkaFacade;
+  private HdfsUsersController hdfsUsersBean;
   @EJB
-  private Settings settings;
-  @EJB
-  private TensorflowFacade tf;
+  private DistributedFsService dfs;
 
   private Integer projectId;
   private Project project;
-  private String path;
 
-  public TensorflowService() {
+  public TensorFlowService() {
   }
 
-  public void setProjectId(Integer projectId) {
-    this.projectId = projectId;
-    this.project = this.projectFacade.find(projectId);
-    String projectPath = settings.getProjectPath(this.project.getName());
-    this.path = projectPath + File.separator;
+  TensorFlowService setProject(Project project) {
+    this.project = project;
+    return this;
   }
 
   public Integer getProjectId() {
@@ -91,18 +85,18 @@ public class TensorflowService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getPrograms(@Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException, Exception {
+      @Context HttpServletRequest req) throws AppException, Exception {
 
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Incomplete request!");
+          "Incomplete request!");
     }
 
-//        List<TopicDTO> listTopics = tf.findProgramsByProject(projectId);
     GenericEntity<List<TopicDTO>> programs
-            = new GenericEntity<List<TopicDTO>>(null) {};
+        = new GenericEntity<List<TopicDTO>>(null) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            programs).build();
+        programs).build();
   }
 
   @POST
@@ -111,19 +105,17 @@ public class TensorflowService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response allocateResources(TfResourceCluster resourceReq,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Incomplete request!");
+          "Incomplete request!");
     }
-    //create the topic in the database and the Kafka cluster
-//        kafkaFacade.createTopicInProject(this.projectId, tfDto);
 
     json.setSuccessMessage("The Topic has been created.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+        json).build();
   }
 
   @DELETE
@@ -131,36 +123,62 @@ public class TensorflowService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response freeResources(@PathParam("program") String topicName,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Incomplete request!");
+          "Incomplete request!");
     }
-    //remove the topic from the database and Kafka cluster
-    kafkaFacade.removeTopicFromProject(this.project, topicName);
 
     json.setSuccessMessage("The topic has been removed.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+        json).build();
   }
 
+  /**
+   * Inspect a python in HDFS prior to running a job. Returns a
+   * TensorFlowJobConfiguration object.
+   *
+   * @param path
+   * @param sc
+   * @param req
+   * @return
+   * @throws AppException
+   * @throws org.apache.hadoop.security.AccessControlException
+   */
   @GET
-  @Path("/details/{program}")
+  @Path("/inspect/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response getTopicDetails(@PathParam("program") String topicName,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException, Exception {
-
-    if (projectId == null) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Incomplete request!");
+  public Response inspectProgram(@PathParam("path") String path,
+      @Context SecurityContext sc, @Context HttpServletRequest req) throws
+      AppException, AccessControlException {
+    String email = sc.getUserPrincipal().getName();
+    Users user = userFacade.findByEmail(email);
+    String username = hdfsUsersBean.getHdfsUserName(project, user);
+    DistributedFileSystemOps udfso = null;
+    try {
+      udfso = dfs.getDfsOps(username);
+      TensorFlowJobConfiguration config = tensorflowController.inspectProgram(path, username, udfso);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+          entity(config).build();
+    } catch (AccessControlException ex) {
+      throw new AccessControlException(
+          "Permission denied: You do not have access to the jar file.");
+    } catch (IOException ex) {
+      LOGGER.log(Level.SEVERE, "Failed to inspect file.", ex);
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+          getStatusCode(), "Error reading file: " + ex.getLocalizedMessage());
+    } catch (IllegalArgumentException e) {
+      LOGGER.log(Level.WARNING, "Got a non-python file to inspect.");
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+          getStatusCode(), "Error reading jar file: " + e.getLocalizedMessage());
+    } finally {
+      if (udfso != null) {
+        udfso.close();
+      }
     }
-
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            null).build();
   }
 
 }
