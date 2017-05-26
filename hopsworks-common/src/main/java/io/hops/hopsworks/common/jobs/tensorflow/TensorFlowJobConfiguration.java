@@ -32,7 +32,7 @@ public class TensorFlowJobConfiguration extends YarnJobConfiguration {
   protected static final String KEY_WORKER_VCORES = "NUM_WORKER_VCORES";
   protected static final String KEY_GPUS = "NUM_GPUS";
 
-  protected static final String KEY_PYTHON_DIR = "PYSPARK_PYTHON";
+  protected static final String KEY_PYTHON_DIR = "PYTHON";
 
   public TensorFlowJobConfiguration() {
     super();
