@@ -132,8 +132,9 @@ angular.module('hopsWorksApp')
 //                          self.ui = "http://" + $location.host() + ":" + self.config.port + "/?token=" + self.config.token;
                         self.ui = "http://" + self.config.hostIp + "/hopsworks-api/jupyter/?token=" + self.config.token
                         + "&_port=" + self.config.port ;
-//                        $window.open(self.ui, '_blank');
-                        $timeout(stopLoading(), 4000);
+                        $window.open(self.ui, '_blank');
+//                        $timeout(stopLoading(), 4000);
+///api/kernelspecs
 
                       }, function (error) {
                 growl.error("Could not start Jupyter.");

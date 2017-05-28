@@ -32,19 +32,56 @@
   </servlet-mapping>
   
   
-<servlet>
-  <servlet-name>JupyterProxyServlet</servlet-name>
-  <servlet-class>io.hops.hopsworks.api.jupyter.JupyterProxyServlet</servlet-class>
-  <init-param>
-    <param-name>targetUri</param-name>
-    <!--<param-value>http://localhost:8888/hopsworks-api/jupyter</param-value>-->
-    <param-value>http://localhost:{_port}/hopsworks-api/jupyter</param-value>
-  </init-param>
-  <init-param>
-    <param-name>log</param-name>
-    <param-value>true</param-value>
-  </init-param>
-</servlet>
+  <!--<servlet>
+    <servlet-name>MembraneServlet</servlet-name>
+    <servlet-class>com.predic8.membrane.servlet.embedded.MembraneServlet</servlet-class>
+    <init-param>
+      <param-name>targetUri</param-name>
+      <param-value>http://localhost:8888/hopsworks-api/jupyter</param-value>
+      <param-value>http://localhost:{_port}/hopsworks-api/jupyter</param-value>
+    </init-param>
+    <init-param>
+      <param-name>log</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </servlet>-->
+
+  <!-- 
+    Note that it is advised to deploy this web application with a context path of "/", using
+    virtual hosts, if necessary. Elsewise problems with forwarded web applications or services
+    might occur, since the request path differs. If this servlet is deployed using a different
+    context path, the context path prefix will be removed from any incoming request URIs before
+    any further processing takes place (unless <servletTransport removeContextRoot="false"/> is
+    used in proxies.xml).
+  -->
+  <servlet>
+    <servlet-name>membrane</servlet-name>
+    <servlet-class>com.predic8.membrane.servlet.embedded.MembraneServlet</servlet-class>
+    <init-param>
+      <param-name>proxiesXml</param-name>
+      <param-value>/WEB-INF/proxies.xml</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>membrane</servlet-name>
+    <url-pattern>/jupyter2</url-pattern>
+  </servlet-mapping>
+    
+  
+  
+  <servlet>
+    <servlet-name>JupyterProxyServlet</servlet-name>
+    <servlet-class>io.hops.hopsworks.api.jupyter.JupyterProxyServlet</servlet-class>
+    <init-param>
+      <param-name>targetUri</param-name>
+      <!--<param-value>http://localhost:8888/hopsworks-api/jupyter</param-value>-->
+      <param-value>http://localhost:{_port}/hopsworks-api/jupyter</param-value>
+    </init-param>
+    <init-param>
+      <param-name>log</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </servlet>
 
   <servlet-mapping>
     <servlet-name>JupyterProxyServlet</servlet-name>
