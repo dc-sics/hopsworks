@@ -28,7 +28,7 @@ var vizopsTotalActiveTasksOptions = function() {
         chart: {
             "type": "lineChart",
             "interpolate": "monotone",
-            "height": 450,
+            "height": 350,
             "margin": {
                 "top": 20,
                 "right": 30,
@@ -85,7 +85,7 @@ var vizopsTotalCompletedTasksOptions = function() {
         chart: {
             "type": "multiChart",
             "interpolate": "monotone",
-            "height": 450,
+            "height": 350,
             "margin": {
                 "top": 20,
                 "right": 50,
@@ -145,13 +145,13 @@ var vizopsTotalCompletedTasksTemplate = function() {
     ];
 };
 
-// EXECUTOR CPU SETUP
-var vizopsExecutorCPUOptions = function() {
+// DRIVER: Heap used
+var vizopsMemorySpaceDriverOptions = function() {
     return {
         chart: {
-            "type": "lineWithFocusChart",
+            "type": "lineChart",
             "interpolate": "monotone",
-            "height": 450,
+            "height": 350,
             "margin": {
                 "top": 20,
                 "right": 30,
@@ -160,7 +160,9 @@ var vizopsExecutorCPUOptions = function() {
             },
             "x": function(d){ return d.x; },
             "y": function(d){ return d.y; },
+            "forceY": [0],
             "duration": 500,
+            "showLegend": false,
             "useInteractiveGuideline": true,
             "xAxis": {
               "axisLabel": "Time",
@@ -175,7 +177,69 @@ var vizopsExecutorCPUOptions = function() {
               }
             },
             "yAxis": {
-              "axisLabel": "VCores usage",
+              "axisLabel": "Heap used",
+              "rotateYLabel": true,
+              "tickFormat": function(d) {
+                return d3.format(".2s")(d);
+              }
+            },
+            "y2Axis": {}
+        },
+        title: {
+            enable: true,
+            text: 'Heap used (groupby 20s)'
+        }
+    };
+};
+
+var vizopsMemorySpaceDriverTemplate = function() {
+    return [
+        {
+            values: [],
+            key: 'avg',
+            color: _getColor[2]
+        },
+        {
+            values: [],
+            key: 'max',
+            color: _getColor[14]
+        }
+    ];
+};
+
+// DRIVER: VCPU used
+var vizopsVCPUDriverOptions = function() {
+    return {
+        chart: {
+            "type": "lineChart",
+            "interpolate": "monotone",
+            "height": 350,
+            "margin": {
+                "top": 20,
+                "right": 30,
+                "bottom": 60,
+                "left": 80
+            },
+            "x": function(d){ return d.x; },
+            "y": function(d){ return d.y; },
+            "forceY": [0],
+            "duration": 500,
+            "showLegend": false,
+            "useInteractiveGuideline": true,
+            "xAxis": {
+              "axisLabel": "Time",
+              "rotateLabels": -35,
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "x2Axis": {
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "yAxis": {
+              "axisLabel": "VCPU usage %",
               "rotateYLabel": true,
               "tickFormat": function(d) {
                 return d3.format(".1%")(d);
@@ -185,46 +249,75 @@ var vizopsExecutorCPUOptions = function() {
         },
         title: {
             enable: true,
-            text: 'Executor VCPU usage'
-        },
-        subtitle: {
-            enable: false,
-            text: 'Updates every ' + (vizopsUpdateInterval()/1000) + ' s',
-            css: {
-                'text-align': 'center',
-                'margin': '10px 13px 0px 7px'
-            }
-        },
-        caption: {
-            enable: false,
-            html: 'Test graph retrieving live updates',
-            css: {
-                'text-align': 'justify',
-                'margin': '10px 13px 0px 7px'
-            }
+            text: 'VCPU usage (groupby 20s)'
         }
     };
 };
 
-var vizopsExecutorCPUDataTemplate = function(nbExecutors, colorMap) {
-    var template = [
+var vizopsVCPUDriverTemplate = function() {
+    return [
+        {
+            values: [],
+            key: 'vcpu',
+            color: _getColor[10]
+        }
+    ];
+};
+
+// EXECUTOR CPU SETUP
+var vizopsExecutorCPUOptions = function() {
+    return {
+        chart: {
+            "type": "lineChart",
+            "interpolate": "monotone",
+            "height": 350,
+            "margin": {
+                "top": 20,
+                "right": 30,
+                "bottom": 60,
+                "left": 80
+            },
+            "x": function(d){ return d.x; },
+            "y": function(d){ return d.y; },
+            "duration": 500,
+            "showLegend": false,
+            "useInteractiveGuideline": true,
+            "xAxis": {
+              "axisLabel": "Time",
+              "rotateLabels": -35,
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "x2Axis": {
+              "tickFormat": function(d) {
+                return d3.time.format("%H:%M:%S")(new Date(d));
+              }
+            },
+            "yAxis": {
+              "axisLabel": "VCores usage %",
+              "rotateYLabel": true,
+              "tickFormat": function(d) {
+                return d3.format(".1%")(d);
+              }
+            },
+            "y2Axis": {}
+        },
+        title: {
+            enable: true,
+            text: 'Aggregated executor VCPU usage'
+        }
+    };
+};
+
+var vizopsExecutorCPUDataTemplate = function() {
+    return template = [
        {
            values: [],
-           key: 'driver',
-           color: colorMap['0']
+           key: 'vcpu',
+           color: _getColor[5]
        }
     ];
-
-    // ignore the driver
-    for(var i = 1; i < nbExecutors; i++) {
-        template.push({
-            values: [],
-            key: 'executor_' + i,
-            color: colorMap['' + i]
-        });
-    }
-
-    return template;
 };
 
 // HOST CPU SETUP
@@ -233,7 +326,7 @@ var vizopsHostCPUOptions = function() {
         chart: {
             "type": "lineWithFocusChart",
             "interpolate": "monotone",
-            "height": 450,
+            "height": 350,
             "margin": {
                 "top": 20,
                 "right": 30,
@@ -304,7 +397,7 @@ var vizopsExecutorMemoryOptions = function() {
         chart: {
             "type": "lineWithFocusChart",
             "interpolate": "monotone",
-            "height": 450,
+            "height": 350,
             "margin": {
                 "top": 20,
                 "right": 30,
@@ -370,7 +463,7 @@ var vizopsExecutorMemoryDataTemplate = function(nbExecutors, colorMap) {
 var vizopsTaskPerHostOptions = function() {
     return {
         chart: {
-            "height": 450,
+            "height": 350,
             "margin": {
               "top": 30,
               "right": 60,

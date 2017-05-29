@@ -10,9 +10,8 @@ angular.module('hopsWorksApp')
            function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, InfluxDBService) {
 
                 var self = this;
-                self.projectId = $routeParams.projectID;
-                self.updateLabel = vizopsGetUpdateLabel();
                 // Job details
+                self.projectId = $routeParams.projectID;
                 self.jobName = $routeParams.name;
                 self.appId = ""; // startTime, endTime, now will be filled by init
                 self.startTime = -1;
@@ -23,9 +22,17 @@ angular.module('hopsWorksApp')
                 self.nbExecutors;
                 // a list of objects holding as a key the hostname and value the number of executors
                 self.hostnames = {};
+                self.nbExecutorsOnDriverHost = 0;
+                self.durationInterval;
+                self.durationLabel = "0m00s";
 
                 // UI VARIABLES
+                // Overview TAB variables
                 self.nbHosts; // number of machines that ran application executors
+                self.clusterCPUUtilization = "0.0";
+                // Driver TAB variables
+                self.maxUsedDriverMem = "0.0";
+                self.maxAvailableDriverMem = "0.0";
                 // Executor TAB variables
                 self.maxUsedExecutorMem = "0.0";
                 self.maxAvailableExecutorMem = "0.0";
@@ -34,7 +41,11 @@ angular.module('hopsWorksApp')
                 self.startTimeMap = {
                     'totalActiveTasksApp': -1,
                     'totalCompletedTasksApp': -1,
+                    'memorySpaceDriver': -1,
+                    'maxMemoryDriver': -1,
+                    'vcpuUsageDriver': -1,
                     'maxMemoryExecutorCard': -1,
+                    'clusterCPUUtilizationCard': -1,
                     'executorCPU': -1,
                     'hostCPU': -1,
                     'executorMemory': -1,
@@ -46,7 +57,10 @@ angular.module('hopsWorksApp')
                 self.hasLoadedOnce = {
                     'totalActiveTasksApp': false,
                     'totalCompletedTasksApp': false,
+                    'memorySpaceDriver': false,
                     'maxMemoryExecutorCard': false,
+                    'vcpuUsageDriver': false,
+                    'clusterCPUUtilizationCard': false,
                     'executorCPU': false,
                     'hostCPU': false,
                     'executorMemory': false,
@@ -63,6 +77,12 @@ angular.module('hopsWorksApp')
                 // OVERVIEW: Total completed tasks for the whole application
                 $scope.optionsTotalCompletedTasks = vizopsTotalCompletedTasksOptions();
                 $scope.templateTotalCompletedTasks = [];
+                // DRIVER: memory used
+                $scope.optionsMemorySpaceDriver = vizopsMemorySpaceDriverOptions();
+                $scope.templateMemorySpaceDriver = [];
+                // DRIVER: vcpu graph
+                $scope.optionsVCPUDriver = vizopsVCPUDriverOptions();
+                $scope.templateVCPUDriver = [];
                 // EXECUTOR CPU GRAPH
                 $scope.optionsExecutorCPU = vizopsExecutorCPUOptions();
                 $scope.templateExecutorCPU = [];
@@ -83,14 +103,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['totalActiveTasksApp'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\'' +
-                               ' and time > ' + self.startTimeMap['totalActiveTasksApp'] + 'ms';
-                    // app has finished running and we havent called the backend yet
-                    if (!self.now && !self.hasLoadedOnce['totalActiveTasksApp']) {
-                        tags += ' and time < ' + self.endTime + 'ms';
-                    } else if (self.now) {
-                        tags += ' and time < now()';
-                    }
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalActiveTasksApp');
 
                     InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
                                                'sum(threadpool_activeTasks)', 'spark', tags, 'time(30s)').then(
@@ -119,14 +132,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['totalCompletedTasksApp'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\'' +
-                               ' and time > ' + self.startTimeMap['totalCompletedTasksApp'] + 'ms';
-                    // app has finished running and we havent called the backend yet
-                    if (!self.now && !self.hasLoadedOnce['totalCompletedTasksApp']) {
-                        tags += ' and time < ' + self.endTime + 'ms';
-                    } else if (self.now) {
-                        tags += ' and time < now()';
-                    }
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalCompletedTasksApp');
 
                     InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
                                                'non_negative_derivative(max(threadpool_completeTasks)),max(threadpool_completeTasks)',
@@ -158,12 +164,121 @@ angular.module('hopsWorksApp')
                     );
                 };
 
+                var updateMemorySpaceDriver = function() {
+                    if (!self.now && self.hasLoadedOnce['memorySpaceDriver'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memorySpaceDriver')
+                               ' and service = \'driver\'';
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                                               'mean(heap_used), max(heap_used)', 'spark', tags, 'time(20s) fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
+
+                                self.startTimeMap['memorySpaceDriver'] = _getLastTimestampFromSeries(newData);
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+
+                                    $scope.templateMemorySpaceDriver[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    $scope.templateMemorySpaceDriver[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                }
+
+                                self.hasLoadedOnce['memorySpaceDriver'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching memorySpaceDriver metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateGraphVCPUDriver = function() {
+                    if (!self.now && self.hasLoadedOnce['vcpuUsageDriver'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' + ' and ' + _getTimestampLimits('vcpuUsageDriver');;
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                                               'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
+                                               'nodemanager', tags, 'time(20s) fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
+
+                                self.startTimeMap['vcpuUsageDriver'] = _getLastTimestampFromSeries(newData);
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+
+                                    $scope.templateVCPUDriver[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                }
+
+                                self.hasLoadedOnce['vcpuUsageDriver'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching VcpuUsageDriver metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateMaxMemoryDriver = function() {
+                    if (!self.now && self.hasLoadedOnce['maxMemoryDriver'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and service =~ /driver/';
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                        'max(heap_used), heap_max', 'spark', tags).then(
+                    function(success) {
+                        if (success.status === 200) { // new measurements
+                            var newData = success.data.result.results[0].series[0];
+                            self.startTimeMap['maxMemoryDriver'] = _getLastTimestampFromSeries(newData);
+
+                            self.maxUsedDriverMem = d3.format(".4s")(newData.values[0].split(' ')[1]);
+                            self.maxAvailableDriverMem = d3.format(".4s")(newData.values[0].split(' ')[2]);
+
+                            self.hasLoadedOnce['maxMemoryDriver'] = true;
+                        } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching maxMemoryDriver metric.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateClusterCPUUtilizationOverview = function() {
+                    if (!self.now && self.hasLoadedOnce['clusterCPUUtilizationCard'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' +
+                               ' and time > ' + self.startTimeMap['clusterCPUUtilizationCard'] + 'ms' +
+                               ' and time <= now()';
+
+                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                        'max(heap_used), heap_max, service', 'spark', tags).then(
+                    function(success) {
+                        if (success.status === 200) { // new measurements
+                            var newData = success.data.result.results[0].series[0];
+                            self.startTimeMap['clusterCPUUtilizationCard'] = _getLastTimestampFromSeries(newData);
+
+                            self.clusterCPUUtilization = d3.format(".1%")(newData.values[0].split(' ')[1]);
+
+                            self.hasLoadedOnce['clusterCPUUtilizationCard'] = true;
+                        } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching clusterCPUUtilization metric.', ttl: 10000});
+                        }
+                    );
+                };
+
                 var updateMaxMemoryExecutor = function() {
                     if (!self.now && self.hasLoadedOnce['maxMemoryExecutorCard'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\'' +
-                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+                    var tags = 'appid = \'' + self.appId + '\' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
 
                     InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
                         'max(heap_used), heap_max, service', 'spark', tags).then(
@@ -184,28 +299,28 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateGraphExecutorCPU = function() {
-                    /* ask for the metrics coming from all the containers, otherwise we would bombard
-                     the backend with nbExecutors requests. We choose the metrics for each executor
-                     from the results. application_1491828160189_0001 -> 1491828160189_0001
-                    */
-                    var tags = 'source =~ /.*' + (self.appId.substring(self.appId.indexOf('_') + 1)) + '.*/' +
-                               ' and time > ' + self.startTimeMap['executorCPU'] + 'ms';
+                    if (!self.now && self.hasLoadedOnce['executorCPU'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'source != \'' + self.executorInfo.entry[0].value[0] + '\' and ' + _getTimestampLimits('executorCPU');
+
                     InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
-                        'MilliVcoreUsageIMinMilliVcores/' + (+self.executorInfo.entry[0].value[2]*1000) + ',source',
-                        'nodemanager', tags).then(
+                        'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
+                        'nodemanager', tags, 'time(20s) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data;
-                                self.startTimeMap['executorCPU'] = +newData.lastMeasurementTimestamp;
+                                var newData = success.data.result.results[0].series[0];
+                                self.startTimeMap['executorCPU'] = _getLastTimestampFromSeries(newData);
 
-                                var metrics = newData.series.values;
+                                var metrics = newData.values;
 
                                 for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
-                                    var executorID = +splitEntry[2].charAt(splitEntry[2].length - 1);
 
-                                    $scope.templateExecutorCPU[executorID - 1].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    $scope.templateExecutorCPU[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                 }
+
+                                self.hasLoadedOnce['executorCPU'] = true;
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching ExecutorCPU metrics.', ttl: 10000});
@@ -287,16 +402,34 @@ angular.module('hopsWorksApp')
                     // Overview tab update functions
                     updateTotalActiveTasksOverview();
                     updateTotalCompletedTasksOverview();
+                    // Driver tab update functions
+                    updateMemorySpaceDriver();
+                    updateMaxMemoryDriver();
+                    updateGraphVCPUDriver();
+                    // updateClusterCPUUtilizationOverview
                     // Executor tab update functions
                     updateMaxMemoryExecutor();
-                    /*updateGraphExecutorCPU();
-                    updateGraphExecutorMemory();
+                    updateGraphExecutorCPU();
+                    /*updateGraphExecutorMemory();
                     updateGraphHostCPU();*/
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
                     // Takes as an argument a single serie
                     return +serie.values[serie.values.length - 1].split(' ')[0];
+                };
+
+                var _getTimestampLimits = function(graphName) {
+                    // If we didnt use groupBy calls then it would be enough to upper limit the time with now()
+                    var limits = 'time > ' + self.startTimeMap[graphName] + 'ms';
+
+                    if (!self.now) {
+                        limits += ' and time < ' + self.endTime + 'ms';
+                    } else {
+                        limits += ' and time < now()';
+                    }
+
+                    return limits;
                 };
 
                 var _extractHostnameInfoFromResponse = function(response) {
@@ -336,15 +469,27 @@ angular.module('hopsWorksApp')
                               }
                             }
 
+                            // Set the duration timer
+                            if (self.now) {
+                                self.durationInterval = $interval(function () {
+                                    self.durationLabel = Date.now() - self.startTime;
+                                }, 1000);
+                            } else {
+                                self.durationLabel = self.endTime - self.startTime;
+                            }
+
                             // get the unique hostnames and the number of executors running on them
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
                             self.nbHosts = Object.keys(self.hostnames).length;
+                            self.nbExecutorsOnDriverHost = self.hostnames[self.executorInfo.entry[0].value[1]].length - 1;
 
                             var colorMap = vizopsMapColorExecutorsHost(self.hostnames);
 
                             $scope.templateTotalActiveTasks = vizopsTotalActiveTasksTemplate();
                             $scope.templateTotalCompletedTasks = vizopsTotalCompletedTasksTemplate();
-                            $scope.templateExecutorCPU = vizopsExecutorCPUDataTemplate(self.nbExecutors, colorMap);
+                            $scope.templateMemorySpaceDriver = vizopsMemorySpaceDriverTemplate();
+                            $scope.templateVCPUDriver = vizopsVCPUDriverTemplate();
+                            $scope.templateExecutorCPU = vizopsExecutorCPUDataTemplate();
                             $scope.templateHostCPU = vizopsHostCPUDataTemplate(Object.keys(self.hostnames), colorMap);
                             $scope.templateExecutorMemory = vizopsExecutorMemoryDataTemplate(self.nbExecutors, colorMap);
                             $scope.templateExecutorPerNode = vizopsExecutorsPerNodeTemplate(self.hostnames, colorMap);
@@ -365,5 +510,6 @@ angular.module('hopsWorksApp')
                  */
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);
+                  $interval.cancel(self.durationInterval);
                 });
            }]);

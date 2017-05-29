@@ -4,8 +4,14 @@
       <h3>{{influxDBCtrl.jobName}}&nbsp;<small>{{influxDBCtrl.appId}}</small></h3>
     </div>
     <div class="col-md-6 text-right">
-      <h3 ng-if="influxDBCtrl.now">Application running for minutes ({{influxDBCtrl.startTime | date:'medium'}})</h3>
-      <h3 ng-if="!influxDBCtrl.now">Application completed in forever ({{influxDBCtrl.startTime | date:'medium'}})</h3>
+      <h3 ng-if="influxDBCtrl.now">
+        <span class="fa fa-clock-o" aria-hidden="true">{{influxDBCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
+        ,&nbsp; running since {{influxDBCtrl.startTime | date:'medium'}}
+      </h3>
+      <h3 ng-if="!influxDBCtrl.now">
+        <span class="fa fa-clock-o" aria-hidden="true">{{influxDBCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
+        ,&nbsp; from {{influxDBCtrl.startTime | date:'medium'}} to {{influxDBCtrl.endTime | date:'medium'}}
+      </h3>
     </div>
   </div>
 
@@ -49,11 +55,11 @@
 
         </div>
         <div class="row">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <nvd3 id="totalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
                 class="with-3d-shadow with-transitions"></nvd3>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
             <nvd3 id="totalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
                   class="with-3d-shadow with-transitions"></nvd3>
           </div>
@@ -63,26 +69,58 @@
         <div class="container-fluid">
           <div class="row">
 
-            <div class="col-md-5">
-              <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
+            <!-- Max driver memory card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Max driver memory</span>
+                    <span class="md-subhead">
+                    <b>{{influxDBCtrl.maxUsedDriverMem}}</b> of container's <b>{{influxDBCtrl.maxAvailableDriverMem}}</b>
+                  </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Total executors card -->
+
+            <!-- Running on -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Running on</span>
+                    <span class="md-subhead">
+                    <b>{{influxDBCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting <b>{{influxDBCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
+                  </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Running on card -->
+
+          </div>
+
+          <div class="row">
+
+            <div class="col-md-4">
+              <nvd3 id="driverMemoryUsed" options="optionsMemorySpaceDriver" data="templateMemorySpaceDriver"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
-            <div class="col-md-5">
-              <nvd3 id="executorMemory" options="optionsExecutorMemory" data="templateExecutorMemory"
+            <div class="col-md-4">
+              <nvd3 id="driverVCPUUsed" options="optionsVCPUDriver" data="templateVCPUDriver"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
           </div> <!-- row -->
 
-          <div class="row">
+          <!--<div class="row">
 
             <div class="col-md-5">
               <nvd3 id="hostCPU" options="optionsHostCPU" data="templateHostCPU"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
-          </div> <!-- row -->
+          </div> &lt;!&ndash; row &ndash;&gt;-->
 
         </div>
       </uib-tab>
@@ -104,8 +142,16 @@
           </div> <!-- end: Total executors card -->
 
         </div>
+        <div class="row">
+
+          <div class="col-md-4">
+            <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
+                  class="with-3d-shadow with-transitions"></nvd3>
+          </div>
+
+        </div>
       </uib-tab>
-      <uib-tab index="3" heading="Worker">Worker content</uib-tab>
+      <uib-tab index="3" heading="Worker"></uib-tab>
     </uib-tabset>
   </div>
 
