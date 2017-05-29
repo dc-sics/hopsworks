@@ -50,6 +50,8 @@ public class TensorFlowJob extends YarnJob {
     runnerbuilder.setNumOfPs(jobconfig.getNumOfPs());
     runnerbuilder.setNumOfWorkers(jobconfig.getNumOfWorkers());
     runnerbuilder.setWorkerMemory(jobconfig.getWorkerMemory());
+    runnerbuilder.setWorkerVCores(jobconfig.getWorkerVCores());
+    runnerbuilder.setWorkerGPUs(jobconfig.getNumOfGPUs());
 
     //Set Yarn running options
     runnerbuilder.setAmMemory(jobconfig.getAmMemory());
