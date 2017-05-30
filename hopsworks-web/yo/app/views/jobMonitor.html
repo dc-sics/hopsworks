@@ -93,7 +93,7 @@
               </div>
               <div ng-if="jobUICtrl.ui === ''">This job has not run yet</div>
               <div ng-if="jobUICtrl.current === 'vizopsUI'">
-                <div ng-controller="InfluxDBCtrl as influxDBCtrl">
+                <div ng-controller="VizopsCtrl as vizopsCtrl">
                   <div ng-include="'views/vizops.html'"></div>
                 </div>
               </div>

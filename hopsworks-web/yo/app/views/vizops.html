@@ -1,16 +1,16 @@
 <div id="body" style="background:#ffffff !important; border-radius: 7px; padding: 20px">
   <div class="row">
     <div class="col-md-6" id="headers">
-      <h3>{{influxDBCtrl.jobName}}&nbsp;<small>{{influxDBCtrl.appId}}</small></h3>
+      <h3>{{vizopsCtrl.jobName}}&nbsp;<small>{{vizopsCtrl.appId}}</small></h3>
     </div>
     <div class="col-md-6 text-right">
-      <h3 ng-if="influxDBCtrl.now">
-        <span class="fa fa-clock-o" aria-hidden="true">{{influxDBCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
-        ,&nbsp; running since {{influxDBCtrl.startTime | date:'medium'}}
+      <h3 ng-if="vizopsCtrl.now">
+        <span class="fa fa-clock-o" aria-hidden="true">{{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
+        ,&nbsp; running since {{vizopsCtrl.startTime | date:'medium'}}
       </h3>
-      <h3 ng-if="!influxDBCtrl.now">
-        <span class="fa fa-clock-o" aria-hidden="true">{{influxDBCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
-        ,&nbsp; from {{influxDBCtrl.startTime | date:'medium'}} to {{influxDBCtrl.endTime | date:'medium'}}
+      <h3 ng-if="!vizopsCtrl.now">
+        <span class="fa fa-clock-o" aria-hidden="true">{{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
+        ,&nbsp; from {{vizopsCtrl.startTime | date:'medium'}} to {{vizopsCtrl.endTime | date:'medium'}}
       </h3>
     </div>
   </div>
@@ -19,54 +19,60 @@
 
   <div class="row">
     <uib-tabset active="active">
+
       <uib-tab index="0" heading="Overview">
-        <div class="row">
+        <div ng-controller="VizopsOverviewCtrl as vizopsOverviewCtrl">
+          <div class="row">
 
-          <!-- Total executors card -->
-          <div class="col-md-2">
-            <md-card>
-              <md-card-title>
-                <md-card-title-text>
-                  <span class="md-headline strong">Total executors/Hosts</span>
-                  <span class="md-subhead">
-                    <b>{{influxDBCtrl.nbExecutors}}</b> executor(s) running on <b>{{influxDBCtrl.nbHosts}}</b> machine(s)
-                  </span>
-                </md-card-title-text>
-              </md-card-title>
-            </md-card>
-          </div> <!-- end: Total executors card -->
+            <!-- Total executors card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Total executors/Hosts</span>
+                    <span class="md-subhead">
+                      <b>{{vizopsCtrl.nbExecutors}}</b> executor(s) running on <b>{{vizopsCtrl.nbHosts}}</b> machine(s)
+                    </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Total executors card -->
 
-          <!-- Cluster CPU utilization card -->
-          <div class="col-md-2">
-            <md-card>
-              <md-card-title>
-                <md-card-title-text>
-                  <span class="md-headline strong">Cluster CPU utilization</span>
-                  <span class="md-subhead">50.4%</span>
-                </md-card-title-text>
-              </md-card-title>
-            </md-card>
-          </div> <!-- end: Cluster CPU utilization -->
+            <!-- Cluster CPU utilization card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Cluster CPU utilization</span>
+                    <span class="md-subhead">50.4%</span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Cluster CPU utilization -->
 
-          <!--<div class="col-md-2">
-            <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateExecutorPerNode"
+            <!--<div class="col-md-2">
+              <nvd3 id="executorsPerNode" options="optionsExecutorPerNode" data="templateExecutorPerNode"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>-->
+
+          </div> <!-- row -->
+
+          <div class="row">
+            <div class="col-md-4">
+              <nvd3 id="totalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
                   class="with-3d-shadow with-transitions"></nvd3>
-          </div>-->
-
-        </div>
-        <div class="row">
-          <div class="col-md-4">
-            <nvd3 id="totalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
-                class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+            <div class="col-md-4">
+              <nvd3 id="totalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
           </div>
-          <div class="col-md-4">
-            <nvd3 id="totalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
-                  class="with-3d-shadow with-transitions"></nvd3>
-          </div>
-        </div>
+        </div> <!-- controller end -->
       </uib-tab>
+
       <uib-tab index="1" heading="Driver">
-        <div class="container-fluid">
+        <div ng-controller="VizopsDriverCtrl as vizopsDriverCtrl">
+          <div class="container-fluid">
           <div class="row">
 
             <!-- Max driver memory card -->
@@ -76,7 +82,7 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Max driver memory</span>
                     <span class="md-subhead">
-                    <b>{{influxDBCtrl.maxUsedDriverMem}}</b> of container's <b>{{influxDBCtrl.maxAvailableDriverMem}}</b>
+                    <b>{{vizopsCtrl.maxUsedDriverMem}}</b> of container's <b>{{vizopsCtrl.maxAvailableDriverMem}}</b>
                   </span>
                   </md-card-title-text>
                 </md-card-title>
@@ -90,7 +96,7 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Running on</span>
                     <span class="md-subhead">
-                    <b>{{influxDBCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting <b>{{influxDBCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
+                    <b>{{vizopsCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting <b>{{vizopsCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
                   </span>
                   </md-card-title-text>
                 </md-card-title>
@@ -123,35 +129,44 @@
           </div> &lt;!&ndash; row &ndash;&gt;-->
 
         </div>
-      </uib-tab>
-      <uib-tab index="2" heading="Executor">
-        <div class="row">
-
-          <!-- Max executor memory card -->
-          <div class="col-md-2">
-            <md-card>
-              <md-card-title>
-                <md-card-title-text>
-                  <span class="md-headline strong">Max executor memory</span>
-                  <span class="md-subhead">
-                    <b>{{influxDBCtrl.maxUsedExecutorMem}}</b> of container's <b>{{influxDBCtrl.maxAvailableExecutorMem}}</b>
-                  </span>
-                </md-card-title-text>
-              </md-card-title>
-            </md-card>
-          </div> <!-- end: Total executors card -->
-
         </div>
-        <div class="row">
+      </uib-tab>
+
+      <uib-tab index="2" heading="Executor">
+        <div ng-controller="VizopsExecutorCtrl as vizopsExecutorCtrl">
+          <div class="row">
+
+            <!-- Max executor memory card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Max executor memory</span>
+                    <span class="md-subhead">
+                      <b>{{vizopsCtrl.maxUsedExecutorMem}}</b> of container's <b>{{vizopsCtrl.maxAvailableExecutorMem}}</b>
+                    </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Total executors card -->
+
+          </div>
+          <div class="row">
 
           <div class="col-md-4">
             <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
                   class="with-3d-shadow with-transitions"></nvd3>
           </div>
 
+          </div>
         </div>
       </uib-tab>
-      <uib-tab index="3" heading="Worker"></uib-tab>
+
+      <uib-tab index="3" heading="Worker">
+        <div ng-controller="VizopsWorkerCtrl as vizopsWorkerCtrl">
+        </div>
+      </uib-tab>
+
     </uib-tabset>
   </div>
 

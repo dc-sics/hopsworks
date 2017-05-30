@@ -4,10 +4,10 @@
  */
 
 angular.module('hopsWorksApp')
-         .controller('InfluxDBCtrl', ['$scope', '$timeout', 'growl', 'JobService', '$interval',
-                     '$routeParams', '$route', 'InfluxDBService',
+         .controller('VizopsCtrl', ['$scope', '$timeout', 'growl', 'JobService', '$interval',
+                     '$routeParams', '$route', 'VizopsService',
 
-           function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, InfluxDBService) {
+           function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, VizopsService) {
 
                 var self = this;
                 // Job details
@@ -105,7 +105,7 @@ angular.module('hopsWorksApp')
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalActiveTasksApp');
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                                                'sum(threadpool_activeTasks)', 'spark', tags, 'time(30s)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
@@ -134,7 +134,7 @@ angular.module('hopsWorksApp')
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalCompletedTasksApp');
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                                                'non_negative_derivative(max(threadpool_completeTasks)),max(threadpool_completeTasks)',
                                                'spark', tags, 'time(30s), service fill(0)').then(
                         function(success) {
@@ -171,7 +171,7 @@ angular.module('hopsWorksApp')
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memorySpaceDriver')
                                ' and service = \'driver\'';
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                                                'mean(heap_used), max(heap_used)', 'spark', tags, 'time(20s) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
@@ -201,7 +201,7 @@ angular.module('hopsWorksApp')
 
                     var tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' + ' and ' + _getTimestampLimits('vcpuUsageDriver');;
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                                                'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
                                                'nodemanager', tags, 'time(20s) fill(0)').then(
                         function(success) {
@@ -231,7 +231,7 @@ angular.module('hopsWorksApp')
 
                     var tags = 'appid = \'' + self.appId + '\' and service =~ /driver/';
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                         'max(heap_used), heap_max', 'spark', tags).then(
                     function(success) {
                         if (success.status === 200) { // new measurements
@@ -257,7 +257,7 @@ angular.module('hopsWorksApp')
                                ' and time > ' + self.startTimeMap['clusterCPUUtilizationCard'] + 'ms' +
                                ' and time <= now()';
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                         'max(heap_used), heap_max, service', 'spark', tags).then(
                     function(success) {
                         if (success.status === 200) { // new measurements
@@ -280,7 +280,7 @@ angular.module('hopsWorksApp')
 
                     var tags = 'appid = \'' + self.appId + '\' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                         'max(heap_used), heap_max, service', 'spark', tags).then(
                     function(success) {
                         if (success.status === 200) { // new measurements
@@ -304,7 +304,7 @@ angular.module('hopsWorksApp')
 
                     var tags = 'source != \'' + self.executorInfo.entry[0].value[0] + '\' and ' + _getTimestampLimits('executorCPU');
 
-                    InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                    VizopsService.getMetrics('graphite',
                         'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
                         'nodemanager', tags, 'time(20s) fill(0)').then(
                         function(success) {
@@ -344,9 +344,8 @@ angular.module('hopsWorksApp')
                     // assume that the template has been created with the same sequence as the for loop
                     var unique_hosts = Object.keys(self.hostnames);
                     for(var host of unique_hosts) {
-                        // (projectId, appId, database, columns, measurement, tags, groupBy)
                         var tags = 'host=\''+ host + '\' and time > ' + startTime + 'ms and time < ' + endTime + 'ms';
-                        InfluxDBService.getMetrics(self.projectId, self.appId, 'telegraf', 'usage_user', 'cpu', tags).then(
+                        VizopsService.getMetrics('telegraf', 'usage_user', 'cpu', tags).then(
                             function(success) {
                                 if (success.status === 200) { // new measurements
                                     var newData = success.data;
@@ -375,7 +374,7 @@ angular.module('hopsWorksApp')
                         var tags = 'appid=\'' + self.appId + '\' ' +
                                     'and service =\''+ service + '\' ' +
                                     'and time > ' + self.startTimeMap['executorMemory'] + 'ms';
-                        InfluxDBService.getMetrics(self.projectId, self.appId, 'graphite',
+                        VizopsService.getMetrics('graphite',
                                                         'heap_used, service', 'spark', tags).then(
                             function(success) {
                                 if (success.status === 200) { // new measurements
@@ -450,7 +449,7 @@ angular.module('hopsWorksApp')
                 };
 
                 var init = function() {
-                    self.appId = InfluxDBService.getAppId();
+                    self.appId = VizopsService.getAppId();
 
                     JobService.getAppInfo(self.projectId, self.appId).then(
                         function(success) {
