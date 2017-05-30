@@ -31,7 +31,7 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Total executors/Hosts</span>
                     <span class="md-subhead">
-                      <b>{{vizopsCtrl.nbExecutors}}</b> executor(s) running on <b>{{vizopsCtrl.nbHosts}}</b> machine(s)
+                      <b>{{vizopsOverviewCtrl.nbExecutors}}</b> executor(s) running on <b>{{vizopsOverviewCtrl.nbHosts}}</b> machine(s)
                     </span>
                   </md-card-title-text>
                 </md-card-title>
@@ -82,12 +82,12 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Max driver memory</span>
                     <span class="md-subhead">
-                    <b>{{vizopsCtrl.maxUsedDriverMem}}</b> of container's <b>{{vizopsCtrl.maxAvailableDriverMem}}</b>
+                    <b>{{vizopsDriverCtrl.maxUsedDriverMem}}</b> of container's <b>{{vizopsDriverCtrl.maxAvailableDriverMem}}</b>
                   </span>
                   </md-card-title-text>
                 </md-card-title>
               </md-card>
-            </div> <!-- end: Total executors card -->
+            </div> <!-- end: Max driver mem card -->
 
             <!-- Running on -->
             <div class="col-md-2">
@@ -96,7 +96,8 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Running on</span>
                     <span class="md-subhead">
-                    <b>{{vizopsCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting <b>{{vizopsCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
+                      <b>{{vizopsDriverCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting
+                      <b>{{vizopsDriverCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
                   </span>
                   </md-card-title-text>
                 </md-card-title>
@@ -108,12 +109,12 @@
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="driverMemoryUsed" options="optionsMemorySpaceDriver" data="templateMemorySpaceDriver"
+              <nvd3 id="driverMemoryUsed" options="optionsMemorySpace" data="templateMemorySpace"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="driverVCPUUsed" options="optionsVCPUDriver" data="templateVCPUDriver"
+              <nvd3 id="driverVCPUUsed" options="optionsVCPU" data="templateVCPU"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
@@ -143,7 +144,7 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Max executor memory</span>
                     <span class="md-subhead">
-                      <b>{{vizopsCtrl.maxUsedExecutorMem}}</b> of container's <b>{{vizopsCtrl.maxAvailableExecutorMem}}</b>
+                      <b>{{vizopsExecutorCtrl.maxUsedExecutorMem}}</b> of container's <b>{{vizopsExecutorCtrl.maxAvailableExecutorMem}}</b>
                     </span>
                   </md-card-title-text>
                 </md-card-title>
@@ -154,7 +155,7 @@
           <div class="row">
 
           <div class="col-md-4">
-            <nvd3 id="executorCPU" options="optionsExecutorCPU" data="templateExecutorCPU"
+            <nvd3 id="executorCPU" options="optionsAggregatedVCPUUsage" data="templateAggregatedVCPUUsage"
                   class="with-3d-shadow with-transitions"></nvd3>
           </div>
 

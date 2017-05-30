@@ -6,22 +6,6 @@ var _getColor = ['#9a92e8','#d60606' ,'#025ced','#c67a0f', '#2166ac', '#b2182b',
                  '#35978f','#01665e','#39d81a','#40004b', '#d6604d',
                  '#9970ab','#c310d3','#5aae61','#1505aa'];
 
-var vizopsMapColorExecutorsHost = function(hostnames) {
-    var result = {}, i = 0;
-
-    for (var key in hostnames) {
-        if (hostnames.hasOwnProperty(key)) {
-            result[key] = _getColor[i % 20];
-            for (var executor of hostnames[key]) {
-                result[executor] = _getColor[i % 20];
-            }
-        }
-        i++;
-    }
-
-    return result;
-};
-
 // OVERVIEW: Total active tasks running in the application
 var vizopsTotalActiveTasksOptions = function() {
     return {
@@ -381,11 +365,11 @@ var vizopsHostCPUOptions = function() {
     };
 };
 
-var vizopsHostCPUDataTemplate = function(hostnames, colorMap) {
+var vizopsHostCPUDataTemplate = function(hostnames) {
     var template = [];
 
     hostnames.map(function(host) {
-        template.push({ values: [], key: host, color: colorMap[host] });
+        template.push({ values: [], key: host, color: _getColor[1] });
     });
 
     return template;
@@ -438,12 +422,12 @@ var vizopsExecutorMemoryOptions = function() {
     };
 };
 
-var vizopsExecutorMemoryDataTemplate = function(nbExecutors, colorMap) {
+var vizopsExecutorMemoryDataTemplate = function(nbExecutors) {
     var template = [
            {
                values: [],
                key: 'driver',
-               color: colorMap['0']
+               color: _getColor[1]
            }
         ];
 
@@ -452,7 +436,7 @@ var vizopsExecutorMemoryDataTemplate = function(nbExecutors, colorMap) {
         template.push({
             values: [],
             key: 'executor_' + i,
-            color: colorMap['' + i]
+            color: _getColor[i % 20]
         });
     }
 
@@ -517,13 +501,13 @@ var vizopsExecutorsPerNodeOptions = function() {
         };
 };
 
-var vizopsExecutorsPerNodeTemplate = function(hostnames, colorMap) {
+var vizopsExecutorsPerNodeTemplate = function(hostnames) {
     var template = [];
     for (var key in hostnames) {
         template.push({
             'key': key,
             'y': hostnames[key].length,
-            'color': colorMap[key]
+            'color': _getColor[1]
         });
     }
 

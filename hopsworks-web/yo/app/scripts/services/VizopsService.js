@@ -16,6 +16,7 @@ angular.module('hopsWorksApp')
             },
 
             getAppId : function() { return self.appId; },
+            getProjectId : function() { return self.projectId; },
 
             getMetrics: function(database, columns, measurement, tags, groupBy) {
                 var query = '/api/project/' + self.projectId + '/jobs/' + self.appId + '/influxdb/' + database + '?' +
