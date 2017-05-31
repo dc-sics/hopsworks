@@ -12,10 +12,10 @@ angular.module('hopsWorksApp')
                    
              
             self.getAirpalURL = function () {
-              startLoading("Loading Airpal UI...");
+              console.log("Loading Airpal UI...");
               console.log("1111111111111111111111");
-              self.ui = "/hopsworks-api/airpal?projectID="+self.projectId;
-              return self.ui;
+              self.ui = "/hopsworks-api/airpal/app?projectID="+self.projectId+"_"+self.email;
+              return $sce.trustAsResourceUrl(self.ui);
             };
                    
             

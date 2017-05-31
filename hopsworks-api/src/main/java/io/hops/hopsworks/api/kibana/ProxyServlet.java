@@ -373,19 +373,19 @@ public class ProxyServlet extends HttpServlet {
     if (statusCode >= HttpServletResponse.SC_MULTIPLE_CHOICES /*
        * 300
        */
-      && statusCode <= HttpServletResponse.SC_NOT_MODIFIED /*
+      && statusCode < HttpServletResponse.SC_NOT_MODIFIED /*
        * 304
        */) {
       Header locationHeader = proxyResponse.getLastHeader(HttpHeaders.LOCATION);
-//      if (locationHeader == null) {
-//        throw new ServletException("Received status code: " + statusCode
-//          + " but no " + HttpHeaders.LOCATION
-//          + " header was found in the response");
-//      }
+      if (locationHeader == null) {
+        throw new ServletException("Received status code: " + statusCode
+          + " but no " + HttpHeaders.LOCATION
+          + " header was found in the response");
+      }
       // Modify the redirect to go to this proxy servlet rather that the proxied host
-      String locStr = getTargetUri(servletRequest);
-//      String locStr = rewriteUrlFromResponse(servletRequest, locationHeader.
-//        getValue());
+//      String locStr = getTargetUri(servletRequest);
+      String locStr = rewriteUrlFromResponse(servletRequest, locationHeader.
+        getValue());
 
       servletResponse.sendRedirect(locStr);
       return true;
