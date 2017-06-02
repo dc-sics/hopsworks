@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.predic8.membrane.servlet;
+package io.hops.membrane;
 
 import java.util.Collection;
 
@@ -22,7 +22,6 @@ import javax.servlet.ServletContext;
 import org.springframework.web.context.support.XmlWebApplicationContext;
 
 import com.predic8.membrane.core.Router;
-import com.predic8.membrane.servlet.embedded.ServletTransport;
 
 public class RouterUtil {
 
@@ -37,7 +36,7 @@ public class RouterUtil {
     Router theOne = null;
     for (Router r : routers) {
       r.getResolverMap().addSchemaResolver(new FileSchemaWebAppResolver(ctx));
-      if (r.getTransport() instanceof ServletTransport) {
+      if (r.getTransport() instanceof HopsTransport) {
         if (theOne != null) {
           throw new RuntimeException(
                   "Only one <router> may have a <servletTransport> defined.");

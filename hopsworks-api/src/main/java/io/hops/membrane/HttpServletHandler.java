@@ -12,8 +12,9 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package com.predic8.membrane.servlet.embedded;
+package io.hops.membrane;
 
+import io.hops.membrane.HopsTransport;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Enumeration;
@@ -168,8 +169,8 @@ class HttpServletHandler extends AbstractHttpHandler {
   }
 
   @Override
-  public ServletTransport getTransport() {
-    return (ServletTransport)super.getTransport();
+  public HopsTransport getTransport() {
+    return (HopsTransport)super.getTransport();
   }
 
   @Override

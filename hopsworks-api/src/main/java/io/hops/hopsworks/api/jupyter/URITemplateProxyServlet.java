@@ -15,7 +15,6 @@ package io.hops.hopsworks.api.jupyter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import io.hops.hopsworks.api.kibana.ProxyServlet;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URIUtils;
 import org.apache.http.client.utils.URLEncodedUtils;
@@ -31,6 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.http.HttpServlet;
+import org.apache.http.HttpHost;
 
 /**
  * A proxy servlet in which the target URI is templated from incoming request
@@ -46,7 +47,7 @@ import java.util.regex.Pattern;
  * names. They are removed when the request is sent to the target.
  */
 @SuppressWarnings({"serial"})
-public class URITemplateProxyServlet extends ProxyServlet {
+public class URITemplateProxyServlet extends HttpServlet {
 
   /*
    * Rich:
@@ -69,17 +70,56 @@ public class URITemplateProxyServlet extends ProxyServlet {
   private static final String ATTR_QUERY_STRING = URITemplateProxyServlet.class.
           getSimpleName() + ".queryString";
 
+  protected static final String P_TARGET_URI = "targetUri";
+  protected static final String ATTR_TARGET_URI = URITemplateProxyServlet.class.
+          getSimpleName() + ".targetUri";
+  protected static final String ATTR_TARGET_HOST
+          = URITemplateProxyServlet.class.
+          getSimpleName() + ".targetHost";
+
   protected String targetUriTemplate;//has {name} parts
   protected String port;
 
-  @Override
+  //These next 3 are cached here, and should only be referred to in 
+  //initialization logic. See the ATTR_* parameters.
+  /**
+   * From the configured parameter "targetUri".
+   */
+  protected String targetUri;
+  protected URI targetUriObj;//new URI(targetUri)
+  protected HttpHost targetHost;//URIUtils.extractHost(targetUriObj);
+
+
+//  @Override
   protected void initTarget() throws ServletException {
     targetUriTemplate = getConfigParam(P_TARGET_URI);
     if (targetUriTemplate == null) {
       throw new ServletException(P_TARGET_URI + " is required.");
     }
 
+    targetUri = getConfigParam(P_TARGET_URI);
+    if (targetUri == null) {
+      throw new ServletException(P_TARGET_URI + " is required.");
+    }
+    //test it's valid
+    try {
+      targetUriObj = new URI(targetUri);
+    } catch (Exception e) {
+      throw new ServletException("Trying to process targetUri init parameter: "
+              + e, e);
+    }
+    targetHost = URIUtils.extractHost(targetUriObj);
+
     //leave this.target* null to prevent accidental mis-use
+  }
+
+  /**
+   * Reads a configuration parameter. By default it reads servlet init
+   * parameters but
+   * it can be overridden.
+   */
+  protected String getConfigParam(String key) {
+    return getServletConfig().getInitParameter(key);
   }
 
   @Override
@@ -133,7 +173,6 @@ public class URITemplateProxyServlet extends ProxyServlet {
     matcher.appendTail(urlBuf);
     String newTargetUri = urlBuf.toString();
     servletRequest.setAttribute(ATTR_TARGET_URI, newTargetUri);
-//    URI targetUriObj;
     try {
       targetUriObj = new URI(newTargetUri);
     } catch (Exception e) {
@@ -156,10 +195,16 @@ public class URITemplateProxyServlet extends ProxyServlet {
     }
     servletRequest.setAttribute(ATTR_QUERY_STRING, newQueryBuf.toString());
 
-    super.service(servletRequest, servletResponse);
+    // Create Exchange object with targetUriObj
+    // create transport object
+//    ServiceProxy sp = new ServiceProxy();
+//    sp.setTargetUrl(ATTR_TARGET_URI);
+//    super.service(servletRequest, servletResponse);
+
+//              RouterUtil.initializeRoutersFromSpringWebContext(appCtx, config.
+//              getServletContext(), getProxiesXmlLocation(config));
   }
 
-  @Override
   protected String rewriteQueryStringFromRequest(
           HttpServletRequest servletRequest, String queryString) {
     return (String) servletRequest.getAttribute(ATTR_QUERY_STRING);

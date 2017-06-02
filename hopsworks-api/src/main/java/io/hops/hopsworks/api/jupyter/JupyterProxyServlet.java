@@ -4,16 +4,10 @@ import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.project.ProjectController;
 import java.io.IOException;
-import java.util.Enumeration;
 import javax.ejb.EJB;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.HeaderGroup;
 
@@ -45,6 +39,7 @@ public class JupyterProxyServlet extends URITemplateProxyServlet {
    * approach does case insensitive lookup faster.
    */
   protected static final HeaderGroup wsHopByHopHeaders;
+  
 
   static {
     // Allow 'Upgrade' hop-by-hop header to pass through
@@ -77,64 +72,6 @@ public class JupyterProxyServlet extends URITemplateProxyServlet {
 
   }
 
-  @Override
-  protected void copyRequestHeaders(HttpServletRequest servletRequest,
-          HttpRequest proxyRequest) {
-    // Get an Enumeration of all of the header names sent by the client
-    Enumeration enumerationOfHeaderNames = servletRequest.getHeaderNames();
-    while (enumerationOfHeaderNames.hasMoreElements()) {
-      String headerName = (String) enumerationOfHeaderNames.nextElement();
-      //Instead the content-length is effectively set via InputStreamEntity
-      if (headerName.equalsIgnoreCase(HttpHeaders.CONTENT_LENGTH)) {
-        continue;
-      }
-      if (wsHopByHopHeaders.containsHeader(headerName)) {
-        continue;
-      }
 
-      Enumeration headers = servletRequest.getHeaders(headerName);
-      while (headers.hasMoreElements()) {//sometimes more than one value
-        String headerValue = (String) headers.nextElement();
-        // In case the proxy host is running multiple virtual servers,
-        // rewrite the Host header to ensure that we get content from
-        // the correct virtual server
-        if (headerName.equalsIgnoreCase(HttpHeaders.HOST)) {
-          HttpHost host = getTargetHost(servletRequest);
-          headerValue = host.getHostName();
-          if (host.getPort() != -1) {
-            headerValue += ":" + host.getPort();
-          }
-        } else if (headerName.equalsIgnoreCase(org.apache.http.cookie.SM.COOKIE)) {
-          headerValue = getRealCookie(headerValue);
-        }
-        proxyRequest.addHeader(headerName, headerValue);
-      }
-    }
-  }
-
-  /**
-   * Copy proxied response headers back to the servlet client.
-   *
-   * @param proxyResponse
-   * @param servletRequest
-   * @param servletResponse
-   */
-  @Override
-  protected void copyResponseHeaders(HttpResponse proxyResponse,
-          HttpServletRequest servletRequest,
-          HttpServletResponse servletResponse) {
-    for (Header header : proxyResponse.getAllHeaders()) {
-      if (wsHopByHopHeaders.containsHeader(header.getName())) {
-        continue;
-      }
-      if (header.getName().
-              equalsIgnoreCase(org.apache.http.cookie.SM.SET_COOKIE) || header.
-              getName().equalsIgnoreCase(org.apache.http.cookie.SM.SET_COOKIE2)) {
-        copyProxyCookie(servletRequest, servletResponse, header);
-      } else {
-        servletResponse.addHeader(header.getName(), header.getValue());
-      }
-    }
-  }
 
 }
