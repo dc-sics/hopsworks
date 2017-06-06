@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.membrane;
+package com.predic8.membrane.servlet.embedded;
 
 import java.io.IOException;
 
@@ -32,7 +32,7 @@ import java.net.URI;
         configPackage = "com.predic8.membrane.servlet.config.spring")
 public class HopsTransport extends Transport {
 
-  boolean removeContextRoot = true;
+  boolean removeContextRoot = false;
   URI targetUri;
 
   public HopsTransport(URI targetUri) {

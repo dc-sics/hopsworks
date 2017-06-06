@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.membrane;
+package com.predic8.membrane.servlet;
 
 import java.util.Collection;
 
@@ -22,6 +22,7 @@ import javax.servlet.ServletContext;
 import org.springframework.web.context.support.XmlWebApplicationContext;
 
 import com.predic8.membrane.core.Router;
+import com.predic8.membrane.servlet.embedded.HopsTransport;
 
 public class RouterUtil {
 

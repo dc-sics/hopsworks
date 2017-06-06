@@ -12,7 +12,7 @@
    See the License for the specific language governing permissions and
    limitations under the License. */
 
-package io.hops.membrane;
+package com.predic8.membrane.servlet;
 
 import java.io.InputStream;
 import java.util.List;

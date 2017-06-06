@@ -20,7 +20,7 @@ c.NotebookApp.open_browser = False
 c.NotebookApp.port_retries = 0
 c.NotebookApp.port = %%port%%
 
-c.NotebookApp.base_url='/hopsworks-api/jupyter/'
+c.NotebookApp.base_url='/hopsworks-api/jupyter/%%port%%/'
 
 #
 # Disable the default Python2 kernel

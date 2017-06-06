@@ -41,7 +41,8 @@ angular.module('hopsWorksApp')
 //                        self.ui = "http://" + $location.host() + ":" + self.config.port + "/?token=" + self.config.token;
 //                        self.ui = "http://" + self.config.hostIp + ":" + self.config.port + "/?token=" + self.config.token;
                         self.ui = "http://" + self.config.hostIp 
-                                + "/hopsworks-api/jupyter/?token=" + self.config.token + "&_port=" + self.config.port;
+//                                + "/hopsworks-api/jupyter/?token=" + self.config.token + "&_port=" + self.config.port;
+                                + "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
                       }, function (error) {
                 configure();
               }

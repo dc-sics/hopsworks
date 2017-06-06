@@ -54,7 +54,7 @@
   </servlet-mapping>-->
     <servlet>
         <servlet-name>jupyter</servlet-name>
-        <servlet-class>io.hops.membrane.MembraneServlet</servlet-class>
+        <servlet-class>com.predic8.membrane.servlet.embedded.MembraneServlet</servlet-class>
         <init-param>
             <param-name>targetUri</param-name>
             <param-value>http://localhost:{_port}/hopsworks-api/jupyter</param-value>
@@ -82,7 +82,7 @@
   -->
     <servlet>
         <servlet-name>membrane</servlet-name>
-        <servlet-class>io.hops.membrane.MembraneServlet</servlet-class>
+        <servlet-class>com.predic8.membrane.servlet.embedded.MembraneServlet</servlet-class>
         <init-param>
             <param-name>proxiesXml</param-name>
             <param-value>/WEB-INF/proxies.xml</param-value>

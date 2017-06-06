@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.membrane;
+package com.predic8.membrane.servlet.embedded;
 
-import io.hops.membrane.HopsTransport;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Enumeration;
@@ -81,12 +80,13 @@ class HopsServletHandler extends AbstractHttpHandler {
 //        String ip = dnsCache.getHostAddress(remoteAddr);
         exchange.setRemoteAddrIp("127.0.0.1");
         exchange.setRemoteAddr(remoteHost);
+//        exchange.setRemoteAddr(this.targetUriObj.toString());
 //        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.
 //                getHostName(remoteAddr) : ip);
 
         exchange.setRequest(srcReq);
         exchange.setOriginalRequestUri(srcReq.getUri());
-
+        
         invokeHandlers();
       } catch (AbortException e) {
         exchange.finishExchange(true, exchange.getErrorMessage());
@@ -134,10 +134,11 @@ class HopsServletHandler extends AbstractHttpHandler {
   private Request createRequest() throws IOException {
     Request srcReq = new Request();
 
-    String pathQuery = request.getRequestURI();
-    if (request.getQueryString() != null) {
-      pathQuery += "?" + request.getQueryString();
-    }
+//    String pathQuery = request.getRequestURI();
+//    if (request.getQueryString() != null) {
+//      pathQuery += "?" + request.getQueryString();
+//    }
+    String pathQuery = this.targetUriObj.toString();
 
     if (getTransport().isRemoveContextRoot()) {
       String contextPath = request.getContextPath();
@@ -191,6 +192,7 @@ class HopsServletHandler extends AbstractHttpHandler {
   @Override
   public int getLocalPort() {
     return request.getLocalPort();
+//    return -1;
   }
 
   @Override

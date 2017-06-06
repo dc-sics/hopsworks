@@ -13,47 +13,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.membrane;
+package com.predic8.membrane.servlet.embedded;
 
 import com.predic8.membrane.core.Router;
+import com.predic8.membrane.core.interceptor.DispatchingInterceptor;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.predic8.membrane.core.interceptor.DispatchingInterceptor;
 import com.predic8.membrane.core.interceptor.HTTPClientInterceptor;
 import com.predic8.membrane.core.interceptor.Interceptor;
 import com.predic8.membrane.core.interceptor.RuleMatchingInterceptor;
-import com.predic8.membrane.core.interceptor.UserFeatureInterceptor;
 import com.predic8.membrane.core.interceptor.tunnel.WebSocketInterceptor;
 import com.predic8.membrane.core.transport.Transport;
 import java.net.URI;
 
 public class HopsRouter extends Router {
 
-  public HopsRouter() {
+  public HopsRouter() throws Exception {
     this(null);
   }
 
-  public HopsRouter(URI targetUri) {
+  public HopsRouter(URI targetUri) throws Exception {
     transport = createTransport(targetUri);
 //    ProxyConfiguration proxyConfiguration=null;
-//		resolverMap.getHTTPSchemaResolver().getHttpClientConfig().setProxy(proxyConfiguration);
+//    resolverMap.getHTTPSchemaResolver().getHttpClientConfig().setProxy(proxyConfiguration);
   }
 
   /**
    * Same as the default config from monitor-beans.xml
    */
-  private Transport createTransport(URI targetUri) {
+  private Transport createTransport(URI targetUri) throws Exception {
 //		Transport transport = new ServletTransport();
     Transport transport = new HopsTransport(targetUri);
     List<Interceptor> interceptors = new ArrayList<>();
     interceptors.add(new RuleMatchingInterceptor());
+//    interceptors.add(new ExchangeStoreInterceptor(getExchangeStore()));
     interceptors.add(new DispatchingInterceptor());
-    interceptors.add(new UserFeatureInterceptor());
+//    interceptors.add(new ReverseProxyingInterceptor());
     interceptors.add(new WebSocketInterceptor());
-    HTTPClientInterceptor httpClientInterceptor = new HTTPClientInterceptor();
-    interceptors.add(httpClientInterceptor);
+    interceptors.add(new HTTPClientInterceptor());
     transport.setInterceptors(interceptors);
+    transport.init(this);
     return transport;
   }
 

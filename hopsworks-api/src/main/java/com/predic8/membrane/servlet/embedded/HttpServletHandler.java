@@ -1,20 +1,20 @@
-/* Copyright 2012 predic8 GmbH, www.predic8.com
+/*
+ * Copyright 2012 predic8 GmbH, www.predic8.com
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.predic8.membrane.servlet.embedded;
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-   http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License. */
-
-package io.hops.membrane;
-
-import io.hops.membrane.HopsTransport;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Enumeration;
@@ -40,14 +40,16 @@ import com.predic8.membrane.core.util.DNSCache;
 import com.predic8.membrane.core.util.EndOfStreamException;
 
 class HttpServletHandler extends AbstractHttpHandler {
+
   private static final Log log = LogFactory.getLog(HttpServletHandler.class);
 
   private final HttpServletRequest request;
   private final HttpServletResponse response;
   private final InetAddress remoteAddr, localAddr;
 
-  public HttpServletHandler(HttpServletRequest request, HttpServletResponse response,
-      Transport transport) throws IOException {
+  public HttpServletHandler(HttpServletRequest request,
+          HttpServletResponse response,
+          Transport transport) throws IOException {
     super(transport);
     this.request = request;
     this.response = response;
@@ -68,7 +70,8 @@ class HttpServletHandler extends AbstractHttpHandler {
         DNSCache dnsCache = getTransport().getRouter().getDnsCache();
         String ip = dnsCache.getHostAddress(remoteAddr);
         exchange.setRemoteAddrIp(ip);
-        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.getHostName(remoteAddr) : ip);
+        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.
+                getHostName(remoteAddr) : ip);
 
         exchange.setRequest(srcReq);
         exchange.setOriginalRequestUri(srcReq.getUri());
@@ -86,8 +89,9 @@ class HttpServletHandler extends AbstractHttpHandler {
     } catch (EndOfStreamException e) {
       log.debug("stream closed");
     } catch (EOFWhileReadingFirstLineException e) {
-      log.debug("Client connection terminated before line was read. Line so far: ("
-          + e.getLineSoFar() + ")");
+      log.debug(
+              "Client connection terminated before line was read. Line so far: ("
+              + e.getLineSoFar() + ")");
     } catch (Exception e) {
       log.error(e.getMessage(), e);
     } finally {
@@ -100,8 +104,9 @@ class HttpServletHandler extends AbstractHttpHandler {
   protected void writeResponse(Response res) throws Exception {
     response.setStatus(res.getStatusCode(), res.getStatusMessage());
     for (HeaderField header : res.getHeader().getAllHeaderFields()) {
-      if (header.getHeaderName().equals(Header.TRANSFER_ENCODING))
+      if (header.getHeaderName().equals(Header.TRANSFER_ENCODING)) {
         continue;
+      }
       response.addHeader(header.getHeaderName().toString(), header.getValue());
     }
 
@@ -119,21 +124,23 @@ class HttpServletHandler extends AbstractHttpHandler {
     Request srcReq = new Request();
 
     String pathQuery = request.getRequestURI();
-    if (request.getQueryString() != null)
+    if (request.getQueryString() != null) {
       pathQuery += "?" + request.getQueryString();
+    }
 
     if (getTransport().isRemoveContextRoot()) {
       String contextPath = request.getContextPath();
-      if (contextPath.length() > 0 && pathQuery.startsWith(contextPath))
+      if (contextPath.length() > 0 && pathQuery.startsWith(contextPath)) {
         pathQuery = pathQuery.substring(contextPath.length());
+      }
     }
 
     srcReq.create(
-        request.getMethod(),
-        pathQuery,
-        request.getProtocol(),
-        createHeader(),
-        request.getInputStream());
+            request.getMethod(),
+            pathQuery,
+            request.getProtocol(),
+            createHeader(),
+            request.getInputStream());
     return srcReq;
   }
 
@@ -141,10 +148,10 @@ class HttpServletHandler extends AbstractHttpHandler {
     Header header = new Header();
     Enumeration<?> e = request.getHeaderNames();
     while (e.hasMoreElements()) {
-      String key = (String)e.nextElement();
+      String key = (String) e.nextElement();
       Enumeration<?> e2 = request.getHeaders(key);
       while (e2.hasMoreElements()) {
-        String value = (String)e2.nextElement();
+        String value = (String) e2.nextElement();
         header.add(key, value);
       }
     }
@@ -170,7 +177,7 @@ class HttpServletHandler extends AbstractHttpHandler {
 
   @Override
   public HopsTransport getTransport() {
-    return (HopsTransport)super.getTransport();
+    return (HopsTransport) super.getTransport();
   }
 
   @Override
@@ -180,7 +187,8 @@ class HttpServletHandler extends AbstractHttpHandler {
 
   @Override
   public String getContextPath(Exchange exc) {
-    return ((HttpServletRequest)exc.getProperty(Exchange.HTTP_SERVLET_REQUEST)).getContextPath();
+    return ((HttpServletRequest) exc.getProperty(Exchange.HTTP_SERVLET_REQUEST)).
+            getContextPath();
   }
 
 }

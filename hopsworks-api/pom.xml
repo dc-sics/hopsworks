@@ -51,14 +51,6 @@
     </dependency>
     
     
-    
-    <!--    <dependency>
-      <groupId>org.membrane-soa</groupId>
-      <artifactId>service-proxy-war</artifactId>
-      <version>4.4.3-SNAPSHOT</version>
-      <type>war</type>		
-    </dependency>
-    -->
     <dependency>
       <groupId>org.apache.portals.applications</groupId>
       <artifactId>apa-webcontent2-content-rewriter</artifactId>
