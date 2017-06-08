@@ -37,6 +37,7 @@ import com.predic8.membrane.core.transport.http.AbortException;
 import com.predic8.membrane.core.transport.http.AbstractHttpHandler;
 import com.predic8.membrane.core.transport.http.EOFWhileReadingFirstLineException;
 import com.predic8.membrane.core.util.EndOfStreamException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.logging.Level;
@@ -50,19 +51,19 @@ class HopsServletHandler extends AbstractHttpHandler {
 
   private final HttpServletRequest request;
   private final HttpServletResponse response;
-  private final String remoteHost;
+//  private URI srcUriObj = null;
   private URI targetUriObj = null;
+  private HttpHost targetHost = null;
 
   public HopsServletHandler(HttpServletRequest request,
           HttpServletResponse response,
-          Transport transport, URI targetUri) throws IOException {
+          Transport transport, URI targetUriObj) throws IOException {
     super(transport);
     this.request = request;
     this.response = response;
-    this.targetUriObj = targetUri;
-
-    HttpHost targetHost = URIUtils.extractHost(targetUriObj);
-    this.remoteHost = targetHost.getHostName();
+//    this.srcUriObj = srcUri;
+    this.targetUriObj = targetUriObj;
+    this.targetHost = URIUtils.extractHost(targetUriObj);
 
     exchange = new Exchange(this);
 
@@ -79,14 +80,14 @@ class HopsServletHandler extends AbstractHttpHandler {
 //        DNSCache dnsCache = getTransport().getRouter().getDnsCache();
 //        String ip = dnsCache.getHostAddress(remoteAddr);
         exchange.setRemoteAddrIp("127.0.0.1");
-        exchange.setRemoteAddr(remoteHost);
+        exchange.setRemoteAddr(this.targetHost.getHostName());
 //        exchange.setRemoteAddr(this.targetUriObj.toString());
 //        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.
 //                getHostName(remoteAddr) : ip);
 
         exchange.setRequest(srcReq);
         exchange.setOriginalRequestUri(srcReq.getUri());
-        
+
         invokeHandlers();
       } catch (AbortException e) {
         exchange.finishExchange(true, exchange.getErrorMessage());
@@ -134,11 +135,12 @@ class HopsServletHandler extends AbstractHttpHandler {
   private Request createRequest() throws IOException {
     Request srcReq = new Request();
 
-//    String pathQuery = request.getRequestURI();
-//    if (request.getQueryString() != null) {
-//      pathQuery += "?" + request.getQueryString();
-//    }
-    String pathQuery = this.targetUriObj.toString();
+    String pathQuery = this.targetHost.toURI();
+    pathQuery += request.getRequestURI();
+    if (request.getQueryString() != null) {
+      pathQuery += "?" + request.getQueryString();
+    }
+//    String pathQuery = this.targetUriObj.toString();
 
     if (getTransport().isRemoveContextRoot()) {
       String contextPath = request.getContextPath();
@@ -166,6 +168,12 @@ class HopsServletHandler extends AbstractHttpHandler {
         String value = (String) e2.nextElement();
         header.add(key, value);
       }
+    }
+    try {
+      header.add(Header.DESTINATION, targetUriObj.toURL().toString());
+    } catch (MalformedURLException ex) {
+      Logger.getLogger(HopsServletHandler.class.getName()).
+              log(Level.SEVERE, null, ex);
     }
     return header;
   }

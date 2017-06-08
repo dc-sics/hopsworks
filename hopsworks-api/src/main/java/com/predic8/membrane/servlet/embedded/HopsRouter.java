@@ -16,13 +16,17 @@
 package com.predic8.membrane.servlet.embedded;
 
 import com.predic8.membrane.core.Router;
+import com.predic8.membrane.core.exchangestore.LimitedMemoryExchangeStore;
 import com.predic8.membrane.core.interceptor.DispatchingInterceptor;
+import com.predic8.membrane.core.interceptor.ExchangeStoreInterceptor;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.predic8.membrane.core.interceptor.HTTPClientInterceptor;
 import com.predic8.membrane.core.interceptor.Interceptor;
 import com.predic8.membrane.core.interceptor.RuleMatchingInterceptor;
+import com.predic8.membrane.core.interceptor.UserFeatureInterceptor;
+import com.predic8.membrane.core.interceptor.rewrite.ReverseProxyingInterceptor;
 import com.predic8.membrane.core.interceptor.tunnel.WebSocketInterceptor;
 import com.predic8.membrane.core.transport.Transport;
 import java.net.URI;
@@ -34,6 +38,7 @@ public class HopsRouter extends Router {
   }
 
   public HopsRouter(URI targetUri) throws Exception {
+    this.exchangeStore = new LimitedMemoryExchangeStore();
     transport = createTransport(targetUri);
 //    ProxyConfiguration proxyConfiguration=null;
 //    resolverMap.getHTTPSchemaResolver().getHttpClientConfig().setProxy(proxyConfiguration);
@@ -47,9 +52,12 @@ public class HopsRouter extends Router {
     Transport transport = new HopsTransport(targetUri);
     List<Interceptor> interceptors = new ArrayList<>();
     interceptors.add(new RuleMatchingInterceptor());
-//    interceptors.add(new ExchangeStoreInterceptor(getExchangeStore()));
     interceptors.add(new DispatchingInterceptor());
-//    interceptors.add(new ReverseProxyingInterceptor());
+    ExchangeStoreInterceptor esi = new ExchangeStoreInterceptor();
+    esi.setExchangeStore(this.exchangeStore);
+    interceptors.add(esi);
+    interceptors.add(new ReverseProxyingInterceptor());
+    interceptors.add(new UserFeatureInterceptor());
     interceptors.add(new WebSocketInterceptor());
     interceptors.add(new HTTPClientInterceptor());
     transport.setInterceptors(interceptors);

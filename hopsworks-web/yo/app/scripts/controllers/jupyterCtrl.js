@@ -131,11 +131,14 @@ angular.module('hopsWorksApp')
                         self.config = success.data;
                                 
 //                          self.ui = "http://" + $location.host() + ":" + self.config.port + "/?token=" + self.config.token;
-                        self.ui = "http://" + self.config.hostIp + "/hopsworks-api/jupyter/?token=" + self.config.token
-                        + "&_port=" + self.config.port ;
-                        $window.open(self.ui, '_blank');
+//                        self.ui = "http://" + self.config.hostIp + "/hopsworks-api/jupyter/?token=" + self.config.token
+//                        + "&_port=" + self.config.port ;
 //                        $timeout(stopLoading(), 4000);
 ///api/kernelspecs
+
+                        self.ui = "http://" + self.config.hostIp 
+                                + "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
+                        $window.open(self.ui, '_blank');
 
                       }, function (error) {
                 growl.error("Could not start Jupyter.");
