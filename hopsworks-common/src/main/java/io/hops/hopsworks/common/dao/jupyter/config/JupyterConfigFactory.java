@@ -404,4 +404,33 @@ public class JupyterConfigFactory {
 
   }
 
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public boolean pingServerJupyterUser(Long pid) {
+    int exitValue;
+    Integer id = 1;
+    String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
+    String[] command = {"/usr/bin/sudo", prog, "ping", pid.toString()};
+    ProcessBuilder pb = new ProcessBuilder(command);
+    try {
+      Process process = pb.start();
+
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+              process.getInputStream(), Charset.forName("UTF8")));
+      String line;
+      while ((line = br.readLine()) != null) {
+        logger.info(line);
+      }
+
+      process.waitFor(10l, TimeUnit.SECONDS);
+      exitValue = process.exitValue();
+    } catch (IOException | InterruptedException ex) {
+      logger.log(Level.SEVERE,
+              "Problem checking if Jupyter Notebook server is running: {0}", ex.
+              toString());
+      exitValue = -2;
+    }
+
+    return exitValue == 0;
+  }
+
 }

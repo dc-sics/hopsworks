@@ -38,10 +38,7 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.toggleValue = true;
                         self.config = success.data;
-//                        self.ui = "http://" + $location.host() + ":" + self.config.port + "/?token=" + self.config.token;
-//                        self.ui = "http://" + self.config.hostIp + ":" + self.config.port + "/?token=" + self.config.token;
                         self.ui = "http://" + self.config.hostIp 
-//                                + "/hopsworks-api/jupyter/?token=" + self.config.token + "&_port=" + self.config.port;
                                 + "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
                       }, function (error) {
                 configure();
@@ -65,7 +62,7 @@ angular.module('hopsWorksApp')
             
               JupyterService.stop(projectId).then(
                       function (success) {
-                        self.ui = ""
+                        self.ui = "";
                         stopLoading();
                       }, function (error) {
                 growl.error("Could not stop the Jupyter Notebook Server.");
@@ -130,15 +127,10 @@ angular.module('hopsWorksApp')
                         self.toggleValue = true;
                         self.config = success.data;
                                 
-//                          self.ui = "http://" + $location.host() + ":" + self.config.port + "/?token=" + self.config.token;
-//                        self.ui = "http://" + self.config.hostIp + "/hopsworks-api/jupyter/?token=" + self.config.token
-//                        + "&_port=" + self.config.port ;
-//                        $timeout(stopLoading(), 4000);
-///api/kernelspecs
-
                         self.ui = "http://" + self.config.hostIp 
                                 + "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
-                        $window.open(self.ui, '_blank');
+//                        $window.open(self.ui, '_blank');
+                        $timeout(stopLoading(), 5000);
 
                       }, function (error) {
                 growl.error("Could not start Jupyter.");

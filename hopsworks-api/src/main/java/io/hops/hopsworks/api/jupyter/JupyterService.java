@@ -112,7 +112,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) {  };
+            = new GenericEntity<List<JupyterProject>>(listServers) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
   }
@@ -128,11 +128,24 @@ public class JupyterService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");
     }
-    JupyterProject jp = jupyterFacade.findByUser(getHdfsUser(sc));
+    String hdfsUser = getHdfsUser(sc);
+    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
     if (jp == null) {
       throw new AppException(
               Response.Status.NOT_FOUND.getStatusCode(),
               "Could not find any Jupyter notebook server for this project.");
+    }
+    if (jp != null) {
+      // Check to make sure the jupyter notebook server is running
+      boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
+      // if the notebook is not running but we have a database entry for it,
+      // we should remove the DB entry (and restart the notebook server).
+      if (!running) {
+        jupyterFacade.removeNotebookServer(hdfsUser);
+        throw new AppException(
+                Response.Status.NOT_FOUND.getStatusCode(),
+                "Found Jupyter notebook server for you, but it wasn't running.");
+      }
     }
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
@@ -166,6 +179,7 @@ public class JupyterService {
     }
 
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+
     if (jp == null) {
       HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
 
