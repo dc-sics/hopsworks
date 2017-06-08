@@ -17,19 +17,16 @@ package com.predic8.membrane.servlet.embedded;
 
 import java.io.IOException;
 
-import com.predic8.membrane.annot.MCAttribute;
-import com.predic8.membrane.annot.MCElement;
-import com.predic8.membrane.annot.MCMain;
 import com.predic8.membrane.core.transport.Transport;
 import com.predic8.membrane.core.transport.ssl.SSLProvider;
 import java.net.URI;
 
-@MCMain(
-        outputPackage = "com.predic8.membrane.servlet.config.spring",
-        outputName = "router-conf.xsd",
-        targetNamespace = "http://membrane-soa.org/war/1/")
-@MCElement(name = "hopsTransport",
-        configPackage = "com.predic8.membrane.servlet.config.spring")
+//@MCMain(
+//        outputPackage = "com.predic8.membrane.servlet.config.spring",
+//        outputName = "router-conf.xsd",
+//        targetNamespace = "http://membrane-soa.org/war/1/")
+//@MCElement(name = "hopsTransport",
+//        configPackage = "com.predic8.membrane.servlet.config.spring")
 public class HopsTransport extends Transport {
 
   boolean removeContextRoot = false;
@@ -49,7 +46,7 @@ public class HopsTransport extends Transport {
     return removeContextRoot;
   }
 
-  @MCAttribute
+//  @MCAttribute
   public void setRemoveContextRoot(boolean removeContextRoot) {
     this.removeContextRoot = removeContextRoot;
   }
