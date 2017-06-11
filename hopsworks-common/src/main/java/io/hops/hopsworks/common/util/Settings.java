@@ -926,8 +926,6 @@ public class Settings implements Serializable {
     return ZEPPELIN_SYNC_INTERVAL;
   }
 
-  public static final int JUPYTER_PORT = 8888;
-
   // Jupyter
   private String JUPYTER_DIR = "/srv/hops/jupyter";
 

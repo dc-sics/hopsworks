@@ -32,12 +32,14 @@ import com.predic8.membrane.core.rules.ProxyRule;
 import com.predic8.membrane.core.rules.ProxyRuleKey;
 import com.predic8.membrane.core.rules.ServiceProxy;
 import com.predic8.membrane.core.rules.ServiceProxyKey;
+import io.hops.hopsworks.common.util.Settings;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ejb.EJB;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -48,33 +50,14 @@ import org.apache.http.client.utils.URLEncodedUtils;
 public class MembraneServlet extends HttpServlet {
 
   private static final long serialVersionUID = 1L;
-  private static final Log log = LogFactory.getLog(MembraneServlet.class);
+  private static final Log logger = LogFactory.getLog(MembraneServlet.class);
 
-//  protected static final Pattern TEMPLATE_PATTERN = Pattern.compile(
-//          //          "\\{(.+?)\\}");
-//          "\\/([0-9]+)\\/");
-//  private static final String ATTR_QUERY_STRING = MembraneServlet.class.
-//          getSimpleName() + ".queryString";
-//  protected static final String P_TARGET_URI = "targetUri";
-//  protected static final String ATTR_TARGET_URI = MembraneServlet.class.
-//          getSimpleName() + ".targetUri";
-//  protected static final String ATTR_TARGET_HOST
-//          = MembraneServlet.class.
-//          getSimpleName() + ".targetHost";
-//  protected String targetUriTemplate;//has {name} parts
-//  protected String port;
-//  protected String targetUri;
+  @EJB
+  private Settings settings;
+  
+  
   @Override
   public void init(ServletConfig config) throws ServletException {
-//    targetUriTemplate = config.getInitParameter(P_TARGET_URI);
-//    if (targetUriTemplate == null) {
-//      throw new ServletException(P_TARGET_URI + " is required.");
-//    }
-//
-//    targetUri = config.getInitParameter(P_TARGET_URI);
-//    if (targetUri == null) {
-//      throw new ServletException(P_TARGET_URI + " is required.");
-//    }
   }
 
   @Override
@@ -92,6 +75,24 @@ public class MembraneServlet extends HttpServlet {
 //    if (hash >= 0) {
 //      queryString = queryString.substring(0, hash);
 //    }
+
+
+// For websockets, the following paths are used by JupyterHub:
+//  /(user/[^/]*)/(api/kernels/[^/]+/channels|terminals/websocket)/?
+// forward to ws(s)://servername:port_number
+
+//<LocationMatch "/mypath/(user/[^/]*)/(api/kernels/[^/]+/channels|terminals/websocket)(.*)">
+//    ProxyPassMatch ws://localhost:8999/mypath/$1/$2$3
+//    ProxyPassReverse ws://localhost:8999 # this may be superfluous
+//</LocationMatch>
+
+
+
+//        ProxyPass /api/kernels/ ws://192.168.254.23:8888/api/kernels/
+//        ProxyPassReverse /api/kernels/ http://192.168.254.23:8888/api/kernels/
+
+
+
     List<NameValuePair> pairs;
     try {
       //note: HttpClient 4.2 lets you parse the string without building the URI
@@ -106,68 +107,35 @@ public class MembraneServlet extends HttpServlet {
     }
 
     StringBuffer urlBuf = new StringBuffer("http://127.0.0.1:");//note: StringBuilder isn't supported by Matcher
-//    Matcher matcher = TEMPLATE_PATTERN.matcher(targetUriTemplate);
-
-//    while (matcher.find()) {
-//      String arg = matcher.group(1);
-//      String replacement = params.remove(arg);//note we remove
-//      if (replacement != null) {
-//        matcher.appendReplacement(urlBuf, replacement);
-//        port = replacement;
-//      } else if (port != null) {
-//        matcher.appendReplacement(urlBuf, port);
-//      } else {
-//        throw new ServletException("Missing HTTP parameter " + arg
-//                + " to fill the template");
-//      }
-//    }
     String ctxPath = req.getRequestURI();
+    
+    boolean websocket = false;
+//    if (ctxPath.contains("/api/kernels/")) {
+//      urlBuf = new StringBuffer("ws://127.0.0.1:");
+//      websocket = true;
+//    }
+    
+    
+    
     int x = ctxPath.indexOf("/jupyter");
     int firstSlash = ctxPath.indexOf('/', x + 1);
     int secondSlash = ctxPath.indexOf('/', firstSlash + 1);
     String portString = ctxPath.substring(firstSlash + 1, secondSlash);
+    Integer targetPort = -1;
+    try {
+      targetPort = Integer.parseInt(portString);
+    } catch (NumberFormatException ex) {
+      logger.error("Invalid target port in the URL: {0} ", portString);
+      return;
+    }
     urlBuf.append(portString);
 
-//    if (matcher.find()) {
-//      String arg = matcher.group(1);
-//      String replacement = params.remove(arg);
-//      matcher.appendReplacement(urlBuf, portString);
-//      matcher.appendTail(urlBuf);
-//    }
     String newTargetUri = urlBuf.toString() + req.getRequestURI();
-//    req.setAttribute(ATTR_TARGET_URI, newTargetUri);
-//    try {
-//      targetUriObj = new URI(newTargetUri);
-//    } catch (Exception e) {
-//      throw new ServletException("Rewritten targetUri is invalid: "
-//              + newTargetUri, e);
-//    }
-//    req.setAttribute(ATTR_TARGET_HOST, URIUtils.extractHost(
-//            targetUriObj));
 
-    //Determine the new query string based on removing the used names
-//    StringBuilder newQueryBuf = new StringBuilder(queryString.length());
     StringBuilder newQueryBuf = new StringBuilder();
     newQueryBuf.append(newTargetUri);
-//    for (Map.Entry<String, String> nameVal : params.entrySet()) {
-//      if (nameVal.getKey().compareToIgnoreCase("token")==0) {
-//        newQueryBuf.append('?');
-//      } else if (newQueryBuf.length() > 0) {
-//        newQueryBuf.append('&');
-//      }
-//      newQueryBuf.append(nameVal.getKey()).append('=');
-//      if (nameVal.getValue() != null) {
-//        newQueryBuf.append(nameVal.getValue());
-//      }
-//    }
-//    req.setAttribute(ATTR_QUERY_STRING, newQueryBuf.toString());
     newQueryBuf.append(queryString);
 
-//    Enumeration<String> headerNames = req.getHeaderNames();
-//    while (headerNames.hasMoreElements()) {
-//      String h = headerNames.nextElement();
-//      String header = req.getHeader(h);
-//    }
     URI targetUriObj = null;
     try {
       targetUriObj = new URI(newQueryBuf.toString());
@@ -175,14 +143,11 @@ public class MembraneServlet extends HttpServlet {
       throw new ServletException("Rewritten targetUri is invalid: "
               + newTargetUri, e);
     }
-//    req.setAttribute(ATTR_TARGET_HOST, URIUtils.extractHost(targetUriObj));
-
     ServiceProxy sp = new ServiceProxy(
-            new ServiceProxyKey("localhost", "*", "*", -1), "localhost", 8888);
+            new ServiceProxyKey("localhost", "*", "*", -1), "localhost", targetPort);
     sp.setTargetURL(newQueryBuf.toString());
     try {
       router = new HopsRouter(targetUriObj);
-//      router = new HopsRouter();
       ProxyRule proxy = new ProxyRule(new ProxyRuleKey(-1));
       router.getRuleManager().addProxy(proxy,
               RuleManager.RuleDefinitionSource.MANUAL);
@@ -195,7 +160,6 @@ public class MembraneServlet extends HttpServlet {
               ex);
     }
 
-//    new HttpServletHandler(req, resp, router.getTransport()).run();
   }
 
 }

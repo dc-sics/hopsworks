@@ -37,6 +37,8 @@ import com.predic8.membrane.core.transport.http.AbortException;
 import com.predic8.membrane.core.transport.http.AbstractHttpHandler;
 import com.predic8.membrane.core.transport.http.EOFWhileReadingFirstLineException;
 import com.predic8.membrane.core.util.EndOfStreamException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -217,6 +219,33 @@ class HopsServletHandler extends AbstractHttpHandler {
   public String getContextPath(Exchange exc) {
     return ((HttpServletRequest) exc.getProperty(Exchange.HTTP_SERVLET_REQUEST)).
             getContextPath();
+  }
+
+  @Override
+  public OutputStream getSrcOut() {
+    try {
+      return response.getOutputStream();
+    } catch (IOException ex) {
+      Logger.getLogger(HopsServletHandler.class.getName()).
+              log(Level.SEVERE, null, ex);
+    }
+    return null;
+  }
+
+  @Override
+  public InputStream getSrcIn() {
+    try {
+      return request.getInputStream();
+    } catch (IOException ex) {
+      Logger.getLogger(HopsServletHandler.class.getName()).
+              log(Level.SEVERE, null, ex);
+    }
+    return null;
+  }
+
+  @Override
+  public String getRemoteAddress() {
+    return request.getRemoteAddr();
   }
 
 }

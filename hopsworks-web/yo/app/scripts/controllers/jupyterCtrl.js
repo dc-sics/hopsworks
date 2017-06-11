@@ -2,7 +2,7 @@
 
 angular.module('hopsWorksApp')
         .controller('JupyterCtrl', ['$scope', '$routeParams', '$route',
-          'growl', 'ModalService', 'JupyterService', '$location', '$timeout', '$window', '$sce', 
+          'growl', 'ModalService', 'JupyterService', '$location', '$timeout', '$window', '$sce',
           function ($scope, $routeParams, $route, growl, ModalService, JupyterService, $location, $timeout, $window, $sce) {
 
             var self = this;
@@ -10,10 +10,9 @@ angular.module('hopsWorksApp')
             self.loadingText = "";
             $scope.tgState = true;
             self.jupyterServer;
-            self.toggleValue;
+            self.toggleValue = false;
             var projectId = $routeParams.projectID;
             var statusMsgs = ['stopped    ', "running    ", 'stopping...', 'restarting...'];
-            var loaded = false;
             self.ui = "";
 
             self.config = {};
@@ -28,7 +27,7 @@ angular.module('hopsWorksApp')
             };
 
             self.restart = function () {
-              $location.path('/#!/project/' + self.projectId + '/jupyter' );
+              $location.path('/#!/project/' + self.projectId + '/jupyter');
             }
 
 
@@ -36,10 +35,10 @@ angular.module('hopsWorksApp')
             var init = function () {
               JupyterService.running(projectId).then(
                       function (success) {
-                        self.toggleValue = true;
                         self.config = success.data;
-                        self.ui = "http://" + self.config.hostIp 
+                        self.ui = "http://" + self.config.hostIp
                                 + "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
+                        self.toggleValue = true;
                       }, function (error) {
                 configure();
               }
@@ -57,9 +56,13 @@ angular.module('hopsWorksApp')
               self.loadingText = "";
             };
 
+            self.goBack = function () {
+              $window.history.back();
+            };
+
             self.stop = function () {
               startLoading("Stopping Jupyter...");
-            
+
               JupyterService.stop(projectId).then(
                       function (success) {
                         self.ui = "";
@@ -69,14 +72,14 @@ angular.module('hopsWorksApp')
                 stopLoading();
               }
               );
-     
-            
-            
+
+
+
             };
 
             self.stopDataOwner = function (hdfsUsername) {
               startLoading("Stopping Jupyter...");
-              JupyterService.stopDataOwner(projectId,hdfsUsername).then(
+              JupyterService.stopDataOwner(projectId, hdfsUsername).then(
                       function (success) {
                         self.ui = ""
                         stopLoading();
@@ -105,18 +108,7 @@ angular.module('hopsWorksApp')
 
             init();
 
-            $scope.$on("$destroy", function () {
-              stop();
-              loaded = false;
-            });
 
-            //refresh interpreter status when we return to zeppelin dashbord. 
-            window.onfocus = function () {
-              if (loaded) {
-                refresh();
-              }
-            };
-            
 
             var start = function () {
               startLoading("Connecting to Jupyter...");
@@ -126,8 +118,8 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.toggleValue = true;
                         self.config = success.data;
-                                
-                        self.ui = "http://" + self.config.hostIp 
+
+                        self.ui = "http://" + self.config.hostIp
                                 + "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
 //                        $window.open(self.ui, '_blank');
                         $timeout(stopLoading(), 5000);
@@ -135,23 +127,24 @@ angular.module('hopsWorksApp')
                       }, function (error) {
                 growl.error("Could not start Jupyter.");
                 stopLoading();
+                self.toggleValue = true;
               }
-              );    
+              );
 
             };
 
 
             var configure = function () {
               var val = {};
-              val.driverMemory="500M";
-              val.executorMemory="500M";
-              val.gpus=1;
-              val.driverCores=1;
-              val.executorCores=1;
-              val.archives="";
-              val.jars="";
-              val.files="";
-              val.pyFiles="";
+              val.driverMemory = "500M";
+              val.executorMemory = "500M";
+              val.gpus = 1;
+              val.driverCores = 1;
+              val.executorCores = 1;
+              val.archives = "";
+              val.jars = "";
+              val.files = "";
+              val.pyFiles = "";
               ModalService.jupyterConfig('md', '', '', val).then(
                       function (success) {
                         self.config = success.val;
@@ -159,6 +152,8 @@ angular.module('hopsWorksApp')
                       },
                       function (error) {
                         growl.error("Could not activate Jupyter.");
+                        self.toggleValue = true;
+
                       });
 
             };

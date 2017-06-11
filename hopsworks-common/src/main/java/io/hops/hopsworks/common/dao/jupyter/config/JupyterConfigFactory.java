@@ -238,7 +238,7 @@ public class JupyterConfigFactory {
     }
     // The Jupyter Notebook is running at: http://localhost:8888/?token=c8de56fa4deed24899803e93c227592aef6538f93025fe01
     boolean foundToken = false;
-    int maxTries = 1;
+    int maxTries = 5;
     Process process = null;
     Integer port = 0;
     JupyterConfig jc = null;
@@ -247,22 +247,20 @@ public class JupyterConfigFactory {
 //    cleanup(hdfsUser);
     while (!foundToken && maxTries > 0) {
       // use pidfile to kill any running servers
-      if (settings.getVagrantEnabled()) {
-        port = 8888;
-      } else {
+//      if (settings.getVagrantEnabled()) {
+//        port = 8888;
+//      } else {
         port = ThreadLocalRandom.current().nextInt(40000, 59999);
-      }
+//      }
 
       jc = new JupyterConfig(project.getName(), secret, hdfsUser, hdfsLeFacade.
               getSingleEndpoint(), settings, port, driverCores,
               driverMemory, numExecutors, executorCores, executorMemory, gpus,
               archives, jars, files, pyFiles);
-//      hdfsuserConfCache.put(hdfsUser, jc);
 
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       String[] command
               = {"/usr/bin/sudo", prog, "start", jc.getProjectDirPath(),
-                //              = {"/usr/bin/nohup", prog, "start", jc.getProjectDirPath(),
                 jc.getSettings().getHadoopDir(), settings.getJavaHome(),
                 settings.getAnacondaProjectDir(project.getName()), port.
                 toString(),
