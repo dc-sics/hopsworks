@@ -20,11 +20,6 @@
     
     <dependency>
       <groupId>org.membrane-soa</groupId>
-      <artifactId>service-proxy-annot</artifactId>
-      <version>4.4.3-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.membrane-soa</groupId>
       <artifactId>service-proxy-core</artifactId>
       <version>4.4.3-SNAPSHOT</version>
     </dependency>
