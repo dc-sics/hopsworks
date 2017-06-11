@@ -121,11 +121,11 @@ public class MembraneServlet extends HttpServlet {
     int firstSlash = ctxPath.indexOf('/', x + 1);
     int secondSlash = ctxPath.indexOf('/', firstSlash + 1);
     String portString = ctxPath.substring(firstSlash + 1, secondSlash);
-    Integer targetPort = -1;
+    Integer targetPort;
     try {
       targetPort = Integer.parseInt(portString);
     } catch (NumberFormatException ex) {
-      logger.error("Invalid target port in the URL: {0} ", portString);
+      logger.error("Invalid target port in the URL: " + portString);
       return;
     }
     urlBuf.append(portString);

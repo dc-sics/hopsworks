@@ -250,7 +250,7 @@ public class JupyterConfigFactory {
 //      if (settings.getVagrantEnabled()) {
 //        port = 8888;
 //      } else {
-        port = ThreadLocalRandom.current().nextInt(40000, 59999);
+      port = ThreadLocalRandom.current().nextInt(40000, 59999);
 //      }
 
       jc = new JupyterConfig(project.getName(), secret, hdfsUser, hdfsLeFacade.
