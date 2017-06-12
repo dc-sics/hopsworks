@@ -46,7 +46,6 @@ angular.module('hopsWorksApp')
                             self.endTime = info.endTime;
                             self.now = info.now;
 
-                            // Set the duration timer
                             if (self.now) {
                                 self.durationInterval = $interval(function () {
                                     self.durationLabel = Date.now() - self.startTime;

@@ -5,11 +5,11 @@
     </div>
     <div class="col-md-6 text-right">
       <h3 ng-if="vizopsCtrl.now">
-        <span class="fa fa-clock-o" aria-hidden="true">{{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
+        <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}
         ,&nbsp; running since {{vizopsCtrl.startTime | date:'medium'}}
       </h3>
       <h3 ng-if="!vizopsCtrl.now">
-        <span class="fa fa-clock-o" aria-hidden="true">{{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}</span>
+        <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}
         ,&nbsp; from {{vizopsCtrl.startTime | date:'medium'}} to {{vizopsCtrl.endTime | date:'medium'}}
       </h3>
     </div>
@@ -43,8 +43,22 @@
               <md-card>
                 <md-card-title>
                   <md-card-title-text>
-                    <span class="md-headline strong">Cluster CPU utilization</span>
-                    <span class="md-subhead">50.4%</span>
+                    <span class="md-headline strong">Cluster VCPU utilization</span>
+                    <span class="md-subhead">{{vizopsOverviewCtrl.clusterCPUUtilization}}</span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Cluster CPU utilization -->
+
+            <!-- Live hosts card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Live hosts</span>
+                    <span class="md-subhead">
+                      {{vizopsOverviewCtrl.nbLiveHosts}} / {{vizopsOverviewCtrl.nbHosts}} &nbsp; (last 10seconds)
+                    </span>
                   </md-card-title-text>
                 </md-card-title>
               </md-card>
@@ -59,83 +73,114 @@
 
           <div class="row">
             <div class="col-md-4">
-              <nvd3 id="totalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
+              <nvd3 id="overviewTotalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
                   class="with-3d-shadow with-transitions"></nvd3>
-            </div>
+            </div> <!-- end: total active tasks graph -->
             <div class="col-md-4">
-              <nvd3 id="totalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
+              <nvd3 id="overviewTotalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
                     class="with-3d-shadow with-transitions"></nvd3>
-            </div>
+            </div> <!-- end: total completed tasks graph -->
+            <div class="col-md-4">
+              <nvd3 id="overviewHDFSReadRateTotal" options="optionsHDFSReadRateTotal" data="templateHDFSReadRateTotal"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div> <!-- end: hdfs read write graph -->
           </div>
-        </div> <!-- controller end -->
+
+          <div class="row">
+            <div class="col-md-4">
+              <nvd3 id="overviewHDFSWriteRateTotal" options="optionsHDFSWriteRateTotal" data="templateHDFSWriteRateTotal"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div> <!-- end: hdfs write rate/total graph -->
+          </div> <!-- row -->
+
+        </div> <!-- overview controller end -->
       </uib-tab>
 
       <uib-tab index="1" heading="Driver">
         <div ng-controller="VizopsDriverCtrl as vizopsDriverCtrl">
           <div class="container-fluid">
-          <div class="row">
+            <div class="row">
 
-            <!-- Max driver memory card -->
-            <div class="col-md-2">
-              <md-card>
-                <md-card-title>
-                  <md-card-title-text>
-                    <span class="md-headline strong">Max driver memory</span>
-                    <span class="md-subhead">
-                    <b>{{vizopsDriverCtrl.maxUsedDriverMem}}</b> of container's <b>{{vizopsDriverCtrl.maxAvailableDriverMem}}</b>
-                  </span>
-                  </md-card-title-text>
-                </md-card-title>
-              </md-card>
-            </div> <!-- end: Max driver mem card -->
+              <!-- Max driver memory card -->
+              <div class="col-md-2">
+                <md-card>
+                  <md-card-title>
+                    <md-card-title-text>
+                      <span class="md-headline strong">Max driver memory</span>
+                      <span class="md-subhead">
+                      <b>{{vizopsDriverCtrl.maxUsedDriverMem}}</b> of container's <b>{{vizopsDriverCtrl.maxAvailableDriverMem}}</b>
+                    </span>
+                    </md-card-title-text>
+                  </md-card-title>
+                </md-card>
+              </div> <!-- end: Max driver mem card -->
 
-            <!-- Running on -->
-            <div class="col-md-2">
-              <md-card>
-                <md-card-title>
-                  <md-card-title-text>
-                    <span class="md-headline strong">Running on</span>
-                    <span class="md-subhead">
-                      <b>{{vizopsDriverCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting
-                      <b>{{vizopsDriverCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
-                  </span>
-                  </md-card-title-text>
-                </md-card-title>
-              </md-card>
-            </div> <!-- end: Running on card -->
+              <!-- Running on -->
+              <div class="col-md-2">
+                <md-card>
+                  <md-card-title>
+                    <md-card-title-text>
+                      <span class="md-headline strong">Running on</span>
+                      <span class="md-subhead">
+                        <b>{{vizopsDriverCtrl.executorInfo.entry[0].value[1]}}</b>, also hosting
+                        <b>{{vizopsDriverCtrl.nbExecutorsOnDriverHost}}</b> executor(s)
+                    </span>
+                    </md-card-title-text>
+                  </md-card-title>
+                </md-card>
+              </div> <!-- end: Running on card -->
+
+            </div> <!-- row -->
+
+            <div class="row">
+
+              <div class="col-md-4">
+                <nvd3 id="driverMemoryUsed" options="optionsMemorySpace" data="templateMemorySpace"
+                      class="with-3d-shadow with-transitions"></nvd3>
+              </div>
+
+              <div class="col-md-4">
+                <nvd3 id="driverVCPUUsed" options="optionsVCPU" data="templateVCPU"
+                      class="with-3d-shadow with-transitions"></nvd3>
+              </div>
+
+              <div class="col-md-4">
+                <nvd3 id="driverRDDCacheDiskSpill" options="optionsRDDCacheDiskSpill"
+                      data="templateRDDCacheDiskSpill" class="with-3d-shadow with-transitions"></nvd3>
+              </div>
+
+            </div> <!-- row -->
+
+            <div class="row">
+
+              <div class="col-md-4">
+                <nvd3 id="driverGCTime" options="optionsGCTime" data="templateGCTime"
+                      class="with-3d-shadow with-transitions"></nvd3>
+              </div>
+
+            </div>
 
           </div>
-
-          <div class="row">
-
-            <div class="col-md-4">
-              <nvd3 id="driverMemoryUsed" options="optionsMemorySpace" data="templateMemorySpace"
-                    class="with-3d-shadow with-transitions"></nvd3>
-            </div>
-
-            <div class="col-md-4">
-              <nvd3 id="driverVCPUUsed" options="optionsVCPU" data="templateVCPU"
-                    class="with-3d-shadow with-transitions"></nvd3>
-            </div>
-
-          </div> <!-- row -->
-
-          <!--<div class="row">
-
-            <div class="col-md-5">
-              <nvd3 id="hostCPU" options="optionsHostCPU" data="templateHostCPU"
-                    class="with-3d-shadow with-transitions"></nvd3>
-            </div>
-
-          </div> &lt;!&ndash; row &ndash;&gt;-->
-
-        </div>
         </div>
       </uib-tab>
 
       <uib-tab index="2" heading="Executor">
         <div ng-controller="VizopsExecutorCtrl as vizopsExecutorCtrl">
           <div class="row">
+
+            <!-- Number of executors card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Number of executors</span>
+                    <span class="md-subhead">
+                      <b>{{vizopsExecutorCtrl.nbExecutors}}</b> executor(s)
+                    </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Number of executors card -->
 
             <!-- Max executor memory card -->
             <div class="col-md-2">
@@ -151,7 +196,7 @@
               </md-card>
             </div> <!-- end: Total executors card -->
 
-          </div>
+          </div> <!-- row -->
           <div class="row">
 
           <div class="col-md-4">
@@ -159,12 +204,109 @@
                   class="with-3d-shadow with-transitions"></nvd3>
           </div>
 
+          <div class="col-md-8">
+            <nvd3 id="executorTaskDistribution" options="optionsTaskDistribution" data="templateTaskDistribution"
+                  class="with-3d-shadow with-transitions"></nvd3>
           </div>
+
+        </div> <!-- row -->
+          <div class="row">
+
+            <div class="col-md-4">
+              <nvd3 id="executorMem" options="optionsMemoryUsage" data="templateMemoryUsage"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-4">
+              <nvd3 id="executorHDFSDiskRead" options="optionsHDFSDiskRead" data="templateHDFSDiskRead"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-4">
+              <nvd3 id="executorHDFSDiskWrite" options="optionsHDFSDiskWrite" data="templateHDFSDiskWrite"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+          </div> <!-- row -->
+          <div class="row">
+
+            <div class="col-md-4">
+              <nvd3 id="executorGCTime" options="optionsGCTime" data="templateGCTime"
+                      class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-8">
+              <nvd3 id="executorPeakMemoryBar" options="optionsPeakMemoryPerExecutor"
+                    data="templatePeakMemoryPerExecutor" class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+          </div> <!-- row -->
         </div>
       </uib-tab>
 
-      <uib-tab index="3" heading="Worker">
+      <uib-tab index="3" heading="Hosts">
         <div ng-controller="VizopsWorkerCtrl as vizopsWorkerCtrl">
+          <div class="row">
+
+            <!-- Total worker machines card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Number of worker machines</span>
+                    <span class="md-subhead">{{vizopsWorkerCtrl.nbOfHosts}}</span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Total worker machines card -->
+
+            <!-- Total worker machines card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Filters</span>
+                    <span class="md-subhead">
+                      <ui-select name="appId" theme="select2" ng-model="vizopsWorkerCtrl.chosenHostToFilter"
+                                 style="min-width: 200px;" on-select="vizopsWorkerCtrl.onHostFilterChange()">
+
+                        <ui-select-match placeholder="Filter by host" allow-clear="true">{{$select.selected}}</ui-select-match>
+
+                        <ui-select-choices repeat="host in vizopsWorkerCtrl.hostsList">
+                          <div ng-bind-html="host | highlight: $select.search"></div>
+                        </ui-select-choices>
+                      </ui-select>
+                    </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Total worker machines card -->
+
+            <div class="col-md-2">
+
+            </div>
+
+          </div> <!-- row -->
+
+          <div class="row">
+
+            <div class="col-md-4">
+              <nvd3 id="workerPCpuUsage" options="optionsPhysicalCPUUsage" data="templatePhysicalCPUUsage"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-4">
+              <nvd3 id="workerMemoryUsage" options="optionsMemoryUsage" data="templateMemoryUsage"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-4">
+              <nvd3 id="workerNetworkTraffic" options="optionsNetworkTraffic" data="templateNetworkTraffic"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+          </div>
+
         </div>
       </uib-tab>
 

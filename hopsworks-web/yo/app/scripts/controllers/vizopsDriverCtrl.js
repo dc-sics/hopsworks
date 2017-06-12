@@ -23,21 +23,31 @@ angular.module('hopsWorksApp')
                 self.maxAvailableDriverMem = "0.0";
 
                 $scope.optionsMemorySpace = vizopsMemorySpaceDriverOptions();
-                $scope.templateMemorySpace = [];
+                $scope.templateMemorySpace = vizopsMemorySpaceDriverTemplate();
 
                 $scope.optionsVCPU = vizopsVCPUDriverOptions();
-                $scope.templateVCPU = [];
+                $scope.templateVCPU = vizopsVCPUDriverTemplate();
+
+                $scope.optionsRDDCacheDiskSpill = vizopsRDDCacheDiskSpillOptions();
+                $scope.templateRDDCacheDiskSpill = vizopsRDDCacheDiskSpillTemplate();
+
+                $scope.optionsGCTime = vizopsGCTimeOptions();
+                $scope.templateGCTime = vizopsGCTimeTemplate();
 
                 self.startTimeMap = {
                     'vcpuUsage': -1,
                     'memorySpace': -1,
-                    'maxMemory': -1
+                    'maxMemory': -1,
+                    'rddCacheDiskSpill': -1,
+                    'gcTime': -1
                 };
 
                 self.hasLoadedOnce = {
                     'vcpuUsage': false,
                     'memorySpace': false,
-                    'maxMemory': false
+                    'maxMemory': false,
+                    'rddCacheDiskSpill': false,
+                    'gcTime': false
                 };
 
                 var updateMemorySpace = function() {
@@ -47,7 +57,8 @@ angular.module('hopsWorksApp')
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memorySpace')
                                ' and service = \'driver\'';
 
-                    VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_used)', 'spark', tags, 'time(20s) fill(0)').then(
+                    VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_used)', 'spark', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -74,11 +85,12 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['vcpuUsage'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' + ' and ' + _getTimestampLimits('vcpuUsage');;
+                    var tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' + ' and ' + _getTimestampLimits('vcpuUsage')
+                               + ' and MilliVcoreUsageIMinMilliVcores <= ' + (+self.executorInfo.entry[0].value[2]*1000);
 
                     VizopsService.getMetrics('graphite',
                                                'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
-                                               'nodemanager', tags, 'time(20s) fill(0)').then(
+                                               'nodemanager', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -124,10 +136,74 @@ angular.module('hopsWorksApp')
                     );
                 };
 
+                var updateRDDCacheDiskSpill = function() {
+                    if (!self.now && self.hasLoadedOnce['rddCacheDiskSpill'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('rddCacheDiskSpill')
+                               ' and service = \'driver\'';
+
+                    VizopsService.getMetrics('graphite', 'mean(memory_memUsed_MB), last(disk_diskSpaceUsed_MB)', 'spark', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
+
+                                self.startTimeMap['rddCacheDiskSpill'] = _getLastTimestampFromSeries(newData);
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+
+                                    $scope.templateRDDCacheDiskSpill[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    $scope.templateRDDCacheDiskSpill[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                }
+
+                                self.hasLoadedOnce['rddCacheDiskSpill'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching rddCacheDiskSpill metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateGCTime = function() {
+                    if (!self.now && self.hasLoadedOnce['gcTime'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('gcTime')
+                               ' and service = \'driver\'';
+
+                    VizopsService.getMetrics('graphite', 'mean(PS-MarkSweep_time), mean(PS-Scavenge_time)', 'spark', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
+
+                                self.startTimeMap['gcTime'] = _getLastTimestampFromSeries(newData);
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+
+                                    $scope.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    $scope.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                }
+
+                                self.hasLoadedOnce['gcTime'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching gcTime metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
                 var updateMetrics = function() {
                     updateMemorySpace();
                     updateMaxMemory();
                     updateGraphVCPU();
+                    updateRDDCacheDiskSpill();
+                    //updateGCTime();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -189,8 +265,7 @@ angular.module('hopsWorksApp')
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
                             self.nbExecutorsOnDriverHost = self.hostnames[self.executorInfo.entry[0].value[1]].length - 1;
 
-                            $scope.templateMemorySpace = vizopsMemorySpaceDriverTemplate();
-                            $scope.templateVCPU = vizopsVCPUDriverTemplate();
+                            updateMetrics();
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
@@ -201,7 +276,7 @@ angular.module('hopsWorksApp')
 
                 self.poller = $interval(function () {
                     updateMetrics();
-                }, vizopsUpdateInterval());
+                }, 10000);
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);

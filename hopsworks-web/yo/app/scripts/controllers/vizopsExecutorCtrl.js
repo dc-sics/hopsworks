@@ -20,17 +20,48 @@ angular.module('hopsWorksApp')
 
                 self.maxUsedExecutorMem = "0.0";
                 self.maxAvailableExecutorMem = "0.0";
+                self.maxAvailableExecutorMemValue = 0.0;
 
                 $scope.optionsAggregatedVCPUUsage = vizopsExecutorCPUOptions();
-                $scope.templateAggregatedVCPUUsage = [];
+                $scope.templateAggregatedVCPUUsage = vizopsExecutorCPUDataTemplate();
+
+                $scope.optionsTaskDistribution = vizopsExecutorTaskDistributionOptions();
+                $scope.templateTaskDistribution = vizopsExecutorTaskDistributionTemplate();
+
+                $scope.optionsMemoryUsage = vizopsExecutorMemoryUsageOptions();
+                $scope.templateMemoryUsage = vizopsExecutorMemoryUsageTemplate();
+
+                $scope.optionsHDFSDiskRead = vizopsExecutorHDFSDiskReadOptions();
+                $scope.templateHDFSDiskRead = vizopsExecutorHDFSDiskReadTemplate();
+
+                $scope.optionsHDFSDiskWrite = vizopsExecutorHDFSDiskWriteOptions();
+                $scope.templateHDFSDiskWrite = vizopsExecutorHDFSDiskWriteTemplate();
+
+                $scope.optionsGCTime = vizopsExecutorGCTimeOptions();
+                $scope.templateGCTime = vizopsExecutorGCTimeTemplate();
+
+                $scope.optionsPeakMemoryPerExecutor = vizopsExecutorPeakMemoryOptions();
+                $scope.templatePeakMemoryPerExecutor = vizopsExecutorPeakMemoryTemplate();
 
                 self.startTimeMap = {
-                    'vcpuUsage': -1
+                    'vcpuUsage': -1,
+                    'taskDistribution': -1,
+                    'memoryUsage': -1,
+                    'hdfsDiskRead': -1,
+                    'hdfsDiskWrite': -1,
+                    'gcTime': -1,
+                    'peakMemoryPerExecutor': -1
                 };
 
                 self.hasLoadedOnce = {
                     'maxMemoryCard': false,
-                    'vcpuUsage': false
+                    'vcpuUsage': false,
+                    'memoryUsage': false,
+                    'taskDistribution': false,
+                    'hdfsDiskRead': false,
+                    'hdfsDiskWrite': false,
+                    'gcTime': false,
+                    'peakMemoryPerExecutor': false
                 };
 
                 var updateMaxMemoryCard = function() {
@@ -48,6 +79,7 @@ angular.module('hopsWorksApp')
 
                             self.maxUsedExecutorMem = d3.format(".4s")(newData.values[0].split(' ')[1]);
                             self.maxAvailableExecutorMem = d3.format(".4s")(newData.values[0].split(' ')[2]);
+                            self.maxAvailableExecutorMemValue = +newData.values[0].split(' ')[2];
 
                             self.hasLoadedOnce['maxMemoryCard'] = true;
                         } // dont do anything if response 204(no content), nothing new
@@ -61,11 +93,12 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['vcpuUsage'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'source != \'' + self.executorInfo.entry[0].value[0] + '\' and ' + _getTimestampLimits('vcpuUsage');
+                    var tags = 'source != \'' + self.executorInfo.entry[0].value[0] + '\' and ' + _getTimestampLimits('vcpuUsage')
+                               + ' and MilliVcoreUsageIMinMilliVcores <= ' + (+self.executorInfo.entry[0].value[2]*1000);
 
                     VizopsService.getMetrics('graphite',
                         'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
-                        'nodemanager', tags, 'time(20s) fill(0)').then(
+                        'nodemanager', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -87,9 +120,203 @@ angular.module('hopsWorksApp')
                     );
                 };
 
+                var updateTaskDistribution = function() {
+                      if (!self.now && self.hasLoadedOnce['taskDistribution'])
+                          return; // offline mode + we have loaded the information
+
+                      var tags = 'appid = \'' + self.appId + '\' and service != \'driver\'' +
+                                 ' and ' + _getTimestampLimits('taskDistribution');
+
+                      VizopsService.getMetrics('graphite', 'last(threadpool_completeTasks)', 'spark', tags, 'service').then(
+                          function(success) {
+                              if (success.status === 200) { // new measurements
+                                  var newData = success.data.result.results[0].series;
+                                  self.startTimeMap['taskDistribution'] = _getLastTimestampFromSeries(newData[0]);
+
+                                  for(var i = 0; i < newData.length; i++) { // loop over each executor
+                                      var executorID = newData[i].tags.entry[0].value;
+                                      var totalTasks = +newData[i].values[0].split(" ")[1];
+
+                                      var itemIndex = _.findIndex($scope.templateTaskDistribution.values, executorID);
+
+                                      if (itemIndex > -1) { // exists
+                                          $scope.templateTaskDistribution[0].values[itemIndex]['y'] = totalTasks;
+                                      } else {
+                                          $scope.templateTaskDistribution[0].values.push({'x': executorID, 'y': totalTasks});
+                                      }
+                                  }
+
+                                  self.hasLoadedOnce['taskDistribution'] = true;
+                              } // dont do anything if response 204(no content), nothing new
+                          }, function(error) {
+                              growl.error(error.data.errorMsg, {title: 'Error fetching taskDistribution metrics.', ttl: 10000});
+                          }
+                      );
+                  };
+
+                var updateMemoryUsage = function() {
+                    if (!self.now && self.hasLoadedOnce['memoryUsage'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memoryUsage') +
+                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+
+                    VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_max)', 'spark', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                          function(success) {
+                              if (success.status === 200) { // new measurements
+                                  var newData = success.data.result.results[0].series[0];
+                                  var metrics = newData.values;
+                                  self.startTimeMap['memoryUsage'] = _getLastTimestampFromSeries(newData);
+
+                                  for(var i = 0; i < metrics.length; i++) {
+                                      var splitEntry = metrics[i].split(' ');
+
+                                      $scope.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]}); // mean
+                                      $scope.templateMemoryUsage[1].values.push({'x': +splitEntry[0], 'y': (+splitEntry[2]) * 0.8}); // threshold
+                                  }
+
+                                  self.hasLoadedOnce['memoryUsage'] = true;
+                              } // dont do anything if response 204(no content), nothing new
+                          }, function(error) {
+                              growl.error(error.data.errorMsg, {title: 'Error fetching memoryUsage metric.', ttl: 10000});
+                          }
+                      );
+                };
+
+                var updateHDFSDiskRead = function() {
+                    if (!self.now && self.hasLoadedOnce['hdfsDiskRead'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskRead') +
+                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+
+                    VizopsService.getMetrics('graphite', 'last(filesystem_file_read_bytes), last(filesystem_hdfs_read_bytes)',
+                                             'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                          function(success) {
+                              if (success.status === 200) { // new measurements
+                                  var newData = success.data.result.results[0].series[0];
+                                  var metrics = newData.values;
+                                  self.startTimeMap['hdfsDiskRead'] = _getLastTimestampFromSeries(newData);
+
+                                  for(var i = 0; i < metrics.length; i++) {
+                                      var splitEntry = metrics[i].split(' ');
+
+                                      $scope.templateHDFSDiskRead[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                      $scope.templateHDFSDiskRead[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                  }
+
+                                  self.hasLoadedOnce['hdfsDiskRead'] = true;
+                              } // dont do anything if response 204(no content), nothing new
+                          }, function(error) {
+                              growl.error(error.data.errorMsg, {title: 'Error fetching hdfsDiskRead metric.', ttl: 10000});
+                          }
+                      );
+                };
+
+                var updateHDFSDiskWrite = function() {
+                    if (!self.now && self.hasLoadedOnce['hdfsDiskWrite'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskWrite') +
+                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+
+                    VizopsService.getMetrics('graphite', 'last(filesystem_file_write_bytes), last(filesystem_hdfs_write_bytes)',
+                                             'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                          function(success) {
+                              if (success.status === 200) { // new measurements
+                                  var newData = success.data.result.results[0].series[0];
+                                  var metrics = newData.values;
+                                  self.startTimeMap['hdfsDiskWrite'] = _getLastTimestampFromSeries(newData);
+
+                                  for(var i = 0; i < metrics.length; i++) {
+                                      var splitEntry = metrics[i].split(' ');
+
+                                      $scope.templateHDFSDiskWrite[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                      $scope.templateHDFSDiskWrite[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                  }
+
+                                  self.hasLoadedOnce['hdfsDiskWrite'] = true;
+                              } // dont do anything if response 204(no content), nothing new
+                          }, function(error) {
+                              growl.error(error.data.errorMsg, {title: 'Error fetching hdfsDiskWrite metric.', ttl: 10000});
+                          }
+                      );
+                };
+
+                var updateGCTime = function() {
+                    if (!self.now && self.hasLoadedOnce['gcTime'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskWrite') +
+                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+
+                    VizopsService.getMetrics('graphite', 'mean(PS-MarkSweep_time), mean(PS-Scavenge_time)', 'spark', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
+
+                                self.startTimeMap['gcTime'] = _getLastTimestampFromSeries(newData);
+
+                                for(var i = 0; i < metrics.length; i++) {
+                                    var splitEntry = metrics[i].split(' ');
+
+                                    $scope.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    $scope.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                }
+
+                                self.hasLoadedOnce['gcTime'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching gcTime metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updatePeakMemoryPerExecutor = function() {
+                    if (!self.now && self.hasLoadedOnce['peakMemoryPerExecutor'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and service != \'driver\'';
+
+                    VizopsService.getMetrics('graphite', 'max(heap_used)', 'spark', tags, 'service').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series;
+                                self.startTimeMap['peakMemoryPerExecutor'] = _getLastTimestampFromSeries(newData[0]);
+
+                                for(var i = 0; i < newData.length; i++) { // loop over each executor
+                                    var executorID = newData[i].tags.entry[0].value;
+                                    var maxMemory = +newData[i].values[0].split(" ")[1];
+
+                                    var itemIndex = _.findIndex($scope.templatePeakMemoryPerExecutor.values, executorID);
+
+                                    if (itemIndex > -1) { // exists
+                                        $scope.templatePeakMemoryPerExecutor[0].values[itemIndex]['y'] = maxMemory;
+                                    } else {
+                                        $scope.templatePeakMemoryPerExecutor[0].values.push({'x': executorID, 'y': maxMemory});
+                                    }
+                                }
+
+                                self.hasLoadedOnce['peakMemoryPerExecutor'] = true;
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching peakMemoryPerExecutor metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
                 var updateMetrics = function() {
                     updateMaxMemoryCard();
                     updateAggregatedVCPUUsageGraph();
+                    updateTaskDistribution();
+                    updateMemoryUsage();
+                    updateHDFSDiskRead();
+                    updateHDFSDiskWrite();
+                    //updateGCTime();
+                    updatePeakMemoryPerExecutor();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -150,7 +377,7 @@ angular.module('hopsWorksApp')
                             // get the unique hostnames and the number of executors running on them
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
 
-                            $scope.templateAggregatedVCPUUsage = vizopsExecutorCPUDataTemplate();
+                            updateMetrics();
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
@@ -161,7 +388,7 @@ angular.module('hopsWorksApp')
 
                 self.poller = $interval(function () {
                     updateMetrics();
-                }, vizopsUpdateInterval());
+                }, 10000);
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);
