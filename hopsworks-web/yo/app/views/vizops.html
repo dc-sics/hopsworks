@@ -196,6 +196,34 @@
               </md-card>
             </div> <!-- end: Total executors card -->
 
+            <!-- Filter card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Filters(enter to load by id)</span>
+                    <span class="md-subhead">
+                      <ui-select name="execFilter" theme="select2" ng-model="vizopsExecutorCtrl.chosenFilter"
+                                 style="min-width: 200px;" on-select="vizopsExecutorCtrl.onFilterChoiceChange()">
+
+                        <ui-select-match placeholder="Filter by host or ID" allow-clear="true">{{$select.selected}}</ui-select-match>
+
+                        <ui-select-choices repeat="choice in vizopsExecutorCtrl.filterChoices">
+                          <div ng-bind-html="choice | highlight: $select.search"></div>
+                        </ui-select-choices>
+                      </ui-select>
+
+                      <input type="number" class="form-control" ng-disabled="vizopsExecutorCtrl.chosenFilter !== 'by executor id'"
+                             style="max-width: 80px; display: inline; max-height: 30px;"
+                             ng-model="vizopsExecutorCtrl.executorIDFromInput"
+                             ng-keypress="vizopsExecutorCtrl.onExecutorIDFilterApply($event)">
+
+                    </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: Filter card -->
+
           </div> <!-- row -->
           <div class="row">
 
@@ -260,14 +288,14 @@
               </md-card>
             </div> <!-- end: Total worker machines card -->
 
-            <!-- Total worker machines card -->
+            <!-- Filter by host card -->
             <div class="col-md-2">
               <md-card>
                 <md-card-title>
                   <md-card-title-text>
                     <span class="md-headline strong">Filters</span>
                     <span class="md-subhead">
-                      <ui-select name="appId" theme="select2" ng-model="vizopsWorkerCtrl.chosenHostToFilter"
+                      <ui-select name="hostFilter" theme="select2" ng-model="vizopsWorkerCtrl.chosenHostToFilter"
                                  style="min-width: 200px;" on-select="vizopsWorkerCtrl.onHostFilterChange()">
 
                         <ui-select-match placeholder="Filter by host" allow-clear="true">{{$select.selected}}</ui-select-match>
@@ -280,11 +308,7 @@
                   </md-card-title-text>
                 </md-card-title>
               </md-card>
-            </div> <!-- end: Total worker machines card -->
-
-            <div class="col-md-2">
-
-            </div>
+            </div> <!-- end: Filter by host card -->
 
           </div> <!-- row -->
 

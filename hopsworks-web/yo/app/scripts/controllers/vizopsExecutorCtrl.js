@@ -18,30 +18,33 @@ angular.module('hopsWorksApp')
                 // a list of objects holding as a key the hostname and value the number of executors
                 self.hostnames = {};
 
+                // UI
                 self.maxUsedExecutorMem = "0.0";
                 self.maxAvailableExecutorMem = "0.0";
                 self.maxAvailableExecutorMemValue = 0.0;
+                self.hostsList; // List of all the hosts
+                self.chosenFilter; // model for the actual select dropdown
+                self.executorIDFromInput;
+                self.executorQuery = '[0-9]%2B'; // the actual filter that will be applied to the query
+                self.containerQuery;
+                self.containerTemplate = '.*_APPID_.*_\\d{5}[2-9]'; // holds the original container regex - filled by init
+                self.selectiveContainersTemplate = '.*_APPID_.*_'; // used for picking the containers running on the same host
 
                 $scope.optionsAggregatedVCPUUsage = vizopsExecutorCPUOptions();
-                $scope.templateAggregatedVCPUUsage = vizopsExecutorCPUDataTemplate();
-
                 $scope.optionsTaskDistribution = vizopsExecutorTaskDistributionOptions();
-                $scope.templateTaskDistribution = vizopsExecutorTaskDistributionTemplate();
-
                 $scope.optionsMemoryUsage = vizopsExecutorMemoryUsageOptions();
-                $scope.templateMemoryUsage = vizopsExecutorMemoryUsageTemplate();
-
                 $scope.optionsHDFSDiskRead = vizopsExecutorHDFSDiskReadOptions();
-                $scope.templateHDFSDiskRead = vizopsExecutorHDFSDiskReadTemplate();
-
                 $scope.optionsHDFSDiskWrite = vizopsExecutorHDFSDiskWriteOptions();
-                $scope.templateHDFSDiskWrite = vizopsExecutorHDFSDiskWriteTemplate();
-
                 $scope.optionsGCTime = vizopsExecutorGCTimeOptions();
-                $scope.templateGCTime = vizopsExecutorGCTimeTemplate();
-
                 $scope.optionsPeakMemoryPerExecutor = vizopsExecutorPeakMemoryOptions();
-                $scope.templatePeakMemoryPerExecutor = vizopsExecutorPeakMemoryTemplate();
+
+                $scope.templateAggregatedVCPUUsage = [];
+                $scope.templateTaskDistribution = [];
+                $scope.templateMemoryUsage = [];
+                $scope.templateHDFSDiskRead = [];
+                $scope.templateHDFSDiskWrite = [];
+                $scope.templateGCTime = [];
+                $scope.templatePeakMemoryPerExecutor = [];
 
                 self.startTimeMap = {
                     'vcpuUsage': -1,
@@ -68,7 +71,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['maxMemoryCard'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+                    var tags = 'appid = \'' + self.appId + '\' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite',
                         'max(heap_used), heap_max, service', 'spark', tags).then(
@@ -93,7 +96,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['vcpuUsage'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'source != \'' + self.executorInfo.entry[0].value[0] + '\' and ' + _getTimestampLimits('vcpuUsage')
+                    var tags = 'source =~ /' + self.containerQuery + '/ and ' + _getTimestampLimits('vcpuUsage')
                                + ' and MilliVcoreUsageIMinMilliVcores <= ' + (+self.executorInfo.entry[0].value[2]*1000);
 
                     VizopsService.getMetrics('graphite',
@@ -124,7 +127,7 @@ angular.module('hopsWorksApp')
                       if (!self.now && self.hasLoadedOnce['taskDistribution'])
                           return; // offline mode + we have loaded the information
 
-                      var tags = 'appid = \'' + self.appId + '\' and service != \'driver\'' +
+                      var tags = 'appid = \'' + self.appId + '\' and service =~ /' + self.executorQuery +'/' +
                                  ' and ' + _getTimestampLimits('taskDistribution');
 
                       VizopsService.getMetrics('graphite', 'last(threadpool_completeTasks)', 'spark', tags, 'service').then(
@@ -159,7 +162,7 @@ angular.module('hopsWorksApp')
                         return; // offline mode + we have loaded the information
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memoryUsage') +
-                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+                               ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_max)', 'spark', tags,
                                              'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
@@ -189,7 +192,7 @@ angular.module('hopsWorksApp')
                         return; // offline mode + we have loaded the information
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskRead') +
-                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+                               ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite', 'last(filesystem_file_read_bytes), last(filesystem_hdfs_read_bytes)',
                                              'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
@@ -219,7 +222,7 @@ angular.module('hopsWorksApp')
                         return; // offline mode + we have loaded the information
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskWrite') +
-                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+                               ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite', 'last(filesystem_file_write_bytes), last(filesystem_hdfs_write_bytes)',
                                              'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
@@ -279,7 +282,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['peakMemoryPerExecutor'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and service != \'driver\'';
+                    var tags = 'appid = \'' + self.appId + '\' and service =~ /' + self.executorQuery +'/';
 
                     VizopsService.getMetrics('graphite', 'max(heap_used)', 'spark', tags, 'service').then(
                         function(success) {
@@ -317,6 +320,23 @@ angular.module('hopsWorksApp')
                     updateHDFSDiskWrite();
                     //updateGCTime();
                     updatePeakMemoryPerExecutor();
+                };
+
+                var resetGraphs = function() {
+                    for (var key in self.startTimeMap) {
+                      if (self.startTimeMap.hasOwnProperty(key)) {
+                        self.startTimeMap[key] = self.startTime;
+                        self.hasLoadedOnce[key] = false;
+                      }
+                    }
+
+                    $scope.templateAggregatedVCPUUsage = vizopsExecutorCPUDataTemplate();
+                    $scope.templateTaskDistribution = vizopsExecutorTaskDistributionTemplate();
+                    $scope.templateMemoryUsage = vizopsExecutorMemoryUsageTemplate();
+                    $scope.templateHDFSDiskRead = vizopsExecutorHDFSDiskReadTemplate();
+                    $scope.templateHDFSDiskWrite = vizopsExecutorHDFSDiskWriteTemplate();
+                    $scope.templateGCTime = vizopsExecutorGCTimeTemplate();
+                    $scope.templatePeakMemoryPerExecutor = vizopsExecutorPeakMemoryTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -361,30 +381,77 @@ angular.module('hopsWorksApp')
                         function(success) {
                             var info = success.data;
 
-                            self.nbExecutors = info.nbExecutors;
+                            self.nbExecutors = info.nbExecutors - 1;
                             self.executorInfo = info.executorInfo;
                             self.startTime = info.startTime;
                             self.endTime = info.endTime;
                             self.now = info.now;
-
-                            // Initialize the graph timers
-                            for (var key in self.startTimeMap) {
-                              if (self.startTimeMap.hasOwnProperty(key)) {
-                                self.startTimeMap[key] = info.startTime;
-                              }
-                            }
+                            self.containerTemplate = self.containerTemplate.replace('APPID', self.appId.substring(12));
+                            self.selectiveContainersTemplate = self.selectiveContainersTemplate.replace('APPID', self.appId.substring(12));
+                            self.containerQuery = self.containerTemplate;
 
                             // get the unique hostnames and the number of executors running on them
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
+                            self.hostsList = Object.keys(self.hostnames);
+                            self.filterChoices = [].concat('by executor id', self.hostsList);
 
+                            resetGraphs();
                             updateMetrics();
                         }, function(error) {
-                            growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
+                            growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 10000});
                         }
                     );
                 }
 
                 init();
+
+                self.onFilterChoiceChange = function() {
+                    if (self.executorQuery === '[0-9]%2B') { // already displaying all executors
+                        return;
+                    } else if (self.chosenFilter === null) {    // filter was emptied, reset to original
+                        self.executorQuery = '[0-9]%2B'; // [0-9]+
+                        self.containerQuery = self.containerTemplate;
+                    } else if (self.chosenFilter === 'by executor id') {
+                        self.executorIDFromInput = '';
+                        return;
+                    }
+
+                     else if (_.isEqual([self.chosenFilter], self.hostsToQuery)) { // same choice, skip
+                        return;
+                    } else {
+                        // Remove the driver if there
+                        var executorsOnHost = self.hostnames[self.chosenFilter];
+                        var index = executorsOnHost.indexOf(0);
+                        if (index > -1) {
+                            executorsOnHost.splice(index, 1);
+                        }
+                        self.executorQuery = executorsOnHost.join('|');
+                        self.containerQuery = self.selectiveContainersTemplate +
+                                              '(?:' + executorsOnHost.map((x) => _.padLeft(x, 6, '0')).join('|') + ')';
+                    }
+
+                    resetGraphs();
+                    updateMetrics();
+                };
+
+                self.onExecutorIDFilterApply = function($event) {
+                    if ($event.keyCode !== 13) {
+                        return;
+                    } else if (self.executorIDFromInput === null) {
+                        self.executorQuery = '[0-9]%2B';
+                        self.containerQuery = self.containerTemplate;
+                    } else if ((self.executorIDFromInput < 2) || (self.executorIDFromInput > self.nbExecutors)) {
+                        return;
+                    } else if (self.executorIDFromInput === self.executorQuery) {
+                        return;
+                    } else {
+                        self.executorQuery = self.executorIDFromInput;
+                        self.containerQuery = self.executorInfo.entry[self.executorIDFromInput].value[0];
+                    }
+
+                    resetGraphs();
+                    updateMetrics();
+                }
 
                 self.poller = $interval(function () {
                     updateMetrics();
