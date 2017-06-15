@@ -42,7 +42,7 @@ public class JupyterFacade {
   @EJB
   private UserFacade userFacade;
   @EJB
-  private HdfsUsersController hdfsUsername;
+  private HdfsUsersController hdfsUsersController;
   @EJB
   private HdfsUsersFacade hdfsUsersFacade;
   @EJB
@@ -51,7 +51,8 @@ public class JupyterFacade {
   protected EntityManager getEntityManager() {
     return em;
   }
-
+  
+  
   public List<JupyterProject> findNotebooksByProject(Integer projectId) {
     TypedQuery<JupyterProject> query = em.createNamedQuery(
             "JupyterProject.findByProjectId",

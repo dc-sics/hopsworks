@@ -22,16 +22,23 @@ import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.util.Settings;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
@@ -47,6 +54,8 @@ public class JupyterService {
 
   private final static Logger LOGGER = Logger.getLogger(JupyterService.class.
           getName());
+  private static final Logger logger = Logger.getLogger(
+          JupyterService.class.getName());
 
   @EJB
   private ProjectFacade projectFacade;
@@ -64,6 +73,8 @@ public class JupyterService {
   private HdfsUsersController hdfsUsersController;
   @EJB
   private HdfsUsersFacade hdfsUsersFacade;
+  @EJB
+  private Settings settings;
 
   private Integer projectId;
   private Project project;
@@ -112,7 +123,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) {};
+            = new GenericEntity<List<JupyterProject>>(listServers) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
   }
@@ -229,13 +240,53 @@ public class JupyterService {
   }
 
   @GET
-  @Path("/stopAdmin")
+  @Path("/stopAll")
   @Produces(MediaType.APPLICATION_JSON)
   @RolesAllowed({"HOPS_ADMIN"})
-  public Response stopAdmin(@PathParam("hdfsUsername") String hdfsUsername,
-          @Context SecurityContext sc,
+  public Response stopAll(@Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
-    stop(hdfsUsername);
+    Collection<ProjectTeam> team = this.project.getProjectTeamCollection();
+    for (ProjectTeam pt : team) {
+      String hdfsUsername = hdfsUsersController.getHdfsUserName(project, pt.
+              getUser());
+      try {
+        stop(hdfsUsername);
+      } catch (AppException ex) {
+        // continue
+      }
+    }
+
+    String prog = settings.getHopsworksDomainDir()
+            + "/bin/jupyter-project-cleanup.sh";
+    int exitValue;
+    Integer id = 1;
+    String projectPath = settings.getJupyterDir() + File.separator
+            + Settings.DIR_ROOT + File.separator + this.project.getName();
+
+    String[] command = {"/usr/bin/sudo", prog, projectPath};
+    ProcessBuilder pb = new ProcessBuilder(command);
+    try {
+      Process process = pb.start();
+
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+              process.getInputStream(), Charset.forName("UTF8")));
+      String line;
+      while ((line = br.readLine()) != null) {
+        logger.info(line);
+      }
+      process.waitFor(2l, TimeUnit.SECONDS);
+      exitValue = process.exitValue();
+    } catch (IOException | InterruptedException ex) {
+      logger.log(Level.SEVERE, "Problem cleaning up project: " 
+              + projectPath + ": {0}", ex.toString());
+      exitValue = -2;
+    }
+
+    if (exitValue != 0) {
+      throw new AppException(Response.Status.REQUEST_TIMEOUT.getStatusCode(),
+              "Couldn't stop Jupyter Notebook Server.");
+    }
+
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
@@ -269,6 +320,10 @@ public class JupyterService {
     // We need to stop the jupyter notebook server with the PID
     // If we can't stop the server, delete the Entity bean anyway
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+    if (jp == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "Could not find Jupyter entry for user: " + hdfsUser);
+    }
     String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs

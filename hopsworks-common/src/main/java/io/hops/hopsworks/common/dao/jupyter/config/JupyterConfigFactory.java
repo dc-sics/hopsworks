@@ -5,7 +5,6 @@ import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.project.Project;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
@@ -51,10 +50,6 @@ public class JupyterConfigFactory {
 
   private String hadoopClasspath = null;
 
-//  private static final ConcurrentMap<String, JupyterConfig> hdfsuserConfCache
-//          = new ConcurrentHashMap<>();
-//  private static final ConcurrentHashMap<String, Process> runningServers
-//          = new ConcurrentHashMap<>();
   @PostConstruct
   public void init() {
     loadConfig();
@@ -69,91 +64,10 @@ public class JupyterConfigFactory {
 
   }
 
-  /**
-   * If an existing process is running for this username, kill it.
-   * Starts a new process with that username.
-   *
-   * @param hdfsUsername
-   * @param process
-   *
-   * @param hdfsUsername
-   * @param process
-   * @throws io.hops.hopsworks.common.exception.AppException
-   */
-//  private void addNotebookServer(String hdfsUsername,
-//          Process process) throws AppException {
-//    if (!process.isAlive()) {
-//      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-//              getStatusCode(), "Jupyter server died unexpectadly");
-//    }
-////    runningServers.put(hdfsUsername, process);
-//
-//  }
-//  private boolean killNotebookServer(Process p) {
-//    if (p != null) {
-//      // use destroy forcibly because ctrl-c causes the process to ask if you
-//      // want to kill it - it doesn't kill the process
-//      p.destroyForcibly();
-//      return true;
-//    }
-//    return false;
-//  }
-  /**
-   * Returns a unique jupyter configuration for the project user.
-   *
-   * @param hdfsUser
-   * @return null if the notebook does not exist.
-   */
-//  public JupyterConfig getFromCache(String hdfsUser) {
-//    JupyterConfig userConfig = hdfsuserConfCache.get(hdfsUser);
-//    return userConfig;
-//  }
-  /**
-   * Remove user configuration from cache.
-   *
-   * @param projectName
-   * @param username
-   */
-//  public void cleanup(String hdfsUser) throws AppException {
-//  public void cleanup(String hdfsUser, long pid, int port) throws AppException {
-////    JupyterConfig config = this.hdfsuserConfCache.remove(hdfsUser);
-////    if (config != null) {
-////      long pid = config.getPid();
-////      String projectPath = config.getProjectPath();
-////      int port = config.getPort();
-////      config.clean();
-////      stopServerJupyterUser(projectPath, pid, port);
-////    }
-////    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
-//
-//
-//    String projectPath = getJupyterHome(hdfsUser, jp);
-//    stopServerJupyterUser(projectPath, jp.getPid(), jp.getPort());
-//  }
-  /**
-   * Deletes jupyter configuration dir for user.
-   *
-   * @param project
-   * @return
-   */
-  public boolean deleteProject(Project project) {
-    Collection<ProjectTeam> ptc = project.getProjectTeamCollection();
-
-    for (ProjectTeam pt : ptc) {
-
-    }
-
-    return false;
-  }
-
   public void initNotebook(Project project, HdfsUsers user) {
 
   }
 
-//  public void stopServers(Project project) {
-//
-//    // delete JupyterProject entity bean
-//  }
   /**
    * This only works on Linux systems. From Java 9, you can just call
    * p.getPid();
@@ -209,7 +123,6 @@ public class JupyterConfigFactory {
         if (hdfsUser != null) {
           String user = hdfsUser.getUsername();
         }
-//        remove(jp);
       }
     }
     // Kill any processes
@@ -244,14 +157,9 @@ public class JupyterConfigFactory {
     JupyterConfig jc = null;
 
     // kill any running servers for this user, clear cached entries
-//    cleanup(hdfsUser);
     while (!foundToken && maxTries > 0) {
       // use pidfile to kill any running servers
-//      if (settings.getVagrantEnabled()) {
-//        port = 8888;
-//      } else {
       port = ThreadLocalRandom.current().nextInt(40000, 59999);
-//      }
 
       jc = new JupyterConfig(project.getName(), secret, hdfsUser, hdfsLeFacade.
               getSingleEndpoint(), settings, port, driverCores,
@@ -355,14 +263,53 @@ public class JupyterConfigFactory {
   }
 
   /**
-   * This method both stops any jupyter server and removes the subtree under
-   * /srv/hops/jupyter/projects/proj_user
+   * This method both stops any jupyter server  for a proj_user
    *
    * @param projectPath
    * @param pid
    * @param port
    * @throws AppException
    */
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public void stopServerJupyterUser(String hdfsUser)
+          throws AppException {
+    if (hdfsUser == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.
+              getStatusCode(),
+              "Null hdfsUsername when stopping the Jupyter Server.");
+    }
+    String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
+    int exitValue;
+    Integer id = 1;
+    String[] command = {"/usr/bin/sudo", prog, "kill", hdfsUser};
+    ProcessBuilder pb = new ProcessBuilder(command);
+    try {
+      Process process = pb.start();
+
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+              process.getInputStream(), Charset.forName("UTF8")));
+      String line;
+      while ((line = br.readLine()) != null) {
+        logger.info(line);
+      }
+
+      process.waitFor(10l, TimeUnit.SECONDS);
+      exitValue = process.exitValue();
+    } catch (IOException | InterruptedException ex) {
+      logger.log(Level.SEVERE, "Problem starting a backup: {0}", ex.
+              toString());
+      exitValue = -2;
+    }
+
+    if (exitValue != 0) {
+      throw new AppException(Response.Status.REQUEST_TIMEOUT.getStatusCode(),
+              "Couldn't stop Jupyter Notebook Server.");
+    }    
+    
+    
+  }
+  
+  
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public void stopServerJupyterUser(String projectPath, Long pid, Integer port)
           throws AppException {

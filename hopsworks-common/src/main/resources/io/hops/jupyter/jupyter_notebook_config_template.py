@@ -26,10 +26,12 @@ c.NotebookApp.base_url='/hopsworks-api/jupyter/%%port%%/'
 # Disable the default Python2 kernel
 # https://github.com/jupyter/jupyter_client/issues/144
 #
+#c.KernelSpecManager.whitelist = set(['Python 2', 'ir'])
 #c.KernelSpecManager.whitelist = set(['PySpark', 'ir'])
 #c.KernelSpecManager.whitelist = set(['PySpark3', 'ir'])
 #c.KernelSpecManager.whitelist = set(['Spark', 'ir'])
 #c.KernelSpecManager.whitelist = set(['SparkR', 'ir'])
+#c.KernelSpecManager.whitelist = set(['pythonwithpixiedustspark21', 'ir'])
 #c.MultiKernelManager.default_kernel_name='PySpark'
 
 c.NotebookApp.allow_origin = '*'
