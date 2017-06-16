@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -69,6 +68,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -132,7 +132,7 @@ public class ProjectController {
   @EJB
   private PythonDepsFacade pythonDepsFacade;
   @EJB
-  private JupyterConfigFactory jupyterFactory;
+  private JupyterConfigFactory jupyterConfigFactory;
   @EJB
   private JobDescriptionFacade jobFacade;
   @EJB
@@ -800,58 +800,57 @@ public class ProjectController {
                     getStatusCode(),
                     "Could not close zeppelin interpreters, please wait 60 seconds to retry");
           }
+        }
+
+        // try and close all the jupyter jobs
+        jupyterConfigFactory.stopProject(project);        
+//        Response jupyterResp = ClientBuilder.newClient()
+//                .target(settings.getRestEndpoint()
+//                        + "/hopsworks-api/api/project/" + project.getId()
+//                        + "/jupyter/stopAll")
+//                .request()
+//                .cookie("SESSION", sessionId)
+//                .method("GET");
+//        LOGGER.log(Level.FINE, "Jupyter check resp:" + resp.getStatus());
+//        if (jupyterResp.getStatus() != 200) {
+//          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+//                  getStatusCode(),
+//                  "Could not close Jupyter , please wait 60 seconds to retry");
 //        }
 
-          // try and close all the jupyter jobs
-          Response jupyterResp = ClientBuilder.newClient()
-                  .target(settings.getRestEndpoint()
-                          + "/hopsworks-api/api/jupyter/" + project.getId()
-                          + "/stopAll")
-                  .request()
-                  .cookie("SESSION", sessionId)
-                  .method("GET");
-          LOGGER.log(Level.FINE, "Jupyter check resp:" + resp.getStatus());
-          if (resp.getStatus() != 200) {
-            throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                    getStatusCode(),
-                    "Could not close Jupyter , please wait 60 seconds to retry");
-          }
-//        }
+        //remove from project_team so that nobody can see the project anymore
+        updateProjectTeamRole(project, ProjectRoleTypes.UNDER_REMOVAL);
 
-          //remove from project_team so that nobody can see the project anymore
-          updateProjectTeamRole(project, ProjectRoleTypes.UNDER_REMOVAL);
-
-          //kill jobs
-          List<JobDescription> running = jobFacade.getRunningJobs(project);
-          if (running != null && !running.isEmpty()) {
-            Runtime rt = Runtime.getRuntime();
-            for (JobDescription job : running) {
-              //Get the appId of the running app
-              List<Execution> jobExecs = execFacade.findForJob(job);
-              //Sort descending based on jobId because therie might be two 
-              // jobs with the same name and we want the latest
-              Collections.sort(jobExecs, new Comparator<Execution>() {
-                @Override
-                public int compare(Execution lhs, Execution rhs) {
-                  return lhs.getId() > rhs.getId() ? -1 : (lhs.getId() < rhs.
-                          getId()) ? 1 : 0;
-                }
-              });
-              try {
-                rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill "
-                        + jobExecs.get(0).getAppId());
-              } catch (IOException ex) {
-                Logger.getLogger(ProjectController.class.getName()).
-                        log(Level.SEVERE, null, ex);
+        //kill jobs
+        List<JobDescription> running = jobFacade.getRunningJobs(project);
+        if (running != null && !running.isEmpty()) {
+          Runtime rt = Runtime.getRuntime();
+          for (JobDescription job : running) {
+            //Get the appId of the running app
+            List<Execution> jobExecs = execFacade.findForJob(job);
+            //Sort descending based on jobId because therie might be two 
+            // jobs with the same name and we want the latest
+            Collections.sort(jobExecs, new Comparator<Execution>() {
+              @Override
+              public int compare(Execution lhs, Execution rhs) {
+                return lhs.getId() > rhs.getId() ? -1 : (lhs.getId() < rhs.
+                        getId()) ? 1 : 0;
               }
+            });
+            try {
+              rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill "
+                      + jobExecs.get(0).getAppId());
+            } catch (IOException ex) {
+              Logger.getLogger(ProjectController.class.getName()).
+                      log(Level.SEVERE, null, ex);
             }
           }
-
-          List<HdfsUsers> usersToClean = getUsersToClean(project);
-          List<HdfsGroups> groupsToClean = getGroupsToClean(project);
-          removeProjectInt(project, usersToClean, groupsToClean);
-          return;
         }
+
+        List<HdfsUsers> usersToClean = getUsersToClean(project);
+        List<HdfsGroups> groupsToClean = getGroupsToClean(project);
+        removeProjectInt(project, usersToClean, groupsToClean);
+        return;
       } catch (Exception ex) {
         if (nbTry < 3) {
           try {
@@ -864,7 +863,6 @@ public class ProjectController {
                   getStatusCode(), ex.getMessage());
         }
       }
-//      }
     }
   }
 
@@ -1582,7 +1580,7 @@ public class ProjectController {
 
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public void removeJupypter(Project project) throws AppException {
-    jupyterFactory.removeProject(project);
+    jupyterConfigFactory.removeProject(project);
   }
 
   @TransactionAttribute(TransactionAttributeType.NEVER)

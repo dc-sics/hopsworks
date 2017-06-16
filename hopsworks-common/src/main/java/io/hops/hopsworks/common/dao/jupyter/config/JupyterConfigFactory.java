@@ -5,7 +5,9 @@ import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
 import java.io.File;
@@ -47,6 +49,10 @@ public class JupyterConfigFactory {
   private HdfsUsersFacade hdfsUsersFacade;
   @EJB
   private HdfsLeDescriptorsFacade hdfsLeFacade;
+  @EJB
+  private HdfsUsersController hdfsUsersController;
+  @EJB
+  private JupyterFacade jupyterFacade;
 
   private String hadoopClasspath = null;
 
@@ -263,7 +269,7 @@ public class JupyterConfigFactory {
   }
 
   /**
-   * This method both stops any jupyter server  for a proj_user
+   * This method both stops any jupyter server for a proj_user
    *
    * @param projectPath
    * @param pid
@@ -304,12 +310,10 @@ public class JupyterConfigFactory {
     if (exitValue != 0) {
       throw new AppException(Response.Status.REQUEST_TIMEOUT.getStatusCode(),
               "Couldn't stop Jupyter Notebook Server.");
-    }    
-    
-    
+    }
+
   }
-  
-  
+
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public void stopServerJupyterUser(String projectPath, Long pid, Integer port)
           throws AppException {
@@ -345,6 +349,66 @@ public class JupyterConfigFactory {
     if (exitValue != 0) {
       throw new AppException(Response.Status.REQUEST_TIMEOUT.getStatusCode(),
               "Couldn't stop Jupyter Notebook Server.");
+    }
+
+  }
+
+  private void stopCleanly(String hdfsUser) throws AppException {
+    // We need to stop the jupyter notebook server with the PID
+    // If we can't stop the server, delete the Entity bean anyway
+    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+    if (jp == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "Could not find Jupyter entry for user: " + hdfsUser);
+    }
+    String projectPath = getJupyterHome(hdfsUser, jp);
+
+    // stop the server, remove the user in this project's local dirs
+    stopServerJupyterUser(projectPath, jp.getPid(), jp.
+            getPort());
+    // remove the reference to th e server in the DB.
+    jupyterFacade.removeNotebookServer(hdfsUser);
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public void stopProject(Project project)
+          throws AppException {
+    Collection<ProjectTeam> team = project.getProjectTeamCollection();
+    for (ProjectTeam pt : team) {
+      String hdfsUsername = hdfsUsersController.getHdfsUserName(project, pt.
+              getUser());
+      try {
+        stopServerJupyterUser(hdfsUsername);
+      } catch (AppException ex) {
+        // continue
+      }
+    }
+
+    String prog = settings.getHopsworksDomainDir()
+            + "/bin/jupyter-project-cleanup.sh";
+    int exitValue;
+    String[] command = {"/usr/bin/sudo", prog, project.getName()};
+    ProcessBuilder pb = new ProcessBuilder(command);
+    try {
+      Process process = pb.start();
+
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+              process.getInputStream(), Charset.forName("UTF8")));
+      String line;
+      while ((line = br.readLine()) != null) {
+        logger.info(line);
+      }
+      process.waitFor(2l, TimeUnit.SECONDS);
+      exitValue = process.exitValue();
+    } catch (IOException | InterruptedException ex) {
+      logger.log(Level.SEVERE, "Problem cleaning up project: "
+              + project.getName() + ": {0}", ex.toString());
+      exitValue = -2;
+    }
+
+    if (exitValue != 0) {
+      logger.log(Level.WARNING, "Problem remove project's jupyter folder: "
+              + project.getName());
     }
 
   }
