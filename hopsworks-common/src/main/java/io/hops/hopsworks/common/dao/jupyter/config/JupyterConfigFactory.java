@@ -271,9 +271,7 @@ public class JupyterConfigFactory {
   /**
    * This method both stops any jupyter server for a proj_user
    *
-   * @param projectPath
-   * @param pid
-   * @param port
+   * @param hdfsUser
    * @throws AppException
    */
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
@@ -287,7 +285,7 @@ public class JupyterConfigFactory {
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
     int exitValue;
     Integer id = 1;
-    String[] command = {"/usr/bin/sudo", prog, "kill", hdfsUser};
+    String[] command = {"/usr/bin/sudo", prog, "stop", hdfsUser};
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();
@@ -298,7 +296,6 @@ public class JupyterConfigFactory {
       while ((line = br.readLine()) != null) {
         logger.info(line);
       }
-
       process.waitFor(10l, TimeUnit.SECONDS);
       exitValue = process.exitValue();
     } catch (IOException | InterruptedException ex) {
@@ -315,7 +312,7 @@ public class JupyterConfigFactory {
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public void stopServerJupyterUser(String projectPath, Long pid, Integer port)
+  public void killServerJupyterUser(String projectPath, Long pid, Integer port)
           throws AppException {
     if (projectPath == null || pid == null || port == null) {
       throw new AppException(Response.Status.BAD_REQUEST.
@@ -325,7 +322,7 @@ public class JupyterConfigFactory {
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
     int exitValue;
     Integer id = 1;
-    String[] command = {"/usr/bin/sudo", prog, "stop", projectPath,
+    String[] command = {"/usr/bin/sudo", prog, "kill", projectPath,
       pid.toString(), port.toString()};
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
@@ -364,7 +361,7 @@ public class JupyterConfigFactory {
     String projectPath = getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
-    stopServerJupyterUser(projectPath, jp.getPid(), jp.
+    killServerJupyterUser(projectPath, jp.getPid(), jp.
             getPort());
     // remove the reference to th e server in the DB.
     jupyterFacade.removeNotebookServer(hdfsUser);

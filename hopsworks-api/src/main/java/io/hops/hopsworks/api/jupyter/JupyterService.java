@@ -281,7 +281,7 @@ public class JupyterService {
     String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
-    jupyterConfigFactory.stopServerJupyterUser(projectPath, jp.getPid(), jp.
+    jupyterConfigFactory.killServerJupyterUser(projectPath, jp.getPid(), jp.
             getPort());
     // remove the reference to th e server in the DB.
     jupyterFacade.removeNotebookServer(hdfsUser);
