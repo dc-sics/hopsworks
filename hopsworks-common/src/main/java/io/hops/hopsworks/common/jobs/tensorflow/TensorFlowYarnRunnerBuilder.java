@@ -48,6 +48,12 @@ public class TensorFlowYarnRunnerBuilder {
 
   public YarnRunner getYarnRunner(String project, String sparkUser,
       String jobUser, final String hadoopDir, final String nameNodeIpPort) throws IOException, Exception {
+
+    if (!serviceProps.isAnacondaEnabled()) {
+      //Throw error in Hopswors UI to notify user to enable Anaconda
+      throw new IOException("Pyspark job needs to have Python Anaconda environment enabled");
+    }
+
     YarnRunner.Builder builder = new YarnRunner.Builder(Settings.SPARK_AM_MAIN);
     JobType jobType = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getType();
     builder.setJobType(jobType);
@@ -63,7 +69,7 @@ public class TensorFlowYarnRunnerBuilder {
     client.setNumWorkers(numOfWorkers);
     String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
     client.setMain(appPath);
-    client.setArguments((String[]) jobArgs.toArray());
+    client.setArguments(jobArgs.stream().toArray(String[]::new));
     client.setAmJar(Settings.getTensorFlowJarPath(jobUser));
     client.setPython(serviceProps.getAnaconda().getEnvPath());
     builder.setTfClient(client);
