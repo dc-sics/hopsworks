@@ -183,11 +183,4 @@
     </plugins>
   </build>
   
-  
-  <repositories>
-    <repository>
-      <id>predic8-releases</id>
-      <url>http://repository.membrane-soa.org/content/groups/public</url>
-    </repository>
-  </repositories>  
 </project>
