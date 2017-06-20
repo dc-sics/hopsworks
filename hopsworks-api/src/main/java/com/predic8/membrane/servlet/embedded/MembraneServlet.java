@@ -134,7 +134,7 @@ public class MembraneServlet extends HttpServlet {
     }
     ServiceProxy sp = new ServiceProxy(new ServiceProxyKey(
             settings.getHopsworksIp(), "*", "*", -1),
-            settings.getHopsworksIp(), targetPort);
+            "localhost", targetPort);
 // new ServiceProxyKey("localhost", "*", "*", -1), "localhost", targetPort);
     sp.setTargetURL(newQueryBuf.toString());
     try {

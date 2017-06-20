@@ -81,8 +81,12 @@ class HopsServletHandler extends AbstractHttpHandler {
       try {
 //        DNSCache dnsCache = getTransport().getRouter().getDnsCache();
 //        String ip = dnsCache.getHostAddress(remoteAddr);
-        exchange.setRemoteAddrIp("127.0.0.1");
-        exchange.setRemoteAddr(this.targetHost.getHostName());
+//        exchange.setRemoteAddrIp("127.0.0.1");
+        exchange.setRemoteAddrIp(this.request.getRemoteAddr());
+        exchange.setRemoteAddr(this.request.getRemoteHost());
+//        exchange.setRemoteAddr(this.targetHost.getHostName());
+        
+        
 //        exchange.setRemoteAddr(this.targetUriObj.toString());
 //        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.
 //                getHostName(remoteAddr) : ip);
