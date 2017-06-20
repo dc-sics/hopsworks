@@ -54,8 +54,7 @@ public class MembraneServlet extends HttpServlet {
 
   @EJB
   private Settings settings;
-  
-  
+
   @Override
   public void init(ServletConfig config) throws ServletException {
   }
@@ -76,23 +75,15 @@ public class MembraneServlet extends HttpServlet {
 //      queryString = queryString.substring(0, hash);
 //    }
 
-
 // For websockets, the following paths are used by JupyterHub:
 //  /(user/[^/]*)/(api/kernels/[^/]+/channels|terminals/websocket)/?
 // forward to ws(s)://servername:port_number
-
 //<LocationMatch "/mypath/(user/[^/]*)/(api/kernels/[^/]+/channels|terminals/websocket)(.*)">
 //    ProxyPassMatch ws://localhost:8999/mypath/$1/$2$3
 //    ProxyPassReverse ws://localhost:8999 # this may be superfluous
 //</LocationMatch>
-
-
-
 //        ProxyPass /api/kernels/ ws://192.168.254.23:8888/api/kernels/
 //        ProxyPassReverse /api/kernels/ http://192.168.254.23:8888/api/kernels/
-
-
-
     List<NameValuePair> pairs;
     try {
       //note: HttpClient 4.2 lets you parse the string without building the URI
@@ -108,15 +99,13 @@ public class MembraneServlet extends HttpServlet {
 
     StringBuffer urlBuf = new StringBuffer("http://127.0.0.1:");//note: StringBuilder isn't supported by Matcher
     String ctxPath = req.getRequestURI();
-    
+
     boolean websocket = false;
 //    if (ctxPath.contains("/api/kernels/")) {
 //      urlBuf = new StringBuffer("ws://127.0.0.1:");
 //      websocket = true;
 //    }
-    
-    
-    
+
     int x = ctxPath.indexOf("/jupyter");
     int firstSlash = ctxPath.indexOf('/', x + 1);
     int secondSlash = ctxPath.indexOf('/', firstSlash + 1);
@@ -144,7 +133,9 @@ public class MembraneServlet extends HttpServlet {
               + newTargetUri, e);
     }
     ServiceProxy sp = new ServiceProxy(
-            new ServiceProxyKey("localhost", "*", "*", -1), "localhost", targetPort);
+            new ServiceProxyKey("localhost", "*", "*", -1), settings.
+            getHopsworksIp(), targetPort);
+// new ServiceProxyKey("localhost", "*", "*", -1), "localhost", targetPort);
     sp.setTargetURL(newQueryBuf.toString());
     try {
       router = new HopsRouter(targetUriObj);

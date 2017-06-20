@@ -1089,6 +1089,7 @@ public class Settings implements Serializable {
   private static final String INTERMEDIATE_CA_DIR = CA_DIR + "/intermediate";
   public static final String SSL_CREATE_CERT_SCRIPTNAME = "createusercerts.sh";
   public static final String SSL_DELETE_CERT_SCRIPTNAME = "deleteusercerts.sh";
+  public static final String UNZIP_FILES_SCRIPTNAME = "unzip-hdfs-files.sh";
   public static final String SSL_DELETE_PROJECT_CERTS_SCRIPTNAME
           = "deleteprojectcerts.sh";
   public static final int USERNAME_LEN = 8;
