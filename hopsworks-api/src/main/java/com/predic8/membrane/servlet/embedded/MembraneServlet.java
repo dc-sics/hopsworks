@@ -132,13 +132,15 @@ public class MembraneServlet extends HttpServlet {
       throw new ServletException("Rewritten targetUri is invalid: "
               + newTargetUri, e);
     }
-    ServiceProxy sp = new ServiceProxy(
-            new ServiceProxyKey(settings.
-            getHopsworksIp(), "*", "*", -1), "localhost", targetPort);
+    ServiceProxy sp = new ServiceProxy(new ServiceProxyKey(
+            settings.getHopsworksIp(), "*", "*", -1),
+            settings.getHopsworksIp(), targetPort);
 // new ServiceProxyKey("localhost", "*", "*", -1), "localhost", targetPort);
     sp.setTargetURL(newQueryBuf.toString());
     try {
       router = new HopsRouter(targetUriObj);
+      router.add(sp);
+      router.init();
       ProxyRule proxy = new ProxyRule(new ProxyRuleKey(-1));
       router.getRuleManager().addProxy(proxy,
               RuleManager.RuleDefinitionSource.MANUAL);
