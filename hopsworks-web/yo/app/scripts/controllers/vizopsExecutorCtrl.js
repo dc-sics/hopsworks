@@ -37,6 +37,7 @@ angular.module('hopsWorksApp')
                 $scope.optionsHDFSDiskWrite = vizopsExecutorHDFSDiskWriteOptions();
                 $scope.optionsGCTime = vizopsExecutorGCTimeOptions();
                 $scope.optionsPeakMemoryPerExecutor = vizopsExecutorPeakMemoryOptions();
+                $scope.optionsShuffleReadWrite = vizopsApplicationShuffleOptions();
 
                 $scope.templateAggregatedVCPUUsage = [];
                 $scope.templateTaskDistribution = [];
@@ -45,6 +46,7 @@ angular.module('hopsWorksApp')
                 $scope.templateHDFSDiskWrite = [];
                 $scope.templateGCTime = [];
                 $scope.templatePeakMemoryPerExecutor = [];
+                $scope.templateShuffleReadWrite = [];
 
                 self.startTimeMap = {
                     'vcpuUsage': -1,
@@ -53,7 +55,8 @@ angular.module('hopsWorksApp')
                     'hdfsDiskRead': -1,
                     'hdfsDiskWrite': -1,
                     'gcTime': -1,
-                    'peakMemoryPerExecutor': -1
+                    'peakMemoryPerExecutor': -1,
+                    'totalShuffle': -1
                 };
 
                 self.hasLoadedOnce = {
@@ -64,7 +67,8 @@ angular.module('hopsWorksApp')
                     'hdfsDiskRead': false,
                     'hdfsDiskWrite': false,
                     'gcTime': false,
-                    'peakMemoryPerExecutor': false
+                    'peakMemoryPerExecutor': false,
+                    'totalShuffle': false
                 };
 
                 var updateMaxMemoryCard = function() {
@@ -109,7 +113,7 @@ angular.module('hopsWorksApp')
 
                                 var metrics = newData.values;
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateAggregatedVCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -136,17 +140,13 @@ angular.module('hopsWorksApp')
                                   var newData = success.data.result.results[0].series;
                                   self.startTimeMap['taskDistribution'] = _getLastTimestampFromSeries(newData[0]);
 
+                                  $scope.templateTaskDistribution[0].values = []; // we can afford to clear the data
+
                                   for(var i = 0; i < newData.length; i++) { // loop over each executor
                                       var executorID = newData[i].tags.entry[0].value;
                                       var totalTasks = +newData[i].values[0].split(" ")[1];
 
-                                      var itemIndex = _.findIndex($scope.templateTaskDistribution.values, executorID);
-
-                                      if (itemIndex > -1) { // exists
-                                          $scope.templateTaskDistribution[0].values[itemIndex]['y'] = totalTasks;
-                                      } else {
-                                          $scope.templateTaskDistribution[0].values.push({'x': executorID, 'y': totalTasks});
-                                      }
+                                      $scope.templateTaskDistribution[0].values.push({'x': executorID, 'y': totalTasks});
                                   }
 
                                   self.hasLoadedOnce['taskDistribution'] = true;
@@ -172,7 +172,7 @@ angular.module('hopsWorksApp')
                                   var metrics = newData.values;
                                   self.startTimeMap['memoryUsage'] = _getLastTimestampFromSeries(newData);
 
-                                  for(var i = 0; i < metrics.length; i++) {
+                                  for(var i = 0; i < metrics.length - 1; i++) {
                                       var splitEntry = metrics[i].split(' ');
 
                                       $scope.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]}); // mean
@@ -252,9 +252,10 @@ angular.module('hopsWorksApp')
                         return; // offline mode + we have loaded the information
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskWrite') +
-                               ' and service =~ /[0-9]%2B/'; // + sign encodes into space so....
+                               ' and service =~ /' + self.executorQuery + '/'; // + sign encodes into space so....
 
-                    VizopsService.getMetrics('graphite', 'mean(PS-MarkSweep_time), mean(PS-Scavenge_time)', 'spark', tags,
+                    VizopsService.getMetrics('graphite', 'non_negative_derivative(mean(\"PS-MarkSweep_time\"), 1s),' +
+                                             'non_negative_derivative(mean(\"PS-Scavenge_time\"), 1s)', 'spark', tags,
                                              'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
@@ -263,7 +264,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['gcTime'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -273,7 +274,7 @@ angular.module('hopsWorksApp')
                                 self.hasLoadedOnce['gcTime'] = true; // dont call backend again
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
-                            growl.error(error.data.errorMsg, {title: 'Error fetching gcTime metrics.', ttl: 10000});
+                            growl.error(error.data.errorMsg, {title: 'Error fetching gcTime(executor) metrics.', ttl: 10000});
                         }
                     );
                 };
@@ -290,23 +291,58 @@ angular.module('hopsWorksApp')
                                 var newData = success.data.result.results[0].series;
                                 self.startTimeMap['peakMemoryPerExecutor'] = _getLastTimestampFromSeries(newData[0]);
 
+                                $scope.templatePeakMemoryPerExecutor[0].values = [];
+
                                 for(var i = 0; i < newData.length; i++) { // loop over each executor
                                     var executorID = newData[i].tags.entry[0].value;
                                     var maxMemory = +newData[i].values[0].split(" ")[1];
 
-                                    var itemIndex = _.findIndex($scope.templatePeakMemoryPerExecutor.values, executorID);
-
-                                    if (itemIndex > -1) { // exists
-                                        $scope.templatePeakMemoryPerExecutor[0].values[itemIndex]['y'] = maxMemory;
-                                    } else {
-                                        $scope.templatePeakMemoryPerExecutor[0].values.push({'x': executorID, 'y': maxMemory});
-                                    }
+                                    $scope.templatePeakMemoryPerExecutor[0].values.push({'x': executorID, 'y': maxMemory});
                                 }
 
                                 self.hasLoadedOnce['peakMemoryPerExecutor'] = true;
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching peakMemoryPerExecutor metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateShuffleReadWritePerExecutor = function() {
+                    if (!self.now && self.hasLoadedOnce['totalShuffle'])
+                        return; // offline mode + we have loaded the information
+
+                    VizopsService.getAllExecutorMetrics().then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data;
+
+                                $scope.templateShuffleReadWrite[0].values = [];
+                                $scope.templateShuffleReadWrite[1].values = [];
+
+                                for (var entry of newData) {
+                                    var executorID = entry.id;
+                                    var totalShuffleRead = entry.totalShuffleRead;
+                                    var totalShuffleWrite = entry.totalShuffleWrite;
+
+                                    if (executorID === 'driver') continue;
+
+                                    if (self.executorQuery === '[0-9]%2B') { // all executors are included, just add it
+                                        $scope.templateShuffleReadWrite[0].values.push({'x': executorID, 'y': totalShuffleRead});
+                                        $scope.templateShuffleReadWrite[1].values.push({'x': executorID, 'y': totalShuffleWrite});
+                                    } else {
+                                        var executorsSplit = self.executorQuery.split('|');
+                                        if (executorsSplit.indexOf(executorID) > -1) {
+                                            $scope.templateShuffleReadWrite[0].values.push({'x': executorID, 'y': totalShuffleRead});
+                                            $scope.templateShuffleReadWrite[1].values.push({'x': executorID, 'y': totalShuffleWrite});
+                                        }
+                                    }
+                                }
+
+                                self.hasLoadedOnce['totalShuffle'] = true;
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching totalShuffle(executor) metrics.', ttl: 10000});
                         }
                     );
                 };
@@ -318,8 +354,9 @@ angular.module('hopsWorksApp')
                     updateMemoryUsage();
                     updateHDFSDiskRead();
                     updateHDFSDiskWrite();
-                    //updateGCTime();
+                    updateGCTime();
                     updatePeakMemoryPerExecutor();
+                    updateShuffleReadWritePerExecutor();
                 };
 
                 var resetGraphs = function() {
@@ -337,6 +374,7 @@ angular.module('hopsWorksApp')
                     $scope.templateHDFSDiskWrite = vizopsExecutorHDFSDiskWriteTemplate();
                     $scope.templateGCTime = vizopsExecutorGCTimeTemplate();
                     $scope.templatePeakMemoryPerExecutor = vizopsExecutorPeakMemoryTemplate();
+                    $scope.templateShuffleReadWrite = vizopsApplicationShuffleTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -346,7 +384,7 @@ angular.module('hopsWorksApp')
 
                 var _getTimestampLimits = function(graphName) {
                     // If we didnt use groupBy calls then it would be enough to upper limit the time with now()
-                    var limits = 'time > ' + self.startTimeMap[graphName] + 'ms';
+                    var limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
 
                     if (!self.now) {
                         limits += ' and time < ' + self.endTime + 'ms';
@@ -386,6 +424,7 @@ angular.module('hopsWorksApp')
                             self.startTime = info.startTime;
                             self.endTime = info.endTime;
                             self.now = info.now;
+
                             self.containerTemplate = self.containerTemplate.replace('APPID', self.appId.substring(12));
                             self.selectiveContainersTemplate = self.selectiveContainersTemplate.replace('APPID', self.appId.substring(12));
                             self.containerQuery = self.containerTemplate;
@@ -394,6 +433,30 @@ angular.module('hopsWorksApp')
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
                             self.hostsList = Object.keys(self.hostnames);
                             self.filterChoices = [].concat('by executor id', self.hostsList);
+
+                            if (self.now) { // only schedule the interval if app is running
+                                self.appinfoInterval = $interval(function() { // update appinfo data
+                                    JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
+                                        function(success) {
+                                            var info = success.data;
+
+                                            self.nbExecutors = info.nbExecutors - 1;
+                                            self.executorInfo = info.executorInfo;
+                                            self.endTime = info.endTime;
+                                            self.now = info.now;
+
+                                            // get the unique hostnames and the number of executors running on them
+                                            self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
+                                            self.hostsList = Object.keys(self.hostnames);
+                                            self.filterChoices = [].concat('by executor id', self.hostsList);
+
+                                            if (!self.now) $interval.cancel(self.appinfoInterval);
+                                        }, function(error) {
+                                            growl.error(error.data.errorMsg, {title: 'Error fetching appinfo(overview).', ttl: 15000});
+                                        }
+                                    );
+                                }, 2000);
+                            }
 
                             resetGraphs();
                             updateMetrics();
@@ -440,12 +503,12 @@ angular.module('hopsWorksApp')
                     } else if (self.executorIDFromInput === null) {
                         self.executorQuery = '[0-9]%2B';
                         self.containerQuery = self.containerTemplate;
-                    } else if ((self.executorIDFromInput < 2) || (self.executorIDFromInput > self.nbExecutors)) {
+                    } else if ((self.executorIDFromInput < 1) || (self.executorIDFromInput > self.nbExecutors)) {
                         return;
                     } else if (self.executorIDFromInput === self.executorQuery) {
                         return;
                     } else {
-                        self.executorQuery = self.executorIDFromInput;
+                        self.executorQuery = self.executorIDFromInput.toString();
                         self.containerQuery = self.executorInfo.entry[self.executorIDFromInput].value[0];
                     }
 

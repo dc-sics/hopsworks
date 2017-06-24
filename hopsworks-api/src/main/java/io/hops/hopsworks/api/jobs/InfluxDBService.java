@@ -2,7 +2,11 @@ package io.hops.hopsworks.api.jobs;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.common.dao.jobhistory.Execution;
+import io.hops.hopsworks.common.dao.jobhistory.ExecutionFacade;
+import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationAttemptStateFacade;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.util.IoUtils;
 import io.hops.hopsworks.common.util.Settings;
 import org.apache.hadoop.security.AccessControlException;
 import org.influxdb.InfluxDB;
@@ -24,6 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,6 +39,10 @@ public class InfluxDBService {
   private static final Logger LOGGER = Logger.getLogger(InfluxDBService.class.
           getName());
 
+  @EJB
+  private YarnApplicationAttemptStateFacade appAttemptStateFacade;
+  @EJB
+  private ExecutionFacade exeFacade;
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
@@ -92,6 +101,52 @@ public class InfluxDBService {
     }
 
     influxdb.close();
+
+    return response;
+  }
+
+  @GET
+  @Path("/allexecutors")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response getAllExecutorsMetrics(
+                    @Context SecurityContext sc, @Context HttpServletRequest req) throws
+          AppException, IOException {
+
+    LOGGER.log(Level.INFO, "Vizops - Retrieving executor information");
+
+    Response response = null;
+
+    Execution execution = exeFacade.findByAppId(appId);
+    if (execution != null) {
+      boolean isAppRunning = !execution.getState().isFinalState();
+      String trackingUrl = appAttemptStateFacade.findTrackingUrlByAppId(appId);
+      if (trackingUrl != null && !trackingUrl.isEmpty()) {
+        // trackingURL = http://dn0:8088/proxy/<appid>/
+        String sparkTrackingUrl = trackingUrl + "api/v1/applications/" + appId + "/allexecutors";
+        LOGGER.log(Level.INFO, "Vizops - spark tracking url: " + sparkTrackingUrl);
+
+        if (isAppRunning) { // call endpoint through yarn proxy
+          String content = IoUtils.readContentFromWeb(sparkTrackingUrl);
+          response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
+                  .entity(content).build();
+        } else { // call history server
+          String historyServer = settings.getSparkHistoryServerIp(); // 10.0.2.15:18080
+          String historyEndpoint = "http://" + historyServer + "/api/v1/applications/" + appId + "/1/allexecutors";
+          LOGGER.log(Level.INFO, "Vizops - App moved to history, calling: " + historyEndpoint);
+
+          String historyContent = IoUtils.readContentFromWeb(historyEndpoint);
+          response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
+                  .entity(historyContent).build();
+        }
+      } else {
+        response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND)
+                .entity("TrackingURL not found").build();
+      }
+    } else {
+      response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND)
+              .entity("App not found").build();
+    }
 
     return response;
   }

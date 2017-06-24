@@ -23,15 +23,13 @@ angular.module('hopsWorksApp')
                 self.maxAvailableDriverMem = "0.0";
 
                 $scope.optionsMemorySpace = vizopsMemorySpaceDriverOptions();
-                $scope.templateMemorySpace = vizopsMemorySpaceDriverTemplate();
-
                 $scope.optionsVCPU = vizopsVCPUDriverOptions();
-                $scope.templateVCPU = vizopsVCPUDriverTemplate();
-
                 $scope.optionsRDDCacheDiskSpill = vizopsRDDCacheDiskSpillOptions();
-                $scope.templateRDDCacheDiskSpill = vizopsRDDCacheDiskSpillTemplate();
-
                 $scope.optionsGCTime = vizopsGCTimeOptions();
+
+                $scope.templateMemorySpace = vizopsMemorySpaceDriverTemplate();
+                $scope.templateVCPU = vizopsVCPUDriverTemplate();
+                $scope.templateRDDCacheDiskSpill = vizopsRDDCacheDiskSpillTemplate();
                 $scope.templateGCTime = vizopsGCTimeTemplate();
 
                 self.startTimeMap = {
@@ -66,7 +64,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['memorySpace'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateMemorySpace[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -98,7 +96,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['vcpuUsage'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateVCPU[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -152,7 +150,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['rddCacheDiskSpill'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateRDDCacheDiskSpill[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -174,7 +172,8 @@ angular.module('hopsWorksApp')
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('gcTime')
                                ' and service = \'driver\'';
 
-                    VizopsService.getMetrics('graphite', 'mean(PS-MarkSweep_time), mean(PS-Scavenge_time)', 'spark', tags,
+                    VizopsService.getMetrics('graphite', 'non_negative_derivative(mean(\"PS-MarkSweep_time\"), 1s),' +
+                                             'non_negative_derivative(mean(\"PS-Scavenge_time\"), 1s)', 'spark', tags,
                                              'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
@@ -183,7 +182,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['gcTime'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -203,7 +202,7 @@ angular.module('hopsWorksApp')
                     updateMaxMemory();
                     updateGraphVCPU();
                     updateRDDCacheDiskSpill();
-                    //updateGCTime();
+                    updateGCTime();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -213,7 +212,7 @@ angular.module('hopsWorksApp')
 
                 var _getTimestampLimits = function(graphName) {
                     // If we didnt use groupBy calls then it would be enough to upper limit the time with now()
-                    var limits = 'time > ' + self.startTimeMap[graphName] + 'ms';
+                    var limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
 
                     if (!self.now) {
                         limits += ' and time < ' + self.endTime + 'ms';
@@ -264,6 +263,29 @@ angular.module('hopsWorksApp')
                             // get the unique hostnames and the number of executors running on them
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
                             self.nbExecutorsOnDriverHost = self.hostnames[self.executorInfo.entry[0].value[1]].length - 1;
+
+                            if (self.now) { // only schedule the interval if app is running
+                                self.appinfoInterval = $interval(function() { // update appinfo data
+                                    JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
+                                        function(success) {
+                                            var info = success.data;
+
+                                            self.nbExecutors = info.nbExecutors;
+                                            self.executorInfo = info.executorInfo;
+                                            self.endTime = info.endTime;
+                                            self.now = info.now;
+
+                                            // get the unique hostnames and the number of executors running on them
+                                            self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
+                                            self.nbExecutorsOnDriverHost = self.hostnames[self.executorInfo.entry[0].value[1]].length - 1;
+
+                                            if (!self.now) $interval.cancel(self.appinfoInterval);
+                                        }, function(error) {
+                                            growl.error(error.data.errorMsg, {title: 'Error fetching appinfo(driver).', ttl: 15000});
+                                        }
+                                    );
+                                }, 2000);
+                            }
 
                             updateMetrics();
                         }, function(error) {

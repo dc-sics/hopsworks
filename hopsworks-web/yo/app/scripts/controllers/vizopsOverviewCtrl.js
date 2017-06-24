@@ -1,5 +1,10 @@
 'use strict';
 
+/*  Group by calls have an issue right now that the last measurement has to be ignored. This happens because the last
+    time bucket is not full yet and when the next backend call happens that bucket will be full and as such more accurate.
+    In the 200ok case you should be ignoring the last measurement for now.
+*/
+
 angular.module('hopsWorksApp')
          .controller('VizopsOverviewCtrl', ['$scope', '$timeout', 'growl', 'JobService', '$interval',
                      '$routeParams', '$route', 'VizopsService',
@@ -11,7 +16,7 @@ angular.module('hopsWorksApp')
                 self.appId;
                 self.startTime = -1;
                 self.endTime = -1; // application completion time
-                self.now; // is the application running now?
+                self.now = null; // is the application running now?
                 // array of dictionaries: self.executorInfo.entry[executor].value[0: container, 1: hostname, 2: nm vcores]
                 self.executorInfo;
                 self.nbExecutors;
@@ -20,6 +25,9 @@ angular.module('hopsWorksApp')
                 self.nbHosts; // number of machines that ran application executors
                 self.clusterCPUUtilization = "0.0";
                 self.nbLiveHosts = 0;
+                self.appinfoInterval;
+                self.uiShuffleRead = 0.0;
+                self.uiShuffleWrite = 0.0;
 
                 self.startTimeMap = {
                     'totalActiveTasksApp': -1,
@@ -27,7 +35,9 @@ angular.module('hopsWorksApp')
                     'clusterCPUUtilizationCard': -1,
                     'hdfsReadRateTotal': -1,
                     'hdfsWriteRateTotal': -1,
-                    'liveHostsCard': -1
+                    'liveHostsCard': -1,
+                    'containerMemoryUsedTotal': -1,
+                    'applicationShuffleTotal': -1
                 };
 
                 self.hasLoadedOnce = {
@@ -36,20 +46,22 @@ angular.module('hopsWorksApp')
                     'clusterCPUUtilizationCard': false,
                     'hdfsReadRateTotal': false,
                     'hdfsWriteRateTotal': false,
-                    'liveHostsCard': false
+                    'liveHostsCard': false,
+                    'containerMemoryUsedTotal': false,
+                    'applicationShuffleTotal': false
                 };
 
                 $scope.optionsTotalActiveTasks = vizopsTotalActiveTasksOptions();
-                $scope.templateTotalActiveTasks = vizopsTotalActiveTasksTemplate();
-
                 $scope.optionsTotalCompletedTasks = vizopsTotalCompletedTasksOptions();
-                $scope.templateTotalCompletedTasks = vizopsTotalCompletedTasksTemplate();
-
                 $scope.optionsHDFSReadRateTotal = vizopsHDFSReadRateTotalOptions();
-                $scope.templateHDFSReadRateTotal = vizopsHDFSReadRateTotalTemplate();
-
                 $scope.optionsHDFSWriteRateTotal = vizopsHDFSWriteRateTotalOptions();
-                $scope.templateHDFSWriteRateTotal = vizopsHDFSWriteRateTotalTemplate();
+                $scope.optionsContainerMemoryUsedTotal = vizopsContainerMemoryUsedTotalOptions();
+
+                $scope.templateTotalActiveTasks = [];
+                $scope.templateTotalCompletedTasks = [];
+                $scope.templateHDFSReadRateTotal = [];
+                $scope.templateHDFSWriteRateTotal = [];
+                $scope.templateContainerMemoryUsedTotal = [];
 
                 var updateTotalActiveTasks = function() {
                     if (!self.now && self.hasLoadedOnce['totalActiveTasksApp'])
@@ -59,7 +71,7 @@ angular.module('hopsWorksApp')
 
                     VizopsService.getMetrics('graphite',
                                                'sum(threadpool_activeTasks)', 'spark', tags,
-                                               'time(' + VizopsService.getGroupByInterval() + 's)').then(
+                                               'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -67,7 +79,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['totalActiveTasksApp'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length; i++) {
+                                for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateTotalActiveTasks[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -95,7 +107,7 @@ angular.module('hopsWorksApp')
                                 var newData = success.data.result.results[0].series;
                                 self.startTimeMap['totalCompletedTasksApp'] = _getLastTimestampFromSeries(newData[0]);
 
-                                for(var i = 0; i < newData[0].values.length; i++) {
+                                for(var i = 0; i < newData[0].values.length - 1; i++) {
                                     var timestamp = +newData[0].values[i].split(' ')[0];
                                     var totals = _.reduce(newData, function(sum, serie) {
                                         sum[0] += +serie.values[i].split(' ')[1];
@@ -155,7 +167,7 @@ angular.module('hopsWorksApp')
                             var newData = success.data.result.results[0].series;
                             self.startTimeMap['hdfsReadRateTotal'] = _getLastTimestampFromSeries(newData[0]);
 
-                            for(var i = 0; i < newData[0].values.length; i++) {
+                            for(var i = 0; i < newData[0].values.length - 1; i++) { // each serie has the same number of values
                                 var timestamp = +newData[0].values[i].split(' ')[0];
                                 var totals = _.reduce(newData, function(sum, serie) {
                                     sum[0] += +serie.values[i].split(' ')[1];
@@ -191,7 +203,7 @@ angular.module('hopsWorksApp')
                             var newData = success.data.result.results[0].series;
                             self.startTimeMap['hdfsWriteRateTotal'] = _getLastTimestampFromSeries(newData[0]);
 
-                            for(var i = 0; i < newData[0].values.length; i++) {
+                            for(var i = 0; i < newData[0].values.length - 1; i++) {
                                 var timestamp = +newData[0].values[i].split(' ')[0];
                                 var totals = _.reduce(newData, function(sum, serie) {
                                     sum[0] += +serie.values[i].split(' ')[1];
@@ -239,6 +251,81 @@ angular.module('hopsWorksApp')
                     );
                 };
 
+                var updateContainerMemoryUsedTotal = function() {
+                    // Memory from spark is much easier to work with than nodemanager's metrics
+                    if (!self.now && self.hasLoadedOnce['containerMemoryUsedTotal'])
+                        return; // offline mode + we have loaded the information
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('containerMemoryUsedTotal'); // + sign encodes into space so....
+
+                    VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_max)', 'spark', tags,
+                                             'service, time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                          function(success) {
+                              if (success.status === 200) { // new measurements
+                                  var newData = success.data.result.results[0].series;
+                                  self.startTimeMap['containerMemoryUsedTotal'] = _getLastTimestampFromSeries(newData[0]);
+
+                                  var timestampDictionary = {}, timestampsOrder = []; // { timestamp: [used sum, total sum] }
+                                  for(var i = 0; i < newData.length; i++) { // loop over each executor/driver and sum the memories
+                                        for(var j = 0; j < newData[i].values.length - 1; j++) { // go through each timestamp
+                                            var split = newData[i].values[j].split(' ');
+                                            var timestamp = +split[0];
+                                            /* add both used and max to the rest
+                                               This if will only be activated by the first series's entries,
+                                               so we can maintain a list to maintain insertion order since the Object
+                                               keys order depends on the browser
+                                            */
+                                            if (!(timestamp in timestampDictionary)) {
+                                                timestampDictionary[timestamp] = [0,0];
+                                                timestampsOrder.push(timestamp);
+                                            }
+
+                                            timestampDictionary[timestamp][0] += +split[1];
+                                            timestampDictionary[timestamp][1] += +split[2];
+                                        }
+                                  }
+
+                                  for(var time of timestampsOrder) {
+                                      $scope.templateContainerMemoryUsedTotal[0].values.push({'x': time,
+                                                                                              'y': timestampDictionary[time][0]});
+                                      $scope.templateContainerMemoryUsedTotal[1].values.push({'x': time,
+                                                                                              'y': timestampDictionary[time][1]});
+                                  }
+
+                                  self.hasLoadedOnce['containerMemoryUsedTotal'] = true;
+                              } // dont do anything if response 204(no content), nothing new
+                          }, function(error) {
+                              growl.error(error.data.errorMsg, {title: 'Error fetching containerMemoryUsedTotal metric.', ttl: 10000});
+                          }
+                      );
+                };
+
+                var updateApplicationShuffleTotal = function() {
+                    if (!self.now && self.hasLoadedOnce['applicationShuffleTotal'])
+                        return; // offline mode + we have loaded the information
+
+                    VizopsService.getAllExecutorMetrics().then(
+                          function(success) {
+                              if (success.status === 200) { // new measurements
+                                  var newData = success.data;
+
+                                  var totalShuffleWrite = 0, totalShuffleRead = 0;
+                                  for (var entry of newData) {
+                                    totalShuffleWrite += entry.totalShuffleWrite;
+                                    totalShuffleRead += entry.totalShuffleRead;
+                                  }
+
+                                  self.uiShuffleRead = d3.format(".2s")(totalShuffleRead);
+                                  self.uiShuffleWrite = d3.format(".2s")(totalShuffleWrite);
+
+                                  self.hasLoadedOnce['applicationShuffleTotal'] = true;
+                              } // dont do anything if response 204(no content), nothing new
+                          }, function(error) {
+                              growl.error(error, {title: 'Error fetching shuffleData(overview) metric.', ttl: 10000});
+                          }
+                    );
+                };
+
                 var updateMetrics = function() {
                     updateTotalActiveTasks();
                     updateTotalCompletedTasks();
@@ -246,6 +333,23 @@ angular.module('hopsWorksApp')
                     updateHdfsReadRateTotal();
                     updateHdfsWriteRateTotal();
                     updateLiveHosts();
+                    updateContainerMemoryUsedTotal();
+                    updateApplicationShuffleTotal();
+                };
+
+                var resetGraphs = function() {
+                    for (var key in self.startTimeMap) {
+                      if (self.startTimeMap.hasOwnProperty(key)) {
+                        self.startTimeMap[key] = self.startTime;
+                        self.hasLoadedOnce[key] = false;
+                      }
+                    }
+
+                    $scope.templateTotalActiveTasks = vizopsTotalActiveTasksTemplate();
+                    $scope.templateTotalCompletedTasks = vizopsTotalCompletedTasksTemplate();
+                    $scope.templateHDFSReadRateTotal = vizopsHDFSReadRateTotalTemplate();
+                    $scope.templateHDFSWriteRateTotal = vizopsHDFSWriteRateTotalTemplate();
+                    $scope.templateContainerMemoryUsedTotal = vizopsContainerMemoryUsedTotalTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -255,7 +359,7 @@ angular.module('hopsWorksApp')
 
                 var _getTimestampLimits = function(graphName) {
                     // If we didn't use groupBy calls then it would be enough to upper limit the time with now()
-                    var limits = 'time > ' + self.startTimeMap[graphName] + 'ms';
+                    var limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
 
                     if (!self.now) {
                         limits += ' and time < ' + self.endTime + 'ms';
@@ -296,19 +400,35 @@ angular.module('hopsWorksApp')
                             self.endTime = info.endTime;
                             self.now = info.now;
 
-                            // Initialize the graph timers
-                            for (var key in self.startTimeMap) {
-                              if (self.startTimeMap.hasOwnProperty(key)) {
-                                self.startTimeMap[key] = info.startTime;
-                              }
-                            }
-
                             // get the unique hostnames and the number of executors running on them
                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
                             self.nbHosts = Object.keys(self.hostnames).length; // Remove driver
 
-                            updateMetrics();
+                            if (self.now) { // only schedule the interval if app is running
+                                self.appinfoInterval = $interval(function() { // update appinfo data
+                                    JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
+                                        function(success) {
+                                            var info = success.data;
 
+                                            self.nbExecutors = info.nbExecutors;
+                                            self.executorInfo = info.executorInfo;
+                                            self.endTime = info.endTime;
+                                            self.now = info.now;
+
+                                            // get the unique hostnames and the number of executors running on them
+                                            self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
+                                            self.nbHosts = Object.keys(self.hostnames).length; // Remove driver
+
+                                            if (!self.now) $interval.cancel(self.appinfoInterval);
+                                        }, function(error) {
+                                            growl.error(error.data.errorMsg, {title: 'Error fetching appinfo(overview).', ttl: 15000});
+                                        }
+                                    );
+                                }, 2000);
+                            }
+
+                            resetGraphs();
+                            updateMetrics();
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching Overview info.', ttl: 10000});
                         }

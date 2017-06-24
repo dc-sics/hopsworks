@@ -2,13 +2,14 @@
 
 
 angular.module('hopsWorksApp')
-
-    .factory('VizopsService', ['$http', function ($http) {
+    .factory('VizopsService', ['$http', '$interval', function ($http, $interval) {
         var self = this;
-
-        var projectId = '';
-        var appId = '';
         var groupByInterval = 10;
+
+        self.projectId = '';
+        self.appId = '';
+        self.endTime;
+        self.now = null;
 
         var service = {
             init: function(projectId, appId) {
@@ -28,6 +29,11 @@ angular.module('hopsWorksApp')
                 if (groupBy) {
                     query += '&groupBy=' + groupBy;
                 }
+                return $http.get(query);
+            },
+
+            getAllExecutorMetrics: function() {
+                var query = '/api/project/' + self.projectId + '/jobs/' + self.appId + '/influxdb/allexecutors';
                 return $http.get(query);
             }
         };

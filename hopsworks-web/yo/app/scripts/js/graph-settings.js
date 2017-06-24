@@ -9,9 +9,9 @@ var _getColor = ['#9a92e8','#d60606' ,'#025ced','#c67a0f', '#2166ac', '#b2182b',
 var getBaseChartOptions = function() {
     return {
         chart: {
-            "type": "lineChart",
+            "type": "lineWithFocusChart",
             "interpolate": "monotone",
-            "height": 350,
+            "height": 330,
             "margin": {
                 "top": 20,
                 "right": 80,
@@ -78,10 +78,10 @@ var vizopsTotalActiveTasksOptions = function() {
         "axisLabel": "Tasks",
         "rotateYLabel": true,
         "tickFormat": function(d) {
-          return d3.format("d")(d); // TODO: update to d3.format("s") 10000 -> 10K etc
+          return d3.format("d")(d);
         }
       };
-    options.title.text = 'Total Active Tasks per 30s';
+    options.title.text = 'Total Active Tasks';
 
     return options;
 };
@@ -198,6 +198,36 @@ var vizopsHDFSWriteRateTotalTemplate = function() {
     ];
 };
 
+// OVERVIEW: CONTAINER MEMORY USED AND TOTAL
+var vizopsContainerMemoryUsedTotalOptions = function() {
+    var options = getBaseChartOptions();
+    options.chart.yAxis = {
+        "axisLabel": "Bytes",
+        "rotateYLabel": true,
+        "tickFormat": function(d) {
+          return d3.format(".2s")(d);
+        }
+      };
+    options.title.text = 'Memory across all app containers';
+
+    return options;
+};
+
+var vizopsContainerMemoryUsedTotalTemplate = function() {
+    return [
+        {
+            values: [],
+            key: 'used',
+            color: _getColor[6]
+        },
+        {
+            values: [],
+            key: 'max',
+            color: _getColor[10]
+        }
+    ];
+};
+
 // DRIVER: Heap used
 var vizopsMemorySpaceDriverOptions = function() {
     var options = getBaseChartOptions();
@@ -208,7 +238,7 @@ var vizopsMemorySpaceDriverOptions = function() {
             return d3.format(".2s")(d);
         }
       };
-    options.title.text = 'Heap used (groupby 20s)';
+    options.title.text = 'Heap used';
 
     return options;
 };
@@ -238,7 +268,7 @@ var vizopsVCPUDriverOptions = function() {
           return d3.format(".1%")(d);
         }
       };
-    options.title.text = 'VCPU usage (groupby 20s)';
+    options.title.text = 'VCPU usage';
 
     return options;
 };
@@ -272,6 +302,8 @@ var vizopsRDDCacheDiskSpillOptions = function() {
         }
       } ;
     options.title.text = "BlockManager";
+    options.subtitle.enable = true;
+    options.subtitle.text = 'In case disk spill increases, consider adding executor memory';
 
     return options;
 };
@@ -299,10 +331,10 @@ var vizopsRDDCacheDiskSpillTemplate = function() {
 var vizopsGCTimeOptions = function() {
     var options = getBaseChartOptions();
     options.chart.yAxis = {
-        "axisLabel": "GC Time",
+        "axisLabel": "GC Time(rate in seconds)",
         "rotateYLabel": true,
         "tickFormat": function(d) {
-          return d3.format("d")(d);
+          return d3.format(".1f")(d);
         }
       };
     options.title.text = 'GC Time';
@@ -413,13 +445,15 @@ var vizopsExecutorHDFSDiskWriteTemplate = function() {
 var vizopsExecutorGCTimeOptions = function() {
     var options = getBaseChartOptions();
     options.chart.yAxis = {
-        "axisLabel": "GC Time",
+        "axisLabel": "GC Time(rate in seconds)",
         "rotateYLabel": true,
         "tickFormat": function(d) {
-          return d3.format("d")(d);
+          return d3.format(".1f")(d);
         }
       };
     options.title.text = 'GC Time';
+    options.subtitle.enable = true;
+    options.subtitle.text = 'Spending too much time on GC means a lot of RDDs being created, maybe cache? (spark.memory.storageFraction)';
 
     return options;
 };
@@ -489,7 +523,7 @@ var vizopsExecutorMemoryUsageTemplate = function() {
        },
        {
            values: [],
-           key: 'threshold',
+           key: '80% max',
            color: _getColor[1]
        }
     ];
@@ -514,6 +548,8 @@ var vizopsExecutorTaskDistributionOptions = function() {
       }
     };
     options.title.text = 'Task distribution';
+    options.subtitle.enable = true;
+    options.subtitle.text = 'If task work seems evenly shared, then check task duration per executor';
 
     return options;
 };
@@ -546,6 +582,8 @@ var vizopsExecutorPeakMemoryOptions = function() {
       }
     };
     options.title.text = 'Peak memory';
+    options.subtitle.enable = true;
+    options.subtitle.text = 'If max executor memory is not reached by most executors, consider allocating less container memory';
 
     return options;
 };
@@ -556,6 +594,46 @@ var vizopsExecutorPeakMemoryTemplate = function() {
             key: 'Peak memory per executor',
             values: [],
             color: _getColor[5]
+        }
+    ];
+};
+
+// EXECUTOR TOTAL SHUFFLE
+var vizopsApplicationShuffleOptions = function() {
+    var options = getBaseChartOptions();
+
+    options.chart.type = 'multiBarChart';
+    options.chart.showControls = false;
+    options.chart.xAxis = {
+        "axisLabel": "Executors",
+        "tickFormat": function(d) {
+          return d;
+        }
+    };
+    options.chart.yAxis = {
+      "axisLabel": "Bytes",
+      "rotateYLabel": true,
+      "tickFormat": function(d) {
+        return d3.format(".2s")(d);
+      }
+    };
+    options.chart.showControls = true;
+    options.title.text = 'Shuffle Read/Write';
+
+    return options;
+};
+
+var vizopsApplicationShuffleTemplate = function() {
+    return [
+        {
+            values: [],
+            key: 'read',
+            color: _getColor[11]
+        },
+        {
+            values: [],
+            key: 'write',
+            color: _getColor[16]
         }
     ];
 };
@@ -656,6 +734,48 @@ var vizopsWorkerNetworkTrafficTemplate = function() {
              key: 'sent',
              color: _getColor[10]
          }
+     ];
+ };
+
+// WORKER Disk
+var vizopsWorkerDiskUsageOptions = function() {
+    var options = getBaseChartOptions();
+
+    options.chart.type = 'multiBarChart';
+    options.chart.showControls = false;
+    options.chart.xAxis = {
+        "axisLabel": "Hosts/Disks",
+        "tickFormat": function(d) {
+          return d;
+        }
+    };
+    options.chart.yAxis = {
+      "axisLabel": "Bytes",
+      "rotateYLabel": true,
+      "tickFormat": function(d) {
+        return d3.format(".2s")(d);
+      }
+    };
+    options.chart.showControls = true;
+    options.title.text = 'Disk usage';
+    options.subtitle.enable = true;
+    options.subtitle.text = 'Per host if global view, per device if the filter is active';
+
+    return options;
+};
+
+var vizopsWorkerDiskUsageTemplate = function() {
+    return [
+         {
+             values: [],
+             key: 'used',
+             color: _getColor[14]
+         },
+         {
+              values: [],
+              key: 'free',
+              color: _getColor[3]
+          }
      ];
  };
 

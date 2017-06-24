@@ -16,24 +16,8 @@ angular.module('hopsWorksApp')
                 self.now; // is the application running now?
 
                 self.durationInterval;
+                self.appinfoInterval; // checks for the app status
                 self.durationLabel = "0m00s";
-
-                var _extractHostnameInfoFromResponse = function(response) {
-                    // get the unique host names
-                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
-
-                    var result = {};
-                    for(var i = 0; i < hosts.length; i++) {
-                        result[hosts[i]] = [];
-                    }
-
-                    // and add the executors running on them
-                    for(var i = 0; i < response.entry.length; i++) {
-                        result[response.entry[i].value[1]].push(response.entry[i].key);
-                    }
-
-                    return result;
-                };
 
                 var init = function() {
                     self.appId = VizopsService.getAppId();
@@ -46,12 +30,31 @@ angular.module('hopsWorksApp')
                             self.endTime = info.endTime;
                             self.now = info.now;
 
-                            if (self.now) {
-                                self.durationInterval = $interval(function () {
+                            self.durationInterval = $interval(function () {
+                                if (self.now) {
                                     self.durationLabel = Date.now() - self.startTime;
-                                }, 1000);
-                            } else {
-                                self.durationLabel = self.endTime - self.startTime;
+                                } else {
+                                    self.durationLabel = self.endTime - self.startTime;
+                                }
+                            }, 1000);
+
+                            if (self.now) {
+                                self.appinfoInterval = $interval(function() {
+                                    JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
+                                        function(success) {
+                                            var info = success.data;
+
+                                            self.endTime = info.endTime;
+                                            self.now = info.now;
+
+                                            if (!self.now) {
+                                                $interval.cancel(self.appinfoInterval);
+                                            }
+                                        }, function(error) {
+                                            growl.error(error.data.errorMsg, {title: 'Error fetching app info(2).', ttl: 15000});
+                                        }
+                                    );
+                                }, 2000);
                             }
 
                         }, function(error) {
