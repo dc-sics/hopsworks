@@ -33,14 +33,12 @@ import com.predic8.membrane.core.rules.ProxyRuleKey;
 import com.predic8.membrane.core.rules.ServiceProxy;
 import com.predic8.membrane.core.rules.ServiceProxyKey;
 import io.hops.hopsworks.common.util.Ip;
-import io.hops.hopsworks.common.util.Settings;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.ejb.EJB;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
@@ -53,8 +51,8 @@ public class MembraneServlet extends HttpServlet {
   private static final long serialVersionUID = 1L;
   private static final Log logger = LogFactory.getLog(MembraneServlet.class);
 
-  @EJB
-  private Settings settings;
+//  @EJB
+//  private Settings settings;
 
   @Override
   public void init(ServletConfig config) throws ServletException {
@@ -71,10 +69,6 @@ public class MembraneServlet extends HttpServlet {
             getQueryString();
 
     Router router;
-//    int hash = queryString.indexOf('#');
-//    if (hash >= 0) {
-//      queryString = queryString.substring(0, hash);
-//    }
 
 // For websockets, the following paths are used by JupyterHub:
 //  /(user/[^/]*)/(api/kernels/[^/]+/channels|terminals/websocket)/?
@@ -100,23 +94,13 @@ public class MembraneServlet extends HttpServlet {
 
     String externalIp = Ip.getHost(req.getRequestURL().toString());
 
-//    StringBuffer urlBuf = new StringBuffer("http://127.0.0.1:");//note: StringBuilder isn't supported by Matcher
     StringBuffer urlBuf
             = new StringBuffer("http://"
-//                    + externalIp
-                    //                    + settings.getHopsworksExternalIp()
                                         + "localhost"
                     + ":"
-//                                + settings.getHopsworksPort()
             );
 
     String ctxPath = req.getRequestURI();
-
-//    boolean websocket = false;
-//    if (ctxPath.contains("/api/kernels/")) {
-//      urlBuf = new StringBuffer("ws://127.0.0.1:");
-//      websocket = true;
-//    }
 
     int x = ctxPath.indexOf("/jupyter");
     int firstSlash = ctxPath.indexOf('/', x + 1);
@@ -144,18 +128,12 @@ public class MembraneServlet extends HttpServlet {
       throw new ServletException("Rewritten targetUri is invalid: "
               + newTargetUri, e);
     }
-    // settings.getHopsworksIp()
     ServiceProxy sp = new ServiceProxy(
             new ServiceProxyKey(
-                    //                        req.getRemoteAddr(), "*", "*", -1),
                     externalIp, "*", "*", -1),
             "localhost", targetPort);
-//            new ServiceProxyKey("localhost", "*", "*", -1), "localhost",
-//            new ServiceProxyKey("*", "*", "*", -1), "localhost", targetPort);
-//    sp.setTargetURL(newQueryBuf.toString());
     sp.setTargetURL(newQueryBuf.toString());
     // only set external hostname in case admin console is used
-//    sp.setExternalHostname(externalIp);
     try {
       router = new HopsRouter(targetUriObj);
       router.add(sp);

@@ -54,7 +54,6 @@ class HopsServletHandler extends AbstractHttpHandler {
 
   private final HttpServletRequest request;
   private final HttpServletResponse response;
-//  private URI srcUriObj = null;
   private URI targetUriObj = null;
   private HttpHost targetHost = null;
 
@@ -64,7 +63,6 @@ class HopsServletHandler extends AbstractHttpHandler {
     super(transport);
     this.request = request;
     this.response = response;
-//    this.srcUriObj = srcUri;
     this.targetUriObj = targetUriObj;
     this.targetHost = URIUtils.extractHost(targetUriObj);
 
@@ -80,20 +78,9 @@ class HopsServletHandler extends AbstractHttpHandler {
       exchange.received();
 
       try {
-//        DNSCache dnsCache = getTransport().getRouter().getDnsCache();
-//        String ip = dnsCache.getHostAddress(remoteAddr);
-//        exchange.setRemoteAddrIp("127.0.0.1");
-//        exchange.setRemoteAddrIp(this.request.getRemoteAddr());
         exchange.setRemoteAddrIp(Ip.getHost(request.getRequestURL().toString()));
         exchange.setRemoteAddr(Ip.getHost(request.getRequestURL().toString()));
-//        exchange.setRemoteAddr(this.request.getRemoteHost());
-//        exchange.setRemoteAddr(this.targetHost.getHostName());
-
-//        exchange.setRemoteAddr(this.targetUriObj.toString());
-//        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.
-//                getHostName(remoteAddr) : ip);
         exchange.setRequest(srcReq);
-//        exchange.setOriginalRequestUri(srcReq.getUri());
         exchange.setOriginalRequestUri(request.getRequestURL().toString());
 
         invokeHandlers();
@@ -148,7 +135,6 @@ class HopsServletHandler extends AbstractHttpHandler {
     if (request.getQueryString() != null) {
       pathQuery += "?" + request.getQueryString();
     }
-//    String pathQuery = this.targetUriObj.toString();
 
     if (getTransport().isRemoveContextRoot()) {
       String contextPath = request.getContextPath();
@@ -196,9 +182,6 @@ class HopsServletHandler extends AbstractHttpHandler {
   @Override
   public InetAddress getLocalAddress() {
     try {
-//      return InetAddress.getLocalHost();
-//      return InetAddress.getByName(request.getLocalAddr());
-
       String externalIp = Ip.getHost(request.getRequestURL().toString());
       return InetAddress.getByName(externalIp);
     } catch (UnknownHostException ex) {
@@ -211,7 +194,6 @@ class HopsServletHandler extends AbstractHttpHandler {
   @Override
   public int getLocalPort() {
     return request.getLocalPort();
-//    return -1;
   }
 
   @Override
