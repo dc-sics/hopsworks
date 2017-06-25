@@ -443,6 +443,18 @@ public class Settings implements Serializable {
     return HADOOP_DIR;
   }
 
+  
+  private String HOPSWORKS_EXTERNAL_IP = "127.0.0.1";
+
+  public synchronized String getHopsworksExternalIp() {
+    checkCache();
+    return HOPSWORKS_EXTERNAL_IP;
+  }
+  
+  public synchronized void setHopsworksExternalIp(String ip) {
+    HOPSWORKS_EXTERNAL_IP = ip;
+  }
+  
   private String HOPSWORKS_IP = "127.0.0.1";
 
   public synchronized String getHopsworksIp() {

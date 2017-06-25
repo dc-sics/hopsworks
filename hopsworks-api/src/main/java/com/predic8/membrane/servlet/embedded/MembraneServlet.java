@@ -32,6 +32,7 @@ import com.predic8.membrane.core.rules.ProxyRule;
 import com.predic8.membrane.core.rules.ProxyRuleKey;
 import com.predic8.membrane.core.rules.ServiceProxy;
 import com.predic8.membrane.core.rules.ServiceProxyKey;
+import io.hops.hopsworks.common.util.Ip;
 import io.hops.hopsworks.common.util.Settings;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -97,10 +98,21 @@ public class MembraneServlet extends HttpServlet {
       params.put(pair.getName(), pair.getValue());
     }
 
-    StringBuffer urlBuf = new StringBuffer("http://127.0.0.1:");//note: StringBuilder isn't supported by Matcher
+    String externalIp = Ip.getHost(req.getRequestURL().toString());
+
+//    StringBuffer urlBuf = new StringBuffer("http://127.0.0.1:");//note: StringBuilder isn't supported by Matcher
+    StringBuffer urlBuf
+            = new StringBuffer("http://"
+//                    + externalIp
+                    //                    + settings.getHopsworksExternalIp()
+                                        + "localhost"
+                    + ":"
+//                                + settings.getHopsworksPort()
+            );
+
     String ctxPath = req.getRequestURI();
 
-    boolean websocket = false;
+//    boolean websocket = false;
 //    if (ctxPath.contains("/api/kernels/")) {
 //      urlBuf = new StringBuffer("ws://127.0.0.1:");
 //      websocket = true;
@@ -132,11 +144,18 @@ public class MembraneServlet extends HttpServlet {
       throw new ServletException("Rewritten targetUri is invalid: "
               + newTargetUri, e);
     }
-    ServiceProxy sp = new ServiceProxy(new ServiceProxyKey(
-            settings.getHopsworksIp(), "*", "*", -1),
+    // settings.getHopsworksIp()
+    ServiceProxy sp = new ServiceProxy(
+            new ServiceProxyKey(
+                    //                        req.getRemoteAddr(), "*", "*", -1),
+                    externalIp, "*", "*", -1),
             "localhost", targetPort);
-// new ServiceProxyKey("localhost", "*", "*", -1), "localhost", targetPort);
+//            new ServiceProxyKey("localhost", "*", "*", -1), "localhost",
+//            new ServiceProxyKey("*", "*", "*", -1), "localhost", targetPort);
+//    sp.setTargetURL(newQueryBuf.toString());
     sp.setTargetURL(newQueryBuf.toString());
+    // only set external hostname in case admin console is used
+//    sp.setExternalHostname(externalIp);
     try {
       router = new HopsRouter(targetUriObj);
       router.add(sp);

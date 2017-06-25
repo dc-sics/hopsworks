@@ -37,6 +37,7 @@ import com.predic8.membrane.core.transport.http.AbortException;
 import com.predic8.membrane.core.transport.http.AbstractHttpHandler;
 import com.predic8.membrane.core.transport.http.EOFWhileReadingFirstLineException;
 import com.predic8.membrane.core.util.EndOfStreamException;
+import io.hops.hopsworks.common.util.Ip;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
@@ -82,17 +83,18 @@ class HopsServletHandler extends AbstractHttpHandler {
 //        DNSCache dnsCache = getTransport().getRouter().getDnsCache();
 //        String ip = dnsCache.getHostAddress(remoteAddr);
 //        exchange.setRemoteAddrIp("127.0.0.1");
-        exchange.setRemoteAddrIp(this.request.getRemoteAddr());
-        exchange.setRemoteAddr(this.request.getRemoteHost());
+//        exchange.setRemoteAddrIp(this.request.getRemoteAddr());
+        exchange.setRemoteAddrIp(Ip.getHost(request.getRequestURL().toString()));
+        exchange.setRemoteAddr(Ip.getHost(request.getRequestURL().toString()));
+//        exchange.setRemoteAddr(this.request.getRemoteHost());
 //        exchange.setRemoteAddr(this.targetHost.getHostName());
-        
-        
+
 //        exchange.setRemoteAddr(this.targetUriObj.toString());
 //        exchange.setRemoteAddr(getTransport().isReverseDNS() ? dnsCache.
 //                getHostName(remoteAddr) : ip);
-
         exchange.setRequest(srcReq);
-        exchange.setOriginalRequestUri(srcReq.getUri());
+//        exchange.setOriginalRequestUri(srcReq.getUri());
+        exchange.setOriginalRequestUri(request.getRequestURL().toString());
 
         invokeHandlers();
       } catch (AbortException e) {
@@ -194,8 +196,11 @@ class HopsServletHandler extends AbstractHttpHandler {
   @Override
   public InetAddress getLocalAddress() {
     try {
-      //    return localAddr;
-      return InetAddress.getLocalHost();
+//      return InetAddress.getLocalHost();
+//      return InetAddress.getByName(request.getLocalAddr());
+
+      String externalIp = Ip.getHost(request.getRequestURL().toString());
+      return InetAddress.getByName(externalIp);
     } catch (UnknownHostException ex) {
       Logger.getLogger(HopsServletHandler.class.getName()).
               log(Level.SEVERE, null, ex);
