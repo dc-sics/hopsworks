@@ -464,7 +464,7 @@ angular.module('hopsWorksApp')
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 10000});
                         }
                     );
-                }
+                };
 
                 init();
 
@@ -522,6 +522,7 @@ angular.module('hopsWorksApp')
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);
+                  $interval.cancel(self.appinfoInterval);
                 });
             }
         ]

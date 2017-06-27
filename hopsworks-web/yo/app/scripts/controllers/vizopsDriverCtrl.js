@@ -21,6 +21,8 @@ angular.module('hopsWorksApp')
                 self.nbExecutorsOnDriverHost = 0;
                 self.maxUsedDriverMem = "0.0";
                 self.maxAvailableDriverMem = "0.0";
+                self.uiShuffleRead = 0.0;
+                self.uiShuffleWrite = 0.0;
 
                 $scope.optionsMemorySpace = vizopsMemorySpaceDriverOptions();
                 $scope.optionsVCPU = vizopsVCPUDriverOptions();
@@ -37,7 +39,8 @@ angular.module('hopsWorksApp')
                     'memorySpace': -1,
                     'maxMemory': -1,
                     'rddCacheDiskSpill': -1,
-                    'gcTime': -1
+                    'gcTime': -1,
+                    'totalShuffle': -1
                 };
 
                 self.hasLoadedOnce = {
@@ -45,7 +48,8 @@ angular.module('hopsWorksApp')
                     'memorySpace': false,
                     'maxMemory': false,
                     'rddCacheDiskSpill': false,
-                    'gcTime': false
+                    'gcTime': false,
+                    'totalShuffle': false
                 };
 
                 var updateMemorySpace = function() {
@@ -138,7 +142,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['rddCacheDiskSpill'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('rddCacheDiskSpill')
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('rddCacheDiskSpill') +
                                ' and service = \'driver\'';
 
                     VizopsService.getMetrics('graphite', 'mean(memory_memUsed_MB), last(disk_diskSpaceUsed_MB)', 'spark', tags,
@@ -169,7 +173,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['gcTime'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('gcTime')
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('gcTime') +
                                ' and service = \'driver\'';
 
                     VizopsService.getMetrics('graphite', 'non_negative_derivative(mean(\"PS-MarkSweep_time\"), 1s),' +
@@ -197,9 +201,35 @@ angular.module('hopsWorksApp')
                     );
                 };
 
+                var updateShuffleReadWriteDriver = function() {
+                    if (!self.now && self.hasLoadedOnce['totalShuffle'])
+                        return; // offline mode + we have loaded the information
+
+                    VizopsService.getAllExecutorMetrics().then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data;
+
+                                for (var entry of newData) {
+                                    if (entry.id === 'driver') {
+                                        self.uiShuffleRead = d3.format(".2s")(entry.totalShuffleRead);
+                                        self.uiShuffleWrite = d3.format(".2s")(entry.totalShuffleWrite);
+                                        break;
+                                    }
+                                }
+
+                                self.hasLoadedOnce['totalShuffle'] = true;
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching totalShuffle(driver) metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
                 var updateMetrics = function() {
                     updateMemorySpace();
                     updateMaxMemory();
+                    updateShuffleReadWriteDriver();
                     updateGraphVCPU();
                     updateRDDCacheDiskSpill();
                     updateGCTime();
@@ -302,6 +332,7 @@ angular.module('hopsWorksApp')
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);
+                  $interval.cancel(self.appinfoInterval);
                 });
             }
         ]

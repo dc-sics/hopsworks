@@ -73,6 +73,7 @@ angular.module('hopsWorksApp')
                                     $scope.templatePhysicalCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templatePhysicalCPUUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                     $scope.templatePhysicalCPUUsage[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    $scope.templatePhysicalCPUUsage[3].values.push({'x': +splitEntry[0], 'y': 80.0});
                                 }
 
                                 self.hasLoadedOnce['physicalCpuUsage'] = true; // dont call backend again
@@ -128,7 +129,7 @@ angular.module('hopsWorksApp')
 
                                 self.startTimeMap['networkUsage'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 1; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateNetworkTraffic[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
@@ -300,7 +301,7 @@ angular.module('hopsWorksApp')
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
                     );
-                }
+                };
 
                 init();
 
@@ -325,6 +326,7 @@ angular.module('hopsWorksApp')
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);
+                  $interval.cancel(self.appinfoInterval);
                 });
             }
         ]

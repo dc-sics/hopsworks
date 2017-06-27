@@ -1,7 +1,7 @@
 #!/bin/bash
 # Deploy the frontend to the glassfish home directory and run bower
-export PORT=45343
-export WEBPORT=57981
+export PORT=28449 #ssh port
+export WEBPORT=38746 # the hopsworks http port
 export SERVER=bbc2.sics.se
 export key=insecure_private_key
 usr=fadi

@@ -671,7 +671,11 @@ var vizopsWorkerPhysicalCpuTemplate = function() {
             key: 'idle',
             color: _getColor[13]
         },
-
+        {
+            values: [],
+            key: 'threshold',
+            color: _getColor[1]
+        }
     ];
 };
 
@@ -779,7 +783,147 @@ var vizopsWorkerDiskUsageTemplate = function() {
      ];
  };
 
-// Containers/host
-// Executors/host
-// List of down hosts
-// OVERVIEW io cpu bottleneck
+// STREAMING last received batch records
+var vizopsStreamingLastReceivedBatchRecordsOptions = function() {
+    var options = getBaseChartOptions();
+
+    options.chart.yAxis = {
+        "axisLabel": "Records",
+        "rotateYLabel": true,
+        "tickFormat": function(d) {
+            return d3.format("d")(d);
+        }
+    };
+    options.title.text = 'Records received';
+    options.subtitle = {
+        enable: true,
+        text: 'In case the records drops to 0, then it probably means that the job has finished or failed',
+        css: {
+            'text-align': 'center',
+            'margin': '10px 13px 0px 7px'
+        }
+    };
+
+    return options;
+};
+
+var vizopsStreamingLastReceivedBatchRecordsTemplate = function () {
+    return [
+        {
+            values: [],
+            key: 'records',
+            color: _getColor[10]
+        }
+    ];
+};
+
+// STREAMING total delay (scheduling and processing) of completed batches
+var vizopsStreamingTotalDelayOptions = function() {
+    var options = getBaseChartOptions();
+
+    options.chart.yAxis = {
+        "axisLabel": "miliseconds",
+        "rotateYLabel": true,
+        "tickFormat": function(d) {
+            return d3.format(".1f")(d);
+        }
+    };
+    options.title.text = 'Total processing delay per interval';
+    options.subtitle = {
+        enable: true,
+        text: 'Backpressure builds up if the processing delay is higher than the batch arrival time',
+        css: {
+            'text-align': 'center',
+            'margin': '10px 13px 0px 7px'
+        }
+    };
+
+    return options;
+};
+
+var vizopsStreamingTotalDelayTemplate = function () {
+    return [
+        {
+            values: [],
+            key: 'delay(ms)',
+            color: _getColor[17]
+        }
+    ];
+};
+
+// STREAMING total received and total processed records
+var vizopsStreamingTotalReceivedProcessedRecordsOptions = function() {
+    var options = getBaseChartOptions();
+
+    options.chart.yAxis = {
+        "axisLabel": "Records",
+        "rotateYLabel": true,
+        "tickFormat": function(d) {
+            return d3.format("d")(d);
+        }
+    };
+    options.title.text = 'Total records received and processed';
+    options.subtitle = {
+        enable: true,
+        text: 'Big gap between the received and processed records potentially means backpressure',
+        css: {
+            'text-align': 'center',
+            'margin': '10px 13px 0px 7px'
+        }
+    };
+
+    return options;
+};
+
+var vizopsStreamingTotalReceivedProcessedRecordsTemplate = function () {
+    return [
+        {
+            values: [],
+            key: 'records received',
+            color: _getColor[10]
+        },
+        {
+            values: [],
+            key: 'records processed',
+            color: _getColor[4]
+        }
+    ];
+};
+
+// STREAMING TOTAL COMPLETED, RUNNING, UNPROCESSED BATCHES
+var vizopsStreamingBatchStatisticsOptions = function() {
+    var options = getBaseChartOptions();
+
+    options.chart.yAxis = {
+        "axisLabel": "Batches",
+        "rotateYLabel": true,
+        "tickFormat": function(d) {
+            return d3.format("d")(d);
+        }
+    };
+    options.title.text = 'Batch statistics';
+
+    return options;
+};
+
+var vizopsStreamingBatchStatisticsTemplate = function () {
+    return [
+        {
+            values: [],
+            key: 'running',
+            color: _getColor[10]
+        },
+        {
+            values: [],
+            key: 'completed',
+            color: _getColor[4]
+        },
+        {
+            values: [],
+            key: 'unprocessed',
+            color: _getColor[6]
+        }
+    ];
+};
+
+// STREAMING INPUT VS PROCESSING RATE

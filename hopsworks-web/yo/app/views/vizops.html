@@ -69,7 +69,7 @@
               <md-card>
                 <md-card-title>
                   <md-card-title-text>
-                    <span class="md-headline strong">Shuffle read/write</span>
+                    <span class="md-headline strong">Total Shuffle read/write</span>
                     <span class="md-subhead">
                       {{vizopsOverviewCtrl.uiShuffleRead}} / {{vizopsOverviewCtrl.uiShuffleWrite}}
                     </span>
@@ -146,6 +146,20 @@
                 </md-card-title>
               </md-card>
             </div> <!-- end: Running on card -->
+
+            <!-- Driver Shuffle card -->
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Shuffle read/write</span>
+                    <span class="md-subhead">
+                      {{vizopsDriverCtrl.uiShuffleRead}} / {{vizopsDriverCtrl.uiShuffleWrite}}
+                    </span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div> <!-- end: driver shuffle card -->
 
           </div> <!-- row -->
           <div class="row">
@@ -362,7 +376,57 @@
       </uib-tab>
 
       <uib-tab index="4" heading="Streaming">
+        <div ng-if="active === 4"  ng-controller="VizopsStreamingCtrl as vizopsStreamingCtrl">
 
+          <div class="row">
+
+            <div class="col-md-2">
+              <md-card>
+                <md-card-title>
+                  <md-card-title-text>
+                    <span class="md-headline strong">Receiver tasks</span>
+                    <span class="md-subhead">{{vizopsStreamingCtrl.nrReceivers}} task(s) running</span>
+                  </md-card-title-text>
+                </md-card-title>
+              </md-card>
+            </div>
+
+          </div>
+
+          <div class="row">
+
+            <div class="col-md-4">
+              <nvd3 id="streamingBatchDuration" options="optionsLastReceivedBatchRecords" data="templateLastReceivedBatchRecords"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-4">
+              <nvd3 id="streamingTotalDelay" options="optionsLastCompletedTotalDelay" data="templateLastCompletedTotalDelay"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-4">
+              <nvd3 id="streamingReceivedProcessedRecords" options="optionsTotalReceivedProcessedRecords"
+                    data="templateTotalReceivedProcessedRecords" class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+          </div>
+
+          <div class="row">
+
+            <div class="col-md-4">
+              <nvd3 id="streamingBatchStatistics" options="optionsBatchStatistics" data="templateBatchStatistics"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <!--<div class="col-md-4">
+              <nvd3 id="streamingProcessingRate" options="optionsBatchStatistics" data="templateBatchStatistics"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>-->
+
+          </div>
+
+        </div>
       </uib-tab>
 
     </uib-tabset>

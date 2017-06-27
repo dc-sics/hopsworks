@@ -443,6 +443,7 @@ angular.module('hopsWorksApp')
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.poller);
+                  $interval.cancel(self.appinfoInterval);
                 });
             }
         ]
