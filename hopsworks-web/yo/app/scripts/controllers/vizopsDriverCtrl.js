@@ -6,7 +6,7 @@ angular.module('hopsWorksApp')
 
             function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, VizopsService) {
 
-                var self = this;
+                let self = this;
 
                 self.appId;
                 self.startTime = -1;
@@ -52,24 +52,24 @@ angular.module('hopsWorksApp')
                     'totalShuffle': false
                 };
 
-                var updateMemorySpace = function() {
+                let updateMemorySpace = function() {
                     if (!self.now && self.hasLoadedOnce['memorySpace'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memorySpace')
+                    let tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memorySpace') +
                                ' and service = \'driver\'';
 
                     VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_used)', 'spark', tags,
                                              'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data.result.results[0].series[0];
-                                var metrics = newData.values;
+                                let newData = success.data.result.results[0].series[0];
+                                let metrics = newData.values;
 
                                 self.startTimeMap['memorySpace'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
-                                    var splitEntry = metrics[i].split(' ');
+                                for(let i = 0; i < metrics.length - 1; i++) {
+                                    let splitEntry = metrics[i].split(' ');
 
                                     $scope.templateMemorySpace[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templateMemorySpace[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
@@ -83,11 +83,11 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                var updateGraphVCPU = function() {
+                let updateGraphVCPU = function() {
                     if (!self.now && self.hasLoadedOnce['vcpuUsage'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' + ' and ' + _getTimestampLimits('vcpuUsage')
+                    let tags = 'source =~ /' + self.executorInfo.entry[0].value[0] + '/' + ' and ' + _getTimestampLimits('vcpuUsage')
                                + ' and MilliVcoreUsageIMinMilliVcores <= ' + (+self.executorInfo.entry[0].value[2]*1000);
 
                     VizopsService.getMetrics('graphite',
@@ -95,13 +95,13 @@ angular.module('hopsWorksApp')
                                                'nodemanager', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data.result.results[0].series[0];
-                                var metrics = newData.values;
+                                let newData = success.data.result.results[0].series[0];
+                                let metrics = newData.values;
 
                                 self.startTimeMap['vcpuUsage'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
-                                    var splitEntry = metrics[i].split(' ');
+                                for(let i = 0; i < metrics.length - 1; i++) {
+                                    let splitEntry = metrics[i].split(' ');
 
                                     $scope.templateVCPU[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                 }
@@ -114,17 +114,17 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                var updateMaxMemory = function() {
+                let updateMaxMemory = function() {
                     if (!self.now && self.hasLoadedOnce['maxMemory'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and service =~ /driver/';
+                    let tags = 'appid = \'' + self.appId + '\' and service =~ /driver/';
 
                     VizopsService.getMetrics('graphite',
                         'max(heap_used), heap_max', 'spark', tags).then(
                     function(success) {
                         if (success.status === 200) { // new measurements
-                            var newData = success.data.result.results[0].series[0];
+                            let newData = success.data.result.results[0].series[0];
                             self.startTimeMap['maxMemory'] = _getLastTimestampFromSeries(newData);
 
                             self.maxUsedDriverMem = d3.format(".4s")(newData.values[0].split(' ')[1]);
@@ -138,24 +138,24 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                var updateRDDCacheDiskSpill = function() {
+                let updateRDDCacheDiskSpill = function() {
                     if (!self.now && self.hasLoadedOnce['rddCacheDiskSpill'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('rddCacheDiskSpill') +
+                    let tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('rddCacheDiskSpill') +
                                ' and service = \'driver\'';
 
                     VizopsService.getMetrics('graphite', 'mean(memory_memUsed_MB), last(disk_diskSpaceUsed_MB)', 'spark', tags,
                                              'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data.result.results[0].series[0];
-                                var metrics = newData.values;
+                                let newData = success.data.result.results[0].series[0];
+                                let metrics = newData.values;
 
                                 self.startTimeMap['rddCacheDiskSpill'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
-                                    var splitEntry = metrics[i].split(' ');
+                                for(let i = 0; i < metrics.length - 1; i++) {
+                                    let splitEntry = metrics[i].split(' ');
 
                                     $scope.templateRDDCacheDiskSpill[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templateRDDCacheDiskSpill[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
@@ -169,11 +169,11 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                var updateGCTime = function() {
+                let updateGCTime = function() {
                     if (!self.now && self.hasLoadedOnce['gcTime'])
                         return; // offline mode + we have loaded the information
 
-                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('gcTime') +
+                    let tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('gcTime') +
                                ' and service = \'driver\'';
 
                     VizopsService.getMetrics('graphite', 'non_negative_derivative(mean(\"PS-MarkSweep_time\"), 1s),' +
@@ -181,13 +181,13 @@ angular.module('hopsWorksApp')
                                              'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data.result.results[0].series[0];
-                                var metrics = newData.values;
+                                let newData = success.data.result.results[0].series[0];
+                                let metrics = newData.values;
 
                                 self.startTimeMap['gcTime'] = _getLastTimestampFromSeries(newData);
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
-                                    var splitEntry = metrics[i].split(' ');
+                                for(let i = 0; i < metrics.length - 1; i++) {
+                                    let splitEntry = metrics[i].split(' ');
 
                                     $scope.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
@@ -201,16 +201,16 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                var updateShuffleReadWriteDriver = function() {
+                let updateShuffleReadWriteDriver = function() {
                     if (!self.now && self.hasLoadedOnce['totalShuffle'])
                         return; // offline mode + we have loaded the information
 
                     VizopsService.getAllExecutorMetrics().then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data;
+                                let newData = success.data;
 
-                                for (var entry of newData) {
+                                for (let entry of newData) {
                                     if (entry.id === 'driver') {
                                         self.uiShuffleRead = d3.format(".2s")(entry.totalShuffleRead);
                                         self.uiShuffleWrite = d3.format(".2s")(entry.totalShuffleWrite);
@@ -226,7 +226,7 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                var updateMetrics = function() {
+                let updateMetrics = function() {
                     updateMemorySpace();
                     updateMaxMemory();
                     updateShuffleReadWriteDriver();
@@ -235,14 +235,14 @@ angular.module('hopsWorksApp')
                     updateGCTime();
                 };
 
-                var _getLastTimestampFromSeries = function(serie) {
+                let _getLastTimestampFromSeries = function(serie) {
                     // Takes as an argument a single serie
                     return +serie.values[serie.values.length - 1].split(' ')[0];
                 };
 
-                var _getTimestampLimits = function(graphName) {
+                let _getTimestampLimits = function(graphName) {
                     // If we didnt use groupBy calls then it would be enough to upper limit the time with now()
-                    var limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
+                    let limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
 
                     if (!self.now) {
                         limits += ' and time < ' + self.endTime + 'ms';
@@ -253,29 +253,29 @@ angular.module('hopsWorksApp')
                     return limits;
                 };
 
-                var _extractHostnameInfoFromResponse = function(response) {
+                let _extractHostnameInfoFromResponse = function(response) {
                     // get the unique host names
-                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
+                    let hosts = [...new Set(response.entry.map(item => item.value[1]))];
 
-                    var result = {};
-                    for(var i = 0; i < hosts.length; i++) {
+                    let result = {};
+                    for(let i = 0; i < hosts.length; i++) {
                         result[hosts[i]] = [];
                     }
 
                     // and add the executors running on them
-                    for(var i = 0; i < response.entry.length; i++) {
+                    for(let i = 0; i < response.entry.length; i++) {
                         result[response.entry[i].value[1]].push(response.entry[i].key);
                     }
 
                     return result;
                 };
 
-                var init = function() {
+                let init = function() {
                     self.appId = VizopsService.getAppId();
 
                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                         function(success) {
-                            var info = success.data;
+                            let info = success.data;
 
                             self.nbExecutors = info.nbExecutors;
                             self.executorInfo = info.executorInfo;
@@ -284,7 +284,7 @@ angular.module('hopsWorksApp')
                             self.now = info.now;
 
                             // Initialize the graph timers
-                            for (var key in self.startTimeMap) {
+                            for (let key in self.startTimeMap) {
                               if (self.startTimeMap.hasOwnProperty(key)) {
                                 self.startTimeMap[key] = info.startTime;
                               }
@@ -298,7 +298,7 @@ angular.module('hopsWorksApp')
                                 self.appinfoInterval = $interval(function() { // update appinfo data
                                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                                         function(success) {
-                                            var info = success.data;
+                                            let info = success.data;
 
                                             self.nbExecutors = info.nbExecutors;
                                             self.executorInfo = info.executorInfo;
@@ -322,7 +322,7 @@ angular.module('hopsWorksApp')
                             growl.error(error.data.errorMsg, {title: 'Error fetching app info.', ttl: 15000});
                         }
                     );
-                }
+                };
 
                 init();
 

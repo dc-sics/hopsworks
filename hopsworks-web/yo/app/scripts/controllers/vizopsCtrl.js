@@ -8,7 +8,7 @@ angular.module('hopsWorksApp')
 
            function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, VizopsService) {
 
-                var self = this;
+                let self = this;
                 self.jobName = $routeParams.name;
                 self.appId = ""; // startTime, endTime, now will be filled by init
                 self.startTime = -1;
@@ -17,14 +17,14 @@ angular.module('hopsWorksApp')
 
                 self.durationInterval;
                 self.appinfoInterval; // checks for the app status
-                self.durationLabel = "0m00s";
+                self.durationLabel = "00:00:00";
 
-                var init = function() {
+                let init = function() {
                     self.appId = VizopsService.getAppId();
 
                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                         function(success) {
-                            var info = success.data;
+                            let info = success.data;
 
                             self.startTime = info.startTime;
                             self.endTime = info.endTime;
@@ -42,7 +42,7 @@ angular.module('hopsWorksApp')
                                 self.appinfoInterval = $interval(function() {
                                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                                         function(success) {
-                                            var info = success.data;
+                                            let info = success.data;
 
                                             self.endTime = info.endTime;
                                             self.now = info.now;
@@ -51,7 +51,7 @@ angular.module('hopsWorksApp')
                                                 $interval.cancel(self.appinfoInterval);
                                             }
                                         }, function(error) {
-                                            growl.error(error.data.errorMsg, {title: 'Error fetching app info(2).', ttl: 15000});
+                                            growl.error(error.data.errorMsg, {title: 'Error fetching app info(overview).', ttl: 15000});
                                         }
                                     );
                                 }, 2000);
@@ -67,5 +67,6 @@ angular.module('hopsWorksApp')
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.durationInterval);
+                  $interval.cancel(self.appinfoInterval);
                 });
            }]);
