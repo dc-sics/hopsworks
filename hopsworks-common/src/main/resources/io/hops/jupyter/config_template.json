@@ -56,13 +56,14 @@
   "jars": [%%jars%%],
   "pyFiles": [%%pyFiles%%],
   "conf" : { "spark.yarn.stagingDir": "hdfs://%%nn_endpoint%%/Projects/%%project%%/Resources",
-            "spark.blockManager.port" : "38000",
-            "spark.yarn.appMasterEnv.PYSPARK_PYTHON" : "%%pyspark_bin%%",
-            "spark.yarn.appMasterEnv.PYSPARK3_PYTHON" : "%%pyspark_bin%%",
-            "spark.executorEnv.PYSPARK_PYTHON" : "%%pyspark_bin%%",
+           "spark.yarn.appMasterEnv.PYSPARK_PYTHON" : "%%pyspark_bin%%",
+           "spark.yarn.appMasterEnv.PYSPARK3_PYTHON" : "%%pyspark_bin%%",
+           "spark.executorEnv.PYSPARK_PYTHON" : "%%pyspark_bin%%",
            "spark.executorEnv.PYSPARK3_PYTHON" : "%%pyspark_bin%%",
            "spark.pyspark.python" : "%%pyspark_bin%%",
-           "spark.pyspark.driver.python" : "%%pyspark_bin%%"           
+           "spark.pyspark.driver.python" : "%%pyspark_bin%%",
+           "spark.shuffle.service.enabled" : "true",
+           "spark.dynamicAllocation.enabled" : "true"
    }
   },
 
