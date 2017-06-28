@@ -424,14 +424,6 @@ public class SparkYarnRunnerBuilder {
     return this;
   }
 
-  public SparkYarnRunnerBuilder setExtraFiles(List<LocalResourceDTO> extraFiles) {
-    if (extraFiles == null) {
-      throw new IllegalArgumentException("Map of extra files cannot be null.");
-    }
-    this.extraFiles = extraFiles;
-    return this;
-  }
-
   public SparkYarnRunnerBuilder addExtraFile(LocalResourceDTO dto) {
     if (dto.getName() == null || dto.getName().isEmpty()) {
       throw new IllegalArgumentException(

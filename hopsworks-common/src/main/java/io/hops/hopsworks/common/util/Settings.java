@@ -728,7 +728,7 @@ public class Settings implements Serializable {
   }
 
   public static String getHdfsRootPath(String projectname) {
-    return "/" + DIR_ROOT + "/" + projectname + "/";
+    return "/" + DIR_ROOT + "/" + projectname;
   }
 
   /**

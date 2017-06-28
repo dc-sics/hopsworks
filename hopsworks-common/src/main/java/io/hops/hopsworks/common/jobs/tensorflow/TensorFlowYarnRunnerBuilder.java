@@ -46,7 +46,7 @@ public class TensorFlowYarnRunnerBuilder {
     }
   }
 
-  public YarnRunner getYarnRunner(String project, String sparkUser,
+  public YarnRunner getYarnRunner(String project, String tfUser,
       String jobUser, final String hadoopDir, final String nameNodeIpPort) throws IOException, Exception {
 
     if (!serviceProps.isAnacondaEnabled()) {
@@ -58,6 +58,17 @@ public class TensorFlowYarnRunnerBuilder {
     JobType jobType = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getType();
     builder.setJobType(jobType);
     Client client = new Client();
+
+    //Add extra files to local resources, use filename as key
+    for (LocalResourceDTO dto : extraFiles) {
+      if (!dto.getName().equals(Settings.K_CERTIFICATE) && !dto.getName().equals(Settings.T_CERTIFICATE)) {
+        String pathToResource = dto.getPath();
+        pathToResource = pathToResource.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
+        pathToResource = pathToResource.replaceFirst("hdfs:/*user", "hdfs://" + nameNodeIpPort + "/user");
+        client.addFile(pathToResource);
+      }
+    }
+
     client.setAmMemory(amMemory);
     client.setAmVCores(amVCores);
     client.setMemory(workerMemory);
@@ -68,10 +79,14 @@ public class TensorFlowYarnRunnerBuilder {
     client.setNumPses(numOfPs);
     client.setNumWorkers(numOfWorkers);
     String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
+    appPath = appPath.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
     client.setMain(appPath);
     client.setArguments(jobArgs.stream().toArray(String[]::new));
-    client.setAmJar(Settings.getTensorFlowJarPath(jobUser));
-    client.setPython(serviceProps.getAnaconda().getEnvPath());
+    client.setAmJar(Settings.getTensorFlowJarPath(tfUser));
+    //client.setPython(serviceProps.getAnaconda().getEnvPath());
+    client.setAllocationTimeout(15000);
+    client.setProjectDir("hdfs://"+Settings.getHdfsRootPath(project));
+    client.setLog4jPropFile("hdfs:///user/vagrant/log4j.properties");
     builder.setTfClient(client);
     return builder.build(hadoopDir, null, nameNodeIpPort, JobType.TENSORFLOW);
   }

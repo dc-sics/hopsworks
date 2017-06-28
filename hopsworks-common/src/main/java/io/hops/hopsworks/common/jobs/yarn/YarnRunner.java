@@ -350,6 +350,7 @@ public class YarnRunner {
 
     } else if (jobType == JobType.TENSORFLOW) {
       try {
+        
         tfClient.setConf(conf);
         tfClient.initYarnClient();
         appId = tfClient.submitApplication();
