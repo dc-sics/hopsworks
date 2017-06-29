@@ -8,6 +8,7 @@ import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -31,11 +32,13 @@ public class ProjectSecret implements Serializable{
 	private Integer projectId;
 
 	@Basic(optional = false)
+	@NotNull
 	@Size(min = 1, max = 128)
 	@Column(name = "jwt_secret")
 	private String jwtSecret;
 
 	@Basic(optional = false)
+	@NotNull
 	@Column(name = "jwt_token_duration")
 	private Integer jwtTokenDuration;
 
