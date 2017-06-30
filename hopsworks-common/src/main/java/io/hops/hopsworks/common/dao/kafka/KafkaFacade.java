@@ -136,7 +136,7 @@ public class KafkaFacade {
 
   public List<PartitionDetailsDTO> getTopicDetails(Project project, Users user,
       String topicName)
-      throws AppException, Exception {
+          throws AppException, Exception {
     List<TopicDTO> topics = findTopicsByProject(project.getId());
     if (topics.isEmpty()) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
@@ -145,7 +145,7 @@ public class KafkaFacade {
     for (TopicDTO topic : topics) {
       if (topic.getName().equalsIgnoreCase(topicName)) {
         List<PartitionDetailsDTO> topicDetailDTO
-            = getTopicDetailsfromKafkaCluster(project, user, topicName);
+        = getTopicDetailsfromKafkaCluster(project, user, topicName);
         return topicDetailDTO;
       }
     }
@@ -226,7 +226,7 @@ public class KafkaFacade {
     if (brokerEndpoints.size() < topicDto.getNumOfReplicas()) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           "Topic replication factor can be a maximum of" + brokerEndpoints.
-              size());
+          size());
     }
 
     // create the topic in kafka 
@@ -330,13 +330,13 @@ public class KafkaFacade {
         zkConnection.close();
       } catch (InterruptedException ex) {
         Logger.getLogger(KafkaFacade.class.getName()).
-            log(Level.SEVERE, null, ex);
+        log(Level.SEVERE, null, ex);
       }
     }
   }
 
   public void removeAllTopicsFromProject(Project project) throws
-      InterruptedException, AppException {
+  InterruptedException, AppException {
 
     TypedQuery<ProjectTopics> query = em.createNamedQuery(
         "ProjectTopics.findByProjectId", ProjectTopics.class);
@@ -712,12 +712,12 @@ public class KafkaFacade {
 
         switch (schemaCompatibility.getType()) {
 
-          case COMPATIBLE:
-            break;
-          case INCOMPATIBLE:
-            return SchemaCompatiblityCheck.INCOMPATIBLE;
-          case RECURSION_IN_PROGRESS:
-            break;
+        case COMPATIBLE:
+          break;
+        case INCOMPATIBLE:
+          return SchemaCompatiblityCheck.INCOMPATIBLE;
+        case RECURSION_IN_PROGRESS:
+          break;
         }
       }
     } catch (SchemaParseException ex) {
@@ -950,10 +950,10 @@ public class KafkaFacade {
         KafkaConsumer<Integer, String> consumer = null;
         try {
           consumer = new KafkaConsumer<>(props);
-//          ConsumerGroupCommand.ConsumerGroupCommandOptions opts
-//                  = new ConsumerGroupCommand.ConsumerGroupCommandOptions(null);
-//          ConsumerGroupCommand.KafkaConsumerGroupService k
-//                  = new ConsumerGroupCommand.KafkaConsumerGroupService(opts);
+          //          ConsumerGroupCommand.ConsumerGroupCommandOptions opts
+          //                  = new ConsumerGroupCommand.ConsumerGroupCommandOptions(null);
+          //          ConsumerGroupCommand.KafkaConsumerGroupService k
+          //                  = new ConsumerGroupCommand.KafkaConsumerGroupService(opts);
           List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
           for (PartitionInfo partition : partitions) {
             int id = partition.partition();
@@ -978,7 +978,7 @@ public class KafkaFacade {
         } catch (Exception ex) {
           throw new Exception(
               "Error while retrieving topic metadata from broker: "
-              + brokerAddress, ex);
+                  + brokerAddress, ex);
         } finally {
           if (consumer != null) {
             consumer.close();
@@ -999,87 +999,87 @@ public class KafkaFacade {
 
     return partitionDetailsDto;
   }
-  
+
   private String getAllBootstrapServers() throws Exception {
-	  // Get all the Kafka broker endpoints (Protocol, IP, port number) from Zookeeper.
-	  brokers = getBrokerEndpoints();
-	  Iterator<String> iter = brokers.iterator();
+    // Get all the Kafka broker endpoints (Protocol, IP, port number) from Zookeeper.
+    brokers = getBrokerEndpoints();
+    Iterator<String> iter = brokers.iterator();
 
-	  // Remove all Kafka broker endpoints that contain the PLAINTEXT protocol.
-	  while (iter.hasNext()) {
-		  String seed = iter.next();
-		  if (seed.split(COLON_SEPARATOR)[0].equalsIgnoreCase(PLAINTEXT_PROTOCOL)) {
-			  iter.remove();
-		  }
-	  }
+    // Remove all Kafka broker endpoints that contain the PLAINTEXT protocol.
+    while (iter.hasNext()) {
+      String seed = iter.next();
+      if (seed.split(COLON_SEPARATOR)[0].equalsIgnoreCase(PLAINTEXT_PROTOCOL)) {
+        iter.remove();
+      }
+    }
 
-	  // Combines all Kafka broker locations consisiting of (IP, port number) pairs
-	  String brokerAddress = null;
-	  for (String address : brokers) {
-		  brokerAddress += address.split("://")[1] + ",";
-	  }
-	  if (brokerAddress!=null) {
-		  brokerAddress = brokerAddress.substring(0, brokerAddress.length() - 1);
-	  }
-	  return brokerAddress;
+    // Combines all Kafka broker locations consisiting of (IP, port number) pairs
+    String brokerAddress = null;
+    for (String address : brokers) {
+      brokerAddress += address.split("://")[1] + ",";
+    }
+    if (brokerAddress!=null) {
+      brokerAddress = brokerAddress.substring(0, brokerAddress.length() - 1);
+    }
+    return brokerAddress;
   }
 
   public boolean produce(Project project, Users user, String topicName, ArrayList<String> records) throws Exception{
 
-	  String projectName = project.getName();
-	  String userName = user.getUsername();
+    String projectName = project.getName();
+    String userName = user.getUsername();
 
-	  KafkaProducer<Integer, String> producer = null;
-	  try {
-		  String bootstrapServers = getAllBootstrapServers();
-		  HopsUtils.copyUserKafkaCerts(userCerts, project, userName,
-				  settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir());
-		  Properties props = new Properties();
-		  props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-		  props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-				  "org.apache.kafka.common.serialization.IntegerSerializer");
-		  props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-				  "org.apache.kafka.common.serialization.StringSerializer");
+    KafkaProducer<Integer, String> producer = null;
+    try {
+      String bootstrapServers = getAllBootstrapServers();
+      HopsUtils.copyUserKafkaCerts(userCerts, project, userName,
+          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir());
+      Properties props = new Properties();
+      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+          "org.apache.kafka.common.serialization.IntegerSerializer");
+      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+          "org.apache.kafka.common.serialization.StringSerializer");
 
-		  //configure the ssl parameters
-		  props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-		  props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-				  settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-				  getProjectTruststoreName(projectName, userName));
-		  props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-				  settings.getHopsworksMasterPasswordSsl());
-		  props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
-				  settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-				  getProjectKeystoreName(projectName, userName));
-		  props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-				  settings.getHopsworksMasterPasswordSsl());
-		  props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-				  settings.getHopsworksMasterPasswordSsl());
+      //configure the ssl parameters
+      props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
+          getProjectTruststoreName(projectName, userName));
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
+          settings.getHopsworksMasterPasswordSsl());
+      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
+          getProjectKeystoreName(projectName, userName));
+      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
+          settings.getHopsworksMasterPasswordSsl());
+      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
+          settings.getHopsworksMasterPasswordSsl());
 
-		  producer = new KafkaProducer<>(props);
-		  for (String record: records) {
-			  // Asynchronous production
-			  producer.send(new ProducerRecord<Integer, String>(topicName, record));
+      producer = new KafkaProducer<>(props);
+      for (String record: records) {
+        // Asynchronous production
+        producer.send(new ProducerRecord<Integer, String>(topicName, record));
 
-			  // Synchronous production
-			  //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();
-		  }
-	  }catch (Exception ex){
-		  ex.printStackTrace();
-		  return false;
-	  } finally {
-		  if (producer != null) {
-			  producer.close();
-		  }
-		  //Remove certificates from local dir
-		  Files.deleteIfExists(FileSystems.getDefault().getPath(
-				  settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-				  getProjectTruststoreName(projectName, userName)));
-		  Files.deleteIfExists(FileSystems.getDefault().getPath(
-				  settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-				  getProjectKeystoreName(projectName, userName)));
-	  }
-	  return true;
+        // Synchronous production
+        //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();
+      }
+    }catch (Exception ex){
+      ex.printStackTrace();
+      return false;
+    } finally {
+      if (producer != null) {
+        producer.close();
+      }
+      //Remove certificates from local dir
+      Files.deleteIfExists(FileSystems.getDefault().getPath(
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
+          getProjectTruststoreName(projectName, userName)));
+      Files.deleteIfExists(FileSystems.getDefault().getPath(
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
+          getProjectKeystoreName(projectName, userName)));
+    }
+    return true;
   }
 
 

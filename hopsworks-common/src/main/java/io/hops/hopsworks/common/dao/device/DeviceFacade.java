@@ -6,16 +6,16 @@ import javax.persistence.PersistenceContext;
 
 public class DeviceFacade {
 
-	private final static Logger LOG = Logger.getLogger(DeviceFacade.class.
-			getName());
+  private final static Logger LOG = Logger.getLogger(DeviceFacade.class.
+      getName());
 
-	@PersistenceContext(unitName = "kthfsPU")
-	private EntityManager em;
-	
-	public void registerDevice(Integer projectId, String deviceUuid, String passUuid, String projectUserUuid) {
-		ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-		ProjectDevice pd = new ProjectDevice(pdKey, passUuid, projectUserUuid);
-		em.persist(pd);	
-	}
-	
+  @PersistenceContext(unitName = "kthfsPU")
+  private EntityManager em;
+
+  public void registerDevice(Integer projectId, String deviceUuid, String passUuid, String projectUserUuid) {
+    ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
+    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, projectUserUuid);
+    em.persist(pd);	
+  }
+
 }

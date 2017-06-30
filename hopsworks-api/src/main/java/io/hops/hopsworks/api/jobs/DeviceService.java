@@ -34,136 +34,136 @@ import org.apache.avro.Schema;
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class DeviceService {
 
-	private final static Logger LOGGER = Logger.getLogger(
-			DeviceService.class.getName());
+  private final static Logger LOGGER = Logger.getLogger(
+      DeviceService.class.getName());
 
-	@EJB
-	private NoCacheResponse noCacheResponse;
-	@EJB
-	private KafkaFacade kafkaFacade;
+  @EJB
+  private NoCacheResponse noCacheResponse;
+  @EJB
+  private KafkaFacade kafkaFacade;
 
-	private Integer projectId;
+  private Integer projectId;
 
-	@EJB
-	private DeviceFacade deviceFacade;
+  @EJB
+  private DeviceFacade deviceFacade;
 
-	public DeviceService() {
-	}
+  public DeviceService() {
+  }
 
-	public void setProjectId(Integer projectId) {
-		this.projectId = projectId;
+  public void setProjectId(Integer projectId) {
+    this.projectId = projectId;
 
-	}
+  }
 
-	public Integer getProjectId() {
-		return projectId;
-	}
+  public Integer getProjectId() {
+    return projectId;
+  }
 
-	private void checkForProjectId() throws AppException {
-		if (projectId == null) {
-			throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-					"Incomplete request! Project id not present!");
-		}
-	}
+  private void checkForProjectId() throws AppException {
+    if (projectId == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Incomplete request! Project id not present!");
+    }
+  }
 
-	@POST
-	@Path("/activate")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	@AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-	public Response activateService(
-			@Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
-		checkForProjectId();
+  @POST
+  @Path("/activate")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response activateService(
+      @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
+    checkForProjectId();
 
-		return null;
-	}
+    return null;
+  }
 
-	@POST
-	@Path("/deactivate")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	@AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-	public Response deactivateService(
-			@Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
-		checkForProjectId();
+  @POST
+  @Path("/deactivate")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response deactivateService(
+      @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
+    checkForProjectId();
 
-		return null;
-	}
+    return null;
+  }
 
-	@GET
-	@Path("/endpoints")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	@AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-	public Response getEndpoints(
-			@Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
-		checkForProjectId();
+  @GET
+  @Path("/endpoints")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response getEndpoints(
+      @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
+    checkForProjectId();
 
-		return null;
-	}
+    return null;
+  }
 
-	@POST
-	@Path("/register")
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response registerDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
+  @POST
+  @Path("/register")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response registerDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
 
-		checkForProjectId();
+    checkForProjectId();
 
-		try {
-			JSONObject json = new JSONObject(jsonString);
-			String deviceUuid = json.getString("deviceUuid");
-			String passUuid = json.getString("passUuid");
-			String projectUserUuid = json.getString("projectUserUuid");
-			deviceFacade.registerDevice(projectId, deviceUuid, passUuid, projectUserUuid);
-			return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-		}catch(JSONException e) {
-			throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-					"Json request is malformed! Required properties are [deviceUuid, passUuid, projectUserUuid].");
-		}
-	}
+    try {
+      JSONObject json = new JSONObject(jsonString);
+      String deviceUuid = json.getString("deviceUuid");
+      String passUuid = json.getString("passUuid");
+      String projectUserUuid = json.getString("projectUserUuid");
+      deviceFacade.registerDevice(projectId, deviceUuid, passUuid, projectUserUuid);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    }catch(JSONException e) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Json request is malformed! Required properties are [deviceUuid, passUuid, projectUserUuid].");
+    }
+  }
 
-	@GET
-	@Path("/login") // Returns --> JWT
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response loginDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
-		checkForProjectId();
+  @GET
+  @Path("/login") // Returns --> JWT
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response loginDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
+    checkForProjectId();
 
-		return null;
-	}
+    return null;
+  }
 
-	@POST
-	@Path("/produce") //Returns --> Status.OK / Status.NOT_OK
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response produce(@Context HttpServletRequest req, String jsonString) throws AppException {
-		checkForProjectId();
+  @POST
+  @Path("/produce") //Returns --> Status.OK / Status.NOT_OK
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response produce(@Context HttpServletRequest req, String jsonString) throws AppException {
+    checkForProjectId();
 
-		return null;
-	}
+    return null;
+  }
 
-	@GET
-	@Path("/validate") //Returns --> Status.OK / Status.NOT_OK
-	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response validateSchema(@Context HttpServletRequest req, String jsonString) throws AppException {
+  @GET
+  @Path("/validate") //Returns --> Status.OK / Status.NOT_OK
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response validateSchema(@Context HttpServletRequest req, String jsonString) throws AppException {
 
-		checkForProjectId();
+    checkForProjectId();
 
-		try {
-			JSONObject json = new JSONObject(jsonString);
-			String topicName = json.getString("topic");
-			String schemaName = json.getString("schema");
-			Integer schemaVersion = json.getInt("version");
-			SchemaDTO schemaDtos = kafkaFacade.getSchemaContent(schemaName, schemaVersion);
-			
-			return null;
-		}catch(JSONException e) {
-			throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-					"Json request is malformed! Required properties are [topic, schema, version].");
-		}
-	}
+    try {
+      JSONObject json = new JSONObject(jsonString);
+      String topicName = json.getString("topic");
+      String schemaName = json.getString("schema");
+      Integer schemaVersion = json.getInt("version");
+      SchemaDTO schemaDtos = kafkaFacade.getSchemaContent(schemaName, schemaVersion);
+
+      return null;
+    }catch(JSONException e) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Json request is malformed! Required properties are [topic, schema, version].");
+    }
+  }
 
 }
 
