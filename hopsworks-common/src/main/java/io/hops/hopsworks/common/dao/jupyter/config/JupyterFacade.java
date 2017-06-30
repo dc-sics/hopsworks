@@ -12,8 +12,6 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.Settings;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,7 +42,7 @@ public class JupyterFacade {
   @EJB
   private UserFacade userFacade;
   @EJB
-  private HdfsUsersController hdfsUsername;
+  private HdfsUsersController hdfsUsersController;
   @EJB
   private HdfsUsersFacade hdfsUsersFacade;
   @EJB
@@ -53,7 +51,8 @@ public class JupyterFacade {
   protected EntityManager getEntityManager() {
     return em;
   }
-
+  
+  
   public List<JupyterProject> findNotebooksByProject(Integer projectId) {
     TypedQuery<JupyterProject> query = em.createNamedQuery(
             "JupyterProject.findByProjectId",
@@ -152,7 +151,8 @@ public class JupyterFacade {
     // delete JupyterProject entity bean
   }
 
-  public JupyterProject saveServer(Project project, String secret, int port,
+  public JupyterProject saveServer(String host,
+          Project project, String secret, int port,
           int hdfsUserId,
           String token, long pid, int driverCores, String driverMemory,
           int numExecutors, int executorCores, String executorMemory, int gpus,
@@ -160,19 +160,15 @@ public class JupyterFacade {
           throws AppException {
     JupyterProject jp = null;
     String ip;
-    try {
-      ip = InetAddress.getLocalHost().getHostAddress();
+//    ip = settings.getHopsworksIp() + ":" + settings.getHopsworksPort();
+    ip = host + ":" + settings.getHopsworksPort();
 
-      jp = new JupyterProject(project, secret, port, hdfsUserId, ip, token, pid,
-              driverCores, driverMemory, numExecutors, executorCores,
-              executorMemory, gpus,
-              archives, jars, files, pyFiles);
+    jp = new JupyterProject(project, secret, port, hdfsUserId, ip, token, pid,
+            driverCores, driverMemory, numExecutors, executorCores,
+            executorMemory, gpus,
+            archives, jars, files, pyFiles);
 
-      persist(jp);
-    } catch (UnknownHostException ex) {
-      Logger.getLogger(JupyterFacade.class.getName()).
-              log(Level.SEVERE, null, ex);
-    }
+    persist(jp);
     return jp;
   }
 
@@ -182,7 +178,7 @@ public class JupyterFacade {
     }
   }
 
-  private void update(JupyterProject jp) {
+  public void update(JupyterProject jp) {
     if (jp != null) {
       em.merge(jp);
     }
