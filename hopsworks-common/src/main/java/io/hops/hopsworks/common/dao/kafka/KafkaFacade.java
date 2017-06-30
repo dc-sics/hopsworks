@@ -144,8 +144,8 @@ public class KafkaFacade {
     }
     for (TopicDTO topic : topics) {
       if (topic.getName().equalsIgnoreCase(topicName)) {
-        List<PartitionDetailsDTO> topicDetailDTO
-        = getTopicDetailsfromKafkaCluster(project, user, topicName);
+        List<PartitionDetailsDTO> topicDetailDTO = 
+            getTopicDetailsfromKafkaCluster(project, user, topicName);
         return topicDetailDTO;
       }
     }
@@ -329,8 +329,8 @@ public class KafkaFacade {
       try {
         zkConnection.close();
       } catch (InterruptedException ex) {
-        Logger.getLogger(KafkaFacade.class.getName()).
-        log(Level.SEVERE, null, ex);
+        Logger.getLogger(
+            KafkaFacade.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
   }
@@ -712,12 +712,12 @@ public class KafkaFacade {
 
         switch (schemaCompatibility.getType()) {
 
-        case COMPATIBLE:
-          break;
-        case INCOMPATIBLE:
-          return SchemaCompatiblityCheck.INCOMPATIBLE;
-        case RECURSION_IN_PROGRESS:
-          break;
+          case COMPATIBLE:
+            break;
+          case INCOMPATIBLE:
+            return SchemaCompatiblityCheck.INCOMPATIBLE;
+          case RECURSION_IN_PROGRESS:
+            break;
         }
       }
     } catch (SchemaParseException ex) {
