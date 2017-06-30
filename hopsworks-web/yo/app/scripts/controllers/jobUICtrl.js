@@ -235,7 +235,7 @@ angular.module('hopsWorksApp')
             }
             
             var tensorboardInt = function() {
-              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/";
+              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobtype="+self.job.jobType+"&abc=efg";
               self.current = "tensorboard";
               var iframe = document.getElementById('ui_iframe');
               iframe.onload = function(){stopLoading();};
