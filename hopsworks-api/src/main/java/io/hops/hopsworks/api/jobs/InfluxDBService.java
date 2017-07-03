@@ -18,6 +18,12 @@ import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonArrayBuilder;
+import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -29,6 +35,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -110,7 +117,8 @@ public class InfluxDBService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getAllExecutorsMetrics(
-                    @Context SecurityContext sc, @Context HttpServletRequest req) throws
+          @QueryParam("filters") final String filters,
+          @Context SecurityContext sc, @Context HttpServletRequest req) throws
           AppException, IOException {
 
     LOGGER.log(Level.INFO, "Vizops - Retrieving executor information");
@@ -125,19 +133,22 @@ public class InfluxDBService {
         // trackingURL = http://dn0:8088/proxy/<appid>/
         String sparkTrackingUrl = trackingUrl + "api/v1/applications/" + appId + "/allexecutors";
         LOGGER.log(Level.INFO, "Vizops - spark tracking url: " + sparkTrackingUrl);
+        LOGGER.log(Level.INFO, "Vizops - Filters: " + filters);
 
         if (isAppRunning) { // call endpoint through yarn proxy
           String content = IoUtils.readContentFromWeb(sparkTrackingUrl);
+          LOGGER.log(Level.INFO, "Vizops - Live parsing response " + filters.split(","));
           response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
-                  .entity(content).build();
+                  .entity(parseAllExecutorResults(content, filters.split(","))).build();
         } else { // call history server
           String historyServer = settings.getSparkHistoryServerIp(); // 10.0.2.15:18080
           String historyEndpoint = "http://" + historyServer + "/api/v1/applications/" + appId + "/1/allexecutors";
           LOGGER.log(Level.INFO, "Vizops - App moved to history, calling: " + historyEndpoint);
 
           String historyContent = IoUtils.readContentFromWeb(historyEndpoint);
+          LOGGER.log(Level.INFO, "Vizops - History parsing response " + filters.split(","));
           response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
-                  .entity(historyContent).build();
+                  .entity(parseAllExecutorResults(historyContent, filters.split(","))).build();
         }
       } else {
         response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND)
@@ -149,5 +160,33 @@ public class InfluxDBService {
     }
 
     return response;
+  }
+
+  private JsonArray parseAllExecutorResults(String content, String[] filters) {
+    JsonReader reader = Json.createReader(new StringReader(content));
+    JsonArray processed = reader.readArray();
+
+    if (filters != null && filters.length > 0) {
+      // Only choose the elements in the filters array
+      JsonArrayBuilder builder = Json.createArrayBuilder();
+
+      for (int i = 0; i < processed.size(); i++) { // loop over each entry: driver, executor 1, 2....
+        JsonObject obj = processed.getJsonObject(i);
+        JsonObjectBuilder objBuilder = Json.createObjectBuilder();
+        objBuilder.add("id", obj.get("id"));
+
+        for (String tag : filters) {
+          if (obj.containsKey(tag)) {
+            objBuilder.add(tag, obj.get(tag));
+          } // else skip
+        }
+
+        builder.add(objBuilder.build());
+      }
+
+      return builder.build();
+    }
+
+    return processed;
   }
 }

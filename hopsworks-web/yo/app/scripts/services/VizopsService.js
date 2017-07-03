@@ -40,8 +40,9 @@ angular.module('hopsWorksApp')
                 return $http.get(query);
             },
 
-            getAllExecutorMetrics: function() {
-                var query = '/api/project/' + self.projectId + '/jobs/' + self.appId + '/influxdb/allexecutors';
+            // filters = string e.g. totalShuffleRead,totalShuffleWrite,completedTasks no need to pass "id", empty for all
+            getAllExecutorMetrics: function(filters) {
+                var query = '/api/project/' + self.projectId + '/jobs/' + self.appId + '/influxdb/allexecutors?filters=' + filters;
                 return $http.get(query);
             }
         };

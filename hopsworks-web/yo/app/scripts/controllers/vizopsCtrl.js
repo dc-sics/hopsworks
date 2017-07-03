@@ -8,7 +8,7 @@ angular.module('hopsWorksApp')
 
            function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, VizopsService) {
 
-                let self = this;
+                var self = this;
                 self.jobName = $routeParams.name;
                 self.appId = ""; // startTime, endTime, now will be filled by init
                 self.startTime = -1;
@@ -19,12 +19,12 @@ angular.module('hopsWorksApp')
                 self.appinfoInterval; // checks for the app status
                 self.durationLabel = "00:00:00";
 
-                let init = function() {
+                var init = function() {
                     self.appId = VizopsService.getAppId();
 
                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                         function(success) {
-                            let info = success.data;
+                            var info = success.data;
 
                             self.startTime = info.startTime;
                             self.endTime = info.endTime;
@@ -42,7 +42,7 @@ angular.module('hopsWorksApp')
                                 self.appinfoInterval = $interval(function() {
                                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                                         function(success) {
-                                            let info = success.data;
+                                            var info = success.data;
 
                                             self.endTime = info.endTime;
                                             self.now = info.now;

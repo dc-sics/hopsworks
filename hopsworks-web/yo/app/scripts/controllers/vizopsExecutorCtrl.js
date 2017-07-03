@@ -312,7 +312,7 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['totalShuffle'])
                         return; // offline mode + we have loaded the information
 
-                    VizopsService.getAllExecutorMetrics().then(
+                    VizopsService.getAllExecutorMetrics('totalShuffleRead,totalShuffleWrite').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data;

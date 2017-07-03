@@ -670,11 +670,6 @@ var vizopsWorkerPhysicalCpuTemplate = function() {
             values: [],
             key: 'idle',
             color: _getColor[13]
-        },
-        {
-            values: [],
-            key: 'threshold',
-            color: _getColor[1]
         }
     ];
 };
@@ -731,12 +726,12 @@ var vizopsWorkerNetworkTrafficTemplate = function() {
          {
              values: [],
              key: 'received',
-             color: _getColor[10]
+             color: _getColor[3]
          },
          {
              values: [],
              key: 'sent',
-             color: _getColor[10]
+             color: _getColor[17]
          }
      ];
  };
@@ -794,7 +789,7 @@ var vizopsWorkerExecutorsPerHostOptions = function() {
     options.chart.labelType = "percent";
     options.chart.color = _getColor;
     options.title.text = 'Executors per host';
-    options.chart.margin = { "top": 5, "right": 5, "bottom": 5, "left": 5 };
+    options.chart.margin = { "top": 20, "right": 5, "bottom": 5, "left": 5 };
 
     return options;
 };
@@ -804,8 +799,8 @@ var vizopsWorkerExecutorsPerHostTemplate = function() {
 };
 
 // WORKER Total Tasks PER HOST
-let vizopsWorkerCompletedTasksPerHostOptions = function() {
-    let options = getBaseChartOptions();
+var vizopsWorkerCompletedTasksPerHostOptions = function() {
+    var options = getBaseChartOptions();
     options.chart.type = 'pieChart';
     options.chart.labelThreshold = 0.01;
     options.chart.labelSunbeamLayout = true;
@@ -814,12 +809,12 @@ let vizopsWorkerCompletedTasksPerHostOptions = function() {
     options.chart.labelType = "percent";
     options.chart.color = _getColor;
     options.title.text = 'Completed tasks per host';
-    options.chart.margin = { "top": 5, "right": 5, "bottom": 5, "left": 5 };
+    options.chart.margin = { "top": 20, "right": 5, "bottom": 5, "left": 5 };
 
     return options;
 };
 
-let vizopsWorkerCompletedTasksPerHostTemplate = function() {
+var vizopsWorkerCompletedTasksPerHostTemplate = function() {
     return [];
 };
 

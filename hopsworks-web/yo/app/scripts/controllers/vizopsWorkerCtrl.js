@@ -6,7 +6,7 @@ angular.module('hopsWorksApp')
 
             function ($scope, $timeout, growl, JobService, $interval, $routeParams, $route, VizopsService) {
 
-                let self = this;
+                var self = this;
 
                 self.appId;
                 self.startTime = -1;
@@ -56,29 +56,28 @@ angular.module('hopsWorksApp')
                     'completedTasksPerHost': false
                 };
 
-                let updatePCpuUsage = function() {
+                var updatePCpuUsage = function() {
                     if (!self.now && self.hasLoadedOnce['physicalCpuUsage'])
                         return; // offline mode + we have loaded the information
 
-                    let tags = 'cpu = \'cpu-total\' and ' + _getTimestampLimits('physicalCpuUsage') +
+                    var tags = 'cpu = \'cpu-total\' and ' + _getTimestampLimits('physicalCpuUsage') +
                                ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'mean(usage_user), mean(usage_iowait), mean(usage_idle)', 'cpu',
                                              tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                let newData = success.data.result.results[0].series[0];
-                                let metrics = newData.values;
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
 
                                 self.startTimeMap['physicalCpuUsage'] = _getLastTimestampFromSeries(newData);
 
-                                for(let i = 0; i < metrics.length - 1; i++) {
-                                    let splitEntry = metrics[i].split(' ');
+                                for(var i = 0; i < metrics.length - 1; i++) {
+                                    var splitEntry = metrics[i].split(' ');
 
                                     $scope.templatePhysicalCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templatePhysicalCPUUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                     $scope.templatePhysicalCPUUsage[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
-                                    $scope.templatePhysicalCPUUsage[3].values.push({'x': +splitEntry[0], 'y': 80.0});
                                 }
 
                                 self.hasLoadedOnce['physicalCpuUsage'] = true; // dont call backend again
@@ -89,23 +88,23 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                let updateRAMUsage = function() {
+                var updateRAMUsage = function() {
                     if (!self.now && self.hasLoadedOnce['ramUsage'])
                         return; // offline mode + we have loaded the information
 
-                    let tags = _getTimestampLimits('ramUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
+                    var tags = _getTimestampLimits('ramUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'mean(used), mean(available)',
                                              'mem', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                let newData = success.data.result.results[0].series[0];
-                                let metrics = newData.values;
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
 
                                 self.startTimeMap['ramUsage'] = _getLastTimestampFromSeries(newData);
 
-                                for(let i = 0; i < metrics.length - 1; i++) {
-                                    let splitEntry = metrics[i].split(' ');
+                                for(var i = 0; i < metrics.length - 1; i++) {
+                                    var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templateMemoryUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
@@ -119,23 +118,23 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                let updateNetworkUsage = function() {
+                var updateNetworkUsage = function() {
                     if (!self.now && self.hasLoadedOnce['networkUsage'])
                         return; // offline mode + we have loaded the information
 
-                    let tags = _getTimestampLimits('networkUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
+                    var tags = _getTimestampLimits('networkUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'derivative(first(bytes_recv)), derivative(first(bytes_sent))',
                                              'net', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                let newData = success.data.result.results[0].series[0];
-                                let metrics = newData.values;
+                                var newData = success.data.result.results[0].series[0];
+                                var metrics = newData.values;
 
                                 self.startTimeMap['networkUsage'] = _getLastTimestampFromSeries(newData);
 
-                                for(let i = 1; i < metrics.length - 1; i++) {
-                                    let splitEntry = metrics[i].split(' ');
+                                for(var i = 1; i < metrics.length - 1; i++) {
+                                    var splitEntry = metrics[i].split(' ');
 
                                     $scope.templateNetworkTraffic[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                     $scope.templateNetworkTraffic[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
@@ -149,47 +148,48 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                let updateDiskUsage = function() {
+                var updateDiskUsage = function() {
                     if (!self.now && self.hasLoadedOnce['diskUsage'])
                         return; // offline mode + we have loaded the information
 
-                    let tags = _getTimestampLimits('diskUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
+                    var tags = _getTimestampLimits('diskUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'last(used), last(free)','disk',
                                               tags, 'device, host').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                let newData = success.data.result.results[0].series;
+                                var newData = success.data.result.results[0].series;
 
                                 self.startTimeMap['diskUsage'] = _getLastTimestampFromSeries(newData[0]);
                                 $scope.templateDiskUsage[0].values = [];
                                 $scope.templateDiskUsage[1].values = [];
 
                                 if (self.hostsToQuery.length === 1) { // Only one host, show the devices used/free
-                                    for(let i = 0; i < newData.length - 1; i++) { // loop over each device
-                                        let device = newData[i].tags.entry[0].value;
-                                        let usedSpace = +newData[i].values[0].split(' ')[1];
-                                        let freeSpace = +newData[i].values[0].split(' ')[2];
+                                    for(var i = 0; i < newData.length - 1; i++) { // loop over each device
+                                        var device = newData[i].tags.entry[0].value;
+                                        var usedSpace = +newData[i].values[0].split(' ')[1];
+                                        var freeSpace = +newData[i].values[0].split(' ')[2];
 
                                         $scope.templateDiskUsage[0].values.push({'x': device, 'y': usedSpace});
                                         $scope.templateDiskUsage[1].values.push({'x': device, 'y': freeSpace});
                                     }
                                 } else { // Many hosts, show the total used/total free
-                                    let diskSpacePerHost = {};
-                                    for(let host of self.hostsList) {
-                                        diskSpacePerHost[host] = [0, 0];
-                                    }
+                                    var diskSpacePerHost = {};
 
-                                    for(let i = 0; i < newData.length - 1; i++) { // loop over each host/device combo
-                                        let hostname = newData[i].tags.entry[1].value;
+                                    self.hostsList.forEach(function(host) {
+                                        diskSpacePerHost[host] = [0, 0];
+                                    });
+
+                                    for(var i = 0; i < newData.length - 1; i++) { // loop over each host/device combo
+                                        var hostname = newData[i].tags.entry[1].value;
                                         diskSpacePerHost[hostname][0] += +newData[i].values[0].split(' ')[1];
                                         diskSpacePerHost[hostname][1] += +newData[i].values[0].split(' ')[2];
                                     }
 
-                                    for(let host of self.hostsList) {
+                                    self.hostsList.forEach(function(host) {
                                         $scope.templateDiskUsage[0].values.push({'x': host, 'y': diskSpacePerHost[hostname][0]});
                                         $scope.templateDiskUsage[1].values.push({'x': host, 'y': diskSpacePerHost[hostname][1]});
-                                    }
+                                    });
                                 }
 
                                 self.hasLoadedOnce['diskUsage'] = true; // dont call backend again
@@ -200,31 +200,31 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                let updateExecutorsPerHost = function () {
+                var updateExecutorsPerHost = function () {
                     // Not called from updateMetrics but every time we call the /appinfo
                     $scope.templateExecutorsPerHost = [];
 
-                    for(let host of Object.keys(self.hostnames)) {
+                    for(var host of Object.keys(self.hostnames)) {
                         $scope.templateExecutorsPerHost.push({'x': host, 'y': self.hostnames[host].length});
                     }
                 };
 
-                let updateCompletedTasksPerHost = function () {
+                var updateCompletedTasksPerHost = function () {
                     if (!self.now && self.hasLoadedOnce['completedTasksPerHost'])
                         return; // offline mode + we have loaded the information
 
-                    VizopsService.getAllExecutorMetrics().then(
+                    VizopsService.getAllExecutorMetrics('completedTasks').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                let newData = success.data;
+                                var newData = success.data;
 
                                 $scope.templateCompletedTasksPerHost = [];
 
-                                for (let entry of newData) { // loop over the executors
-                                    let executorID = entry.id;
-                                    let completedTasks = entry.completedTasks;
+                                for (var entry of newData) { // loop over the executors
+                                    var executorID = entry.id;
+                                    var completedTasks = entry.completedTasks;
 
-                                    let hostOfExecutor = '';
+                                    var hostOfExecutor = '';
                                     if (executorID === 'driver')
                                         hostOfExecutor = _.findKey(self.hostnames, x => _.indexOf(x, 0) > -1);
                                     else
@@ -241,7 +241,7 @@ angular.module('hopsWorksApp')
                     );
                 };
 
-                let updateMetrics = function() {
+                var updateMetrics = function() {
                     updatePCpuUsage();
                     updateRAMUsage();
                     updateNetworkUsage();
@@ -250,8 +250,8 @@ angular.module('hopsWorksApp')
                     updateCompletedTasksPerHost();
                 };
 
-                let resetGraphs = function() {
-                    for (let key in self.startTimeMap) {
+                var resetGraphs = function() {
+                    for (var key in self.startTimeMap) {
                       if (self.startTimeMap.hasOwnProperty(key)) {
                         self.startTimeMap[key] = self.startTime;
                         self.hasLoadedOnce[key] = false;
@@ -266,14 +266,14 @@ angular.module('hopsWorksApp')
                     $scope.templateCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostTemplate();
                 };
 
-                let _getLastTimestampFromSeries = function(serie) {
+                var _getLastTimestampFromSeries = function(serie) {
                     // Takes as an argument a single serie
                     return +serie.values[serie.values.length - 1].split(' ')[0];
                 };
 
-                let _getTimestampLimits = function(graphName) {
+                var _getTimestampLimits = function(graphName) {
                     // If we didn't use groupBy calls then it would be enough to upper limit the time with now()
-                    let limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
+                    var limits = 'time >= ' + self.startTimeMap[graphName] + 'ms';
 
                     if (!self.now) {
                         limits += ' and time < ' + self.endTime + 'ms';
@@ -284,29 +284,29 @@ angular.module('hopsWorksApp')
                     return limits;
                 };
 
-                let _extractHostnameInfoFromResponse = function(response) {
+                var _extractHostnameInfoFromResponse = function(response) {
                     // get the unique host names
-                    let hosts = [...new Set(response.entry.map(item => item.value[1]))];
+                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
 
-                    let result = {};
-                    for(let i = 0; i < hosts.length; i++) {
+                    var result = {};
+                    for(var i = 0; i < hosts.length; i++) {
                         result[hosts[i]] = [];
                     }
 
                     // and add the executors running on them
-                    for(let i = 0; i < response.entry.length; i++) {
+                    for(var i = 0; i < response.entry.length; i++) {
                         result[response.entry[i].value[1]].push(response.entry[i].key);
                     }
 
                     return result;
                 };
 
-                let init = function() {
+                var init = function() {
                     self.appId = VizopsService.getAppId();
 
                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                         function(success) {
-                            let info = success.data;
+                            var info = success.data;
 
                             self.nbExecutors = info.nbExecutors;
                             self.executorInfo = info.executorInfo;
@@ -324,7 +324,7 @@ angular.module('hopsWorksApp')
                                 self.appinfoInterval = $interval(function() { // update appinfo data
                                     JobService.getAppInfo(VizopsService.getProjectId(), self.appId).then(
                                         function(success) {
-                                            let info = success.data;
+                                            var info = success.data;
 
                                             self.nbExecutors = info.nbExecutors;
                                             self.executorInfo = info.executorInfo;
