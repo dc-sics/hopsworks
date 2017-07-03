@@ -265,8 +265,7 @@ public class NotebookServer implements
         }
       }
 
-      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal, "",
-              messagereceived.ticket);
+      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal, messagereceived.ticket);
       /**
        * Lets be elegant here
        */
@@ -1846,7 +1845,7 @@ public class NotebookServer implements
     Paragraph p = note.getParagraph(paragraphId);
     p.setText(text);
     p.setTitle(title);
-    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal,"", fromMessage.ticket);
+    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal, fromMessage.ticket);
     p.setAuthenticationInfo(subject);
     p.settings.setParams(params);
     p.setConfig(config);
