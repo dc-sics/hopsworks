@@ -1,5 +1,13 @@
 'use strict';
 
+/*
+    An HTTP response contains the following properties:
+    - data {string|Object} – The response body transformed with the transform functions.
+    - status – {number} – HTTP status code of the response.
+    - headers – {function([headerName])} – Header getter function.
+    - config – {Object} – The configuration object that was used to generate the request.
+    - statusText – {string} – HTTP status text of the response.
+*/
 
 angular.module('hopsWorksApp')
     .factory('VizopsService', ['$http', '$interval', function ($http, $interval) {

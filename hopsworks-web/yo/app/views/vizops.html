@@ -314,7 +314,7 @@
               <md-card>
                 <md-card-title>
                   <md-card-title-text>
-                    <span class="md-headline strong">Number of worker machines</span>
+                    <span class="md-headline strong">Worker machines</span>
                     <span class="md-subhead">{{vizopsWorkerCtrl.nbOfHosts}}</span>
                   </md-card-title-text>
                 </md-card-title>
@@ -368,6 +368,16 @@
 
             <div class="col-md-4">
               <nvd3 id="workerDiskUsage" options="optionsDiskUsage" data="templateDiskUsage"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-2">
+              <nvd3 id="workerExecutorPerHost" options="optionsExecutorsPerHost" data="templateExecutorsPerHost"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div>
+
+            <div class="col-md-2">
+              <nvd3 id="workerCompletedTasksPerHost" options="optionsCompletedTasksPerHost" data="templateCompletedTasksPerHost"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 

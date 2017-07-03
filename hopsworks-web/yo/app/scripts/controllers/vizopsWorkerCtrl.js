@@ -31,11 +31,15 @@ angular.module('hopsWorksApp')
                 $scope.optionsMemoryUsage = vizopsWorkerMemoryUsageOptions();
                 $scope.optionsNetworkTraffic = vizopsWorkerNetworkTrafficOptions();
                 $scope.optionsDiskUsage = vizopsWorkerDiskUsageOptions();
+                $scope.optionsExecutorsPerHost = vizopsWorkerExecutorsPerHostOptions();
+                $scope.optionsCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostOptions();
 
                 $scope.templatePhysicalCPUUsage = [];
                 $scope.templateMemoryUsage = [];
                 $scope.templateNetworkTraffic = [];
                 $scope.templateDiskUsage = [];
+                $scope.templateExecutorsPerHost = [];
+                $scope.templateCompletedTasksPerHost = [];
 
                 self.startTimeMap = {
                     'physicalCpuUsage': -1,
@@ -48,7 +52,8 @@ angular.module('hopsWorksApp')
                     'physicalCpuUsage': false,
                     'ramUsage': false,
                     'networkUsage': false,
-                    'diskUsage': false
+                    'diskUsage': false,
+                    'completedTasksPerHost': false
                 };
 
                 let updatePCpuUsage = function() {
@@ -195,11 +200,54 @@ angular.module('hopsWorksApp')
                     );
                 };
 
+                let updateExecutorsPerHost = function () {
+                    // Not called from updateMetrics but every time we call the /appinfo
+                    $scope.templateExecutorsPerHost = [];
+
+                    for(let host of Object.keys(self.hostnames)) {
+                        $scope.templateExecutorsPerHost.push({'x': host, 'y': self.hostnames[host].length});
+                    }
+                };
+
+                let updateCompletedTasksPerHost = function () {
+                    if (!self.now && self.hasLoadedOnce['completedTasksPerHost'])
+                        return; // offline mode + we have loaded the information
+
+                    VizopsService.getAllExecutorMetrics().then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                let newData = success.data;
+
+                                $scope.templateCompletedTasksPerHost = [];
+
+                                for (let entry of newData) { // loop over the executors
+                                    let executorID = entry.id;
+                                    let completedTasks = entry.completedTasks;
+
+                                    let hostOfExecutor = '';
+                                    if (executorID === 'driver')
+                                        hostOfExecutor = _.findKey(self.hostnames, x => _.indexOf(x, 0) > -1);
+                                    else
+                                        hostOfExecutor = _.findKey(self.hostnames, x => _.indexOf(x, +executorID) > -1);
+
+                                    $scope.templateCompletedTasksPerHost.push({'x': hostOfExecutor, 'y': completedTasks});
+                                }
+
+                                self.hasLoadedOnce['completedTasksPerHost'] = true;
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching completedTasksPerHost(worker) metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
                 let updateMetrics = function() {
                     updatePCpuUsage();
                     updateRAMUsage();
                     updateNetworkUsage();
                     updateDiskUsage();
+                    updateExecutorsPerHost();
+                    updateCompletedTasksPerHost();
                 };
 
                 let resetGraphs = function() {
@@ -214,6 +262,8 @@ angular.module('hopsWorksApp')
                     $scope.templateMemoryUsage = vizopsWorkerMemoryUsageTemplate();
                     $scope.templateNetworkTraffic = vizopsWorkerNetworkTrafficTemplate();
                     $scope.templateDiskUsage = vizopsWorkerDiskUsageTemplate();
+                    $scope.templateExecutorsPerHost = vizopsWorkerExecutorsPerHostTemplate();
+                    $scope.templateCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostTemplate();
                 };
 
                 let _getLastTimestampFromSeries = function(serie) {

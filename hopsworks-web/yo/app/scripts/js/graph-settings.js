@@ -783,6 +783,46 @@ var vizopsWorkerDiskUsageTemplate = function() {
      ];
  };
 
+// WORKER EXECUTORS PER HOST
+var vizopsWorkerExecutorsPerHostOptions = function() {
+    var options = getBaseChartOptions();
+    options.chart.type = 'pieChart';
+    options.chart.labelThreshold = 0.01;
+    options.chart.labelSunbeamLayout = true;
+    options.chart.donut = true;
+    options.chart.donutRatio = 0.3;
+    options.chart.labelType = "percent";
+    options.chart.color = _getColor;
+    options.title.text = 'Executors per host';
+    options.chart.margin = { "top": 5, "right": 5, "bottom": 5, "left": 5 };
+
+    return options;
+};
+
+var vizopsWorkerExecutorsPerHostTemplate = function() {
+    return [];
+};
+
+// WORKER Total Tasks PER HOST
+let vizopsWorkerCompletedTasksPerHostOptions = function() {
+    let options = getBaseChartOptions();
+    options.chart.type = 'pieChart';
+    options.chart.labelThreshold = 0.01;
+    options.chart.labelSunbeamLayout = true;
+    options.chart.donut = true;
+    options.chart.donutRatio = 0.3;
+    options.chart.labelType = "percent";
+    options.chart.color = _getColor;
+    options.title.text = 'Completed tasks per host';
+    options.chart.margin = { "top": 5, "right": 5, "bottom": 5, "left": 5 };
+
+    return options;
+};
+
+let vizopsWorkerCompletedTasksPerHostTemplate = function() {
+    return [];
+};
+
 // STREAMING last received batch records
 var vizopsStreamingLastReceivedBatchRecordsOptions = function() {
     var options = getBaseChartOptions();
