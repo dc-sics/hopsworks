@@ -661,6 +661,9 @@ public class Settings implements Serializable {
   //TensorFlow constants
   public static final String TENSORFLOW_DEFAULT_OUTPUT_PATH = "Logs/TensorFlow/";
   public static final String TENSORFLOW_JAR = "hops-tensorflow-0.0.4-SNAPSHOT.jar";
+  //Used to pass the project user to yarn containers for tensorflow
+  public static final String HADOOP_USER_NAME = "HADOOP_USER_NAME";
+  
   
   public static String getTensorFlowJarPath(String tfUser) {
     return "hdfs:///user/" + tfUser+"/"+TENSORFLOW_JAR;

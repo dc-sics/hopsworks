@@ -1,5 +1,6 @@
 package io.hops.hopsworks.api.tensorflow;
 
+import com.google.common.base.Strings;
 import io.hops.hopsworks.api.kibana.ProxyServlet;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationAttemptStateFacade;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstate;
@@ -47,17 +48,18 @@ public class TensorboardProxyServlet extends ProxyServlet {
   @EJB
   private TensorflowFacade tensorflowFacade;
 
-  private final static Logger LOGGER = Logger.getLogger(TensorboardProxyServlet.class.
-      getName());
+  private String jobType; //TFSPARK or TENSORFLOW
+  private final static Logger LOGGER = Logger.getLogger(TensorboardProxyServlet.class.getName());
 
   @Override
   protected void service(HttpServletRequest servletRequest,
       HttpServletResponse servletResponse)
       throws ServletException, IOException {
     String email = servletRequest.getUserPrincipal().getName();
-    //TFSPARK or TENSORFLOW
-    String jobType = servletRequest.getParameterMap().get("jobType")[0];
-    String trackingUrl = "";
+    if (servletRequest.getParameterMap().containsKey("jobType")) {
+      jobType = servletRequest.getParameterMap().get("jobType")[0];
+    }
+    String trackingUrl;
     Pattern pattern = Pattern.compile("(application_.*?_\\d*)");
     Matcher matcher = pattern.matcher(servletRequest.getRequestURI());
     if (matcher.find()) {
@@ -97,20 +99,22 @@ public class TensorboardProxyServlet extends ProxyServlet {
       }
       //get tensorboard address from hdfs file
       String uri = null;
-      if (jobType.equals("TFSPARK")) {
-        uri = tensorflowFacade.getTensorboardURI(appId, projectName);
-      } else {
+      if (!Strings.isNullOrEmpty(jobType) && jobType.equals("TENSORFLOW")) {
         //Get amTrackingUri of distributed tensorflow
         try {
           uri = getHTML(trackingUrl + "/tensorboard");
         } catch (Exception ex) {
           LOGGER.log(Level.SEVERE, "Could not get TensorBoard URL", ex);
         }
+        //TensorFlow ApplicationMaster returns a list of tensorboards, so we must parse it
+        //Currently it returns a single tensorboard
         uri = "http://" + uri.replace("\"", "").replace("[", "").replace("]", "");
         if (uri == null || uri.equals("null")) {
           sendErrorResponse(servletResponse, "This tensorboard is not running right now");
           return;
         }
+      } else {
+        uri = tensorflowFacade.getTensorboardURI(appId, projectName);
       }
       targetUri = uri;
       try {

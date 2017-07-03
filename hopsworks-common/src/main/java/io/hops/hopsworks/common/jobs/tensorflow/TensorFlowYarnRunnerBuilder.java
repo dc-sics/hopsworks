@@ -79,6 +79,7 @@ public class TensorFlowYarnRunnerBuilder {
     client.setNumPses(numOfPs);
     client.setNumWorkers(numOfWorkers);
     client.setTensorboard(true);
+    client.addEnvironmentVariable(Settings.HADOOP_USER_NAME, jobUser);
     String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
     appPath = appPath.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
     client.setMain(appPath);

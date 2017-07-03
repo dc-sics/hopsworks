@@ -56,6 +56,12 @@
       <groupId>io.hops</groupId>
       <artifactId>hops-tensorflow</artifactId>
       <version>0.0.4-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.hops</groupId>
