@@ -520,11 +520,6 @@ var vizopsExecutorMemoryUsageTemplate = function() {
            values: [],
            key: 'mean',
            color: _getColor[10]
-       },
-       {
-           values: [],
-           key: '80% max',
-           color: _getColor[1]
        }
     ];
 };
@@ -829,7 +824,7 @@ var vizopsStreamingLastReceivedBatchRecordsOptions = function() {
             return d3.format("d")(d);
         }
     };
-    options.title.text = 'Records received';
+    options.title.text = 'Last received batch records';
     options.subtitle = {
         enable: true,
         text: 'In case the records drops to 0, then it probably means that the job has finished or failed',
@@ -863,10 +858,10 @@ var vizopsStreamingTotalDelayOptions = function() {
             return d3.format(".1f")(d);
         }
     };
-    options.title.text = 'Total processing delay per interval';
+    options.title.text = 'Total processing delay(scheduling and processing)';
     options.subtitle = {
         enable: true,
-        text: 'Backpressure builds up if the processing delay is higher than the batch arrival time',
+        text: 'Backpressure builds up if the total delay is higher than the batch arrival time',
         css: {
             'text-align': 'center',
             'margin': '10px 13px 0px 7px'

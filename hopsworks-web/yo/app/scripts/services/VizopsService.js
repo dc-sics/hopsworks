@@ -12,7 +12,7 @@
 angular.module('hopsWorksApp')
     .factory('VizopsService', ['$http', '$interval', function ($http, $interval) {
         var self = this;
-        var groupByInterval = 10;
+        var groupByInterval = '10s';
 
         self.projectId = '';
         self.appId = '';

@@ -30,23 +30,23 @@ angular.module('hopsWorksApp')
                 self.containerTemplate = '.*_APPID_.*_\\d{5}[2-9]'; // holds the original container regex - filled by init
                 self.selectiveContainersTemplate = '.*_APPID_.*_'; // used for picking the containers running on the same host
 
-                $scope.optionsAggregatedVCPUUsage = vizopsExecutorCPUOptions();
-                $scope.optionsTaskDistribution = vizopsExecutorTaskDistributionOptions();
-                $scope.optionsMemoryUsage = vizopsExecutorMemoryUsageOptions();
-                $scope.optionsHDFSDiskRead = vizopsExecutorHDFSDiskReadOptions();
-                $scope.optionsHDFSDiskWrite = vizopsExecutorHDFSDiskWriteOptions();
-                $scope.optionsGCTime = vizopsExecutorGCTimeOptions();
-                $scope.optionsPeakMemoryPerExecutor = vizopsExecutorPeakMemoryOptions();
-                $scope.optionsShuffleReadWrite = vizopsApplicationShuffleOptions();
+                self.optionsAggregatedVCPUUsage = vizopsExecutorCPUOptions();
+                self.optionsTaskDistribution = vizopsExecutorTaskDistributionOptions();
+                self.optionsMemoryUsage = vizopsExecutorMemoryUsageOptions();
+                self.optionsHDFSDiskRead = vizopsExecutorHDFSDiskReadOptions();
+                self.optionsHDFSDiskWrite = vizopsExecutorHDFSDiskWriteOptions();
+                self.optionsGCTime = vizopsExecutorGCTimeOptions();
+                self.optionsPeakMemoryPerExecutor = vizopsExecutorPeakMemoryOptions();
+                self.optionsShuffleReadWrite = vizopsApplicationShuffleOptions();
 
-                $scope.templateAggregatedVCPUUsage = [];
-                $scope.templateTaskDistribution = [];
-                $scope.templateMemoryUsage = [];
-                $scope.templateHDFSDiskRead = [];
-                $scope.templateHDFSDiskWrite = [];
-                $scope.templateGCTime = [];
-                $scope.templatePeakMemoryPerExecutor = [];
-                $scope.templateShuffleReadWrite = [];
+                self.templateAggregatedVCPUUsage = [];
+                self.templateTaskDistribution = [];
+                self.templateMemoryUsage = [];
+                self.templateHDFSDiskRead = [];
+                self.templateHDFSDiskWrite = [];
+                self.templateGCTime = [];
+                self.templatePeakMemoryPerExecutor = [];
+                self.templateShuffleReadWrite = [];
 
                 self.startTimeMap = {
                     'vcpuUsage': -1,
@@ -105,7 +105,7 @@ angular.module('hopsWorksApp')
 
                     VizopsService.getMetrics('graphite',
                         'mean(MilliVcoreUsageIMinMilliVcores)/' + (+self.executorInfo.entry[0].value[2]*1000),
-                        'nodemanager', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                        'nodemanager', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -116,7 +116,7 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateAggregatedVCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateAggregatedVCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                 }
 
                                 self.hasLoadedOnce['vcpuUsage'] = true;
@@ -140,13 +140,13 @@ angular.module('hopsWorksApp')
                                   var newData = success.data.result.results[0].series;
                                   self.startTimeMap['taskDistribution'] = _getLastTimestampFromSeries(newData[0]);
 
-                                  $scope.templateTaskDistribution[0].values = []; // we can afford to clear the data
+                                  self.templateTaskDistribution[0].values = []; // we can afford to clear the data
 
                                   for(var i = 0; i < newData.length; i++) { // loop over each executor
                                       var executorID = newData[i].tags.entry[0].value;
                                       var totalTasks = +newData[i].values[0].split(" ")[1];
 
-                                      $scope.templateTaskDistribution[0].values.push({'x': executorID, 'y': totalTasks});
+                                      self.templateTaskDistribution[0].values.push({'x': executorID, 'y': totalTasks});
                                   }
 
                                   self.hasLoadedOnce['taskDistribution'] = true;
@@ -165,7 +165,7 @@ angular.module('hopsWorksApp')
                                ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_max)', 'spark', tags,
-                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                           function(success) {
                               if (success.status === 200) { // new measurements
                                   var newData = success.data.result.results[0].series[0];
@@ -175,8 +175,7 @@ angular.module('hopsWorksApp')
                                   for(var i = 0; i < metrics.length - 1; i++) {
                                       var splitEntry = metrics[i].split(' ');
 
-                                      $scope.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]}); // mean
-                                      $scope.templateMemoryUsage[1].values.push({'x': +splitEntry[0], 'y': (+splitEntry[2]) * 0.8}); // threshold
+                                      self.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]}); // mean
                                   }
 
                                   self.hasLoadedOnce['memoryUsage'] = true;
@@ -195,7 +194,7 @@ angular.module('hopsWorksApp')
                                ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite', 'last(filesystem_file_read_bytes), last(filesystem_hdfs_read_bytes)',
-                                             'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'spark', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                           function(success) {
                               if (success.status === 200) { // new measurements
                                   var newData = success.data.result.results[0].series[0];
@@ -205,8 +204,8 @@ angular.module('hopsWorksApp')
                                   for(var i = 0; i < metrics.length; i++) {
                                       var splitEntry = metrics[i].split(' ');
 
-                                      $scope.templateHDFSDiskRead[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                      $scope.templateHDFSDiskRead[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                      self.templateHDFSDiskRead[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                      self.templateHDFSDiskRead[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                   }
 
                                   self.hasLoadedOnce['hdfsDiskRead'] = true;
@@ -225,7 +224,7 @@ angular.module('hopsWorksApp')
                                ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
 
                     VizopsService.getMetrics('graphite', 'last(filesystem_file_write_bytes), last(filesystem_hdfs_write_bytes)',
-                                             'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'spark', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                           function(success) {
                               if (success.status === 200) { // new measurements
                                   var newData = success.data.result.results[0].series[0];
@@ -235,8 +234,8 @@ angular.module('hopsWorksApp')
                                   for(var i = 0; i < metrics.length; i++) {
                                       var splitEntry = metrics[i].split(' ');
 
-                                      $scope.templateHDFSDiskWrite[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                      $scope.templateHDFSDiskWrite[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                      self.templateHDFSDiskWrite[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                      self.templateHDFSDiskWrite[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                   }
 
                                   self.hasLoadedOnce['hdfsDiskWrite'] = true;
@@ -256,7 +255,7 @@ angular.module('hopsWorksApp')
 
                     VizopsService.getMetrics('graphite', 'non_negative_derivative(mean(\"PS-MarkSweep_time\"), 1s),' +
                                              'non_negative_derivative(mean(\"PS-Scavenge_time\"), 1s)', 'spark', tags,
-                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -267,8 +266,8 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    $scope.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    self.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                 }
 
                                 self.hasLoadedOnce['gcTime'] = true; // dont call backend again
@@ -291,13 +290,13 @@ angular.module('hopsWorksApp')
                                 var newData = success.data.result.results[0].series;
                                 self.startTimeMap['peakMemoryPerExecutor'] = _getLastTimestampFromSeries(newData[0]);
 
-                                $scope.templatePeakMemoryPerExecutor[0].values = [];
+                                self.templatePeakMemoryPerExecutor[0].values = [];
 
                                 for(var i = 0; i < newData.length; i++) { // loop over each executor
                                     var executorID = newData[i].tags.entry[0].value;
                                     var maxMemory = +newData[i].values[0].split(" ")[1];
 
-                                    $scope.templatePeakMemoryPerExecutor[0].values.push({'x': executorID, 'y': maxMemory});
+                                    self.templatePeakMemoryPerExecutor[0].values.push({'x': executorID, 'y': maxMemory});
                                 }
 
                                 self.hasLoadedOnce['peakMemoryPerExecutor'] = true;
@@ -317,10 +316,11 @@ angular.module('hopsWorksApp')
                             if (success.status === 200) { // new measurements
                                 var newData = success.data;
 
-                                $scope.templateShuffleReadWrite[0].values = [];
-                                $scope.templateShuffleReadWrite[1].values = [];
+                                self.templateShuffleReadWrite[0].values = [];
+                                self.templateShuffleReadWrite[1].values = [];
 
-                                for (var entry of newData) {
+                                for(var i = 0; i < newData.length; i++) {
+                                    var entry = newData[i];
                                     var executorID = entry.id;
                                     var totalShuffleRead = entry.totalShuffleRead;
                                     var totalShuffleWrite = entry.totalShuffleWrite;
@@ -328,13 +328,13 @@ angular.module('hopsWorksApp')
                                     if (executorID === 'driver') continue;
 
                                     if (self.executorQuery === '[0-9]%2B') { // all executors are included, just add it
-                                        $scope.templateShuffleReadWrite[0].values.push({'x': executorID, 'y': totalShuffleRead});
-                                        $scope.templateShuffleReadWrite[1].values.push({'x': executorID, 'y': totalShuffleWrite});
+                                        self.templateShuffleReadWrite[0].values.push({'x': executorID, 'y': totalShuffleRead});
+                                        self.templateShuffleReadWrite[1].values.push({'x': executorID, 'y': totalShuffleWrite});
                                     } else {
                                         var executorsSplit = self.executorQuery.split('|');
                                         if (executorsSplit.indexOf(executorID) > -1) {
-                                            $scope.templateShuffleReadWrite[0].values.push({'x': executorID, 'y': totalShuffleRead});
-                                            $scope.templateShuffleReadWrite[1].values.push({'x': executorID, 'y': totalShuffleWrite});
+                                            self.templateShuffleReadWrite[0].values.push({'x': executorID, 'y': totalShuffleRead});
+                                            self.templateShuffleReadWrite[1].values.push({'x': executorID, 'y': totalShuffleWrite});
                                         }
                                     }
                                 }
@@ -342,7 +342,8 @@ angular.module('hopsWorksApp')
                                 self.hasLoadedOnce['totalShuffle'] = true;
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
-                            growl.error(error.data.errorMsg, {title: 'Error fetching totalShuffle(executor) metrics.', ttl: 10000});
+                            if (error.status !== 500)
+                                growl.error(error.data.errorMsg, {title: 'Error fetching totalShuffle(executor) metrics.', ttl: 10000});
                         }
                     );
                 };
@@ -367,14 +368,14 @@ angular.module('hopsWorksApp')
                       }
                     }
 
-                    $scope.templateAggregatedVCPUUsage = vizopsExecutorCPUDataTemplate();
-                    $scope.templateTaskDistribution = vizopsExecutorTaskDistributionTemplate();
-                    $scope.templateMemoryUsage = vizopsExecutorMemoryUsageTemplate();
-                    $scope.templateHDFSDiskRead = vizopsExecutorHDFSDiskReadTemplate();
-                    $scope.templateHDFSDiskWrite = vizopsExecutorHDFSDiskWriteTemplate();
-                    $scope.templateGCTime = vizopsExecutorGCTimeTemplate();
-                    $scope.templatePeakMemoryPerExecutor = vizopsExecutorPeakMemoryTemplate();
-                    $scope.templateShuffleReadWrite = vizopsApplicationShuffleTemplate();
+                    self.templateAggregatedVCPUUsage = vizopsExecutorCPUDataTemplate();
+                    self.templateTaskDistribution = vizopsExecutorTaskDistributionTemplate();
+                    self.templateMemoryUsage = vizopsExecutorMemoryUsageTemplate();
+                    self.templateHDFSDiskRead = vizopsExecutorHDFSDiskReadTemplate();
+                    self.templateHDFSDiskWrite = vizopsExecutorHDFSDiskWriteTemplate();
+                    self.templateGCTime = vizopsExecutorGCTimeTemplate();
+                    self.templatePeakMemoryPerExecutor = vizopsExecutorPeakMemoryTemplate();
+                    self.templateShuffleReadWrite = vizopsApplicationShuffleTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -397,7 +398,7 @@ angular.module('hopsWorksApp')
 
                 var _extractHostnameInfoFromResponse = function(response) {
                     // get the unique host names
-                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
+                    var hosts = _.uniq(response.entry.map(function(item) { return item.value[1]; }));
 
                     var result = {};
                     for(var i = 0; i < hosts.length; i++) {
@@ -477,9 +478,7 @@ angular.module('hopsWorksApp')
                     } else if (self.chosenFilter === 'by executor id') {
                         self.executorIDFromInput = '';
                         return;
-                    }
-
-                     else if (_.isEqual([self.chosenFilter], self.hostsToQuery)) { // same choice, skip
+                    } else if (_.isEqual([self.chosenFilter], self.hostsToQuery)) { // same choice, skip
                         return;
                     } else {
                         // Remove the driver if there
@@ -490,7 +489,7 @@ angular.module('hopsWorksApp')
                         }
                         self.executorQuery = executorsOnHost.join('|');
                         self.containerQuery = self.selectiveContainersTemplate +
-                                              '(?:' + executorsOnHost.map((x) => _.padLeft(x, 6, '0')).join('|') + ')';
+                                              '(?:' + executorsOnHost.map(function(x) { return _.padLeft(x, 6, '0'); }).join('|') + ')';
                     }
 
                     resetGraphs();
@@ -524,6 +523,13 @@ angular.module('hopsWorksApp')
                   $interval.cancel(self.poller);
                   $interval.cancel(self.appinfoInterval);
                 });
+
+                $scope.$watch(function() { return VizopsService.getGroupByInterval(); }, function(newVal, oldVal) {
+                    if (newVal === oldVal) return;
+
+                    resetGraphs();
+                    updateMetrics();
+                }, true);
             }
         ]
     );

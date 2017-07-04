@@ -18,6 +18,8 @@ angular.module('hopsWorksApp')
                 self.durationInterval;
                 self.appinfoInterval; // checks for the app status
                 self.durationLabel = "00:00:00";
+               self.chosenGroupByInterval;
+               self.groupByIntervals = ['10s', '30s', '1m', '3m', '10m', '30m', '1h'];
 
                 var init = function() {
                     self.appId = VizopsService.getAppId();
@@ -64,6 +66,10 @@ angular.module('hopsWorksApp')
                 };
 
                 init();
+
+                self.onGroupByIntervalSelection = function () {
+                    VizopsService.setGroupByInterval(self.chosenGroupByInterval);
+                };
 
                 $scope.$on('$destroy', function () {
                   $interval.cancel(self.durationInterval);

@@ -3,7 +3,21 @@
     <div class="col-md-4" id="headers">
       <h3>{{vizopsCtrl.jobName}}&nbsp;<small>{{vizopsCtrl.appId}}</small></h3>
     </div>
-    <div class="col-md-8 text-right">
+    <div class="col-md-1 text-right">
+      <h4 uib-tooltip="Bigger interval results to less data points">Group by interval</h4>
+
+      <ui-select name="groupBySelection" theme="select2" ng-model="vizopsCtrl.chosenGroupByInterval"
+                 style="min-width: 150px;" on-select="vizopsCtrl.onGroupByIntervalSelection()">
+
+        <ui-select-match placeholder="Group by interval" allow-clear="false">{{$select.selected}}</ui-select-match>
+
+        <ui-select-choices repeat="choice in vizopsCtrl.groupByIntervals">
+          <div ng-bind-html="choice | highlight: $select.search"></div>
+        </ui-select-choices>
+      </ui-select>
+    </div>
+
+    <div class="col-md-7 text-right">
       <h3 ng-if="vizopsCtrl.now">
         <!--  -->
         <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}
@@ -87,27 +101,37 @@
           </div> <!-- row -->
           <div class="row">
             <div class="col-md-4">
-              <nvd3 id="overviewTotalActiveTasks" options="optionsTotalActiveTasks" data="templateTotalActiveTasks"
+              <nvd3 id="overviewTotalActiveTasks"
+                    options="vizopsOverviewCtrl.optionsTotalActiveTasks"
+                    data="vizopsOverviewCtrl.templateTotalActiveTasks"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: total active tasks graph -->
             <div class="col-md-4">
-              <nvd3 id="overviewTotalCompletedTasks" options="optionsTotalCompletedTasks" data="templateTotalCompletedTasks"
+              <nvd3 id="overviewTotalCompletedTasks"
+                    options="vizopsOverviewCtrl.optionsTotalCompletedTasks"
+                    data="vizopsOverviewCtrl.templateTotalCompletedTasks"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: total completed tasks graph -->
             <div class="col-md-4">
-              <nvd3 id="overviewClusterMemory" options="optionsContainerMemoryUsedTotal" data="templateContainerMemoryUsedTotal"
+              <nvd3 id="overviewClusterMemory"
+                    options="vizopsOverviewCtrl.optionsContainerMemoryUsedTotal"
+                    data="vizopsOverviewCtrl.templateContainerMemoryUsedTotal"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: used/total container memory -->
           </div> <!-- row -->
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="overviewHDFSWriteRateTotal" options="optionsHDFSWriteRateTotal" data="templateHDFSWriteRateTotal"
+              <nvd3 id="overviewHDFSWriteRateTotal"
+                    options="vizopsOverviewCtrl.optionsHDFSWriteRateTotal"
+                    data="vizopsOverviewCtrl.templateHDFSWriteRateTotal"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: hdfs write rate/total graph -->
 
             <div class="col-md-4">
-              <nvd3 id="overviewHDFSReadRateTotal" options="optionsHDFSReadRateTotal" data="templateHDFSReadRateTotal"
+              <nvd3 id="overviewHDFSReadRateTotal"
+                    options="vizopsOverviewCtrl.optionsHDFSReadRateTotal"
+                    data="vizopsOverviewCtrl.templateHDFSReadRateTotal"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: hdfs read write graph -->
 
@@ -166,25 +190,33 @@
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="driverMemoryUsed" options="optionsMemorySpace" data="templateMemorySpace"
+              <nvd3 id="driverMemoryUsed"
+                    options="vizopsDriverCtrl.optionsMemorySpace"
+                    data="vizopsDriverCtrl.templateMemorySpace"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="driverVCPUUsed" options="optionsVCPU" data="templateVCPU"
+              <nvd3 id="driverVCPUUsed"
+                    options="vizopsDriverCtrl.optionsVCPU"
+                    data="vizopsDriverCtrl.templateVCPU"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="driverRDDCacheDiskSpill" options="optionsRDDCacheDiskSpill"
-                    data="templateRDDCacheDiskSpill" class="with-3d-shadow with-transitions"></nvd3>
+              <nvd3 id="driverRDDCacheDiskSpill"
+                    options="vizopsDriverCtrl.optionsRDDCacheDiskSpill"
+                    data="vizopsDriverCtrl.templateRDDCacheDiskSpill"
+                    class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
           </div> <!-- row -->
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="driverGCTime" options="optionsGCTime" data="templateGCTime"
+              <nvd3 id="driverGCTime"
+                    options="vizopsDriverCtrl.optionsGCTime"
+                    data="vizopsDriverCtrl.templateGCTime"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
@@ -256,48 +288,64 @@
           <div class="row">
 
           <div class="col-md-4">
-            <nvd3 id="executorCPU" options="optionsAggregatedVCPUUsage" data="templateAggregatedVCPUUsage"
+            <nvd3 id="executorCPU"
+                  options="vizopsExecutorCtrl.optionsAggregatedVCPUUsage"
+                  data="vizopsExecutorCtrl.templateAggregatedVCPUUsage"
                   class="with-3d-shadow with-transitions"></nvd3>
           </div>
 
           <div class="col-md-4">
-            <nvd3 id="executorTaskDistribution" options="optionsTaskDistribution" data="templateTaskDistribution"
+            <nvd3 id="executorTaskDistribution"
+                  options="vizopsExecutorCtrl.optionsTaskDistribution"
+                  data="vizopsExecutorCtrl.templateTaskDistribution"
                   class="with-3d-shadow with-transitions"></nvd3>
           </div>
 
           <div class="col-md-4">
-            <nvd3 id="executorPeakMemoryBar" options="optionsPeakMemoryPerExecutor"
-                  data="templatePeakMemoryPerExecutor" class="with-3d-shadow with-transitions"></nvd3>
+            <nvd3 id="executorPeakMemoryBar"
+                  options="vizopsExecutorCtrl.optionsPeakMemoryPerExecutor"
+                  data="vizopsExecutorCtrl.templatePeakMemoryPerExecutor"
+                  class="with-3d-shadow with-transitions"></nvd3>
           </div>
 
         </div> <!-- row -->
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="executorMem" options="optionsMemoryUsage" data="templateMemoryUsage"
+              <nvd3 id="executorMem"
+                    options="vizopsExecutorCtrl.optionsMemoryUsage"
+                    data="vizopsExecutorCtrl.templateMemoryUsage"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="executorGCTime" options="optionsGCTime" data="templateGCTime"
+              <nvd3 id="executorGCTime"
+                    options="vizopsExecutorCtrl.optionsGCTime"
+                    data="vizopsExecutorCtrl.templateGCTime"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="executorShufflePerExecutor" options="optionsShuffleReadWrite"
-                    data="templateShuffleReadWrite" class="with-3d-shadow with-transitions"></nvd3>
+              <nvd3 id="executorShufflePerExecutor"
+                    options="vizopsExecutorCtrl.optionsShuffleReadWrite"
+                    data="vizopsExecutorCtrl.templateShuffleReadWrite"
+                    class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
           </div> <!-- row -->
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="executorHDFSDiskRead" options="optionsHDFSDiskRead" data="templateHDFSDiskRead"
+              <nvd3 id="executorHDFSDiskRead"
+                    options="vizopsExecutorCtrl.optionsHDFSDiskRead"
+                    data="vizopsExecutorCtrl.templateHDFSDiskRead"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="executorHDFSDiskWrite" options="optionsHDFSDiskWrite" data="templateHDFSDiskWrite"
+              <nvd3 id="executorHDFSDiskWrite"
+                    options="vizopsExecutorCtrl.optionsHDFSDiskWrite"
+                    data="vizopsExecutorCtrl.templateHDFSDiskWrite"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
@@ -315,7 +363,9 @@
                 <md-card-title>
                   <md-card-title-text>
                     <span class="md-headline strong">Worker machines</span>
-                    <span class="md-subhead">{{vizopsWorkerCtrl.nbOfHosts}}</span>
+                    <span class="md-subhead">
+                      {{vizopsWorkerCtrl.nbOfHosts}} machines in the cluster running application containers
+                    </span>
                   </md-card-title-text>
                 </md-card-title>
               </md-card>
@@ -348,17 +398,23 @@
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="workerPCpuUsage" options="optionsPhysicalCPUUsage" data="templatePhysicalCPUUsage"
+              <nvd3 id="workerPCpuUsage"
+                    options="vizopsWorkerCtrl.optionsPhysicalCPUUsage"
+                    data="vizopsWorkerCtrl.templatePhysicalCPUUsage"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="workerMemoryUsage" options="optionsMemoryUsage" data="templateMemoryUsage"
+              <nvd3 id="workerMemoryUsage"
+                    options="vizopsWorkerCtrl.optionsMemoryUsage"
+                    data="vizopsWorkerCtrl.templateMemoryUsage"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="workerNetworkTraffic" options="optionsNetworkTraffic" data="templateNetworkTraffic"
+              <nvd3 id="workerNetworkTraffic"
+                    options="vizopsWorkerCtrl.optionsNetworkTraffic"
+                    data="vizopsWorkerCtrl.templateNetworkTraffic"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
@@ -367,17 +423,23 @@
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="workerDiskUsage" options="optionsDiskUsage" data="templateDiskUsage"
+              <nvd3 id="workerDiskUsage"
+                    options="vizopsWorkerCtrl.optionsDiskUsage"
+                    data="vizopsWorkerCtrl.templateDiskUsage"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-2">
-              <nvd3 id="workerExecutorPerHost" options="optionsExecutorsPerHost" data="templateExecutorsPerHost"
+              <nvd3 id="workerExecutorPerHost"
+                    options="vizopsWorkerCtrl.optionsExecutorsPerHost"
+                    data="vizopsWorkerCtrl.templateExecutorsPerHost"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-2">
-              <nvd3 id="workerCompletedTasksPerHost" options="optionsCompletedTasksPerHost" data="templateCompletedTasksPerHost"
+              <nvd3 id="workerCompletedTasksPerHost"
+                    options="vizopsWorkerCtrl.optionsCompletedTasksPerHost"
+                    data="vizopsWorkerCtrl.templateCompletedTasksPerHost"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
@@ -407,18 +469,24 @@
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="streamingBatchDuration" options="optionsLastReceivedBatchRecords" data="templateLastReceivedBatchRecords"
+              <nvd3 id="streamingBatchDuration"
+                    options="vizopsStreamingCtrl.optionsLastReceivedBatchRecords"
+                    data="vizopsStreamingCtrl.templateLastReceivedBatchRecords"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="streamingTotalDelay" options="optionsLastCompletedTotalDelay" data="templateLastCompletedTotalDelay"
+              <nvd3 id="streamingTotalDelay"
+                    options="vizopsStreamingCtrl.optionsLastCompletedTotalDelay"
+                    data="vizopsStreamingCtrl.templateLastCompletedTotalDelay"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
             <div class="col-md-4">
-              <nvd3 id="streamingReceivedProcessedRecords" options="optionsTotalReceivedProcessedRecords"
-                    data="templateTotalReceivedProcessedRecords" class="with-3d-shadow with-transitions"></nvd3>
+              <nvd3 id="streamingReceivedProcessedRecords"
+                    options="vizopsStreamingCtrl.optionsTotalReceivedProcessedRecords"
+                    data="vizopsStreamingCtrl.templateTotalReceivedProcessedRecords"
+                    class="with-3d-shadow with-transitions"></nvd3>
             </div>
 
           </div>
@@ -426,7 +494,9 @@
           <div class="row">
 
             <div class="col-md-4">
-              <nvd3 id="streamingBatchStatistics" options="optionsBatchStatistics" data="templateBatchStatistics"
+              <nvd3 id="streamingBatchStatistics"
+                    options="vizopsStreamingCtrl.optionsBatchStatistics"
+                    data="vizopsStreamingCtrl.templateBatchStatistics"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div>
 

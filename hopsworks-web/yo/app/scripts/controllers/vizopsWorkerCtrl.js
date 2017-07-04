@@ -27,19 +27,19 @@ angular.module('hopsWorksApp')
                 self.nbOfHosts; // hostsList.length
                 self.chosenHostToFilter; // two way binded with the chosen host to filter
 
-                $scope.optionsPhysicalCPUUsage = vizopsWorkerPhysicalCpuOptions();
-                $scope.optionsMemoryUsage = vizopsWorkerMemoryUsageOptions();
-                $scope.optionsNetworkTraffic = vizopsWorkerNetworkTrafficOptions();
-                $scope.optionsDiskUsage = vizopsWorkerDiskUsageOptions();
-                $scope.optionsExecutorsPerHost = vizopsWorkerExecutorsPerHostOptions();
-                $scope.optionsCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostOptions();
+                self.optionsPhysicalCPUUsage = vizopsWorkerPhysicalCpuOptions();
+                self.optionsMemoryUsage = vizopsWorkerMemoryUsageOptions();
+                self.optionsNetworkTraffic = vizopsWorkerNetworkTrafficOptions();
+                self.optionsDiskUsage = vizopsWorkerDiskUsageOptions();
+                self.optionsExecutorsPerHost = vizopsWorkerExecutorsPerHostOptions();
+                self.optionsCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostOptions();
 
-                $scope.templatePhysicalCPUUsage = [];
-                $scope.templateMemoryUsage = [];
-                $scope.templateNetworkTraffic = [];
-                $scope.templateDiskUsage = [];
-                $scope.templateExecutorsPerHost = [];
-                $scope.templateCompletedTasksPerHost = [];
+                self.templatePhysicalCPUUsage = [];
+                self.templateMemoryUsage = [];
+                self.templateNetworkTraffic = [];
+                self.templateDiskUsage = [];
+                self.templateExecutorsPerHost = [];
+                self.templateCompletedTasksPerHost = [];
 
                 self.startTimeMap = {
                     'physicalCpuUsage': -1,
@@ -64,7 +64,7 @@ angular.module('hopsWorksApp')
                                ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'mean(usage_user), mean(usage_iowait), mean(usage_idle)', 'cpu',
-                                             tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -75,9 +75,9 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templatePhysicalCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    $scope.templatePhysicalCPUUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
-                                    $scope.templatePhysicalCPUUsage[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    self.templatePhysicalCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templatePhysicalCPUUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    self.templatePhysicalCPUUsage[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
                                 }
 
                                 self.hasLoadedOnce['physicalCpuUsage'] = true; // dont call backend again
@@ -95,7 +95,7 @@ angular.module('hopsWorksApp')
                     var tags = _getTimestampLimits('ramUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'mean(used), mean(available)',
-                                             'mem', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'mem', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -106,8 +106,8 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    $scope.templateMemoryUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    self.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateMemoryUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                 }
 
                                 self.hasLoadedOnce['ramUsage'] = true; // dont call backend again
@@ -125,7 +125,7 @@ angular.module('hopsWorksApp')
                     var tags = _getTimestampLimits('networkUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
                     VizopsService.getMetrics('telegraf', 'derivative(first(bytes_recv)), derivative(first(bytes_sent))',
-                                             'net', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'net', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -136,8 +136,8 @@ angular.module('hopsWorksApp')
                                 for(var i = 1; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateNetworkTraffic[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    $scope.templateNetworkTraffic[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    self.templateNetworkTraffic[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateNetworkTraffic[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                 }
 
                                 self.hasLoadedOnce['networkUsage'] = true; // dont call backend again
@@ -161,8 +161,8 @@ angular.module('hopsWorksApp')
                                 var newData = success.data.result.results[0].series;
 
                                 self.startTimeMap['diskUsage'] = _getLastTimestampFromSeries(newData[0]);
-                                $scope.templateDiskUsage[0].values = [];
-                                $scope.templateDiskUsage[1].values = [];
+                                self.templateDiskUsage[0].values = [];
+                                self.templateDiskUsage[1].values = [];
 
                                 if (self.hostsToQuery.length === 1) { // Only one host, show the devices used/free
                                     for(var i = 0; i < newData.length - 1; i++) { // loop over each device
@@ -170,8 +170,8 @@ angular.module('hopsWorksApp')
                                         var usedSpace = +newData[i].values[0].split(' ')[1];
                                         var freeSpace = +newData[i].values[0].split(' ')[2];
 
-                                        $scope.templateDiskUsage[0].values.push({'x': device, 'y': usedSpace});
-                                        $scope.templateDiskUsage[1].values.push({'x': device, 'y': freeSpace});
+                                        self.templateDiskUsage[0].values.push({'x': device, 'y': usedSpace});
+                                        self.templateDiskUsage[1].values.push({'x': device, 'y': freeSpace});
                                     }
                                 } else { // Many hosts, show the total used/total free
                                     var diskSpacePerHost = {};
@@ -187,8 +187,8 @@ angular.module('hopsWorksApp')
                                     }
 
                                     self.hostsList.forEach(function(host) {
-                                        $scope.templateDiskUsage[0].values.push({'x': host, 'y': diskSpacePerHost[hostname][0]});
-                                        $scope.templateDiskUsage[1].values.push({'x': host, 'y': diskSpacePerHost[hostname][1]});
+                                        self.templateDiskUsage[0].values.push({'x': host, 'y': diskSpacePerHost[hostname][0]});
+                                        self.templateDiskUsage[1].values.push({'x': host, 'y': diskSpacePerHost[hostname][1]});
                                     });
                                 }
 
@@ -202,10 +202,12 @@ angular.module('hopsWorksApp')
 
                 var updateExecutorsPerHost = function () {
                     // Not called from updateMetrics but every time we call the /appinfo
-                    $scope.templateExecutorsPerHost = [];
+                    self.templateExecutorsPerHost = [];
 
-                    for(var host of Object.keys(self.hostnames)) {
-                        $scope.templateExecutorsPerHost.push({'x': host, 'y': self.hostnames[host].length});
+                    var hostsNames = Object.keys(self.hostnames);
+                    for(var i = 0; i < hostsNames.length; i++) {
+                        var host = hostsNames[i];
+                        self.templateExecutorsPerHost.push({'x': host, 'y': self.hostnames[host].length});
                     }
                 };
 
@@ -218,25 +220,27 @@ angular.module('hopsWorksApp')
                             if (success.status === 200) { // new measurements
                                 var newData = success.data;
 
-                                $scope.templateCompletedTasksPerHost = [];
+                                self.templateCompletedTasksPerHost = [];
 
-                                for (var entry of newData) { // loop over the executors
+                                for(var i = 0; i < newData.length; i++) {
+                                    var entry = newData[i];
                                     var executorID = entry.id;
                                     var completedTasks = entry.completedTasks;
 
                                     var hostOfExecutor = '';
                                     if (executorID === 'driver')
-                                        hostOfExecutor = _.findKey(self.hostnames, x => _.indexOf(x, 0) > -1);
+                                        hostOfExecutor = _.findKey(self.hostnames, function(x) { return _.indexOf(x, 0) > -1; });
                                     else
-                                        hostOfExecutor = _.findKey(self.hostnames, x => _.indexOf(x, +executorID) > -1);
+                                        hostOfExecutor = _.findKey(self.hostnames, function(x) { return _.indexOf(x, +executorID) > -1; });
 
-                                    $scope.templateCompletedTasksPerHost.push({'x': hostOfExecutor, 'y': completedTasks});
+                                    self.templateCompletedTasksPerHost.push({'x': hostOfExecutor, 'y': completedTasks});
                                 }
 
                                 self.hasLoadedOnce['completedTasksPerHost'] = true;
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
-                            growl.error(error.data.errorMsg, {title: 'Error fetching completedTasksPerHost(worker) metrics.', ttl: 10000});
+                            if (error.status !== 500)
+                                growl.error(error.data.errorMsg, {title: 'Error fetching completedTasksPerHost(worker) metrics.', ttl: 10000});
                         }
                     );
                 };
@@ -258,12 +262,12 @@ angular.module('hopsWorksApp')
                       }
                     }
 
-                    $scope.templatePhysicalCPUUsage = vizopsWorkerPhysicalCpuTemplate();
-                    $scope.templateMemoryUsage = vizopsWorkerMemoryUsageTemplate();
-                    $scope.templateNetworkTraffic = vizopsWorkerNetworkTrafficTemplate();
-                    $scope.templateDiskUsage = vizopsWorkerDiskUsageTemplate();
-                    $scope.templateExecutorsPerHost = vizopsWorkerExecutorsPerHostTemplate();
-                    $scope.templateCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostTemplate();
+                    self.templatePhysicalCPUUsage = vizopsWorkerPhysicalCpuTemplate();
+                    self.templateMemoryUsage = vizopsWorkerMemoryUsageTemplate();
+                    self.templateNetworkTraffic = vizopsWorkerNetworkTrafficTemplate();
+                    self.templateDiskUsage = vizopsWorkerDiskUsageTemplate();
+                    self.templateExecutorsPerHost = vizopsWorkerExecutorsPerHostTemplate();
+                    self.templateCompletedTasksPerHost = vizopsWorkerCompletedTasksPerHostTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -286,7 +290,7 @@ angular.module('hopsWorksApp')
 
                 var _extractHostnameInfoFromResponse = function(response) {
                     // get the unique host names
-                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
+                    var hosts = _.uniq(response.entry.map(function(item) { return item.value[1]; }));
 
                     var result = {};
                     for(var i = 0; i < hosts.length; i++) {
@@ -378,6 +382,13 @@ angular.module('hopsWorksApp')
                   $interval.cancel(self.poller);
                   $interval.cancel(self.appinfoInterval);
                 });
+
+                $scope.$watch(function() { return VizopsService.getGroupByInterval(); }, function(newVal, oldVal) {
+                    if (newVal === oldVal) return;
+
+                    resetGraphs();
+                    updateMetrics();
+                }, true);
             }
         ]
     );

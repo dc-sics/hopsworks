@@ -19,15 +19,15 @@ angular.module('hopsWorksApp')
                 self.hostnames = {};
                 self.nrReceivers = 0;
 
-                $scope.optionsLastReceivedBatchRecords = vizopsStreamingLastReceivedBatchRecordsOptions();
-                $scope.optionsLastCompletedTotalDelay = vizopsStreamingTotalDelayOptions();
-                $scope.optionsTotalReceivedProcessedRecords = vizopsStreamingTotalReceivedProcessedRecordsOptions();
-                $scope.optionsBatchStatistics = vizopsStreamingBatchStatisticsOptions();
+                self.optionsLastReceivedBatchRecords = vizopsStreamingLastReceivedBatchRecordsOptions();
+                self.optionsLastCompletedTotalDelay = vizopsStreamingTotalDelayOptions();
+                self.optionsTotalReceivedProcessedRecords = vizopsStreamingTotalReceivedProcessedRecordsOptions();
+                self.optionsBatchStatistics = vizopsStreamingBatchStatisticsOptions();
 
-                $scope.templateLastReceivedBatchRecords = [];
-                $scope.templateLastCompletedTotalDelay = [];
-                $scope.templateTotalReceivedProcessedRecords = [];
-                $scope.templateBatchStatistics = [];
+                self.templateLastReceivedBatchRecords = [];
+                self.templateLastCompletedTotalDelay = [];
+                self.templateTotalReceivedProcessedRecords = [];
+                self.templateBatchStatistics = [];
 
                 self.startTimeMap = {
                     'receivers': -1,
@@ -76,7 +76,7 @@ angular.module('hopsWorksApp')
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('lastReceivedBatchRecords');
 
                     VizopsService.getMetrics('graphite', 'last(StreamingMetrics_streaming_lastReceivedBatch_records)', 'spark',
-                        tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                        tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -87,7 +87,7 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateLastReceivedBatchRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateLastReceivedBatchRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                 }
 
                                 self.hasLoadedOnce['lastReceivedBatchRecords'] = true; // dont call backend again
@@ -105,7 +105,7 @@ angular.module('hopsWorksApp')
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('lastCompletedTotalDelay');
 
                     VizopsService.getMetrics('graphite', 'last(StreamingMetrics_streaming_lastCompletedBatch_totalDelay)', 'spark',
-                        tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                        tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -116,7 +116,7 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateLastCompletedTotalDelay[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateLastCompletedTotalDelay[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
                                 }
 
                                 self.hasLoadedOnce['lastCompletedTotalDelay'] = true; // dont call backend again
@@ -135,7 +135,7 @@ angular.module('hopsWorksApp')
 
                     VizopsService.getMetrics('graphite', 'last(StreamingMetrics_streaming_totalReceivedRecords),' +
                                              'last(StreamingMetrics_streaming_totalProcessedRecords)', 'spark', tags,
-                                             'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                                             'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -146,8 +146,8 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateTotalReceivedProcessedRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    $scope.templateTotalReceivedProcessedRecords[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    self.templateTotalReceivedProcessedRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateTotalReceivedProcessedRecords[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
                                 }
 
                                 self.hasLoadedOnce['totalReceivedProcessedRecords'] = true; // dont call backend again
@@ -164,10 +164,10 @@ angular.module('hopsWorksApp')
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('batchStatistics');
 
-                    VizopsService.getMetrics('graphite', 'sum(StreamingMetrics_streaming_runningBatches),' +
-                                                         'sum(StreamingMetrics_streaming_totalCompletedBatches),' +
-                                                         'sum(StreamingMetrics_streaming_unprocessedBatches)',
-                            'spark', tags, 'time(' + VizopsService.getGroupByInterval() + 's) fill(0)').then(
+                    VizopsService.getMetrics('graphite', 'last(StreamingMetrics_streaming_runningBatches),' +
+                                                         'last(StreamingMetrics_streaming_totalCompletedBatches),' +
+                                                         'last(StreamingMetrics_streaming_unprocessedBatches)',
+                            'spark', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -178,9 +178,9 @@ angular.module('hopsWorksApp')
                                 for(var i = 0; i < metrics.length - 1; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    $scope.templateBatchStatistics[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    $scope.templateBatchStatistics[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
-                                    $scope.templateBatchStatistics[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    self.templateBatchStatistics[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    self.templateBatchStatistics[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    self.templateBatchStatistics[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
                                 }
 
                                 self.hasLoadedOnce['batchStatistics'] = true; // dont call backend again
@@ -207,10 +207,10 @@ angular.module('hopsWorksApp')
                         }
                     }
 
-                    $scope.templateLastReceivedBatchRecords = vizopsStreamingLastReceivedBatchRecordsTemplate();
-                    $scope.templateLastCompletedTotalDelay = vizopsStreamingTotalDelayTemplate();
-                    $scope.templateTotalReceivedProcessedRecords = vizopsStreamingTotalReceivedProcessedRecordsTemplate();
-                    $scope.templateBatchStatistics = vizopsStreamingBatchStatisticsTemplate();
+                    self.templateLastReceivedBatchRecords = vizopsStreamingLastReceivedBatchRecordsTemplate();
+                    self.templateLastCompletedTotalDelay = vizopsStreamingTotalDelayTemplate();
+                    self.templateTotalReceivedProcessedRecords = vizopsStreamingTotalReceivedProcessedRecordsTemplate();
+                    self.templateBatchStatistics = vizopsStreamingBatchStatisticsTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {
@@ -233,7 +233,7 @@ angular.module('hopsWorksApp')
 
                 var _extractHostnameInfoFromResponse = function(response) {
                     // get the unique host names
-                    var hosts = [...new Set(response.entry.map(item => item.value[1]))];
+                    var hosts = _.uniq(response.entry.map(function(item) { return item.value[1]; }));
 
                     var result = {};
                     for(var i = 0; i < hosts.length; i++) {
@@ -304,6 +304,13 @@ angular.module('hopsWorksApp')
                   $interval.cancel(self.poller);
                   $interval.cancel(self.appinfoInterval);
                 });
+
+                $scope.$watch(function() { return VizopsService.getGroupByInterval(); }, function(newVal, oldVal) {
+                    if (newVal === oldVal) return;
+
+                    resetGraphs();
+                    updateMetrics();
+                }, true);
             }
         ]
     );
