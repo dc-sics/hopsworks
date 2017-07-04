@@ -450,6 +450,10 @@ angular.module('hopsWorksApp')
                 });
 
                 $scope.$watch(function() { return VizopsService.getGroupByInterval(); }, function(newVal, oldVal) {
+                    /* This happens only the first time, Service fires up this event the first time
+                       as we set the group by interval to 10s but the UI has already started updating with that value
+                       First time - newVal 10s, oldVal 10s, subsequent - newVal XX oldVal YY
+                     */
                     if (newVal === oldVal) return;
 
                     resetGraphs();

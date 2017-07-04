@@ -11,7 +11,7 @@ angular.module('hopsWorksApp')
                 self.appId;
                 self.startTime = -1;
                 self.endTime = -1; // application completion time
-                self.now; // is the application running now?
+                self.now = null; // is the application running now?
                 // array of dictionaries: self.executorInfo.entry[executor].value[0: container, 1: hostname, 2: nm vcores]
                 self.executorInfo;
                 self.nbExecutors;
@@ -45,7 +45,8 @@ angular.module('hopsWorksApp')
                     'physicalCpuUsage': -1,
                     'ramUsage': -1,
                     'networkUsage': -1,
-                    'diskUsage': -1
+                    'diskUsage': -1,
+                    'completedTasksPerHost': -1
                 };
 
                 self.hasLoadedOnce = {
@@ -123,9 +124,15 @@ angular.module('hopsWorksApp')
                         return; // offline mode + we have loaded the information
 
                     var tags = _getTimestampLimits('networkUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
+                    var columns = '';
+                    if (self.hostsToQuery.length === 1) {
+                        columns = 'derivative(first(bytes_recv)), derivative(first(bytes_sent))';
+                    } else {
+                        columns = 'derivative(mean(bytes_recv)), derivative(mean(bytes_sent))';
+                    }
 
-                    VizopsService.getMetrics('telegraf', 'derivative(first(bytes_recv)), derivative(first(bytes_sent))',
-                                             'net', tags, 'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
+                    VizopsService.getMetrics('telegraf', columns, 'net', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
@@ -154,8 +161,7 @@ angular.module('hopsWorksApp')
 
                     var tags = _getTimestampLimits('diskUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
-                    VizopsService.getMetrics('telegraf', 'last(used), last(free)','disk',
-                                              tags, 'device, host').then(
+                    VizopsService.getMetrics('telegraf', 'last(used), last(free)','disk', tags, 'device, host').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series;
@@ -206,8 +212,13 @@ angular.module('hopsWorksApp')
 
                     var hostsNames = Object.keys(self.hostnames);
                     for(var i = 0; i < hostsNames.length; i++) {
-                        var host = hostsNames[i];
-                        self.templateExecutorsPerHost.push({'x': host, 'y': self.hostnames[host].length});
+                        var host = hostsNames[i], len = self.hostnames[host].length;
+                        if (self.hostnames[host].indexOf(0) > -1) {
+                            len -= 1; // remove driver
+                            console.log(self.hostnames[host]);
+                        }
+
+                        self.templateExecutorsPerHost.push({'x': host, 'y': len});
                     }
                 };
 
@@ -221,19 +232,26 @@ angular.module('hopsWorksApp')
                                 var newData = success.data;
 
                                 self.templateCompletedTasksPerHost = [];
+                                var taskAccumulator = {};
 
                                 for(var i = 0; i < newData.length; i++) {
                                     var entry = newData[i];
                                     var executorID = entry.id;
                                     var completedTasks = entry.completedTasks;
 
-                                    var hostOfExecutor = '';
-                                    if (executorID === 'driver')
-                                        hostOfExecutor = _.findKey(self.hostnames, function(x) { return _.indexOf(x, 0) > -1; });
-                                    else
-                                        hostOfExecutor = _.findKey(self.hostnames, function(x) { return _.indexOf(x, +executorID) > -1; });
+                                    if (executorID === 'driver') continue; // skip driver
 
-                                    self.templateCompletedTasksPerHost.push({'x': hostOfExecutor, 'y': completedTasks});
+                                    var hostOfExecutor = _.findKey(self.hostnames, function(x) { return _.indexOf(x, +executorID) > -1; });
+
+                                    if (hostOfExecutor in taskAccumulator)
+                                        taskAccumulator[hostOfExecutor] += completedTasks;
+                                    else
+                                        taskAccumulator[hostOfExecutor] = completedTasks;
+                                }
+
+                                var keys = Object.keys(taskAccumulator);
+                                for(var i = 0; i < keys.length; i++) {
+                                    self.templateCompletedTasksPerHost.push({'x': keys[i], 'y': taskAccumulator[keys[i]]});
                                 }
 
                                 self.hasLoadedOnce['completedTasksPerHost'] = true;
@@ -339,7 +357,6 @@ angular.module('hopsWorksApp')
                                             self.hostnames = _extractHostnameInfoFromResponse(self.executorInfo);
                                             self.hostsList = Object.keys(self.hostnames);
                                             self.nbOfHosts = self.hostsList.length;
-                                            self.hostsToQuery = self.hostsList;
 
                                             if (!self.now) $interval.cancel(self.appinfoInterval);
                                         }, function(error) {
@@ -384,6 +401,10 @@ angular.module('hopsWorksApp')
                 });
 
                 $scope.$watch(function() { return VizopsService.getGroupByInterval(); }, function(newVal, oldVal) {
+                    /* This happens only the first time, Service fires up this event the first time
+                     as we set the group by interval to 10s but the UI has already started updating with that value
+                     First time - newVal 10s, oldVal 10s, subsequent - newVal XX oldVal YY
+                     */
                     if (newVal === oldVal) return;
 
                     resetGraphs();

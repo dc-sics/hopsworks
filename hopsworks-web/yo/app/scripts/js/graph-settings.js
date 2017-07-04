@@ -680,7 +680,7 @@ var vizopsWorkerMemoryUsageOptions = function() {
            return d3.format(".2s")(d);
          }
        };
-    options.title.text = 'Memory usage';
+    options.title.text = 'Memory usage average';
 
     return options;
 };
@@ -712,6 +712,8 @@ var vizopsWorkerNetworkTrafficOptions = function() {
         }
       };
     options.title.text = 'Network usage(rate of change)';
+    options.subtitle.enable = true;
+    options.subtitle.text = 'Average when displaying more than one hosts';
 
     return options;
 };

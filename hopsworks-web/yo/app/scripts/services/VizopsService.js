@@ -28,7 +28,7 @@ angular.module('hopsWorksApp')
 
             getAppId : function() { return self.appId; },
             getProjectId : function() { return self.projectId; },
-            getGroupByInterval : function() { return self.groupByInterval; },
+            getGroupByInterval : function() { return self.groupByInterval; }, // The controllers 'watch' this value
             setGroupByInterval : function(groupBy) { self.groupByInterval = groupBy; },
 
             getMetrics: function(database, columns, measurement, tags, groupBy) {
