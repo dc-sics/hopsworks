@@ -7,6 +7,7 @@ import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
 import io.hops.hopsworks.common.jobs.yarn.YarnRunner;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.tensorflow.Client;
+import io.hops.tensorflow.LocalResourceInfo;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,11 +50,10 @@ public class TensorFlowYarnRunnerBuilder {
   public YarnRunner getYarnRunner(String project, String tfUser,
       String jobUser, final String hadoopDir, final String nameNodeIpPort) throws IOException, Exception {
 
-    if (!serviceProps.isAnacondaEnabled()) {
-      //Throw error in Hopswors UI to notify user to enable Anaconda
-      throw new IOException("Pyspark job needs to have Python Anaconda environment enabled");
-    }
-
+//    if (!serviceProps.isAnacondaEnabled()) {
+//      //Throw error in Hopswors UI to notify user to enable Anaconda
+//      throw new IOException("Pyspark job needs to have Python Anaconda environment enabled");
+//    }
     YarnRunner.Builder builder = new YarnRunner.Builder(Settings.SPARK_AM_MAIN);
     JobType jobType = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getType();
     builder.setJobType(jobType);
@@ -66,6 +66,8 @@ public class TensorFlowYarnRunnerBuilder {
         pathToResource = pathToResource.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
         pathToResource = pathToResource.replaceFirst("hdfs:/*user", "hdfs://" + nameNodeIpPort + "/user");
         client.addFile(pathToResource);
+        client.getFilesInfo().put(pathToResource, new LocalResourceInfo(dto.getName(), pathToResource, dto.
+            getVisibility(), dto.getType(), dto.getPattern()));
       }
     }
 
@@ -80,6 +82,10 @@ public class TensorFlowYarnRunnerBuilder {
     client.setNumWorkers(numOfWorkers);
     client.setTensorboard(true);
     client.addEnvironmentVariable(Settings.HADOOP_USER_NAME, jobUser);
+    client.addEnvironmentVariable(Settings.LOGSTASH_JOB_INFO, project.toLowerCase() + "," + jobName + ","
+        + jobDescription.getId() + "," + YarnRunner.APPID_PLACEHOLDER);
+    client.addEnvironmentVariable(Settings.YARNTF_HOME_DIR, "hdfs://" + nameNodeIpPort + "/Projects/" + project
+        + "/" + Settings.PROJECT_STAGING_DIR + "/" + Settings.YARNTF_STAGING_DIR);
     String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
     appPath = appPath.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
     client.setMain(appPath);
@@ -87,8 +93,7 @@ public class TensorFlowYarnRunnerBuilder {
     client.setAmJar(Settings.getTensorFlowJarPath(tfUser));
     //client.setPython(serviceProps.getAnaconda().getEnvPath());
     client.setAllocationTimeout(15000);
-    client.setProjectDir("hdfs://"+Settings.getHdfsRootPath(project));
-    client.setLog4jPropFile("hdfs:///user/vagrant/log4j.properties");
+    client.setProjectDir("hdfs://" + Settings.getHdfsRootPath(project));
     builder.setTfClient(client);
     return builder.build(hadoopDir, null, nameNodeIpPort, JobType.TENSORFLOW);
   }

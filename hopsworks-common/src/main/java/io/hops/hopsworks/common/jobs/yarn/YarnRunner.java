@@ -354,6 +354,9 @@ public class YarnRunner {
         tfClient.setConf(conf);
         tfClient.initYarnClient();
         appId = tfClient.submitApplication();
+//        String logstashInfo = tfClient.getEnvironment().get(Settings.LOGSTASH_JOB_INFO);
+//        logstashInfo = logstashInfo.replaceAll(APPID_REGEX, appId.toString());
+//        tfClient.addEnvironmentVariable(Settings.LOGSTASH_JOB_INFO, logstashInfo);
         fillInAppid(appId.toString());
         newClient.init(conf);
         monitor = new YarnMonitor(appId, newClient);

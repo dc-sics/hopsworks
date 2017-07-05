@@ -663,7 +663,8 @@ public class Settings implements Serializable {
   public static final String TENSORFLOW_JAR = "hops-tensorflow-0.0.4-SNAPSHOT.jar";
   //Used to pass the project user to yarn containers for tensorflow
   public static final String HADOOP_USER_NAME = "HADOOP_USER_NAME";
-  
+  public static final String YARNTF_HOME_DIR = "YARNTF_HOME_DIR";
+  public static final String YARNTF_STAGING_DIR = ".yarntfStaging";
   
   public static String getTensorFlowJarPath(String tfUser) {
     return "hdfs:///user/" + tfUser+"/"+TENSORFLOW_JAR;

@@ -20,7 +20,6 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -115,6 +114,10 @@ public class TensorboardProxyServlet extends ProxyServlet {
         }
       } else {
         uri = tensorflowFacade.getTensorboardURI(appId, projectName);
+      }
+      if (uri == null) {
+        sendErrorResponse(servletResponse, "This tensorboard is not running right now");
+        return;
       }
       targetUri = uri;
       try {

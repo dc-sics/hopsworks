@@ -56,17 +56,6 @@
       <groupId>io.hops</groupId>
       <artifactId>hops-tensorflow</artifactId>
       <version>0.0.4-SNAPSHOT</version>
-      <exclusions>
-        <exclusion>
-          <groupId>*</groupId>
-          <artifactId>*</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>io.hops</groupId>
-      <artifactId>erasure-coding</artifactId>
-      <version>2.4.0</version>    
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
