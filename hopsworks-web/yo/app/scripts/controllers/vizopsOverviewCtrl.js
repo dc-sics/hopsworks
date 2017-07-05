@@ -32,6 +32,7 @@ angular.module('hopsWorksApp')
                 self.startTimeMap = {
                     'totalActiveTasksApp': -1,
                     'totalCompletedTasksApp': -1,
+                    'rateOfTaskCompletion': -1,
                     'clusterCPUUtilizationCard': -1,
                     'hdfsReadRateTotal': -1,
                     'hdfsWriteRateTotal': -1,
@@ -43,6 +44,7 @@ angular.module('hopsWorksApp')
                 self.hasLoadedOnce = {
                     'totalActiveTasksApp': false,
                     'totalCompletedTasksApp': false,
+                    'rateOfTaskCompletion': false,
                     'clusterCPUUtilizationCard': false,
                     'hdfsReadRateTotal': false,
                     'hdfsWriteRateTotal': false,
@@ -51,21 +53,42 @@ angular.module('hopsWorksApp')
                     'applicationShuffleTotal': false
                 };
 
+                self.lastMeasurement = {
+                    'totalActiveTasksApp': [],
+                    'totalCompletedTasksApp': [],
+                    'rateOfTaskCompletion': [],
+                    'clusterCPUUtilizationCard': [],
+                    'hdfsReadRateTotal': [],
+                    'hdfsWriteRateTotal': [],
+                    'liveHostsCard': [],
+                    'containerMemoryUsedTotal': [],
+                    'applicationShuffleTotal': []
+                };
+
                 self.optionsTotalActiveTasks = vizopsTotalActiveTasksOptions();
                 self.optionsTotalCompletedTasks = vizopsTotalCompletedTasksOptions();
                 self.optionsHDFSReadRateTotal = vizopsHDFSReadRateTotalOptions();
                 self.optionsHDFSWriteRateTotal = vizopsHDFSWriteRateTotalOptions();
                 self.optionsContainerMemoryUsedTotal = vizopsContainerMemoryUsedTotalOptions();
+                self.optionsRateOfTaskCompletion = vizopsRateOfTaskCompletionOptions();
 
                 self.templateTotalActiveTasks = [];
                 self.templateTotalCompletedTasks = [];
                 self.templateHDFSReadRateTotal = [];
                 self.templateHDFSWriteRateTotal = [];
                 self.templateContainerMemoryUsedTotal = [];
+                self.templateRateOfTaskCompletion = [];
 
                 var updateTotalActiveTasks = function() {
-                    if (!self.now && self.hasLoadedOnce['totalActiveTasksApp'])
+                    if (!self.now && self.hasLoadedOnce['totalActiveTasksApp']) {
+                        if (self.lastMeasurement['totalActiveTasksApp'].length > 0) {
+                            self.templateTotalActiveTasks[0].values.push(self.lastMeasurement['totalActiveTasksApp'][0]);
+
+                            self.lastMeasurement['totalActiveTasksApp'] = []; //clean up
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalActiveTasksApp');
 
@@ -78,11 +101,16 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['totalActiveTasksApp'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['totalActiveTasksApp'] = []; // clean it, we need only the last request
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateTotalActiveTasks[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['totalActiveTasksApp'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                    } else {
+                                        self.templateTotalActiveTasks[0].values.push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['totalActiveTasksApp'] = true; // dont call backend again
@@ -94,35 +122,97 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateTotalCompletedTasks = function() {
-                    if (!self.now && self.hasLoadedOnce['totalCompletedTasksApp'])
+                    if (!self.now && self.hasLoadedOnce['totalCompletedTasksApp']) {
+                        if(self.lastMeasurement['totalCompletedTasksApp'].length > 0) {
+                            self.templateTotalCompletedTasks[0].values.push(self.lastMeasurement['totalCompletedTasksApp'][0]);
+
+                            self.lastMeasurement['totalCompletedTasksApp'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalCompletedTasksApp');
 
-                    VizopsService.getMetrics('graphite',
-                                               'non_negative_derivative(max(threadpool_completeTasks)),max(threadpool_completeTasks)',
-                                               'spark', tags, 'time(' + VizopsService.getGroupByInterval() + '), service fill(0)').then(
+                    VizopsService.getMetrics('graphite', 'max(threadpool_completeTasks)', 'spark', tags,
+                                             'time(' + VizopsService.getGroupByInterval() + '), service fill(0)').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series;
                                 self.startTimeMap['totalCompletedTasksApp'] = _getLastTimestampFromSeries(newData[0]);
+                                self.lastMeasurement['totalCompletedTasksApp'] = [];
 
-                                for(var i = 0; i < newData[0].values.length - 1; i++) {
+                                for(var i = 0; i < newData[0].values.length; i++) {
                                     var timestamp = +newData[0].values[i].split(' ')[0];
                                     var totals = _.reduce(newData, function(sum, serie) {
-                                        sum[0] += +serie.values[i].split(' ')[1];
-                                        sum[1] += +serie.values[i].split(' ')[2];
+                                        if (i === (newData[0].values.length - 1)) {
+                                            sum[1] += +serie.values[i].split(' ')[1];
+                                        } else {
+                                            sum[0] += +serie.values[i].split(' ')[1];
+                                            sum[1] += +serie.values[i].split(' ')[1];
+                                        }
                                         return sum;
-                                    }, [0, 0]);
+                                    }, [0, 0]); // sum, last measurement(sum)
 
-                                    self.templateTotalCompletedTasks[0].values.push({'x': timestamp, 'y': totals[0]}); // rate
-                                    self.templateTotalCompletedTasks[1].values.push({'x': timestamp, 'y': totals[1]}); // total
+                                    if (i === (newData[0].values.length - 1)) {
+                                        self.lastMeasurement['totalCompletedTasksApp'].push({'x': +timestamp,'y': +totals[1]});
+                                    } else {
+                                        self.templateTotalCompletedTasks[0].values.push({'x': timestamp,'y': totals[0]}); // rate
+                                    }
                                 }
 
                                 self.hasLoadedOnce['totalCompletedTasksApp'] = true; // dont call backend again
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
                             growl.error(error.data.errorMsg, {title: 'Error fetching TotalCompletedTasksApp metrics.', ttl: 10000});
+                        }
+                    );
+                };
+
+                var updateRateOfTaskCompletion = function() {
+                    if (!self.now && self.hasLoadedOnce['rateOfTaskCompletion']) {
+                        if(self.lastMeasurement['rateOfTaskCompletion'].length > 0) {
+                            self.templateRateOfTaskCompletion[0].values.push(self.lastMeasurement['rateOfTaskCompletion'][0]);
+
+                            self.lastMeasurement['rateOfTaskCompletion'] = [];
+                        }
+
+                        return; // offline mode + we have loaded the information
+                    }
+
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('rateOfTaskCompletion');
+
+                    VizopsService.getMetrics('graphite', 'non_negative_derivative(max(threadpool_completeTasks))',
+                        'spark', tags, 'time(' + VizopsService.getGroupByInterval() + '), service fill(0)').then(
+                        function(success) {
+                            if (success.status === 200) { // new measurements
+                                var newData = success.data.result.results[0].series;
+                                self.startTimeMap['rateOfTaskCompletion'] = _getLastTimestampFromSeries(newData[0]);
+                                self.lastMeasurement['rateOfTaskCompletion'] = [];
+
+                                for(var i = 0; i < newData[0].values.length; i++) {
+                                    var timestamp = +newData[0].values[i].split(' ')[0];
+                                    var totals = _.reduce(newData, function(sum, serie) {
+                                        if (i === (newData[0].values.length - 1)) {
+                                            sum[1] += +serie.values[i].split(' ')[1];
+                                        } else {
+                                            sum[0] += +serie.values[i].split(' ')[1];
+                                            sum[1] += +serie.values[i].split(' ')[1];
+                                        }
+                                        return sum;
+                                    }, [0, 0]); // rate, last measurement(rate)
+
+                                    if (i === (newData[0].values.length - 1)) {
+                                        self.lastMeasurement['rateOfTaskCompletion'].push({'x': +timestamp,'y': +totals[1]});
+                                    } else {
+                                        self.templateRateOfTaskCompletion[0].values.push({'x': timestamp,'y': totals[0]});
+                                    }
+                                }
+
+                                self.hasLoadedOnce['rateOfTaskCompletion'] = true; // dont call backend again
+                            } // dont do anything if response 204(no content), nothing new
+                        }, function(error) {
+                            growl.error(error.data.errorMsg, {title: 'Error fetching rateOfTaskCompletion(overview) metrics.', ttl: 10000});
                         }
                     );
                 };
@@ -154,8 +244,17 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateHdfsReadRateTotal = function() {
-                    if (!self.now && self.hasLoadedOnce['hdfsReadRateTotal'])
+                    if (!self.now && self.hasLoadedOnce['hdfsReadRateTotal']) {
+                        if(self.lastMeasurement['hdfsReadRateTotal'].length > 0) {
+                            self.templateHDFSReadRateTotal[0].values.push(self.lastMeasurement['hdfsReadRateTotal'][0]);
+                            self.templateHDFSReadRateTotal[1].values.push(self.lastMeasurement['hdfsReadRateTotal'][1]);
+
+                            self.lastMeasurement['hdfsReadRateTotal'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
+
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsReadRateTotal');
 
@@ -166,8 +265,9 @@ angular.module('hopsWorksApp')
                         if (success.status === 200) { // new measurements
                             var newData = success.data.result.results[0].series;
                             self.startTimeMap['hdfsReadRateTotal'] = _getLastTimestampFromSeries(newData[0]);
+                            self.lastMeasurement['hdfsReadRateTotal'] = [];
 
-                            for(var i = 0; i < newData[0].values.length - 1; i++) { // each serie has the same number of values
+                            for(var i = 0; i < newData[0].values.length; i++) { // each serie has the same number of values
                                 var timestamp = +newData[0].values[i].split(' ')[0];
                                 var totals = _.reduce(newData, function(sum, serie) {
                                     sum[0] += +serie.values[i].split(' ')[1];
@@ -175,9 +275,13 @@ angular.module('hopsWorksApp')
                                     return sum;
                                 }, [0, 0]);
 
-
-                                self.templateHDFSReadRateTotal[0].values.push({'x': timestamp, 'y': totals[0]}); // rate-read
-                                self.templateHDFSReadRateTotal[1].values.push({'x': timestamp, 'y': totals[1]}); // read
+                                if (i === (newData[0].length - 1)) {
+                                    self.lastMeasurement['hdfsReadRateTotal'].push({'x': +timestamp,'y': +totals[0]});
+                                    self.lastMeasurement['hdfsReadRateTotal'].push({'x': +timestamp,'y': +totals[1]});
+                                } else {
+                                    self.templateHDFSReadRateTotal[0].values.push({'x': timestamp, 'y': totals[0]}); // rate-read
+                                    self.templateHDFSReadRateTotal[1].values.push({'x': timestamp, 'y': totals[1]}); // read
+                                }
                             }
 
                             self.hasLoadedOnce['hdfsReadRateTotal'] = true;
@@ -190,8 +294,16 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateHdfsWriteRateTotal = function() {
-                    if (!self.now && self.hasLoadedOnce['hdfsWriteRateTotal'])
+                    if (!self.now && self.hasLoadedOnce['hdfsWriteRateTotal']) {
+                        if(self.lastMeasurement['hdfsWriteRateTotal'].length > 0) {
+                            self.templateHDFSWriteRateTotal[0].values.push(self.lastMeasurement['hdfsWriteRateTotal'][0]);
+                            self.templateHDFSWriteRateTotal[1].values.push(self.lastMeasurement['hdfsWriteRateTotal'][1]);
+
+                            self.lastMeasurement['hdfsWriteRateTotal'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsWriteRateTotal');
 
@@ -202,6 +314,7 @@ angular.module('hopsWorksApp')
                         if (success.status === 200) { // new measurements
                             var newData = success.data.result.results[0].series;
                             self.startTimeMap['hdfsWriteRateTotal'] = _getLastTimestampFromSeries(newData[0]);
+                            self.lastMeasurement['hdfsWriteRateTotal'] = [];
 
                             for(var i = 0; i < newData[0].values.length - 1; i++) {
                                 var timestamp = +newData[0].values[i].split(' ')[0];
@@ -211,8 +324,13 @@ angular.module('hopsWorksApp')
                                     return sum;
                                 }, [0, 0]);
 
-                                self.templateHDFSWriteRateTotal[0].values.push({'x': timestamp, 'y': totals[0]}); // rate-write
-                                self.templateHDFSWriteRateTotal[1].values.push({'x': timestamp, 'y': totals[1]}); // total-write
+                                if (i === (newData[0].length - 1)) {
+                                    self.lastMeasurement['hdfsWriteRateTotal'].push({'x': +timestamp,'y': +totals[0]});
+                                    self.lastMeasurement['hdfsWriteRateTotal'].push({'x': +timestamp,'y': +totals[1]});
+                                } else {
+                                    self.templateHDFSWriteRateTotal[0].values.push({'x': +timestamp, 'y': +totals[0]}); // rate-write
+                                    self.templateHDFSWriteRateTotal[1].values.push({'x': +timestamp, 'y': +totals[1]}); // write
+                                }
                             }
 
                             self.hasLoadedOnce['hdfsWriteRateTotal'] = true;
@@ -253,8 +371,14 @@ angular.module('hopsWorksApp')
 
                 var updateContainerMemoryUsedTotal = function() {
                     // Memory from spark is much easier to work with than nodemanager's metrics
-                    if (!self.now && self.hasLoadedOnce['containerMemoryUsedTotal'])
-                        return; // offline mode + we have loaded the information
+                    if (!self.now && self.hasLoadedOnce['containerMemoryUsedTotal']) {
+                        if (self.lastMeasurement['containerMemoryUsedTotal'].length > 0) {
+                            self.templateContainerMemoryUsedTotal[0].values.push(self.lastMeasurement['containerMemoryUsedTotal'][0]);
+                            self.templateContainerMemoryUsedTotal[1].values.push(self.lastMeasurement['containerMemoryUsedTotal'][1]);
+
+                            self.lastMeasurement['containerMemoryUsedTotal'] = [];
+                        }
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('containerMemoryUsedTotal'); // + sign encodes into space so....
 
@@ -264,12 +388,16 @@ angular.module('hopsWorksApp')
                               if (success.status === 200) { // new measurements
                                   var newData = success.data.result.results[0].series;
                                   self.startTimeMap['containerMemoryUsedTotal'] = _getLastTimestampFromSeries(newData[0]);
+                                  self.lastMeasurement['containerMemoryUsedTotal'] = [];
 
                                   var timestampDictionary = {}, timestampsOrder = []; // { timestamp: [used sum, total sum] }
                                   for(var i = 0; i < newData.length; i++) { // loop over each executor/driver and sum the memories
-                                        for(var j = 0; j < newData[i].values.length - 1; j++) { // go through each timestamp
+                                        for(var j = 0; j < newData[i].values.length; j++) { // go through each timestamp
                                             var split = newData[i].values[j].split(' ');
                                             var timestamp = +split[0];
+
+                                            if (j === (newData[i].values.length - 1)) continue;
+
                                             /* add both used and max to the rest
                                                This if will only be activated by the first series's entries,
                                                so we can maintain a list to maintain insertion order since the Object
@@ -287,10 +415,20 @@ angular.module('hopsWorksApp')
 
                                   for(var i = 0; i < timestampsOrder.length; i++) {
                                       var time = timestampsOrder[i];
-                                      self.templateContainerMemoryUsedTotal[0].values.push({'x': time,
-                                                                                            'y': timestampDictionary[time][0]});
-                                      self.templateContainerMemoryUsedTotal[1].values.push({'x': time,
-                                                                                            'y': timestampDictionary[time][1]});
+
+                                      if (i === (timestampsOrder - 1)) {
+                                          self.lastMeasurement['containerMemoryUsedTotal'].push({'x': time,'y': timestampDictionary[time][0]});
+                                          self.lastMeasurement['containerMemoryUsedTotal'].push({'x': time,'y': timestampDictionary[time][1]});
+                                      } else {
+                                          self.templateContainerMemoryUsedTotal[0].values.push({
+                                              'x': time,
+                                              'y': timestampDictionary[time][0]
+                                          });
+                                          self.templateContainerMemoryUsedTotal[1].values.push({
+                                              'x': time,
+                                              'y': timestampDictionary[time][1]
+                                          });
+                                      }
                                   }
 
                                   self.hasLoadedOnce['containerMemoryUsedTotal'] = true;
@@ -323,8 +461,8 @@ angular.module('hopsWorksApp')
                                   self.hasLoadedOnce['applicationShuffleTotal'] = true;
                               } // dont do anything if response 204(no content), nothing new
                           }, function(error) {
-                            if (error.status !== 500)
-                                growl.error(error, {title: 'Error fetching shuffleData(overview) metric.', ttl: 10000});
+                            // if (error.status !== 500)
+                            //     growl.error(error, {title: 'Error fetching shuffleData(overview) metric.', ttl: 10000});
                           }
                     );
                 };
@@ -332,6 +470,7 @@ angular.module('hopsWorksApp')
                 var updateMetrics = function() {
                     updateTotalActiveTasks();
                     updateTotalCompletedTasks();
+                    updateRateOfTaskCompletion();
                     updateClusterCPUUtilization();
                     updateHdfsReadRateTotal();
                     updateHdfsWriteRateTotal();
@@ -353,6 +492,7 @@ angular.module('hopsWorksApp')
                     self.templateHDFSReadRateTotal = vizopsHDFSReadRateTotalTemplate();
                     self.templateHDFSWriteRateTotal = vizopsHDFSWriteRateTotalTemplate();
                     self.templateContainerMemoryUsedTotal = vizopsContainerMemoryUsedTotalTemplate();
+                    self.templateRateOfTaskCompletion = vizopsRateOfTaskCompletionTemplate();
                 };
 
                 var _getLastTimestampFromSeries = function(serie) {

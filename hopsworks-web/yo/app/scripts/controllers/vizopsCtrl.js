@@ -17,7 +17,7 @@ angular.module('hopsWorksApp')
 
                 self.durationInterval;
                 self.appinfoInterval; // checks for the app status
-                self.durationLabel = "00:00:00";
+                self.durationLabel = "00:00:00:00";
                self.chosenGroupByInterval;
                self.groupByIntervals = ['10s', '30s', '1m', '3m', '10m', '30m', '1h'];
 
@@ -34,9 +34,9 @@ angular.module('hopsWorksApp')
 
                             self.durationInterval = $interval(function () {
                                 if (self.now) {
-                                    self.durationLabel = Date.now() - self.startTime;
+                                    self.durationLabel = self.formatTime(Date.now() - self.startTime);
                                 } else {
-                                    self.durationLabel = self.endTime - self.startTime;
+                                    self.durationLabel = self.formatTime(self.endTime - self.startTime);
                                 }
                             }, 1000);
 
@@ -66,6 +66,19 @@ angular.module('hopsWorksApp')
                 };
 
                 init();
+
+                self.formatTime = function (duration) {
+                    var days = Math.floor(duration / (1000 * 60 * 60 * 24));
+                    var day =  duration % (1000 * 60 * 60 * 24);
+                    var hours = Math.floor(day / (1000 * 60 * 60));
+                    var hour = day % (1000 * 60 * 60);
+                    var minutes = Math.floor(hour / (1000 * 60));
+                    var minute = hour % (1000 * 60);
+                    var seconds = Math.floor(minute / 1000);
+                    var pad = d3.format("02d");
+
+                    return pad(days) + ":" + pad(hours) + ":" + pad(minutes) + ":" + pad(seconds);
+                };
 
                 self.onGroupByIntervalSelection = function () {
                     VizopsService.setGroupByInterval(self.chosenGroupByInterval);

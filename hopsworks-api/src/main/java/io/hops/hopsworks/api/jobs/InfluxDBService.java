@@ -87,7 +87,7 @@ public class InfluxDBService {
     query.append(" where " + tags);
     if (groupBy != null) query.append(" group by " + groupBy);
 
-    LOGGER.log(Level.INFO, "Influxdb - Running query: " + query.toString());
+    LOGGER.log(Level.FINE, "Influxdb - Running query: " + query.toString());
 
     Query q = new Query(query.toString(), database);
     QueryResult reply = influxdb.query(q, TimeUnit.MILLISECONDS);
@@ -119,9 +119,9 @@ public class InfluxDBService {
   public Response getAllExecutorsMetrics(
           @QueryParam("filters") final String filters,
           @Context SecurityContext sc, @Context HttpServletRequest req) throws
-          AppException, IOException {
+          AppException {
 
-    LOGGER.log(Level.INFO, "Vizops - Retrieving executor information");
+    LOGGER.log(Level.FINE, "Vizops - Retrieving executor information");
 
     Response response = null;
 
@@ -132,23 +132,47 @@ public class InfluxDBService {
       if (trackingUrl != null && !trackingUrl.isEmpty()) {
         // trackingURL = http://dn0:8088/proxy/<appid>/
         String sparkTrackingUrl = trackingUrl + "api/v1/applications/" + appId + "/allexecutors";
-        LOGGER.log(Level.INFO, "Vizops - spark tracking url: " + sparkTrackingUrl);
-        LOGGER.log(Level.INFO, "Vizops - Filters: " + filters);
+        LOGGER.log(Level.FINE, "Vizops - spark tracking url: " + sparkTrackingUrl);
+        LOGGER.log(Level.FINE, "Vizops - Filters: " + filters);
 
         if (isAppRunning) { // call endpoint through yarn proxy
-          String content = IoUtils.readContentFromWeb(sparkTrackingUrl);
-          LOGGER.log(Level.INFO, "Vizops - Live parsing response " + filters.split(","));
-          response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
-                  .entity(parseAllExecutorResults(content, filters.split(","))).build();
+          try {
+            String content = IoUtils.readContentFromWeb(sparkTrackingUrl);
+            LOGGER.log(Level.FINE, "Vizops - Live parsing response " + filters);
+            response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
+                    .entity(parseAllExecutorResults(content, filters.split(","))).build();
+          } catch (IOException e) {
+            if (e.getMessage().contains("500")) {
+              LOGGER.log(Level.FINE, "Vizops - Error while retrieving allexecutor metrics from live server: "
+                      + e.getMessage());
+              response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).entity("").build();
+            } else {
+              LOGGER.log(Level.FINE, "Vizops - YARN proxy metrics retrieval error(not a 500): "
+                      + e.getMessage());
+              response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.BAD_REQUEST).entity("").build();
+            }
+          }
         } else { // call history server
           String historyServer = settings.getSparkHistoryServerIp(); // 10.0.2.15:18080
           String historyEndpoint = "http://" + historyServer + "/api/v1/applications/" + appId + "/1/allexecutors";
-          LOGGER.log(Level.INFO, "Vizops - App moved to history, calling: " + historyEndpoint);
+          LOGGER.log(Level.FINE, "Vizops - App moved to history, calling: " + historyEndpoint);
 
-          String historyContent = IoUtils.readContentFromWeb(historyEndpoint);
-          LOGGER.log(Level.INFO, "Vizops - History parsing response " + filters.split(","));
-          response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
-                  .entity(parseAllExecutorResults(historyContent, filters.split(","))).build();
+          try {
+            String historyContent = IoUtils.readContentFromWeb(historyEndpoint);
+            LOGGER.log(Level.FINE, "Vizops - History parsing response " + filters);
+            response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
+                    .entity(parseAllExecutorResults(historyContent, filters.split(","))).build();
+          } catch (IOException e) {
+            if (e.getMessage().contains("500")) {
+              LOGGER.log(Level.FINE, "Vizops - Error while retrieving allexecutor metrics from history server: "
+                      + e.getMessage());
+              response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).entity("").build();
+            } else {
+              LOGGER.log(Level.FINE, "Vizops - Spark history metrics retrieval error(not a 500): "
+                      + e.getMessage());
+              response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.BAD_REQUEST).entity("").build();
+            }
+          }
         }
       } else {
         response = noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND)

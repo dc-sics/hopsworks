@@ -20,11 +20,11 @@
     <div class="col-md-7 text-right">
       <h3 ng-if="vizopsCtrl.now">
         <!--  -->
-        <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}
+        <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel}}
         ,&nbsp; running since {{vizopsCtrl.startTime | date:'medium'}}
       </h3>
       <h3 ng-if="!vizopsCtrl.now">
-        <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel | date:'HH:mm:ss': 'UTC'}}
+        <span class="fa fa-clock-o" aria-hidden="true"></span> {{vizopsCtrl.durationLabel}}
         ,&nbsp; from {{vizopsCtrl.startTime | date:'medium'}} to {{vizopsCtrl.endTime | date:'medium'}}
       </h3>
     </div>
@@ -46,7 +46,7 @@
                   <md-card-title-text>
                     <span class="md-headline strong">Total executors/Hosts</span>
                     <span class="md-subhead">
-                      <b>{{vizopsOverviewCtrl.nbExecutors}}</b> executor(s) running on <b>{{vizopsOverviewCtrl.nbHosts}}</b> machine(s)
+                      <b>{{vizopsOverviewCtrl.nbExecutors - 1}}</b> executor(s) running on <b>{{vizopsOverviewCtrl.nbHosts}}</b> machine(s)
                     </span>
                   </md-card-title-text>
                 </md-card-title>
@@ -65,19 +65,19 @@
               </md-card>
             </div> <!-- end: Cluster CPU utilization -->
 
-            <!-- Live hosts card -->
+            <!-- hosts card -->
             <div class="col-md-2">
               <md-card>
                 <md-card-title>
                   <md-card-title-text>
-                    <span class="md-headline strong">Live hosts</span>
+                    <span class="md-headline strong">Number of hosts</span>
                     <span class="md-subhead">
-                      {{vizopsOverviewCtrl.nbLiveHosts}} / {{vizopsOverviewCtrl.nbHosts}} &nbsp; (last 10seconds)
+                      {{vizopsOverviewCtrl.nbLiveHosts}} / {{vizopsOverviewCtrl.nbHosts}} daemons wrote metrics in last update
                     </span>
                   </md-card-title-text>
                 </md-card-title>
               </md-card>
-            </div> <!-- end: Cluster CPU utilization -->
+            </div> <!-- end: hosts card -->
 
             <!-- Shuffle card -->
             <div class="col-md-2">
@@ -113,13 +113,20 @@
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: total completed tasks graph -->
             <div class="col-md-4">
+              <nvd3 id="overviewRateOfTaskCompletion"
+                    options="vizopsOverviewCtrl.optionsRateOfTaskCompletion"
+                    data="vizopsOverviewCtrl.templateRateOfTaskCompletion"
+                    class="with-3d-shadow with-transitions"></nvd3>
+            </div> <!-- end: task rate of completion graph -->
+          </div> <!-- row -->
+          <div class="row">
+
+            <div class="col-md-4">
               <nvd3 id="overviewClusterMemory"
                     options="vizopsOverviewCtrl.optionsContainerMemoryUsedTotal"
                     data="vizopsOverviewCtrl.templateContainerMemoryUsedTotal"
                     class="with-3d-shadow with-transitions"></nvd3>
             </div> <!-- end: used/total container memory -->
-          </div> <!-- row -->
-          <div class="row">
 
             <div class="col-md-4">
               <nvd3 id="overviewHDFSWriteRateTotal"

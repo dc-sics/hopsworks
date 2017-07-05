@@ -45,6 +45,14 @@ angular.module('hopsWorksApp')
                     'batchStatistics': false
                 };
 
+                self.lastMeasurement = {
+                    'receivers': [],
+                    'lastReceivedBatchRecords': [],
+                    'lastCompletedTotalDelay': [],
+                    'totalReceivedProcessedRecords': [],
+                    'batchStatistics': []
+                };
+
                 var updateReceiverTasksCard = function() {
                     if (!self.now && self.hasLoadedOnce['receivers'])
                         return; // offline mode + we have loaded the information
@@ -70,8 +78,15 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateLastReceivedBatchRecords = function() {
-                    if (!self.now && self.hasLoadedOnce['lastReceivedBatchRecords'])
+                    if (!self.now && self.hasLoadedOnce['lastReceivedBatchRecords']) {
+                        if(self.lastMeasurement['lastReceivedBatchRecords'].length > 0) {
+                            self.templateLastReceivedBatchRecords[0].values.push(self.lastMeasurement['lastReceivedBatchRecords'][0]);
+
+                            self.lastMeasurement['lastReceivedBatchRecords'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('lastReceivedBatchRecords');
 
@@ -83,11 +98,16 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['lastReceivedBatchRecords'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['lastReceivedBatchRecords'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateLastReceivedBatchRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['lastReceivedBatchRecords'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                    } else {
+                                        self.templateLastReceivedBatchRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['lastReceivedBatchRecords'] = true; // dont call backend again
@@ -99,8 +119,13 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateLastCompletedTotalDelay = function() {
-                    if (!self.now && self.hasLoadedOnce['lastCompletedTotalDelay'])
-                        return; // offline mode + we have loaded the information
+                    if (!self.now && self.hasLoadedOnce['lastCompletedTotalDelay']) {
+                        if (self.lastMeasurement['lastCompletedTotalDelay'].length > 0) {
+                            self.templateLastCompletedTotalDelay[0].values.push(self.lastMeasurement['lastCompletedTotalDelay'][0]);
+
+                            self.lastMeasurement['lastCompletedTotalDelay'] = [];
+                        }
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('lastCompletedTotalDelay');
 
@@ -112,11 +137,16 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['lastCompletedTotalDelay'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['lastCompletedTotalDelay'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateLastCompletedTotalDelay[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['lastCompletedTotalDelay'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                    } else {
+                                        self.templateLastCompletedTotalDelay[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['lastCompletedTotalDelay'] = true; // dont call backend again
@@ -128,8 +158,14 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateTotalReceivedProcessedRecords = function () {
-                    if (!self.now && self.hasLoadedOnce['totalReceivedProcessedRecords'])
-                        return; // offline mode + we have loaded the information
+                    if (!self.now && self.hasLoadedOnce['totalReceivedProcessedRecords']) {
+                        if (self.lastMeasurement['totalReceivedProcessedRecords'].length > 0) {
+                            self.templateTotalReceivedProcessedRecords[0].values.push(self.lastMeasurement['totalReceivedProcessedRecords'][0]);
+                            self.templateTotalReceivedProcessedRecords[1].values.push(self.lastMeasurement['totalReceivedProcessedRecords'][1]);
+
+                            self.lastMeasurement['totalReceivedProcessedRecords'] = [];
+                        }
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('totalReceivedProcessedRecords');
 
@@ -142,12 +178,18 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['totalReceivedProcessedRecords'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['totalReceivedProcessedRecords'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateTotalReceivedProcessedRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    self.templateTotalReceivedProcessedRecords[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['totalReceivedProcessedRecords'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                        self.lastMeasurement['totalReceivedProcessedRecords'].push({'x': +splitEntry[0],'y': +splitEntry[2]});
+                                    } else {
+                                        self.templateTotalReceivedProcessedRecords[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.templateTotalReceivedProcessedRecords[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['totalReceivedProcessedRecords'] = true; // dont call backend again
@@ -159,8 +201,15 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateBatchStatistics = function () {
-                    if (!self.now && self.hasLoadedOnce['batchStatistics'])
-                        return; // offline mode + we have loaded the information
+                    if (!self.now && self.hasLoadedOnce['batchStatistics']) {
+                        if (self.lastMeasurement['batchStatistics'].length > 0) {
+                            self.templateBatchStatistics[0].values.push(self.lastMeasurement['batchStatistics'][0]);
+                            self.templateBatchStatistics[1].values.push(self.lastMeasurement['batchStatistics'][1]);
+                            self.templateBatchStatistics[2].values.push(self.lastMeasurement['batchStatistics'][2]);
+
+                            self.lastMeasurement['batchStatistics'] = [];
+                        }
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('batchStatistics');
 
@@ -174,13 +223,20 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['batchStatistics'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['batchStatistics'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateBatchStatistics[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    self.templateBatchStatistics[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
-                                    self.templateBatchStatistics[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['batchStatistics'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                        self.lastMeasurement['batchStatistics'].push({'x': +splitEntry[0],'y': +splitEntry[2]});
+                                        self.lastMeasurement['batchStatistics'].push({'x': +splitEntry[0],'y': +splitEntry[3]});
+                                    } else {
+                                        self.templateBatchStatistics[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.templateBatchStatistics[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                        self.templateBatchStatistics[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['batchStatistics'] = true; // dont call backend again

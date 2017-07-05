@@ -57,9 +57,26 @@ angular.module('hopsWorksApp')
                     'completedTasksPerHost': false
                 };
 
+                self.lastMeasurement = {
+                    'physicalCpuUsage': [],
+                    'ramUsage': [],
+                    'networkUsage': [],
+                    'diskUsage': [],
+                    'completedTasksPerHost': []
+                };
+
                 var updatePCpuUsage = function() {
-                    if (!self.now && self.hasLoadedOnce['physicalCpuUsage'])
+                    if (!self.now && self.hasLoadedOnce['physicalCpuUsage']) {
+                        if (self.lastMeasurement['physicalCpuUsage'].length > 0) {
+                            self.templatePhysicalCPUUsage[0].values.push(self.lastMeasurement['physicalCpuUsage'][0]);
+                            self.templatePhysicalCPUUsage[1].values.push(self.lastMeasurement['physicalCpuUsage'][1]);
+                            self.templatePhysicalCPUUsage[2].values.push(self.lastMeasurement['physicalCpuUsage'][2]);
+
+                            self.lastMeasurement['physicalCpuUsage'] = []; // clean up
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'cpu = \'cpu-total\' and ' + _getTimestampLimits('physicalCpuUsage') +
                                ' and host =~ /' + self.hostsToQuery.join('|') + '/';
@@ -72,13 +89,21 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['physicalCpuUsage'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['physicalCpuUsage'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templatePhysicalCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    self.templatePhysicalCPUUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
-                                    self.templatePhysicalCPUUsage[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    if (i === (metrics.length - 1)) {
+                                        // save last measurement
+                                        self.lastMeasurement['physicalCpuUsage'].push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.lastMeasurement['physicalCpuUsage'].push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                        self.lastMeasurement['physicalCpuUsage'].push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    } else {
+                                        self.templatePhysicalCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.templatePhysicalCPUUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                        self.templatePhysicalCPUUsage[2].values.push({'x': +splitEntry[0], 'y': +splitEntry[3]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['physicalCpuUsage'] = true; // dont call backend again
@@ -90,8 +115,16 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateRAMUsage = function() {
-                    if (!self.now && self.hasLoadedOnce['ramUsage'])
+                    if (!self.now && self.hasLoadedOnce['ramUsage']) {
+                        if (self.lastMeasurement['ramUsage'].length > 0) {
+                            self.templateMemoryUsage[0].values.push(self.lastMeasurement['ramUsage'][0]);
+                            self.templateMemoryUsage[1].values.push(self.lastMeasurement['ramUsage'][1]);
+                            
+                            self.lastMeasurement['ramUsage'] = []; //clean up
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = _getTimestampLimits('ramUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
 
@@ -103,12 +136,18 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['ramUsage'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['ramUsage'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    self.templateMemoryUsage[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['ramUsage'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                        self.lastMeasurement['ramUsage'].push({'x': +splitEntry[0],'y': +splitEntry[2]});
+                                    } else {
+                                        self.templateMemoryUsage[0].values.push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                        self.templateMemoryUsage[1].values.push({'x': +splitEntry[0],'y': +splitEntry[2]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['ramUsage'] = true; // dont call backend again
@@ -120,8 +159,16 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateNetworkUsage = function() {
-                    if (!self.now && self.hasLoadedOnce['networkUsage'])
+                    if (!self.now && self.hasLoadedOnce['networkUsage']) {
+                        if (self.lastMeasurement['networkUsage'].length > 0) {
+                            self.templateNetworkTraffic[0].values.push(self.lastMeasurement['networkUsage'][0]);
+                            self.templateNetworkTraffic[1].values.push(self.lastMeasurement['networkUsage'][1]);
+
+                            self.lastMeasurement['networkUsage'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = _getTimestampLimits('networkUsage') + ' and host =~ /' + self.hostsToQuery.join('|') + '/';
                     var columns = '';
@@ -139,12 +186,18 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['networkUsage'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['networkUsage'] = [];
 
-                                for(var i = 1; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateNetworkTraffic[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    self.templateNetworkTraffic[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['networkUsage'].push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.lastMeasurement['networkUsage'].push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    } else {
+                                        self.templateNetworkTraffic[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.templateNetworkTraffic[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['networkUsage'] = true; // dont call backend again
@@ -215,7 +268,6 @@ angular.module('hopsWorksApp')
                         var host = hostsNames[i], len = self.hostnames[host].length;
                         if (self.hostnames[host].indexOf(0) > -1) {
                             len -= 1; // remove driver
-                            console.log(self.hostnames[host]);
                         }
 
                         self.templateExecutorsPerHost.push({'x': host, 'y': len});
@@ -226,23 +278,21 @@ angular.module('hopsWorksApp')
                     if (!self.now && self.hasLoadedOnce['completedTasksPerHost'])
                         return; // offline mode + we have loaded the information
 
-                    VizopsService.getAllExecutorMetrics('completedTasks').then(
+                    var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('completedTasksPerHost');
+
+                    VizopsService.getMetrics('graphite', 'last(threadpool_completeTasks)', 'spark', tags, 'service').then(
                         function(success) {
                             if (success.status === 200) { // new measurements
-                                var newData = success.data;
-
+                                var newData = success.data.result.results[0].series; // array of series - per executor
+                                self.startTimeMap['completedTasksPerHost'] = _getLastTimestampFromSeries(newData[0]);
                                 self.templateCompletedTasksPerHost = [];
                                 var taskAccumulator = {};
 
-                                for(var i = 0; i < newData.length; i++) {
-                                    var entry = newData[i];
-                                    var executorID = entry.id;
-                                    var completedTasks = entry.completedTasks;
-
-                                    if (executorID === 'driver') continue; // skip driver
+                                for(var i = 0; i < newData.length; i++) { // loop over each executor
+                                    var executorID = newData[i].tags.entry[0].value;
+                                    var completedTasks = +newData[i].values[0].split(" ")[1];
 
                                     var hostOfExecutor = _.findKey(self.hostnames, function(x) { return _.indexOf(x, +executorID) > -1; });
-
                                     if (hostOfExecutor in taskAccumulator)
                                         taskAccumulator[hostOfExecutor] += completedTasks;
                                     else
@@ -254,11 +304,10 @@ angular.module('hopsWorksApp')
                                     self.templateCompletedTasksPerHost.push({'x': keys[i], 'y': taskAccumulator[keys[i]]});
                                 }
 
-                                self.hasLoadedOnce['completedTasksPerHost'] = true;
+                                self.hasLoadedOnce['completedTasksPerHost'] = true; // dont call backend again
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
-                            if (error.status !== 500)
-                                growl.error(error.data.errorMsg, {title: 'Error fetching completedTasksPerHost(worker) metrics.', ttl: 10000});
+                            growl.error(error.data.errorMsg, {title: 'Error fetching TotalCompletedTasksApp metrics.', ttl: 10000});
                         }
                     );
                 };

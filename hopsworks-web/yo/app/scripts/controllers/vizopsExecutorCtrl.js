@@ -72,6 +72,18 @@ angular.module('hopsWorksApp')
                     'totalShuffle': false
                 };
 
+                self.lastMeasurement = {
+                    'maxMemoryCard': [],
+                    'vcpuUsage': [],
+                    'memoryUsage': [],
+                    'taskDistribution': [],
+                    'hdfsDiskRead': [],
+                    'hdfsDiskWrite': [],
+                    'gcTime': [],
+                    'peakMemoryPerExecutor': [],
+                    'totalShuffle': []
+                };
+
                 var updateMaxMemoryCard = function() {
                     if (!self.now && self.hasLoadedOnce['maxMemoryCard'])
                         return; // offline mode + we have loaded the information
@@ -98,8 +110,15 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateAggregatedVCPUUsageGraph = function() {
-                    if (!self.now && self.hasLoadedOnce['vcpuUsage'])
+                    if (!self.now && self.hasLoadedOnce['vcpuUsage']) {
+                        if(self.lastMeasurement['vcpuUsage'].length > 0) {
+                            self.templateAggregatedVCPUUsage[0].values.push(self.lastMeasurement['vcpuUsage'][0]);
+
+                            self.lastMeasurement['vcpuUsage'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'source =~ /' + self.containerQuery + '/ and ' + _getTimestampLimits('vcpuUsage')
                                + ' and MilliVcoreUsageIMinMilliVcores <= ' + (+self.executorInfo.entry[0].value[2]*1000);
@@ -111,13 +130,18 @@ angular.module('hopsWorksApp')
                             if (success.status === 200) { // new measurements
                                 var newData = success.data.result.results[0].series[0];
                                 self.startTimeMap['vcpuUsage'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['vcpuUsage'] = [];
 
                                 var metrics = newData.values;
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateAggregatedVCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['vcpuUsage'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                    } else {
+                                        self.templateAggregatedVCPUUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['vcpuUsage'] = true;
@@ -159,11 +183,18 @@ angular.module('hopsWorksApp')
                   };
 
                 var updateMemoryUsage = function() {
-                    if (!self.now && self.hasLoadedOnce['memoryUsage'])
+                    if (!self.now && self.hasLoadedOnce['memoryUsage']) {
+                        if(self.lastMeasurement['memoryUsage'].length > 0) {
+                            self.templateMemoryUsage[0].values.push(self.lastMeasurement['memoryUsage'][0]);
+
+                            self.lastMeasurement['memoryUsage'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('memoryUsage') +
-                               ' and service =~ /' + self.executorQuery +'/'; // + sign encodes into space so....
+                               ' and service =~ /' + self.executorQuery +'/';
 
                     VizopsService.getMetrics('graphite', 'mean(heap_used), max(heap_max)', 'spark', tags,
                                              'time(' + VizopsService.getGroupByInterval() + ') fill(0)').then(
@@ -172,11 +203,16 @@ angular.module('hopsWorksApp')
                                   var newData = success.data.result.results[0].series[0];
                                   var metrics = newData.values;
                                   self.startTimeMap['memoryUsage'] = _getLastTimestampFromSeries(newData);
+                                  self.lastMeasurement['memoryUsage'] = [];
 
-                                  for(var i = 0; i < metrics.length - 1; i++) {
+                                  for(var i = 0; i < metrics.length; i++) {
                                       var splitEntry = metrics[i].split(' ');
 
-                                      self.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]}); // mean
+                                      if (i === (metrics.length - 1)) {
+                                          self.lastMeasurement['memoryUsage'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                      } else {
+                                          self.templateMemoryUsage[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                      }
                                   }
 
                                   self.hasLoadedOnce['memoryUsage'] = true;
@@ -248,8 +284,16 @@ angular.module('hopsWorksApp')
                 };
 
                 var updateGCTime = function() {
-                    if (!self.now && self.hasLoadedOnce['gcTime'])
+                    if (!self.now && self.hasLoadedOnce['gcTime']) {
+                        if(self.lastMeasurement['gcTime'].length > 0) {
+                            self.templateGCTime[0].values.push(self.lastMeasurement['gcTime'][0]);
+                            self.templateGCTime[1].values.push(self.lastMeasurement['gcTime'][1]);
+
+                            self.lastMeasurement['gcTime'] = [];
+                        }
+
                         return; // offline mode + we have loaded the information
+                    }
 
                     var tags = 'appid = \'' + self.appId + '\' and ' + _getTimestampLimits('hdfsDiskWrite') +
                                ' and service =~ /' + self.executorQuery + '/'; // + sign encodes into space so....
@@ -263,12 +307,18 @@ angular.module('hopsWorksApp')
                                 var metrics = newData.values;
 
                                 self.startTimeMap['gcTime'] = _getLastTimestampFromSeries(newData);
+                                self.lastMeasurement['gcTime'] = [];
 
-                                for(var i = 0; i < metrics.length - 1; i++) {
+                                for(var i = 0; i < metrics.length; i++) {
                                     var splitEntry = metrics[i].split(' ');
 
-                                    self.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
-                                    self.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    if (i === (metrics.length - 1)) {
+                                        self.lastMeasurement['gcTime'].push({'x': +splitEntry[0],'y': +splitEntry[1]});
+                                        self.lastMeasurement['gcTime'].push({'x': +splitEntry[0],'y': +splitEntry[2]});
+                                    } else {
+                                        self.templateGCTime[0].values.push({'x': +splitEntry[0], 'y': +splitEntry[1]});
+                                        self.templateGCTime[1].values.push({'x': +splitEntry[0], 'y': +splitEntry[2]});
+                                    }
                                 }
 
                                 self.hasLoadedOnce['gcTime'] = true; // dont call backend again
@@ -343,8 +393,8 @@ angular.module('hopsWorksApp')
                                 self.hasLoadedOnce['totalShuffle'] = true;
                             } // dont do anything if response 204(no content), nothing new
                         }, function(error) {
-                            if (error.status !== 500)
-                                growl.error(error.data.errorMsg, {title: 'Error fetching totalShuffle(executor) metrics.', ttl: 10000});
+                            // if (error.status !== 500)
+                            //     growl.error(error.data.errorMsg, {title: 'Error fetching totalShuffle(executor) metrics.', ttl: 10000});
                         }
                     );
                 };

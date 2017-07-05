@@ -13,10 +13,10 @@ var getBaseChartOptions = function() {
             "interpolate": "monotone",
             "height": 330,
             "margin": {
-                "top": 20,
-                "right": 80,
-                "bottom": 60,
-                "left": 80
+                "top": 50,
+                "right": 50,
+                "bottom": 50,
+                "left": 50
             },
             "x": function(d){ return d.x; },
             "y": function(d){ return d.y; },
@@ -82,6 +82,8 @@ var vizopsTotalActiveTasksOptions = function() {
         }
       };
     options.title.text = 'Total Active Tasks';
+    options.subtitle.enable = true;
+    options.subtitle.text = 'Sum of the tasks that became active during the update interval';
 
     return options;
 };
@@ -99,15 +101,7 @@ var vizopsTotalActiveTasksTemplate = function() {
 // OVERVIEW: Total completed tasks in the application
 var vizopsTotalCompletedTasksOptions = function() {
     var options = getBaseChartOptions();
-    options.chart.type = 'multiChart';
-    options.chart.yAxis1 = {
-         "axisLabel": "Task completion rate",
-         "rotateYLabel": true,
-         "tickFormat": function(d) {
-           return d3.format("d")(d);
-         }
-       };
-    options.chart.yAxis2 ={
+    options.chart.yAxis ={
         "axisLabel": "Completed tasks",
         "rotateYLabel": true,
         "tickFormat": function(d) {
@@ -123,17 +117,33 @@ var vizopsTotalCompletedTasksTemplate = function() {
     return [
         {
             values: [],
-            key: 'rate of completion',
-            color: _getColor[1],
-            type: "line",
-            yAxis: 1
-        },
+            key: 'completed tasks',
+            color: _getColor[2]
+        }
+    ];
+};
+
+// OVERVIEW: Task rate of completion in the application
+var vizopsRateOfTaskCompletionOptions = function() {
+    var options = getBaseChartOptions();
+    options.chart.yAxis = {
+        "axisLabel": "Task completion rate",
+        "rotateYLabel": true,
+        "tickFormat": function(d) {
+            return d3.format("d")(d);
+        }
+    };
+    options.title.text = 'Task rate of completion';
+
+    return options;
+};
+
+var vizopsRateOfTaskCompletionTemplate = function() {
+    return [
         {
             values: [],
-            key: 'completed tasks',
-            color: _getColor[2],
-            type: "line",
-            yAxis: 2
+            key: 'rate of completion',
+            color: _getColor[1]
         }
     ];
 };
@@ -360,21 +370,13 @@ var vizopsGCTimeTemplate = function() {
 // EXECUTOR: HDFS/DISK READ
 var vizopsExecutorHDFSDiskReadOptions = function() {
     var options = getBaseChartOptions();
-    options.chart.type = 'multiChart';
-    options.chart.yAxis1 = {
-         "axisLabel": "HDFS Read bytes",
+    options.chart.yAxis = {
+         "axisLabel": "Read bytes",
          "rotateYLabel": true,
          "tickFormat": function(d) {
            return d3.format(".2s")(d);
          }
        };
-    options.chart.yAxis2 = {
-        "axisLabel": "Disk Read bytes",
-        "rotateYLabel": true,
-        "tickFormat": function(d) {
-          return d3.format(".2s")(d);
-        }
-      };
     options.title.text = 'HDFS/Disk read';
 
     return options;
@@ -385,16 +387,12 @@ var vizopsExecutorHDFSDiskReadTemplate = function() {
        {
            values: [],
            key: 'HDFS Read',
-           color: _getColor[7],
-           type: "line",
-           yAxis: 1
+           color: _getColor[7]
        },
        {
            values: [],
            key: 'Disk Read',
-           color: _getColor[14],
-           type: "line",
-           yAxis: 2
+           color: _getColor[14]
        }
     ];
 };
@@ -402,21 +400,13 @@ var vizopsExecutorHDFSDiskReadTemplate = function() {
 // EXECUTOR: HDFS/DISK WRITE
 var vizopsExecutorHDFSDiskWriteOptions = function() {
     var options = getBaseChartOptions();
-    options.chart.type = 'multiChart';
-    options.chart.yAxis1 = {
-         "axisLabel": "HDFS Write bytes",
+    options.chart.yAxis = {
+         "axisLabel": "Write bytes",
          "rotateYLabel": true,
          "tickFormat": function(d) {
            return d3.format(".2s")(d);
          }
        };
-    options.chart.yAxis2 = {
-        "axisLabel": "Disk Write bytes",
-        "rotateYLabel": true,
-        "tickFormat": function(d) {
-          return d3.format(".2s")(d);
-        }
-      };
     options.title.text = 'HDFS/Disk write';
 
     return options;
@@ -427,16 +417,12 @@ var vizopsExecutorHDFSDiskWriteTemplate = function() {
        {
            values: [],
            key: 'HDFS Write',
-           color: _getColor[7],
-           type: "line",
-           yAxis: 1
+           color: _getColor[7]
        },
        {
            values: [],
            key: 'Disk Write',
-           color: _getColor[14],
-           type: "line",
-           yAxis: 2
+           color: _getColor[14]
        }
     ];
 };
@@ -501,13 +487,12 @@ var vizopsExecutorCPUDataTemplate = function() {
 // EXECUTOR MEMORY
 var vizopsExecutorMemoryUsageOptions = function() {
     var options = getBaseChartOptions();
-    options.chart.type = 'lineChart';
     options.chart.yAxis = {
        "axisLabel": "Average memory",
        "rotateYLabel": true,
        "tickFormat": function(d) {
-        return d3.format(".2s")(d);
-      }
+         return d3.format(".2s")(d);
+       }
     };
     options.title.text = 'Executor memory';
 
