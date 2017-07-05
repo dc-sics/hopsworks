@@ -55,7 +55,7 @@
     <dependency>
       <groupId>io.hops</groupId>
       <artifactId>hops-tensorflow</artifactId>
-      <version>0.0.4-SNAPSHOT</version>
+      <version>0.0.1</version>
     </dependency>
     <dependency>
       <groupId>org.apache.kafka</groupId>
