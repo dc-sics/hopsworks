@@ -1024,8 +1024,9 @@ public class KafkaFacade {
     return brokerAddress;
   }
 
-  public boolean produce(Project project, Users user, String topicName, ArrayList<String> records) throws Exception{
+  public boolean produce(Integer projectId, Users user, String topicName, ArrayList<String> records) throws Exception{
 
+    Project project = projectsFacade.find(projectId);
     String projectName = project.getName();
     String userName = user.getUsername();
 

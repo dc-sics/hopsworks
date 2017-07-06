@@ -14,44 +14,44 @@ public class ProjectUserUuidPK implements Serializable {
 
   @Basic(optional = false)
   @NotNull
-  @Column(name = "project_name")
-  private String projectName;
+  @Column(name = "project_id")
+  private Integer projectId;
 
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1, max = 10)
-  @Column(name = "username")
-  private String username;
+  @Size(min = 1, max = 150)
+  @Column(name = "user_email")
+  private String userEmail;
 
   public ProjectUserUuidPK() {
   }
 
-  public ProjectUserUuidPK(String projectName, String username) {
-    this.projectName = projectName;
-    this.username = username;
+  public ProjectUserUuidPK(Integer projectId, String userEmail) {
+    this.projectId = projectId;
+    this.userEmail = userEmail;
   }
 
-  public String getProjectName() {
-    return projectName;
+  public Integer getProjectId() {
+    return projectId;
   }
 
-  public void setProjectName(String projectName) {
-    this.projectName = projectName;
+  public void setProjectId(Integer projectId) {
+    this.projectId = projectId;
   }
 
-  public String getUsername() {
-    return username;
+  public String getUserEmail() {
+    return userEmail;
   }
 
-  public void setUsername(String username) {
-    this.username = username;
+  public void setUserEmail(String userEmail) {
+    this.userEmail = userEmail;
   }
 
   @Override
   public int hashCode() {
     int hash = 0;
-    hash += (projectName != null ? projectName.hashCode() : 0);
-    hash += (username != null ? username.hashCode() : 0);
+    hash += (int) projectId;
+    hash += (userEmail != null ? userEmail.hashCode() : 0);
     return hash;
   }
 
@@ -61,18 +61,18 @@ public class ProjectUserUuidPK implements Serializable {
       return false;
     }
     ProjectUserUuidPK other = (ProjectUserUuidPK) object;
-    if (!this.projectName.equals(other.projectName)) {
+    if (this.projectId != other.getProjectId()) {
       return false;
     }
 
-    return this.username.equals(other.username);
+    return this.userEmail.equals(other.userEmail);
 
   }
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectUserUuidPK[ projectName=" + 
-        this.projectName +  ", username=" + this.username + " ]";
+    return "io.hops.hopsworks.common.dao.device.ProjectUserUuidPK[ projectId=" + 
+        this.projectId +  ", userEmail=" + this.userEmail + " ]";
 
   }
 }

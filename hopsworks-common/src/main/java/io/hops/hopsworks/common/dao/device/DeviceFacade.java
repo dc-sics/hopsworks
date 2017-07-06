@@ -17,5 +17,19 @@ public class DeviceFacade {
     ProjectDevice pd = new ProjectDevice(pdKey, passUuid, projectUserUuid);
     em.persist(pd);	
   }
+  
+  public void addProjectUserUuid(Integer projectId, String userEmail, String projectUserUuid) {
+    ProjectUserUuidPK puKey = new ProjectUserUuidPK(projectId, userEmail);
+    ProjectUserUuid pu = new ProjectUserUuid(puKey, projectUserUuid);
+    em.persist(pu); 
+  }
+
+  public void removeProjectUserUuid(Integer projectId, String userEmail) {
+    ProjectUserUuidPK puKey = new ProjectUserUuidPK(projectId, userEmail);
+    ProjectUserUuid pu = null;
+    //TODO find pu
+    em.remove(pu);
+    
+  }
 
 }

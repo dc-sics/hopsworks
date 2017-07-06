@@ -38,6 +38,11 @@ public class ProjectUserUuid implements Serializable{
   @Column(name = "project_user_uuid")
   private String projectUserUuid;
 
+  public ProjectUserUuid(ProjectUserUuidPK projectUserUuidPK, String projectUserUuid) {
+    this.projectUserUuidPK = projectUserUuidPK;
+    this.projectUserUuid = projectUserUuid;
+  }
+
   @Override
   public int hashCode() {
     int hash = 0;
