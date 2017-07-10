@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.util;
 
+import com.google.common.io.Files;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.dao.util.Variables;
 import java.io.File;
@@ -109,6 +110,8 @@ public class Settings implements Serializable {
   private static final String VARIABLE_CERTS_DIRS = "certs_dir";
   private static final String VARIABLE_VAGRANT_ENABLED = "vagrant_enabled";
 
+  private static final String VARIABLE_STAGING_DIR = "staging_dir";
+  
   private String setVar(String varName, String defaultValue) {
     Variables userName = findById(varName);
     if (userName != null && userName.getValue() != null && (userName.getValue().
@@ -212,6 +215,7 @@ public class Settings implements Serializable {
       SPARK_DIR = setDirVar(VARIABLE_SPARK_DIR, SPARK_DIR);
       FLINK_USER = setVar(VARIABLE_FLINK_USER, FLINK_USER);
       FLINK_DIR = setDirVar(VARIABLE_FLINK_DIR, FLINK_DIR);
+      String stagingDir = setDirVar(VARIABLE_STAGING_DIR, STAGING_DIR);
       ZEPPELIN_USER = setVar(VARIABLE_ZEPPELIN_USER, ZEPPELIN_USER);
       ZEPPELIN_DIR = setDirVar(VARIABLE_ZEPPELIN_DIR, ZEPPELIN_DIR);
       ZEPPELIN_PROJECTS_DIR = setDirVar(VARIABLE_ZEPPELIN_PROJECTS_DIR,
@@ -398,14 +402,22 @@ public class Settings implements Serializable {
     checkCache();
     return ADAM_USER;
   }
+  
+  // "/tmp" by default
+  private String STAGING_DIR = Files.createTempDir().getParent();
 
+  public synchronized String getStagingDir() {
+    checkCache();
+    return STAGING_DIR;
+  }
+
+  private final String FLINK_CONF_DIR = "conf";
   private String FLINK_DIR = "/srv/hops/flink";
 
   public synchronized String getFlinkDir() {
     checkCache();
     return FLINK_DIR;
   }
-  private final String FLINK_CONF_DIR = "conf";
 
   public String getFlinkConfDir() {
     String flinkDir = getFlinkDir();
