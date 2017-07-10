@@ -180,6 +180,19 @@
                       </td>
                       <td uib-dropdown class="position-fixed" id="menu-{{ $index}}" style="border-top: none">
                         <ul uib-dropdown-menu class="dropdown-amore" role="menu">
+                          <li ng-show="datasetsCtrl.isSelectedFiles() <= 1" 
+                              ng-hide="datasetsCtrl.isZippedfile(file.name)===false">
+                            <a class="pointer"
+                               role="menuitem"
+                               tabindex="10"
+                               ng-click="datasetsCtrl.unzip(file.name)"
+                               data-toggle="uib-tooltip" title="Decompress this archive file using the staging directory
+                               on the scratch disk of the webserver."
+                               >
+                              <span><i class="fa fa-file-archive-o" ></i>
+                                Unzip here</span>
+                            </a>
+                          </li>
                           <li ng-show="datasetsCtrl.isSelectedFiles() <= 1" ng-hide="file.dir">
                             <a class="pointer"
                                role="menuitem"

@@ -143,6 +143,22 @@ public class DataSetService {
   }
 
   @GET
+  @Path("unzip/{path: .+}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public Response unzip(@PathParam("path") String path,
+          @Context SecurityContext sc) throws
+          AppException, AccessControlException {
+
+//    GenericEntity<List<InodeView>> inodeViews
+//            = new GenericEntity<List<InodeView>>(kids) { };
+    GenericEntity<List<String>> ge = new GenericEntity<List<String>>(
+            new ArrayList<String>()) { };
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            ge).build();
+  }
+
+  @GET
   @Path("/getContent/")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
@@ -210,7 +226,8 @@ public class DataSetService {
       }
     }
     GenericEntity<List<InodeView>> inodViews
-            = new GenericEntity<List<InodeView>>(kids) { };
+            = new GenericEntity<List<InodeView>>(kids) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodViews).build();
   }
@@ -254,7 +271,8 @@ public class DataSetService {
       kids.add(inodeView);
     }
     GenericEntity<List<InodeView>> inodeViews
-            = new GenericEntity<List<InodeView>>(kids) { };
+            = new GenericEntity<List<InodeView>>(kids) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodeViews).build();
   }
@@ -286,7 +304,8 @@ public class DataSetService {
     }
 
     GenericEntity<InodeView> inodeViews
-            = new GenericEntity<InodeView>(inodeView) {};
+            = new GenericEntity<InodeView>(inodeView) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodeViews).build();
   }
@@ -1166,12 +1185,13 @@ public class DataSetService {
     Response.ResponseBuilder response = Response.ok();
     return response.build();
   }
-  
+
   @GET
   @Path("checkFileForDownload/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response checkFileForDownload(@PathParam("path") String path, @Context SecurityContext sc) throws
+  public Response checkFileForDownload(@PathParam("path") String path,
+          @Context SecurityContext sc) throws
           AppException, AccessControlException {
     return checkFileExists(path, sc);
   }
