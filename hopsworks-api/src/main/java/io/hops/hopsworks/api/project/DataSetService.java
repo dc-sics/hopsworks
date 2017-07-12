@@ -153,7 +153,7 @@ public class DataSetService {
 //    GenericEntity<List<InodeView>> inodeViews
 //            = new GenericEntity<List<InodeView>>(kids) { };
     GenericEntity<List<String>> ge = new GenericEntity<List<String>>(
-            new ArrayList<String>()) { };
+            new ArrayList<String>()) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             ge).build();
   }
@@ -226,8 +226,7 @@ public class DataSetService {
       }
     }
     GenericEntity<List<InodeView>> inodViews
-            = new GenericEntity<List<InodeView>>(kids) {
-    };
+            = new GenericEntity<List<InodeView>>(kids) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodViews).build();
   }
@@ -271,8 +270,7 @@ public class DataSetService {
       kids.add(inodeView);
     }
     GenericEntity<List<InodeView>> inodeViews
-            = new GenericEntity<List<InodeView>>(kids) {
-    };
+            = new GenericEntity<List<InodeView>>(kids) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodeViews).build();
   }
@@ -304,8 +302,7 @@ public class DataSetService {
     }
 
     GenericEntity<InodeView> inodeViews
-            = new GenericEntity<InodeView>(inodeView) {
-    };
+            = new GenericEntity<InodeView>(inodeView) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodeViews).build();
   }
