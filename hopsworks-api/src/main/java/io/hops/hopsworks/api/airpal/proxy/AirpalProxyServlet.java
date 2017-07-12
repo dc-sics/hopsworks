@@ -39,7 +39,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class AirpalProxyServlet extends ProxyServlet {
-  
+
   private static final Logger logger = Logger.getLogger(
     AirpalProxyServlet.class.
     getName());
@@ -56,7 +56,7 @@ public class AirpalProxyServlet extends ProxyServlet {
   private HdfsUsersController hdfsUsersBean;
   @EJB
   private ProjectController projectController;
-  
+
   @Override
   protected void service(HttpServletRequest servletRequest,
     HttpServletResponse servletResponse) throws ServletException,
@@ -66,9 +66,9 @@ public class AirpalProxyServlet extends ProxyServlet {
       return;
     }
     Cookie cookie = null;
-    
+
     String requestURI = servletRequest.getRequestURI();
-    
+
     String email = servletRequest.getUserPrincipal().getName();
 //    logger.info("email ======>" + email);
     projectID = servletRequest.getParameter("projectID");
@@ -79,7 +79,7 @@ public class AirpalProxyServlet extends ProxyServlet {
      */
     MyRequestWrapper myRequestWrapper = new MyRequestWrapper(
       (HttpServletRequest) servletRequest);
-    
+
     AirpalFilter airpalFilter = null;
     boolean x = false;
     if (servletRequest.getRequestURI().contains(
@@ -125,11 +125,11 @@ public class AirpalProxyServlet extends ProxyServlet {
       } else {
         proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
       }
-      
+
       copyRequestHeaders(servletRequest, proxyRequest);
-      
+
       super.setXForwardedForHeader(servletRequest, proxyRequest);
-      
+
       HttpResponse proxyResponse = null;
       try {
         // Execute the request
@@ -143,7 +143,7 @@ public class AirpalProxyServlet extends ProxyServlet {
         // Process the response
         int statusCode = proxyResponse.getStatusLine().getStatusCode();
         logger.info("proxyResponse statuscode ==============" + statusCode);
-        
+
         if (doResponseRedirectOrNotModifiedLogic(myRequestWrapper, servletResponse,
           proxyResponse, statusCode)) {
           log("Inside doResponseRedirectOrNotModifiedLogic======= ");
@@ -157,12 +157,12 @@ public class AirpalProxyServlet extends ProxyServlet {
         //noinspection deprecation
         servletResponse.setStatus(statusCode, proxyResponse.getStatusLine().
           getReasonPhrase());
-        
+
         copyResponseHeaders(proxyResponse, servletRequest, servletResponse);
 
         // Send the content to the client
         copyResponseEntity(proxyResponse, servletResponse, projid, email1, airpalFilter);
-        
+
       } catch (Exception e) {
         //abort request, according to best practice with HttpClient
         if (proxyRequest instanceof AbortableHttpRequest) {
@@ -181,7 +181,7 @@ public class AirpalProxyServlet extends ProxyServlet {
           throw (IOException) e;
         }
         throw new RuntimeException(e);
-        
+
       } finally {
         // make sure the entire entity was consumed, so the connection is released
         if (proxyResponse != null) {
@@ -191,16 +191,16 @@ public class AirpalProxyServlet extends ProxyServlet {
         // http://stackoverflow.com/questions/1159168/should-one-call-close-on-
         //httpservletresponse-getoutputstream-getwriter
       }
-      
+
     } else {
       logger.info("default stmt in first switch=========================");
       super.service(servletRequest, servletResponse);
       log("End of Service method in  AirpalProxySerlet======= ");
-      
+
     }
-    
+
   }
-  
+
   private void copyResponseEntity(HttpResponse proxyResponse, HttpServletResponse servletResponse, String projectID,
     String email, AirpalFilter airpalFilter) throws
     IOException {
@@ -223,15 +223,15 @@ public class AirpalProxyServlet extends ProxyServlet {
             //list of project names
             List<String> projects = projectController.findProjectNamesByUser(
               email, true);
-            String[] projArray=projects.toArray(new String[0]);
+            String[] projArray = projects.toArray(new String[0]);
             // trying to get project id for each project
             for (int i = 0; i < projArray.length; i++) {
-              logger.info("response ==============" +projArray[i] );
+              logger.info("response ==============" + projArray[i]);
               Project project = projectFacade.findByName(projArray[i]);
               String id = project.getId().toString();
               projidlist.add(id);
             }
-            String[] projidArray=projidlist.toArray(new String[0]);
+            String[] projidArray = projidlist.toArray(new String[0]);
             logger.info("projects ==============+" + projects);
             logger.info("projidlist ==============+" + projidArray);
             BasicHttpEntity basic = new BasicHttpEntity();
@@ -245,11 +245,11 @@ public class AirpalProxyServlet extends ProxyServlet {
 //              String name = project.getName();
 
               for (int j = 0; j < projidArray.length; j++) {
-                if (!(projidArray[j].equalsIgnoreCase(proj) )) {
+                if ((projidArray[j].equalsIgnoreCase(proj))) {
                   jsonarray.remove(i);
                 }
               }
-              
+
             }
             logger.info("projects ==============+" + jsonarray);
 
@@ -285,5 +285,5 @@ public class AirpalProxyServlet extends ProxyServlet {
       }
     }
   }
-  
+
 }
