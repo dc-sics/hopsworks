@@ -10,6 +10,7 @@ import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.IoUtils;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.tensorflow.Client;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -74,7 +75,7 @@ public class YarnRunner {
   //The parallelism parameter of Flink
   private int parallelism;
   private YarnClusterDescriptor flinkCluster;
-
+  private Client tfClient;
   private String appJarPath;
   private final String amJarLocalName;
   private final String amJarPath;
@@ -184,7 +185,7 @@ public class YarnRunner {
   //---------------------------------------------------------------------------
   /**
    * Start the Yarn Application Master.
-   * <p/>
+   *
    * @param services
    * @param project
    * @param dfso
@@ -232,11 +233,18 @@ public class YarnRunner {
 
       //Copy files to HDFS that are expected to be there
       copyAllToHDFS();
+      
+      if (jobType == JobType.TFSPARK) {
+        String tensorboardFile = "hdfs://" + nameNodeIpPort + File.separator + Settings.DIR_ROOT
+            + File.separator + project.getName() + File.separator + Settings.PROJECT_STAGING_DIR + File.separator
+            + ".tensorboard." + appId.toString();
+        filesToRemove.add(tensorboardFile);
+      }
 
       //Set up environment
       Map<String, String> env = new HashMap<>();
       env.putAll(amEnvironment);
-      setUpClassPath(env);
+      setUpClassPath(env, services);
 
       //Set up commands
       List<String> amCommands = setUpCommands();
@@ -340,6 +348,23 @@ public class YarnRunner {
         logger.log(Level.INFO, "Deleting local flink app jar:{0}", appJarPath);
       }
 
+    } else if (jobType == JobType.TENSORFLOW) {
+      try {
+        
+        tfClient.setConf(conf);
+        tfClient.initYarnClient();
+        appId = tfClient.submitApplication();
+//        String logstashInfo = tfClient.getEnvironment().get(Settings.LOGSTASH_JOB_INFO);
+//        logstashInfo = logstashInfo.replaceAll(APPID_REGEX, appId.toString());
+//        tfClient.addEnvironmentVariable(Settings.LOGSTASH_JOB_INFO, logstashInfo);
+        fillInAppid(appId.toString());
+        newClient.init(conf);
+        monitor = new YarnMonitor(appId, newClient);
+      } finally {
+        yarnClient.close();
+        yarnClient = null;
+        appId = null;
+      }
     }
 
     return monitor;
@@ -354,7 +379,7 @@ public class YarnRunner {
    * Commands. Invoking it before the ApplicationSubmissionContext is properly
    * set up will result in an
    * IllegalStateException.
-   * <p/>
+   * 
    * @return
    */
   public ApplicationSubmissionContext getAppContext() {
@@ -553,7 +578,7 @@ public class YarnRunner {
     }
   }
 
-  private void setUpClassPath(Map<String, String> env) {
+  private void setUpClassPath(Map<String, String> env, AsynchronousJobExecutor services) {
     // Add AppMaster.jar location to classpath
     StringBuilder classPathEnv = new StringBuilder();
     for (String c : conf.getStrings(
@@ -567,6 +592,8 @@ public class YarnRunner {
       classPathEnv.append(':');
       classPathEnv.append(System.getProperty("java.class.path"));
     }
+    classPathEnv.append(HopsUtils.getHadoopClasspathGlob(services.getSettings().
+                      getHadoopDir() + "/bin/hadoop", "classpath", "--glob"));
     //Check whether a classpath variable was already set, and if so: merge them
     //TODO(Theofilos): clean this up so no doubles are found in the classpath.
     if (env.containsKey(KEY_CLASSPATH)) {
@@ -644,6 +671,7 @@ public class YarnRunner {
     this.jobType = builder.jobType;
     this.parallelism = builder.parallelism;
     this.flinkCluster = builder.flinkCluster;
+    this.tfClient = builder.tfClient;
     this.appJarPath = builder.appJarPath;
     this.amQueue = builder.amQueue;
     this.amMemory = builder.amMemory;
@@ -735,6 +763,8 @@ public class YarnRunner {
     private int parallelism;
     private YarnClusterDescriptor flinkCluster;
     private String appJarPath;
+    //TensorFlow client
+    private Client tfClient;
     //Optional attributes
     // Queue for App master
     private String amQueue = "default"; //TODO(Theofilos): enable changing this, or infer from user data
@@ -877,6 +907,10 @@ public class YarnRunner {
       this.flinkCluster = flinkCluster;
     }
 
+    public void setTfClient(Client tfClient) {
+      this.tfClient = tfClient;
+    }
+    
     public void setAppJarPath(String path) {
       this.appJarPath = path;
     }

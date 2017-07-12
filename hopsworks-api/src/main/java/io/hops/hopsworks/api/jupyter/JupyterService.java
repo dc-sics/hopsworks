@@ -27,16 +27,21 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.util.Ip;
+import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.GenericEntity;
+import org.apache.commons.codec.digest.DigestUtils;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -44,6 +49,8 @@ public class JupyterService {
 
   private final static Logger LOGGER = Logger.getLogger(JupyterService.class.
           getName());
+  private static final Logger logger = Logger.getLogger(
+          JupyterService.class.getName());
 
   @EJB
   private ProjectFacade projectFacade;
@@ -61,6 +68,8 @@ public class JupyterService {
   private HdfsUsersController hdfsUsersController;
   @EJB
   private HdfsUsersFacade hdfsUsersFacade;
+  @EJB
+  private Settings settings;
 
   private Integer projectId;
   private Project project;
@@ -118,18 +127,40 @@ public class JupyterService {
   @Path("/running")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response isMyNotebookServerRunning(@Context SecurityContext sc,
+  public Response isRunning(@Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
 
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");
     }
-    JupyterProject jp = jupyterFacade.findByUser(getHdfsUser(sc));
+    String hdfsUser = getHdfsUser(sc);
+    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
     if (jp == null) {
       throw new AppException(
               Response.Status.NOT_FOUND.getStatusCode(),
               "Could not find any Jupyter notebook server for this project.");
+    }
+    if (jp != null) {
+      // Check to make sure the jupyter notebook server is running
+      boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
+      // if the notebook is not running but we have a database entry for it,
+      // we should remove the DB entry (and restart the notebook server).
+      if (!running) {
+        jupyterFacade.removeNotebookServer(hdfsUser);
+        throw new AppException(
+                Response.Status.NOT_FOUND.getStatusCode(),
+                "Found Jupyter notebook server for you, but it wasn't running.");
+      }
+      String externalIp = Ip.getHost(req.getRequestURL().toString());
+      settings.setHopsworksExternalIp(externalIp);
+      Integer port = req.getLocalPort();
+      String endpoint = externalIp + ":" + port;
+      if (endpoint.compareToIgnoreCase(jp.getHostIp()) != 0) {
+        // update the host_ip to whatever the client saw as the remote host:port
+        jp.setHostIp(endpoint);
+        jupyterFacade.update(jp);
+      }
     }
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
@@ -155,13 +186,25 @@ public class JupyterService {
               Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
               "Could not find your username. Report a bug.");
     }
+
+    boolean enabled = project.getConda();
+    if (!enabled) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "First enable Anaconda. Click on 'Settings -> Python'");
+    }
+
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+
     if (jp == null) {
       HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
 
+      String secret = DigestUtils.sha256Hex(Integer.toString(
+              ThreadLocalRandom.current().nextInt()));
       JupyterDTO dto;
       try {
-        dto = jupyterConfigFactory.startServer(project, hdfsUser,
+
+        dto = jupyterConfigFactory.startServerAsJupyterUser(project, secret,
+                hdfsUser,
                 jupyterConfig.getDriverCores(), jupyterConfig.getDriverMemory(),
                 jupyterConfig.getNumExecutors(),
                 jupyterConfig.getExecutorCores(), jupyterConfig.
@@ -181,14 +224,19 @@ public class JupyterService {
                 "Incomplete request!");
       }
 
-      jp = jupyterFacade.saveServer(project, dto.getPort(), user.getId(), dto.
-              getToken(), dto.getPid(), dto.getDriverCores(), dto.
-              getDriverMemory(), dto.getNumExecutors(), dto.getExecutorCores(),
-              dto.getExecutorMemory(), dto.getGpus(), dto.getArchives(), dto.
-              getJars(), dto.getFiles(), dto.getPyFiles());
+      String externalIp = Ip.getHost(req.getRequestURL().toString());
+
+      jp = jupyterFacade.
+              saveServer(externalIp, project, secret, dto.getPort(), user.
+                      getId(), dto.getToken(), dto.getPid(),
+                      dto.getDriverCores(), dto.getDriverMemory(),
+                      dto.getNumExecutors(), dto.getExecutorCores(),
+                      dto.getExecutorMemory(), dto.getGpus(), dto.getArchives(),
+                      dto.getJars(), dto.getFiles(), dto.getPyFiles());
 
       if (jp == null) {
-        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                getStatusCode(),
                 "Could not save Jupyter Settings.");
       }
     }
@@ -196,42 +244,58 @@ public class JupyterService {
             jp).build();
   }
 
-  @DELETE
+  @GET
+  @Path("/stopAll")
+  @Produces(MediaType.APPLICATION_JSON)
+  @RolesAllowed({"HOPS_ADMIN"})
+  public Response stopAll(@Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+
+    jupyterConfigFactory.stopProject(project);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  @GET
+  @Path("/stopDataOwner")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response stopDataOwner(@PathParam("hdfsUsername") String hdfsUsername,
+          @Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+    stop(hdfsUsername);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  @GET
   @Path("/stop")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response stopNotebookServer(@Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
+    String hdfsUsername = getHdfsUser(sc);
+    stop(hdfsUsername);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  private void stop(String hdfsUser) throws AppException {
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");
     }
-
-    String hdfsUser = getHdfsUser(sc);
-    if (!jupyterConfigFactory.stopServer(hdfsUser)) {
-      try {
-        // The server may have been restarted and the caches are empty.
-        // We need to stop the jupyter notebook server with the PID
-        // If we can't stop the server, delete the Entity bean anyway
-        JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
-        if (jp == null) {
-          throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-                  "No Jupyter Notebook server to stop");
-        }
-        Long pid = jp.getPid();
-        ProcessBuilder ps = new ProcessBuilder("kill", pid.toString());
-        Process pr = ps.start();
-        pr.waitFor();
-      } catch (IOException ex) {
-        Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
-                ex);
-      } catch (InterruptedException ex) {
-        Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
-                ex);
-      }
+    // We need to stop the jupyter notebook server with the PID
+    // If we can't stop the server, delete the Entity bean anyway
+    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+    if (jp == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              "Could not find Jupyter entry for user: " + hdfsUser);
     }
+    String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
+
+    // stop the server, remove the user in this project's local dirs
+    jupyterConfigFactory.killServerJupyterUser(projectPath, jp.getPid(), jp.
+            getPort());
+    // remove the reference to th e server in the DB.
     jupyterFacade.removeNotebookServer(hdfsUser);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
   private String getHdfsUser(SecurityContext sc) throws AppException {

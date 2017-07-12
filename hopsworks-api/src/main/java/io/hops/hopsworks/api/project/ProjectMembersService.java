@@ -152,7 +152,7 @@ public class ProjectMembersService {
   @DELETE
   @Path("/{email}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response removeMembersByID(
           @PathParam("email") String email,
           @Context SecurityContext sc,
@@ -175,7 +175,7 @@ public class ProjectMembersService {
               ResponseMessages.PROJECT_OWNER_NOT_ALLOWED);
     }
     try {
-      projectController.deleteMemberFromTeam(project, owner, email);
+      projectController.removeMemberFromTeam(project, owner, email);      
     } catch (IOException ex) {
       //FIXME: take an action?
       logger.log(Level.WARNING,

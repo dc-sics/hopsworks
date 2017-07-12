@@ -111,8 +111,8 @@ public class UsersController {
     a.setAddress1("-");
     a.setAddress2("-");
     a.setAddress3("-");
-    a.setCity("-");
-    a.setCountry("-");
+    a.setCity("Stockholm");
+    a.setCountry("SE");
     a.setPostalcode("-");
     a.setState("-");
     user.setAddress(a);
@@ -128,14 +128,16 @@ public class UsersController {
     org.setPhone("-");
 
     user.setOrganization(org);
-
+    //to privent sending email for test user emails
     try {
-      // Notify user about the request
-      emailBean.sendEmail(newUser.getEmail(), RecipientType.TO,
-              UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
-              UserAccountsEmailMessages.buildMobileRequestMessage(
-                      AuditUtil.getUserURL(req), user.getUsername()
-                      + activationKey));
+      if (!newUser.isTestUser()) {
+        // Notify user about the request if not test user.
+        emailBean.sendEmail(newUser.getEmail(), RecipientType.TO,
+                UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
+                UserAccountsEmailMessages.buildMobileRequestMessage(
+                        AuditUtil.getUserURL(req), user.getUsername()
+                        + activationKey));
+      }
       // Only register the user if i can send the email
       userBean.persist(user);
       qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),

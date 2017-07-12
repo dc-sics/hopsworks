@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
@@ -53,7 +52,6 @@ import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
 import io.hops.hopsworks.common.dao.user.consent.ConsentStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
-import io.hops.hopsworks.common.dao.user.sshkey.SshkeysFacade;
 import io.hops.hopsworks.common.dataset.DatasetController;
 import io.hops.hopsworks.common.dataset.FolderNameValidator;
 import io.hops.hopsworks.common.elastic.ElasticController;
@@ -65,12 +63,12 @@ import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.LocalhostServices;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -83,6 +81,7 @@ import javax.ejb.TransactionAttributeType;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.validation.ValidationException;
+import javax.ws.rs.client.ClientBuilder;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
@@ -91,8 +90,6 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.json.JSONObject;
-
-
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -121,8 +118,6 @@ public class ProjectController {
   @EJB
   private DatasetFacade datasetFacade;
   @EJB
-  private SshkeysFacade sshKeysBean;
-  @EJB
   private HdfsUsersController hdfsUsersBean;
   @EJB
   private Settings settings;
@@ -137,7 +132,7 @@ public class ProjectController {
   @EJB
   private PythonDepsFacade pythonDepsFacade;
   @EJB
-  private JupyterConfigFactory jupyterFactory;
+  private JupyterConfigFactory jupyterConfigFactory;
   @EJB
   private JobDescriptionFacade jobFacade;
   @EJB
@@ -162,12 +157,13 @@ public class ProjectController {
    * @param projectDTO
    * @param owner
    * @param failedMembers
+   * @param sessionId
    * @return
    * @throws IllegalArgumentException if the project name already exists.
    * @throws io.hops.hopsworks.common.exception.AppException
    */
   public Project createProject(ProjectDTO projectDTO, Users owner,
-          List<String> failedMembers) throws AppException {
+          List<String> failedMembers, String sessionId) throws AppException {
 
     //check that the project name is ok
     String projectName = projectDTO.getProjectName();
@@ -222,20 +218,20 @@ public class ProjectController {
       } catch (Exception ex) {
         LOGGER.log(Level.SEVERE, null, ex);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                getStatusCode(), "An error occurend when creating the project");
+                getStatusCode(), "An error occured when creating the project");
       }
 
-      verifyProject(project, dfso);
+      verifyProject(project, dfso, sessionId);
 
       String username = hdfsUsersBean.getHdfsUserName(project, owner);
       if (username == null || username.isEmpty()) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "wrong user name");
       }
       udfso = dfs.getDfsOps(username);
       if (udfso == null) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "error geting access to the file system");
       }
@@ -246,12 +242,12 @@ public class ProjectController {
       try {
         projectPath = mkProjectDIR(projectName, dfso);
       } catch (IOException | EJBException ex) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "problem creating project folder");
       }
       if (projectPath == null) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "problem creating project folder");
       }
@@ -259,13 +255,14 @@ public class ProjectController {
       try {
         setProjectInode(project, dfso);
       } catch (AppException | EJBException ex) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw ex;
       } catch (IOException ex) {
-        cleanup(project);
-        LOGGER.log(Level.SEVERE, null, ex);
+        cleanup(project, sessionId);
+        LOGGER.log(Level.SEVERE, "An error occured when creating the project: "
+                + ex.getMessage(), ex);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                getStatusCode(), "An error occurend when creating the project");
+                getStatusCode(), "An error occured when creating the project");
       }
 
       //set payment and quotas
@@ -275,7 +272,7 @@ public class ProjectController {
                 dfso, owner);
 
       } catch (IOException | EJBException ex) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(), "could not set folder quota");
       }
@@ -284,12 +281,11 @@ public class ProjectController {
         //create certificate for this user
         createCertificates(project, owner);
       } catch (IOException | EJBException ex) {
-        Logger.getLogger(ProjectController.class.getName()).log(Level.SEVERE,
-                null,
-                ex);
-        cleanup(project);
+        LOGGER.log(Level.SEVERE, "Error while creating certificates: " + ex.
+                getMessage(), ex);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                getStatusCode(), "error while creating certificats");
+                getStatusCode(), "Error while creating certificates");
       }
 
       //add the services for the project
@@ -299,13 +295,13 @@ public class ProjectController {
         hdfsUsersBean.addProjectFolderOwner(project, dfso);
         createProjectLogResources(owner, project, dfso, udfso);
       } catch (IOException | EJBException ex) {
-        Logger.getLogger(ProjectController.class.getName()).log(Level.SEVERE,
-                null, ex);
-        cleanup(project);
+        LOGGER.log(Level.SEVERE, "Error while creating project sub folders: "
+                + ex.getMessage(), ex);
+        cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                getStatusCode(), "error while creating project sub folders");
+                getStatusCode(), "Error while creating project sub folders");
       } catch (AppException ex) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw ex;
       }
 
@@ -314,7 +310,7 @@ public class ProjectController {
         failedMembers = addMembers(project, owner.getEmail(), projectDTO.
                 getProjectTeam());
       } catch (AppException | EJBException ex) {
-        cleanup(project);
+        cleanup(project, sessionId);
         throw ex;
       }
 
@@ -322,7 +318,7 @@ public class ProjectController {
       try {
         addElasticsearch(project.getName());
       } catch (IOException ex) {
-        cleanup(project);
+        cleanup(project, sessionId);
       }
       return project;
 
@@ -338,7 +334,8 @@ public class ProjectController {
   }
 
   @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-  private void verifyProject(Project project, DistributedFileSystemOps dfso)
+  private void verifyProject(Project project, DistributedFileSystemOps dfso,
+          String sessionId)
           throws AppException {
     //proceed to all the verrifications and set up local variable    
     //  verify that the project folder does not exist
@@ -347,22 +344,53 @@ public class ProjectController {
     //  verify that There is no logs folders corresponding to this project name
     //  verify that There is no certificates corresponding to this project name in the certificate generator
     try {
-      if (existingProjectFolder(project) || !noExistingUser(project.getName())
-              || !noExistingGroup(project.getName())
-              || !verifyQuota(project.getName()) || !verifyLogs(dfso, project.
-              getName())
-              || !noExistingCertificates(project.getName())) {
+      if (existingProjectFolder(project)) {
         LOGGER.log(Level.WARNING,
-                "some elements of project {0} already exist in the system "
-                + "Possible inconsistency!",
-                project.getName());
-        cleanup(project);
+            "a folder with name corresponding to project {0} already exists in the system "
+            + "Possible inconsistency!", project.getName());
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                getStatusCode(),
-                "some elements of project already exist in the system");
+            getStatusCode(), "a Project folder with name corresponding to this project already exists in the system "
+            + "Possible inconsistency! Please contact the admin");
+      } else if (!noExistingUser(project.getName())) {
+        LOGGER.log(Level.WARNING,
+            "a user with name corresponding to this project already exists in the system "
+            + "Possible inconsistency!", project.getName());
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+            getStatusCode(), "a user with name corresponding to this project already exists in the system "
+            + "Possible inconsistency! Please contact the admin");
+      } else if (!noExistingGroup(project.getName())) {
+        LOGGER.log(Level.WARNING,
+            "a group with name corresponding to project {0} already exists in the system "
+            + "Possible inconsistency! Please contact the admin", project.getName());
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+            getStatusCode(), "a group with name corresponding to this project already exists in the system "
+            + "Possible inconsistency! Please contact the admin");
+      } else if (!noExistingCertificates(project.getName())) {
+        LOGGER.log(Level.WARNING,
+            "Certificates corresponding to project {0} already exist in the system "
+            + "Possible inconsistency!", project.getName());
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+            getStatusCode(), "Certificates corresponding to this project already exist in the system "
+            + "Possible inconsistency! Please contact the admin");
+      } else if (!verifyQuota(project.getName())) {
+        LOGGER.log(Level.WARNING,
+            "Quotas corresponding to this project already exist in the system "
+            + "Possible inconsistency! Retry.", project.getName());
+        cleanup(project, sessionId);
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+            getStatusCode(), "Quotas corresponding to this project already exist in the system "
+            + "Possible inconsistency!");
+      } else if (!verifyLogs(dfso, project.getName())) {
+        LOGGER.log(Level.WARNING,
+            "Logs corresponding to this project already exist in the system "
+            + "Possible inconsistency!", project.getName());
+        cleanup(project, sessionId);
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+            getStatusCode(), "Logs corresponding to this project already exist in the system "
+            + "Possible inconsistency! Retry");
       }
     } catch (IOException | EJBException ex) {
-      cleanup(project);
+      cleanup(project, sessionId);
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
               getStatusCode(), "error while running verifications");
     }
@@ -438,7 +466,12 @@ public class ProjectController {
           IOException {
     LocalhostServices.
             createUserCertificates(settings.getIntermediateCaDir(), project.
-                    getName(), owner.getUsername());
+                    getName(), owner.getUsername(),
+                    owner.getAddress().getCountry(),
+                    owner.getAddress().getCity(),
+                    owner.getOrganization().getOrgName(),
+                    owner.getEmail(),
+                    owner.getOrcid());
     userCertsFacade.putUserCerts(project.getName(), owner.getUsername());
   }
 
@@ -599,9 +632,11 @@ public class ProjectController {
           DistributedFileSystemOps dfso, DistributedFileSystemOps udfso) throws
           ProjectInternalFoldersFailedException, AppException {
     try {
-      udfso.copyInHdfs(new Path(settings.getSparkLog4JPath()), new Path("/Projects/" + project.getName()
+      udfso.copyInHdfs(new Path(settings.getSparkLog4JPath()), new Path(
+              "/Projects/" + project.getName()
               + "/" + Settings.DefaultDataset.RESOURCES));
-      udfso.copyInHdfs(new Path(settings.getSparkMetricsPath()), new Path("/Projects/" + project.getName()
+      udfso.copyInHdfs(new Path(settings.getSparkMetricsPath()), new Path(
+              "/Projects/" + project.getName()
               + "/" + Settings.DefaultDataset.RESOURCES));
     } catch (IOException e) {
       throw new ProjectInternalFoldersFailedException(
@@ -704,10 +739,10 @@ public class ProjectController {
   private String mkProjectDIR(String projectName, DistributedFileSystemOps dfso)
           throws IOException {
 
-    String rootDir = settings.DIR_ROOT;
+    String rootDir = Settings.DIR_ROOT;
 
-    boolean rootDirCreated = false;
-    boolean projectDirCreated = false;
+    boolean rootDirCreated;
+    boolean projectDirCreated;
 
     if (!dfso.isDir(File.separator + rootDir)) {
       /*
@@ -744,9 +779,11 @@ public class ProjectController {
    *
    * @param userMail
    * @param projectId
+   * @param sessionId
    * @throws AppException if the project could not be found.
    */
-  public void removeProject(String userMail, int projectId) throws AppException {
+  public void removeProject(String userMail, int projectId, String sessionId)
+          throws AppException {
 
     Project project = projectFacade.find(projectId);
     if (project == null) {
@@ -760,10 +797,10 @@ public class ProjectController {
               ResponseMessages.PROJECT_REMOVAL_NOT_ALLOWED);
     }
 
-    cleanup(project);
+    cleanup(project, sessionId);
   }
 
-  public void cleanup(Project project) throws AppException {
+  public void cleanup(Project project, String sessionId) throws AppException {
     if (project == null) {
       return;
     }
@@ -771,6 +808,47 @@ public class ProjectController {
     while (nbTry < 3) {
       nbTry++;
       try {
+        //Restart zeppelin so interpreters shut down
+        Response resp = ClientBuilder.newClient()
+                .target(settings.getRestEndpoint()
+                        + "/hopsworks-api/api/zeppelin/" + project.getId()
+                        + "/interpreter/check")
+                .request()
+                .cookie("SESSION", sessionId)
+                .method("GET");
+        LOGGER.log(Level.FINE, "Zeppelin check resp:" + resp.getStatus());
+        if (resp.getStatus() == 200) {
+          resp = ClientBuilder.newClient()
+                  .target(settings.getRestEndpoint()
+                          + "/hopsworks-api/api/zeppelin/" + project.getId()
+                          + "/interpreter/restart")
+                  .request()
+                  .cookie("SESSION", sessionId)
+                  .method("GET");
+          LOGGER.log(Level.FINE, "Zeppelin restart resp:" + resp.getStatus());
+          if (resp.getStatus() != 200) {
+            throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                    getStatusCode(),
+                    "Could not close zeppelin interpreters, please wait 60 seconds to retry");
+          }
+        }
+
+        // try and close all the jupyter jobs
+        jupyterConfigFactory.stopProject(project);        
+//        Response jupyterResp = ClientBuilder.newClient()
+//                .target(settings.getRestEndpoint()
+//                        + "/hopsworks-api/api/project/" + project.getId()
+//                        + "/jupyter/stopAll")
+//                .request()
+//                .cookie("SESSION", sessionId)
+//                .method("GET");
+//        LOGGER.log(Level.FINE, "Jupyter check resp:" + resp.getStatus());
+//        if (jupyterResp.getStatus() != 200) {
+//          throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+//                  getStatusCode(),
+//                  "Could not close Jupyter , please wait 60 seconds to retry");
+//        }
+
         //remove from project_team so that nobody can see the project anymore
         updateProjectTeamRole(project, ProjectRoleTypes.UNDER_REMOVAL);
 
@@ -781,7 +859,8 @@ public class ProjectController {
           for (JobDescription job : running) {
             //Get the appId of the running app
             List<Execution> jobExecs = execFacade.findForJob(job);
-            //Sort descending based on jobId
+            //Sort descending based on jobId because therie might be two 
+            // jobs with the same name and we want the latest
             Collections.sort(jobExecs, new Comparator<Execution>() {
               @Override
               public int compare(Execution lhs, Execution rhs) {
@@ -789,28 +868,30 @@ public class ProjectController {
                         getId()) ? 1 : 0;
               }
             });
-            rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill "
-                    + jobExecs.get(0).getAppId());
+            try {
+              rt.exec(settings.getHadoopDir() + "/bin/yarn application -kill "
+                      + jobExecs.get(0).getAppId());
+            } catch (IOException ex) {
+              Logger.getLogger(ProjectController.class.getName()).
+                      log(Level.SEVERE, null, ex);
+            }
           }
         }
 
         List<HdfsUsers> usersToClean = getUsersToClean(project);
-
         List<HdfsGroups> groupsToClean = getGroupsToClean(project);
-
         removeProjectInt(project, usersToClean, groupsToClean);
-
+        return;
       } catch (Exception ex) {
         if (nbTry < 3) {
           try {
             Thread.sleep(nbTry * 1000);
           } catch (InterruptedException ex1) {
-            Logger.getLogger(ProjectController.class.getName()).
-                    log(Level.SEVERE, null, ex1);
+            LOGGER.log(Level.SEVERE, null, ex1);
           }
         } else {
           throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-                  getStatusCode(), "error while removing project");
+                  getStatusCode(), ex.getMessage());
         }
       }
     }
@@ -830,12 +911,14 @@ public class ProjectController {
               + project.getName();
       Path location = new Path(path);
       if (dfso.exists(path)) {
-        dfso.setOwner(location, settings.getHdfsSuperUser(), settings.getHdfsSuperUser());
+        dfso.setOwner(location, settings.getHdfsSuperUser(), settings.
+                getHdfsSuperUser());
       }
 
       Path dumy = new Path("/tmp/" + project.getName());
       if (dfso.exists(dumy.toString())) {
-        dfso.setOwner(dumy, settings.getHdfsSuperUser(), settings.getHdfsSuperUser());
+        dfso.setOwner(dumy, settings.getHdfsSuperUser(), settings.
+                getHdfsSuperUser());
       }
 
       //remove kafka topics
@@ -863,7 +946,8 @@ public class ProjectController {
         }
 
         //Clean up tmp certificates dir from hdfs
-        String tmpCertsDir = settings.getHdfsTmpCertDir() + "/" + hdfsUser.getName();
+        String tmpCertsDir = settings.getHdfsTmpCertDir() + "/" + hdfsUser.
+                getName();
         if (dfso.exists(tmpCertsDir)) {
           dfso.rm(new Path(tmpCertsDir), true);
         }
@@ -905,7 +989,8 @@ public class ProjectController {
     }
   }
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+  @TransactionAttribute(
+          TransactionAttributeType.REQUIRES_NEW)
   private List<ProjectTeam> updateProjectTeamRole(Project project,
           ProjectRoleTypes teamRole) {
     return projectTeamFacade.updateTeamRole(project, teamRole);
@@ -936,7 +1021,8 @@ public class ProjectController {
     yarnProjectsQuotaFacade.remove(yarnProjectsQuota);
   }
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+  @TransactionAttribute(
+          TransactionAttributeType.REQUIRES_NEW)
   private void fixSharedDatasets(Project project, DistributedFileSystemOps dfso)
           throws IOException {
     List<Dataset> sharedDataSets = datasetFacade.findSharedWithProject(project);
@@ -954,7 +1040,8 @@ public class ProjectController {
     }
   }
 
-  @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+  @TransactionAttribute(
+          TransactionAttributeType.REQUIRES_NEW)
   private void removeGroupAndUsers(List<HdfsGroups> groups,
           List<HdfsUsers> users) throws IOException {
     hdfsUsersBean.deleteGroups(groups);
@@ -980,6 +1067,7 @@ public class ProjectController {
    * @param projectTeams
    * @return a list of user names that could not be added to the project team
    * list.
+   * @throws io.hops.hopsworks.common.exception.AppException
    */
   @TransactionAttribute(
           TransactionAttributeType.NEVER)
@@ -1024,7 +1112,12 @@ public class ProjectController {
             try {
               LocalhostServices.createUserCertificates(settings.
                       getIntermediateCaDir(),
-                      project.getName(), newMember.getUsername());
+                      project.getName(), newMember.getUsername(),
+                      newMember.getAddress().getCountry(),
+                      newMember.getAddress().getCity(),
+                      newMember.getOrganization().getOrgName(),
+                      newMember.getEmail(),
+                      newMember.getOrcid());
               userCertsFacade.putUserCerts(project.getName(), newMember.
                       getUsername());
             } catch (IOException ex) {
@@ -1034,8 +1127,7 @@ public class ProjectController {
                 hdfsUsersBean.
                         removeProjectMember(projectTeam.getUser(), project);
               } catch (IOException ex1) {
-                Logger.getLogger(ProjectController.class.getName()).
-                        log(Level.SEVERE, null, ex1);
+                LOGGER.log(Level.SEVERE, null, ex1);
                 throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                         getStatusCode(), "error while creating a user");
               }
@@ -1259,7 +1351,7 @@ public class ProjectController {
    * @param toRemoveEmail
    * @throws AppException
    */
-  public void deleteMemberFromTeam(Project project, String email,
+  public void removeMemberFromTeam(Project project, String email,
           String toRemoveEmail) throws AppException, IOException {
     Users userToBeRemoved = userBean.getUserByEmail(toRemoveEmail);
     if (userToBeRemoved == null) {
@@ -1439,8 +1531,8 @@ public class ProjectController {
 
     Users user = userBean.getUserByEmail(username);
     try {
-      datasetController.createDataset(user, project, "TestJob",
-              "jar files for guide projects", -1, false, true, dfso, udfso);
+      datasetController.createDataset(user, project, Settings.HOPS_TOUR_DATASET,
+          "jar files for guide projects", -1, false, true, dfso, udfso);
     } catch (IOException ex) {
       LOGGER.log(Level.SEVERE, null, ex);
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
@@ -1464,9 +1556,14 @@ public class ProjectController {
                   "More than one spark-examples*.jar found in {0}.", dir.
                   getAbsolutePath());
         }
-        udfso.copyToHDFSFromLocal(false, file[0].getAbsolutePath(),
-                File.separator + Settings.DIR_ROOT + File.separator + project.
-                getName() + "/TestJob/spark-examples.jar");
+        String hdfsJarPath = "/" + Settings.DIR_ROOT + "/" + project.getName() +  "/"+  Settings.HOPS_TOUR_DATASET + 
+            "/spark-examples.jar";
+        udfso.copyToHDFSFromLocal(false, file[0].getAbsolutePath(), hdfsJarPath);
+        String datsetGroup = hdfsUsersBean.getHdfsGroupName(project, Settings.HOPS_TOUR_DATASET);
+        String userHdfsName = hdfsUsersBean.getHdfsUserName(project, user);
+        udfso.setPermission(new Path(hdfsJarPath), udfso.getParentPermission(new Path(hdfsJarPath)));
+        udfso.setOwner(new Path("/" + Settings.DIR_ROOT + "/" + project.getName() +  "/"+ 
+            Settings.HOPS_TOUR_DATASET + "/spark-examples.jar"), userHdfsName, datsetGroup);
 
       } catch (IOException ex) {
         LOGGER.log(Level.SEVERE, null, ex);
@@ -1476,11 +1573,17 @@ public class ProjectController {
       }
     } else if (TourProjectType.KAFKA.equals(projectType)) {
       // Get the JAR from /user/<super user>
-      String kafkaExampleSrc = "/user/" + settings.getHdfsSuperUser() + "/" + Settings.HOPS_KAFKA_TOUR_JAR;
+      String kafkaExampleSrc = "/user/" + settings.getHdfsSuperUser() + "/"
+              + Settings.HOPS_KAFKA_TOUR_JAR;
       String kafkaExampleDst = "/" + Settings.DIR_ROOT + "/" + project.getName()
-              + "/TestJob/" + Settings.HOPS_KAFKA_TOUR_JAR;
+          + "/" + Settings.HOPS_TOUR_DATASET + "/" + Settings.HOPS_KAFKA_TOUR_JAR;
       try {
         udfso.copyInHdfs(new Path(kafkaExampleSrc), new Path(kafkaExampleDst));
+        String datsetGroup = hdfsUsersBean.getHdfsGroupName(project, Settings.HOPS_TOUR_DATASET);
+        String userHdfsName = hdfsUsersBean.getHdfsUserName(project, user);
+        udfso.setPermission(new Path(kafkaExampleDst), udfso.getParentPermission(new Path(kafkaExampleDst)));     
+        udfso.setOwner(new Path(kafkaExampleDst), userHdfsName, datsetGroup);
+        
       } catch (IOException ex) {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(),
@@ -1504,7 +1607,8 @@ public class ProjectController {
     operationsLogFacade.persist(new OperationsLog(project, type));
   }
 
-  @TransactionAttribute(TransactionAttributeType.NEVER)
+  @TransactionAttribute(
+          TransactionAttributeType.NEVER)
   public void createAnacondaEnv(Project project) throws AppException {
     pythonDepsFacade.getPreInstalledLibs(project);
 
@@ -1517,7 +1621,7 @@ public class ProjectController {
 
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public void removeJupypter(Project project) throws AppException {
-    jupyterFactory.removeProject(project);
+    jupyterConfigFactory.removeProject(project);
   }
 
   @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -1543,8 +1647,9 @@ public class ProjectController {
     params.put("data", "{\"template\":\"" + project
             + "\",\"mappings\":{\"logs\":{\"properties\":{\"application\":"
             + "{\"type\":\"string\",\"index\":\"not_analyzed\"},\"host"
-            + "\":{\"type\":\"string\",\"index\":\"not_analyzed\"},\""
-            + "jobname\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
+            + "\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
+            + "\"jobname\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
+            + "\"file\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
             + "\"timestamp\":{\"type\":\"date\",\"index\":\"not_analyzed\"},"
             + "\"project\":{\"type\":\"string\",\"index\":\"not_analyzed\"}},\n"
             + "\"_ttl\": {\n" + "\"enabled\": true,\n" + "\"default\": \""
@@ -1573,7 +1678,7 @@ public class ProjectController {
             + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
             + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"file\\\","
             + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-            + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
+            + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":false,"
             + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"@version\\\","
             + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
             + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
@@ -1712,9 +1817,9 @@ public class ProjectController {
       conn.disconnect();
       return new JSONObject(outputBuilder.toString());
 
-    } catch (FileNotFoundException ex) {
-      LOGGER.log(Level.WARNING, "Elasticsearch resource " + params.get(
-              "resource") + " was not found");
+//    } catch (FileNotFoundException ex) {
+//      LOGGER.log(Level.WARNING, "Elasticsearch resource " + params.get(
+//              "resource") + " was not found");
     } catch (IOException ex) {
       if (ex.getMessage().contains("kibana")) {
         LOGGER.log(Level.WARNING, "error", ex);

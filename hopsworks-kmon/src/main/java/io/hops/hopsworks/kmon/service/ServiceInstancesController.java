@@ -37,6 +37,9 @@ public class ServiceInstancesController {
   private List<InstanceInfo> filteredInstances;
   private static final Logger logger = Logger.getLogger(
           ServiceInstancesController.class.getName());
+  private enum servicesWithMetrics {
+    HDFS, YARN
+  };
 //   private CookieTools cookie = new CookieTools();
 
   static {
@@ -64,6 +67,15 @@ public class ServiceInstancesController {
     this.service = service;
   }
 
+  public boolean getServiceWithMetrics() {
+    try{
+      servicesWithMetrics.valueOf(service);
+      return true;
+    }catch(IllegalArgumentException ex){
+      return false;
+    }
+  }
+  
   public void setCluster(String cluster) {
     this.cluster = cluster;
   }
@@ -145,5 +157,29 @@ public class ServiceInstancesController {
               r.getRole().getHostId(), r.getStatus(), r.getHealth().toString()));
     }
     return instances;
+  }
+  
+  public boolean disableStart() {
+    List<InstanceInfo> instances = getInstances();
+    if (!instances.isEmpty()) {
+      for (InstanceInfo instance : instances) {
+        if (instance.getStatus() == Status.Stopped) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  public boolean disableStop() {
+    List<InstanceInfo> instances = getInstances();
+    if (!instances.isEmpty()) {
+      for (InstanceInfo instance : instances) {
+        if (instance.getStatus() == Status.Started) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 }

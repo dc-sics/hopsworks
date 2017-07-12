@@ -265,7 +265,11 @@ public class NotebookServer implements
         }
       }
 
+<<<<<<< HEAD
       AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal,messagereceived.ticket);
+=======
+      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal, messagereceived.ticket);
+>>>>>>> ba04519393b5881c844c79fbba701bd433d64621
       /**
        * Lets be elegant here
        */
@@ -546,7 +550,7 @@ public class NotebookServer implements
       if (socketLists == null || socketLists.isEmpty()) {
         return;
       }
-      LOG.log(Level.INFO, "SEND >> {0}", m.op);
+      LOG.log(Level.FINE, "SEND >> {0}", m.op);
       for (Session conn : socketLists) {
         try {
           if (conn.isOpen()) {
@@ -566,7 +570,7 @@ public class NotebookServer implements
       if (socketLists == null || socketLists.isEmpty()) {
         return;
       }
-      LOG.log(Level.INFO, "SEND >> {0}", m.op);
+      LOG.log(Level.FINE, "SEND >> {0}", m.op);
       for (Session conn : socketLists) {
         if (exclude.equals(conn)) {
           continue;

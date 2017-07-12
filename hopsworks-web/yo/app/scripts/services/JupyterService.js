@@ -6,11 +6,8 @@ angular.module('hopsWorksApp')
               getAll: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/jupyter');
               },
-              get: function (projectId) {
+              running: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/jupyter/running' );
-              },
-              delete: function (projectId) {
-                return $http.delete('/api/project/' + projectId + '/jupyter/stop');
               },
               start: function (projectId, sparkConfig) {
                 var req = {
@@ -22,11 +19,15 @@ angular.module('hopsWorksApp')
                   data: sparkConfig
                 };
                 return $http(req);
-                
-//                return $http.get('/api/project/' + projectId + '/jupyter/start' );
+              },
+              stopAdmin: function (projectId, hdfsUsername) {
+                return $http.get('/api/project/' + projectId + '/jupyter/stopAdmin/' + hdfsUsername );
+              },
+              stopDataOwner: function (projectId, hdfsUsername) {
+                return $http.get('/api/project/' + projectId + '/jupyter/stopDataOwner/' + hdfsUsername );
               },
               stop: function (projectId) {
-                return $http.delete('/api/project/' + projectId + '/jupyter/stop' );
+                return $http.get('/api/project/' + projectId + '/jupyter/stop' );
               }              
             };
           }]);
