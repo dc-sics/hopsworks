@@ -46,6 +46,9 @@ public class AirpalProxyServlet extends ProxyServlet {
   static String projectID = null;
   String projid = null;
   List<String> projidlist = new ArrayList<String>();
+  JSONArray resultArray = new JSONArray();
+  BasicHttpEntity basic = new BasicHttpEntity();
+
   @EJB
   private ProjectFacade projectFacade;
   @EJB
@@ -84,6 +87,7 @@ public class AirpalProxyServlet extends ProxyServlet {
     boolean x = false;
     if (servletRequest.getRequestURI().contains(
       "/api/table")) {
+      
       airpalFilter = airpalFilter.Airpal_Table;
       x = true;
     }
@@ -106,7 +110,7 @@ public class AirpalProxyServlet extends ProxyServlet {
       if (servletRequest.getAttribute(ATTR_TARGET_HOST) == null) {
         servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
       }
-
+      String referrer = servletRequest.getHeader("referer");
       // Make the Request
       //note: we won't transfer the protocol version because I'm not sure it would truly be compatible
       String method = servletRequest.getMethod();
@@ -137,6 +141,7 @@ public class AirpalProxyServlet extends ProxyServlet {
           log("proxy " + method + " uri: " + servletRequest.getRequestURI()
             + " -- " + proxyRequest.getRequestLine().getUri());
         }
+
         proxyResponse = super.proxyClient.execute(super.getTargetHost(
           myRequestWrapper), proxyRequest);
 
@@ -159,7 +164,7 @@ public class AirpalProxyServlet extends ProxyServlet {
           getReasonPhrase());
 
         copyResponseHeaders(proxyResponse, servletRequest, servletResponse);
-
+        logger.info("proxyResponse statuscode ==============" + statusCode);
         // Send the content to the client
         copyResponseEntity(proxyResponse, servletResponse, projid, email1, airpalFilter);
 
@@ -209,17 +214,16 @@ public class AirpalProxyServlet extends ProxyServlet {
     } else {
       switch (airpalFilter) {
         case Airpal_Table:
-//          logger.info("inside AIrpal filtee  second swtch stmt==============");
-          logger.info("inside AIrpal filtee  second swtch stmt==============" + projectID + email);
+
           HttpEntity entity = proxyResponse.getEntity();
-          logger.info("entity ==============+" + entity);
+          
           if (entity != null) {
-            logger.info("entity inside ==============+" + entity);
+           
             GzipDecompressingEntity gzipEntity = new GzipDecompressingEntity(
               entity);
-            logger.info("above   response ==============+");
+            
             String resp = EntityUtils.toString(gzipEntity);
-            logger.info("response ==============+" + resp);
+           
             //list of project names
             List<String> projects = projectController.findProjectNamesByUser(
               email, true);
@@ -229,50 +233,20 @@ public class AirpalProxyServlet extends ProxyServlet {
               logger.info("response ==============" + projArray[i]);
               Project project = projectFacade.findByName(projArray[i]);
               String id = project.getId().toString();
-              projidlist.add(id);
-            }
-            String[] projidArray = projidlist.toArray(new String[0]);
-            logger.info("projects ==============+" + projects);
-            logger.info("projidlist ==============+" + projidArray);
-            BasicHttpEntity basic = new BasicHttpEntity();
-            JSONArray jsonarray = new JSONArray(resp);
-            for (int i = 0; i < jsonarray.length(); i++) {
-              JSONObject jsonobject = jsonarray.getJSONObject(i);
-              String tname = jsonobject.getString("tableName");
-              String[] tnameArray = tname.split("_");
-              String proj = tnameArray[1];
-//              Project project=projectFacade.find(proj);
-//              String name = project.getName();
-
-              for (int j = 0; j < projidArray.length; j++) {
-                if ((projidArray[j].equalsIgnoreCase(proj))) {
-                  jsonarray.remove(i);
+              JSONArray jsonarray = new JSONArray(resp);
+              for (int j = 0; j < jsonarray.length() - 1; j++) {
+                JSONObject jsonobject = jsonarray.getJSONObject(j);
+                String tname = jsonobject.getString("tableName");
+                String[] tnameArray = tname.split("_");
+                String proj = tnameArray[1];
+                if (id.equalsIgnoreCase(proj)) {
+                  resultArray.put(jsonobject);
                 }
               }
 
-            }
-            logger.info("projects ==============+" + jsonarray);
+            }      
 
-//            JSONObject indices = new JSONObject(resp);
-//            logger.info("inside AIrpaltable first swtch stmt JSONObject==============+" + indices);
-//            //Remove all projects other than the current one and check
-//            //if user is authorizer to access it
-//            List<String> projects = projectController.findProjectNamesByUser(
-//              email, true);
-//            logger.info("projects ==============+" + projects);
-//            JSONArray hits = indices.getJSONObject("hits").getJSONArray("hits");
-//
-//            for (int i = hits.length() - 1; i >= 0; i--) {
-//              String tableName = hits.getJSONObject(i).getString("tableName");
-//
-//              String[] table = tableName.split("_");
-//              int projid = Integer.parseInt(table[1]);
-//              logger.info("inside AIrpaltable first swtch stmt==============+" + projid);
-//              if (!projects.contains(projid)) {
-//                hits.remove(i);
-//              }
-//            }
-            InputStream in = IOUtils.toInputStream(jsonarray.toString());
+            InputStream in = IOUtils.toInputStream(resultArray.toString());
             OutputStream servletOutputStream = servletResponse.getOutputStream();
             basic.setContent(in);
             GzipCompressingEntity compress = new GzipCompressingEntity(basic);

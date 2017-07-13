@@ -265,11 +265,9 @@ public class NotebookServer implements
         }
       }
 
-<<<<<<< HEAD
+
       AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal,messagereceived.ticket);
-=======
-      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal, messagereceived.ticket);
->>>>>>> ba04519393b5881c844c79fbba701bd433d64621
+
       /**
        * Lets be elegant here
        */
