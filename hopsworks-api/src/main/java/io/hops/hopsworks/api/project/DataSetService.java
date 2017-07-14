@@ -78,6 +78,7 @@ import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.metadata.exception.DatabaseException;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.common.util.SystemCommandExecutor;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -150,12 +151,36 @@ public class DataSetService {
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
 
-//    GenericEntity<List<InodeView>> inodeViews
-//            = new GenericEntity<List<InodeView>>(kids) { };
-    GenericEntity<List<String>> ge = new GenericEntity<List<String>>(
-            new ArrayList<String>()) {};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            ge).build();
+    Response.Status resp = Response.Status.OK;
+    List<String> commands = new ArrayList<>();
+    commands.add("/bin/bash");
+    commands.add("-c");
+    commands.add(settings.getHopsworksDomainDir() + "/bin/unzip-background.sh");
+    commands.add(path);
+
+    SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands);
+    String stdout = "", stderr = "";
+    try {
+      int result = commandExecutor.executeCommand();
+      stdout = commandExecutor.getStandardOutputFromCommand();
+      stderr = commandExecutor.getStandardErrorFromCommand();
+      if (result != 0) {
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+                getStatusCode(),
+                "Could not unzip the file at path: " + path);
+      }
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+              getStatusCode(),
+              "Interrupted exception. Could not unzip the file at path: " + path);
+    } catch (IOException ex) {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+              getStatusCode(),
+              "IOException. Could not unzip the file at path: " + path);
+    }
+
+    return noCacheResponse.getNoCacheResponseBuilder(resp).build();
   }
 
   @GET
@@ -469,8 +494,7 @@ public class DataSetService {
     List<Project> list = datasetFacade.findProjectSharedWith(project, dataSet.
             getName());
     GenericEntity<List<Project>> projects = new GenericEntity<List<Project>>(
-            list) {
-    };
+            list) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             projects).build();
