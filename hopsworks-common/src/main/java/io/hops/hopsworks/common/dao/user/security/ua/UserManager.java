@@ -175,6 +175,19 @@ public class UserManager {
 
     return list.get(0);
   }
+  
+  public Users getUserByUid(Integer uid) {
+    TypedQuery<Users> query = em.createNamedQuery("Users.findByUid",
+            Users.class);
+    query.setParameter("uid", uid);
+    List<Users> list = query.getResultList();
+
+    if (list == null || list.isEmpty()) {
+      return null;
+    }
+
+    return list.get(0);
+  }
 
   public boolean isUsernameTaken(String username) {
 
