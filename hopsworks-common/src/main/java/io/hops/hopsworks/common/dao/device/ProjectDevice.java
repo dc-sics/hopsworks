@@ -21,10 +21,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(
-      name = "ProjectDevice.findAll", 
+      name = "ProjectDevices.findAll",
       query = "SELECT pd FROM ProjectDevice pd"),
   @NamedQuery(
-      name = "ProjectDevice.findByProjectId",
+      name = "ProjectDevices.findByProjectDevicePK",
       query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
 public class ProjectDevice implements Serializable{
 
@@ -41,9 +41,9 @@ public class ProjectDevice implements Serializable{
 
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1, max = 36)
-  @Column(name = "project_user_uuid")
-  private String projectUserUuid;
+  @Size(min = 1, max = 11)
+  @Column(name = "user_id")
+  private Integer userId;
 
   @Basic(optional = false)
   @NotNull
@@ -58,17 +58,17 @@ public class ProjectDevice implements Serializable{
 
   public ProjectDevice() {}
 
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, String projectUserUuid) {
+  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
-    this.projectUserUuid = projectUserUuid;
+    this.userId = userId;
   }
 
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, String projectUserUuid, Date createdAt,
+  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId, Date createdAt,
       Integer enabled) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
-    this.projectUserUuid = projectUserUuid;
+    this.userId = userId;
     this.createdAt = createdAt;
     this.enabled = enabled;
   }
@@ -89,12 +89,12 @@ public class ProjectDevice implements Serializable{
     this.passUuid = passUuid;
   }
 
-  public String getProjectUserUuid() {
-    return projectUserUuid;
+  public Integer getUserId() {
+    return userId;
   }
 
-  public void setProjectUserUuid(String projectUserUuid) {
-    this.projectUserUuid = projectUserUuid;
+  public void setUserId(Integer userId) {
+    this.userId = userId;
   }
 
   public Date getCreatedAt() {

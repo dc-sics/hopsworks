@@ -17,10 +17,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(
-      name = "ProjectSecret.findAll", 
+      name = "ProjectSecrets.findAll",
       query = "SELECT ps FROM ProjectSecret ps"),
   @NamedQuery(
-      name = "ProjectSecret.findByProjectId",
+      name = "ProjectSecrets.findByProjectId",
       query= "SELECT ps FROM ProjectSecret ps WHERE ps.projectId = :projectId")})
 public class ProjectSecret implements Serializable{
 
@@ -41,6 +41,12 @@ public class ProjectSecret implements Serializable{
   @NotNull
   @Column(name = "jwt_token_duration")
   private Integer jwtTokenDuration;
+
+  public ProjectSecret(Integer projectId, String jwtSecret, Integer jwtTokenDuration) {
+    this.projectId = projectId;
+    this.jwtSecret = jwtSecret;
+    this.jwtTokenDuration = jwtTokenDuration;
+  }
 
   public int getProjectId() {
     return projectId;
