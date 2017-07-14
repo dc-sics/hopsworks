@@ -3,7 +3,7 @@ package io.hops.hopsworks.api.airpal.proxy;
 import io.hops.hopsworks.api.kibana.MyRequestWrapper;
 import io.hops.hopsworks.api.kibana.ProxyServlet;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
-import io.hops.hopsworks.common.dao.project.Project;
+//import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 //import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -48,7 +48,7 @@ public class AirpalProxyServlet extends ProxyServlet {
   List<String> projidlist = new ArrayList<String>();
   JSONArray resultArray = new JSONArray();
   BasicHttpEntity basic = new BasicHttpEntity();
-
+  String referrer;
   @EJB
   private ProjectFacade projectFacade;
   @EJB
@@ -87,11 +87,21 @@ public class AirpalProxyServlet extends ProxyServlet {
     boolean x = false;
     if (servletRequest.getRequestURI().contains(
       "/api/table")) {
-      
-      airpalFilter = airpalFilter.Airpal_Table;
-      x = true;
+
+      if (servletRequest.getRequestURI().contains(
+        "/api/table/")) {
+        airpalFilter = airpalFilter.Airpal_Table_columns;
+//        x = true;
+      } else {
+
+        airpalFilter = airpalFilter.Airpal_Table;
+//        x = true;
+      }
     }
-    if (x) {
+
+    if (!(servletRequest.getRequestURI().contains(
+      "/app"))) {
+
       logger.info("inside AIrpaltable first swtch stmt==============");
       logger.info("Requesturi of api requests ==============1111" + requestURI);
       String refererURI = servletRequest.getHeader("Referer");
@@ -110,7 +120,7 @@ public class AirpalProxyServlet extends ProxyServlet {
       if (servletRequest.getAttribute(ATTR_TARGET_HOST) == null) {
         servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
       }
-      String referrer = servletRequest.getHeader("referer");
+      referrer = servletRequest.getHeader("referer");
       // Make the Request
       //note: we won't transfer the protocol version because I'm not sure it would truly be compatible
       String method = servletRequest.getMethod();
@@ -216,41 +226,41 @@ public class AirpalProxyServlet extends ProxyServlet {
         case Airpal_Table:
 
           HttpEntity entity = proxyResponse.getEntity();
-          
+
           if (entity != null) {
-           
+
             GzipDecompressingEntity gzipEntity = new GzipDecompressingEntity(
               entity);
-            
+
             String resp = EntityUtils.toString(gzipEntity);
-           
+
             //list of project names
             List<String> projects = projectController.findProjectNamesByUser(
               email, true);
             String[] projArray = projects.toArray(new String[0]);
             // trying to get project id for each project
-            for (int i = 0; i < projArray.length; i++) {
-              logger.info("response ==============" + projArray[i]);
-              Project project = projectFacade.findByName(projArray[i]);
-              String id = project.getId().toString();
-              JSONArray jsonarray = new JSONArray(resp);
-              for (int j = 0; j < jsonarray.length() - 1; j++) {
-                JSONObject jsonobject = jsonarray.getJSONObject(j);
-                String tname = jsonobject.getString("tableName");
-                String[] tnameArray = tname.split("_");
-                String proj = tnameArray[1];
-                if (id.equalsIgnoreCase(proj)) {
-                  resultArray.put(jsonobject);
-                }
+//            for (int i = 0; i < projArray.length; i++) {
+//              logger.info("response ==============" + projArray[i]);
+//              Project project = projectFacade.findByName(projArray[i]);
+//              String id = project.getId().toString();
+            JSONArray jsonarray = new JSONArray(resp);
+            for (int j = 0; j < jsonarray.length() - 1; j++) {
+              JSONObject jsonobject = jsonarray.getJSONObject(j);
+              String tname = jsonobject.getString("tableName");
+              String[] tnameArray = tname.split("_");
+              String proj = tnameArray[1];
+              if (projectID.equalsIgnoreCase(proj)) {
+                resultArray.put(jsonobject);
               }
+            }
 
-            }      
-
+//            }
             InputStream in = IOUtils.toInputStream(resultArray.toString());
             OutputStream servletOutputStream = servletResponse.getOutputStream();
             basic.setContent(in);
             GzipCompressingEntity compress = new GzipCompressingEntity(basic);
             compress.writeTo(servletOutputStream);
+
           }
           break;
         default:
