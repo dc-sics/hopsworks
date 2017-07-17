@@ -39,6 +39,7 @@ public class SparkYarnRunnerBuilder {
   private int numberOfExecutorsMax = Settings.SPARK_MAX_EXECS;
   private int numberOfExecutorsInit = Settings.SPARK_INIT_EXECS;
   private int executorCores = 1;
+  private String properties;
   private boolean dynamicExecutors;
   private String executorMemory = "512m";
   private int driverMemory = 1024; // in MB
@@ -457,6 +458,15 @@ public class SparkYarnRunnerBuilder {
     }
     this.executorCores = executorCores;
     return this;
+  }
+
+  /**
+   * Parse and set user provided Spark properties.
+   * 
+   * @param properties 
+   */
+  public void setProperties(String properties) {
+    this.properties = properties;
   }
 
   public boolean isDynamicExecutors() {
