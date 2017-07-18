@@ -70,7 +70,7 @@ public class SparkJob extends YarnJob {
         runnerbuilder.addAllJobArgs(jobArgs);
       }
     }
-
+    
     //Set spark runner options
     runnerbuilder.setExecutorCores(jobconfig.getExecutorCores());
     runnerbuilder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
@@ -87,6 +87,9 @@ public class SparkJob extends YarnJob {
     runnerbuilder.setDriverCores(jobconfig.getAmVCores());
     runnerbuilder.setDriverQueue(jobconfig.getAmQueue());
 
+    //Set TFSPARK params
+    runnerbuilder.setNumOfGPUs(jobconfig.getNumOfGPUs());
+    runnerbuilder.setNumOfPs(jobconfig.getNumOfPs());
     //Set Kafka params
     runnerbuilder.setServiceProps(serviceProps);
     runnerbuilder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));

@@ -343,7 +343,7 @@ public class SparkYarnRunnerBuilder {
       amargs.append(" --primary-py-file ").append(appExecName);
       //Check if anaconda is enabled
       if (jobType == JobType.TFSPARK) {
-        builder.addToAppMasterEnvironment(Settings.SPARK_PYSPARK_PYTHON, Settings.TFSPARK_PYTHON_NAME + "/bin/python");
+        builder.addToAppMasterEnvironment(Settings.SPARK_PYSPARK_PYTHON, "python");
         addSystemProperty(Settings.SPARK_TF_ENV,"true");
         addSystemProperty(Settings.SPARK_TF_GPUS_ENV, Integer.toString(numOfGPUs));
         addSystemProperty(Settings.SPARK_TF_PS_ENV, Integer.toString(numOfPs));

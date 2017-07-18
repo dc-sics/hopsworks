@@ -291,8 +291,9 @@ public class SparkJobConfiguration extends YarnJobConfiguration {
     obj.set(KEY_HISTORYSERVER, getHistoryServerIp());
     obj.set(KEY_PYSPARK_PYTHON_DIR, getAnacondaDir() + "/bin/python");
     obj.set(KEY_PYSPARK_PYLIB, getAnacondaDir() + "/lib");
-    obj.set(KEY_IS_TFONSPARK, Boolean.toString(tfOnSpark));
+    
     if(tfOnSpark){
+      obj.set(KEY_IS_TFONSPARK, Boolean.toString(tfOnSpark));
       obj.set(KEY_GPUS, "" + numOfGPUs);
       obj.set(KEY_NUM_PS, "" + numOfPs);
     }
@@ -313,8 +314,8 @@ public class SparkJobConfiguration extends YarnJobConfiguration {
     String jsonNumexecsInit = "";
     String jsonDynexecs = "NOT_AVAILABLE";
     String jsonTfOnSpark = "";
-    String jsonNumOfGPUs = "";
-    String jsonNumOfPs = "";
+    String jsonNumOfGPUs = "0";
+    String jsonNumOfPs = "0";
     try {
       String jsonType = json.getString(KEY_TYPE);
       type = JobType.valueOf(jsonType);
@@ -339,7 +340,10 @@ public class SparkJobConfiguration extends YarnJobConfiguration {
       }
       if (json.containsKey(KEY_IS_TFONSPARK)) {
         jsonTfOnSpark = json.getString(KEY_IS_TFONSPARK);
+        jsonNumOfGPUs = json.getString(KEY_GPUS);
+        jsonNumOfPs = json.getString(KEY_NUM_PS);
       }
+      
 
       hs = json.getString(KEY_HISTORYSERVER);
     } catch (Exception e) {

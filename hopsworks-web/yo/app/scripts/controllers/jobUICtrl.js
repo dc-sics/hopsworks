@@ -80,7 +80,7 @@ angular.module('hopsWorksApp')
               JobService.getExecutionUI(self.projectId, self.appId).then(
                         function (success) {
                           self.ui = success.data;
-                          if(self.job.jobType === "TENSORFLOW"){
+                          if(self.job != undefined && self.job.jobType === "TENSORFLOW"){
                             self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType="+self.job.jobType;
                           }
                           self.current = "jobUI";
