@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.jobs.spark;
 
+import com.google.common.base.Strings;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
@@ -17,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 
@@ -26,6 +29,8 @@ import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
  * <p>
  */
 public class SparkYarnRunnerBuilder {
+
+  private static final Logger LOG = Logger.getLogger(SparkYarnRunnerBuilder.class.getName());
 
   //Necessary parameters
   private final JobDescription jobDescription;
@@ -67,7 +72,7 @@ public class SparkYarnRunnerBuilder {
 
   /**
    * Get a YarnRunner instance that will launch a Spark job.
-   * 
+   *
    * @param project name of the project
    * @param sparkUser
    * @param jobUser
@@ -294,6 +299,25 @@ public class SparkYarnRunnerBuilder {
         append(" ").
         append("-D").append(Settings.HOPSUTIL_APPID_ENV_VAR).append("=").append(YarnRunner.APPID_PLACEHOLDER);
 
+    try {
+      //Parse user provided properties (if any) and add them to the job
+      if (!Strings.isNullOrEmpty(properties)) {
+        List<String> propsList = Arrays.asList(properties.split(":"));
+        for (String pair : propsList) {
+          //Split the pair
+          String key = pair.split("=")[0];
+          String val = pair.split("=")[1];
+          addSystemProperty(key, val);
+          extraJavaOptions.append(" -D").append(key).append("=").append(val);
+        }
+      }
+    } catch (Exception ex) {
+      LOG.log(Level.WARNING, "There was an error while setting user-provided Spark properties:{0}", ex.getMessage());
+      throw new IOException(
+          "There was an error while setting user-provided Spark properties. Please check that the values conform to"
+          + " the format K1=V1:K2=V2 etc");
+    }
+
     if (serviceProps != null) {
       addSystemProperty(Settings.HOPSWORKS_REST_ENDPOINT_ENV_VAR, serviceProps.getRestEndpoint());
       addSystemProperty(Settings.KEYSTORE_PASSWORD_ENV_VAR, serviceProps.getKeystorePwd());
@@ -328,10 +352,9 @@ public class SparkYarnRunnerBuilder {
             append(" -D" + Settings.KAFKA_JOB_TOPICS_ENV_VAR + "=").
             append(serviceProps.getKafka().getTopics());
       }
-
-      extraJavaOptions.append("'");
-      builder.addJavaOption(extraJavaOptions.toString());
     }
+    extraJavaOptions.append("'");
+    builder.addJavaOption(extraJavaOptions.toString());
 
     //Set up command
     StringBuilder amargs = new StringBuilder("--class ");
@@ -362,11 +385,10 @@ public class SparkYarnRunnerBuilder {
       //For every property that is in the spark configuration file but is not
       //already set, create a java system property.
       for (String property : sparkProperties.stringPropertyNames()) {
-        if (!jobSpecificProperties.contains(property) && sparkProperties.
-            getProperty(property) != null && !sparkProperties.getProperty(
-            property).isEmpty()) {
-          addSystemProperty(property,
-              sparkProperties.getProperty(property).trim());
+        if (!jobSpecificProperties.contains(property) && sparkProperties.getProperty(property) != null
+            && !sparkProperties.getProperty(
+                property).isEmpty()) {
+          addSystemProperty(property, sparkProperties.getProperty(property).trim());
         }
       }
     }
@@ -462,8 +484,8 @@ public class SparkYarnRunnerBuilder {
 
   /**
    * Parse and set user provided Spark properties.
-   * 
-   * @param properties 
+   *
+   * @param properties
    */
   public void setProperties(String properties) {
     this.properties = properties;
