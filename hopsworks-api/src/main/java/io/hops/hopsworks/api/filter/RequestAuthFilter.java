@@ -36,7 +36,7 @@ public class RequestAuthFilter implements ContainerRequestFilter {
   private ResourceInfo resourceInfo;
 
   private final static Logger log = Logger.getLogger(RequestAuthFilter.class.
-          getName());
+    getName());
 
   @Override
   public void filter(ContainerRequestContext requestContext) {
@@ -51,9 +51,9 @@ public class RequestAuthFilter implements ContainerRequestFilter {
     //intercepted method must be a project operations on a specific project
     //with an id (/project/projectId/... or /activity/projectId/...). 
     if (pathParts.length > 1 && (pathParts[0].equalsIgnoreCase("project")
-            || pathParts[0].equalsIgnoreCase("activity")
-            || pathParts[0].equalsIgnoreCase("notebook")
-            || pathParts[0].equalsIgnoreCase("interpreter"))) {
+      || pathParts[0].equalsIgnoreCase("activity")
+      || pathParts[0].equalsIgnoreCase("notebook")
+      || pathParts[0].equalsIgnoreCase("interpreter"))) {
 
       JsonResponse json = new JsonResponse();
       Integer projectId;
@@ -63,24 +63,24 @@ public class RequestAuthFilter implements ContainerRequestFilter {
       } catch (NumberFormatException ne) {
         //if the second pathparam is not a project id return.
         log.log(Level.INFO,
-                "Call to {0} has no project id, leaving interceptor.",
-                path);
+          "Call to {0} has no project id, leaving interceptor.",
+          path);
         return;
       }
 
       Project project = projectBean.find(projectId);
       if (project == null) {
         requestContext.abortWith(Response.
-                status(Response.Status.NOT_FOUND).build());
+          status(Response.Status.NOT_FOUND).build());
         return;
       }
       log.log(Level.FINEST, "Filtering project request path: {0}", project.
-              getName());
+        getName());
 
       if (!method.isAnnotationPresent(AllowedRoles.class)) {
         //Should throw exception if there is a method that is not annotated in this path.
         requestContext.abortWith(Response.
-                status(Response.Status.SERVICE_UNAVAILABLE).build());
+          status(Response.Status.SERVICE_UNAVAILABLE).build());
         return;
       }
       AllowedRoles rolesAnnotation = method.getAnnotation(AllowedRoles.class);
@@ -95,36 +95,36 @@ public class RequestAuthFilter implements ContainerRequestFilter {
 
       if (requestContext.getSecurityContext().getUserPrincipal() == null) {
         requestContext.abortWith(Response.
-                status(Response.Status.UNAUTHORIZED).build());
+          status(Response.Status.UNAUTHORIZED).build());
         return;
       }
 
       //if the resource is only allowed for some roles check if the user have the requierd role for the resource.
       String userEmail = requestContext.getSecurityContext().getUserPrincipal().
-              getName();
+        getName();
 
       userRole = projectTeamBean.findCurrentRole(project, userEmail);
 
       if (userRole == null || userRole.isEmpty()) {
         log.log(Level.INFO,
-                "Trying to access resource, but you dont have any role in this project");
+          "Trying to access resource, but you dont have any role in this project");
         json.setStatusCode(Response.Status.FORBIDDEN.getStatusCode());
         json.setErrorMsg("You do not have access to this project.");
         requestContext.abortWith(Response
-                .status(Response.Status.FORBIDDEN)
-                .entity(json)
-                .build());
+          .status(Response.Status.FORBIDDEN)
+          .entity(json)
+          .build());
       } else if (!rolesSet.contains(userRole)) {
         log.log(Level.INFO,
-                "Trying to access resource that is only allowed for: {0}, But you are a: {1}",
-                new Object[]{rolesSet, userRole});
+          "Trying to access resource that is only allowed for: {0}, But you are a: {1}",
+          new Object[]{rolesSet, userRole});
         json.setStatusCode(Response.Status.FORBIDDEN.getStatusCode());
         json.setErrorMsg(
-                "Your role in this project is not authorized to perform this action.");
+          "Your role in this project is not authorized to perform this action.");
         requestContext.abortWith(Response
-                .status(Response.Status.FORBIDDEN)
-                .entity(json)
-                .build());
+          .status(Response.Status.FORBIDDEN)
+          .entity(json)
+          .build());
       }
     }
   }

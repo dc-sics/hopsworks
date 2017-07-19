@@ -3,8 +3,14 @@ package io.hops.hopsworks.api.airpal.proxy;
 import io.hops.hopsworks.api.kibana.MyRequestWrapper;
 import io.hops.hopsworks.api.kibana.ProxyServlet;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
+import io.hops.hopsworks.common.dao.project.Project;
 //import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
+import io.hops.hopsworks.common.dao.project.service.ProjectServiceFacade;
+import io.hops.hopsworks.common.dao.project.service.ProjectServices;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+import io.hops.hopsworks.common.dao.user.Users;
 //import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
@@ -14,26 +20,36 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.Consts;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpHeaders;
+//import org.apache.http.HttpEntityEnclosingRequest;
+//import org.apache.http.HttpHeaders;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.GzipCompressingEntity;
 import org.apache.http.client.entity.GzipDecompressingEntity;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.AbortableHttpRequest;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -43,14 +59,28 @@ public class AirpalProxyServlet extends ProxyServlet {
   private static final Logger logger = Logger.getLogger(
     AirpalProxyServlet.class.
     getName());
+
   static String projectID = null;
   String projid = null;
   List<String> projidlist = new ArrayList<String>();
   JSONArray resultArray = new JSONArray();
   BasicHttpEntity basic = new BasicHttpEntity();
   String referrer;
+  String appID = null;
+  String email1 = null;
+  int count = 0;
+  String service = "Airpal";
+  Object serviceobj = service;
+  boolean inTeam = false;
+  boolean projservicebool = false;
+  boolean projidbool = false;
+  boolean isAuth = false;
+
   @EJB
   private ProjectFacade projectFacade;
+  @EJB
+  private ProjectServiceFacade projectServiceFacade;
+
   @EJB
   private YarnApplicationstateFacade yarnApplicationstateFacade;
   @EJB
@@ -64,24 +94,21 @@ public class AirpalProxyServlet extends ProxyServlet {
   protected void service(HttpServletRequest servletRequest,
     HttpServletResponse servletResponse) throws ServletException,
     IOException {
+
     if (servletRequest.getUserPrincipal() == null) {
       servletResponse.sendError(403, "User is not logged in");
       return;
     }
-    Cookie cookie = null;
+
+    String email = servletRequest.getUserPrincipal().getName();
+    Users user = userManager.getUserByEmail(email);
 
     String requestURI = servletRequest.getRequestURI();
 
-    String email = servletRequest.getUserPrincipal().getName();
-//    logger.info("email ======>" + email);
-    projectID = servletRequest.getParameter("projectID");
-    logger.info("projectid ======>" + projectID);
-    String teamRole1 = (String) servletRequest.getAttribute("projectID");
-    /*
-     * if in case change the projectid and try to access
-     */
     MyRequestWrapper myRequestWrapper = new MyRequestWrapper(
       (HttpServletRequest) servletRequest);
+
+    String refererURI = servletRequest.getHeader("Referer");
 
     AirpalFilter airpalFilter = null;
     boolean x = false;
@@ -98,46 +125,62 @@ public class AirpalProxyServlet extends ProxyServlet {
 //        x = true;
       }
     }
-
+    logger.info("servletRequest.getRequestURI() ======>" + servletRequest.getRequestURI());
+    logger.info("servletRequest.getRequestURL() ======>" + servletRequest.getRequestURL().toString());
+    //initialize request attributes from caches if unset by a subclass by this point
+    if (servletRequest.getAttribute(ATTR_TARGET_URI) == null) {
+      servletRequest.setAttribute(ATTR_TARGET_URI, targetUri);
+    }
+    if (servletRequest.getAttribute(ATTR_TARGET_HOST) == null) {
+      servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
+    }
+    referrer = servletRequest.getHeader("referer");
+    // Make the Request
+    //note: we won't transfer the protocol version because I'm not sure it would truly be compatible
+    String method = servletRequest.getMethod();
+    logger.info("request method called ==============" + method);
+    String proxyRequestUri = rewriteUrlFromRequest(servletRequest);
+    HttpRequest proxyRequest;
+    //spec: RFC 2616, sec 4.3: either of these two headers signal that there is a message body.
+    logger.info("proxyRequestUri ======>" + proxyRequestUri);
     if (!(servletRequest.getRequestURI().contains(
       "/app"))) {
+//      logger.info("inside AIrpaltable first swtch stmt==============");
+      logger.info("Requesturi of api requests ==============" + requestURI);
 
-      logger.info("inside AIrpaltable first swtch stmt==============");
-      logger.info("Requesturi of api requests ==============1111" + requestURI);
-      String refererURI = servletRequest.getHeader("Referer");
-      logger.info("refereuri of api requests ==============222222" + refererURI);
+      logger.info("referer of api requests ==============" + refererURI);
       String[] param = refererURI.split("=");
-      logger.info("refereuri of api requests ==============33333" + param[1]);
-      String[] refparam = param[1].split("_");
-      projid = refparam[0];
-      String email1 = refparam[1];
-      logger.info("refereuri projid of api requests ==============444444" + projid);
+      if (param != null && param.length > 1) {
+        logger.info("refereuri of api requests ==============" + param[1]);
+        projid = getProjid(param[1]);
+        email1 = getemail(param[1]);
+        logger.info("refereuri projid of api requests ==============" + projid);
+        boolean isAuth = isAuthorized(projid, email1, user);
+        if (!isAuth) {
+          servletResponse.sendError(Response.Status.BAD_REQUEST.getStatusCode(),
+            "You don't have the access right for this application");
+          return;
+        }
+      }
 
-      //initialize request attributes from caches if unset by a subclass by this point
-      if (servletRequest.getAttribute(ATTR_TARGET_URI) == null) {
-        servletRequest.setAttribute(ATTR_TARGET_URI, targetUri);
-      }
-      if (servletRequest.getAttribute(ATTR_TARGET_HOST) == null) {
-        servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
-      }
-      referrer = servletRequest.getHeader("referer");
-      // Make the Request
-      //note: we won't transfer the protocol version because I'm not sure it would truly be compatible
-      String method = servletRequest.getMethod();
-      String proxyRequestUri = rewriteUrlFromRequest(servletRequest);
-      HttpRequest proxyRequest;
-      //spec: RFC 2616, sec 4.3: either of these two headers signal that there is a message body.
-      if (servletRequest.getHeader(HttpHeaders.CONTENT_LENGTH) != null
-        || servletRequest.getHeader(HttpHeaders.TRANSFER_ENCODING) != null) {
-        HttpEntityEnclosingRequest eProxyRequest
-          = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
-        // Add the input entity (streamed)
-        //  note: we don't bother ensuring we close the servletInputStream since the container handles it
-        eProxyRequest.setEntity(new InputStreamEntity(myRequestWrapper.
-          getInputStream(), servletRequest.getContentLength()));
-        proxyRequest = eProxyRequest;
-      } else {
+      if (!(method.equalsIgnoreCase("post"))) {
+        if (servletRequest.getHeader(HttpHeaders.CONTENT_LENGTH) != null
+          || servletRequest.getHeader(HttpHeaders.TRANSFER_ENCODING) != null) {
+          HttpEntityEnclosingRequest eProxyRequest
+            = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
+          // Add the input entity (streamed)
+          //  note: we don't bother ensuring we close the servletInputStream since the container handles it
+          eProxyRequest.setEntity(new InputStreamEntity(myRequestWrapper.
+            getInputStream(), servletRequest.getContentLength()));
+          proxyRequest = eProxyRequest;
+        } else {
+          proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
+        }
+      } else if (servletRequest.getHeader("Content-Length") == null && servletRequest.getHeader("Transfer-Encoding")
+        == null) {
         proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
+      } else {
+        proxyRequest = newProxyRequestWithEntity(method, proxyRequestUri, servletRequest);
       }
 
       copyRequestHeaders(servletRequest, proxyRequest);
@@ -208,7 +251,21 @@ public class AirpalProxyServlet extends ProxyServlet {
       }
 
     } else {
-      logger.info("default stmt in first switch=========================");
+      logger.info("else stamt request uri.contains(/app)=========================");
+
+      if (proxyRequestUri.contains("?projectID")) {
+//    logger.info("email ======>" + email);
+        projectID = servletRequest.getParameter("projectID");
+        projid = getProjid(projectID);
+        logger.info("projectid in else 1st 251 if  ======>" + projectID);
+        boolean isAuth = isAuthorized(projid, email, user);
+        if (!isAuth) {
+          servletResponse.sendError(Response.Status.BAD_REQUEST.getStatusCode(),
+            "You don't have the access right for this application");
+          return;
+        }
+      }
+
       super.service(servletRequest, servletResponse);
       log("End of Service method in  AirpalProxySerlet======= ");
 
@@ -251,9 +308,10 @@ public class AirpalProxyServlet extends ProxyServlet {
               String proj = tnameArray[1];
               if (projectID.equalsIgnoreCase(proj)) {
                 resultArray.put(jsonobject);
+                //logger.info("resultArray ==============" + resultArray);
               }
             }
-
+            //logger.info("resultArray ===finallllllll===========" + resultArray);
 //            }
             InputStream in = IOUtils.toInputStream(resultArray.toString());
             OutputStream servletOutputStream = servletResponse.getOutputStream();
@@ -268,6 +326,115 @@ public class AirpalProxyServlet extends ProxyServlet {
           break;
       }
     }
+  }
+
+  protected HttpRequest newProxyRequestWithEntity(
+    String method, String proxyRequestUri, HttpServletRequest servletRequest) throws IOException {
+    HttpEntityEnclosingRequest eProxyRequest = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
+
+    String contentType = servletRequest.getContentType();
+
+    boolean isFormPost = (contentType != null
+      && contentType.contains("application/x-www-form-urlencoded")
+      && "POST".equalsIgnoreCase(servletRequest.getMethod()));
+
+    if (isFormPost) {
+      List<NameValuePair> queryParams = Collections.emptyList();
+      String queryString = servletRequest.getQueryString();
+      if (queryString != null) {
+        queryParams = URLEncodedUtils.parse(queryString, Consts.UTF_8);
+      }
+
+      Map<String, String[]> form = servletRequest.getParameterMap();
+      List<NameValuePair> params = new ArrayList<>();
+
+      OUTER_LOOP:
+      for (Iterator<String> nameIterator = form.keySet().iterator(); nameIterator.hasNext();) {
+        String name = nameIterator.next();
+
+        // skip parameters from query string
+        for (NameValuePair queryParam : queryParams) {
+          if (name.equals(queryParam.getName())) {
+            continue OUTER_LOOP;
+          }
+        }
+
+        String[] value = form.get(name);
+        if (value.length != 1) {
+          throw new RuntimeException("expecting one value in post form");
+        }
+        params.add(new BasicNameValuePair(name, value[0]));
+      }
+      eProxyRequest.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
+
+    } else {
+      eProxyRequest.setEntity(
+        new InputStreamEntity(servletRequest.getInputStream(), servletRequest.getContentLength()));
+    }
+    return eProxyRequest;
+  }
+
+  private boolean isAuthorized(String projid, String email, Users user) {
+    /*
+     * if in case change the projectid and try to access
+     */
+    List<String> projects = projectController.findProjectNamesByUser(
+      email, true);
+    // trying to get project id for each project
+    for (String projectStr : projects) {
+      logger.info("response ==============" + projectStr);
+      Project project = projectFacade.findByName(projectStr);
+      String id = project.getId().toString();
+      if (id.equalsIgnoreCase(projid)) {
+        projidbool = true;
+        logger.info("project       ==============444444" + project);
+        for (ProjectTeam pt : project.getProjectTeamCollection()) {
+          if (pt.getUser().equals(user)) {
+            inTeam = true;
+            break;
+          }
+        }
+        List<ProjectServices> projectServiceslist = projectServiceFacade.getAllProjectServicesForProject(project);
+        logger.info("projectServiceslist        ==============444444" + projectServiceslist);
+        for (ProjectServices projectServices : projectServiceslist) {
+
+          ProjectServiceEnum projectServiceEnum = projectServices.getProjectServicesPK().getService();
+          logger.info("projectServiceEnum continueeeeeeeeeeeeeeeeeeeeee" + projectServiceEnum);
+          if (projectServiceEnum != null && projectServiceEnum.equals(ProjectServiceEnum.AIRPAL)) {
+            projservicebool = true;
+            isAuth = true;
+            logger.info("he is valid user continueeeeeeeeeeeeeeeeeeeeee");
+            return isAuth;
+          }
+          
+        }
+        break;
+      }
+
+    }
+
+    if (!projidbool || !projservicebool || !inTeam ) {
+      isAuth = false;
+
+    }
+    logger.info("isAuth==============="+isAuth);
+    return isAuth;
+  }
+
+  private String getProjid(String projectID) {
+    String[] refparam = projectID.split("_");
+    if (refparam != null && refparam.length > 0) {
+      return refparam[0];
+    }
+    return null;
+  }
+
+  private String getemail(String projectID) {
+    String[] refparam = projectID.split("_");
+    if (refparam != null && refparam.length > 1) {
+      return refparam[1];
+    }
+    return null;
   }
 
 }

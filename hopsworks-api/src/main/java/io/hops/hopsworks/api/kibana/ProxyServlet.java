@@ -298,9 +298,10 @@ public class ProxyServlet extends HttpServlet {
         getInputStream(), servletRequest.getContentLength()));
       proxyRequest = eProxyRequest;
     } else {
+      
       proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
     }
-
+    
     copyRequestHeaders(servletRequest, proxyRequest);
 
     setXForwardedForHeader(servletRequest, proxyRequest);

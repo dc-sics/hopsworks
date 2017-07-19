@@ -78,6 +78,6 @@ public class ProjectServiceFacade extends AbstractFacade<ProjectServices> {
             ProjectServices.class);
     q.setParameter("project", project);
     return q.getResultList();
-  }
+  }k<
 
 }

@@ -23,7 +23,6 @@ angular.module('hopsWorksApp')
             self.loading = false;
             self.loadingText = "";
 
-
             var startLoading = function (label) {
               self.loading = true;
               self.loadingText = label;
