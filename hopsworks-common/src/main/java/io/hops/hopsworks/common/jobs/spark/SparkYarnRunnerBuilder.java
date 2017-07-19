@@ -15,9 +15,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
@@ -55,6 +57,8 @@ public class SparkYarnRunnerBuilder {
   private String classPath;
   private ServiceProperties serviceProps;
 
+  final private Set<String> blacklistedProps = new HashSet<>();
+  
   public SparkYarnRunnerBuilder(JobDescription jobDescription) {
     this.jobDescription = jobDescription;
     SparkJobConfiguration jobConfig = (SparkJobConfiguration) jobDescription.getJobConfig();
@@ -67,7 +71,39 @@ public class SparkYarnRunnerBuilder {
       throw new IllegalArgumentException(
           "Name of the main class cannot be empty!");
     }
-
+    
+    blacklistedProps.add("spark.submit.deployMode");
+    blacklistedProps.add("spark.executor.instances");
+    blacklistedProps.add("spark.yarn.stagingDir");
+    blacklistedProps.add("spark.history.fs.cleaner.enabled");
+    blacklistedProps.add("spark.driver.host");
+    blacklistedProps.add("spark.io.compression.codec");
+    blacklistedProps.add("spark.sql.warehouse.dir");
+    blacklistedProps.add("spark.eventLog.enabled");
+    blacklistedProps.add("spark.ui.port");
+    blacklistedProps.add("spark.driver.port");
+    blacklistedProps.add("spark.yarn.queue");
+    blacklistedProps.add("spark.yarn.historyServer.address");
+    blacklistedProps.add("spark.yarn.app.id");
+    blacklistedProps.add("spark.driver.memory");
+    blacklistedProps.add("spark.executor.instances");
+    blacklistedProps.add("spark.yarn.submit.file.replication");
+    blacklistedProps.add("spark.worker.cleanup.enabled");
+    blacklistedProps.add("spark.executor.id");
+    blacklistedProps.add("spark.driver.cores");
+    blacklistedProps.add("spark.master");
+    blacklistedProps.add("spark.history.fs.cleaner.interval");
+    blacklistedProps.add("spark.history.fs.cleaner.maxAge");
+    blacklistedProps.add("spark.ui.filters");
+    blacklistedProps.add("spark.executor.memory");
+    blacklistedProps.add("spark.local.dir");
+    blacklistedProps.add("spark.eventLog.dir");
+    blacklistedProps.add("spark.eventLog.compress");
+    blacklistedProps.add("spark.executor.cores");
+    blacklistedProps.add("spark.org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter.param.PROXY_HOSTS");
+    blacklistedProps.add("spark.yarn.scheduler.heartbeat.interval-ms");
+    blacklistedProps.add("spark.org.apache.hadoop.yarn.server.webproxy.amfilter.AmIpFilter.param.PROXY_URI_BASES");
+    blacklistedProps.add("spark.app.id");
   }
 
   /**
@@ -307,6 +343,9 @@ public class SparkYarnRunnerBuilder {
           //Split the pair
           String key = pair.split("=")[0];
           String val = pair.split("=")[1];
+          if(blacklistedProps.contains(key)){
+            throw new IOException("This user-provided Spark property is not allowed:"+key);
+          }
           addSystemProperty(key, val);
           extraJavaOptions.append(" -D").append(key).append("=").append(val);
         }
@@ -315,7 +354,7 @@ public class SparkYarnRunnerBuilder {
       LOG.log(Level.WARNING, "There was an error while setting user-provided Spark properties:{0}", ex.getMessage());
       throw new IOException(
           "There was an error while setting user-provided Spark properties. Please check that the values conform to"
-          + " the format K1=V1:K2=V2 etc");
+          + " the format K1=V1:K2=V2 or that the property is allowed:"+ex.getMessage());
     }
 
     if (serviceProps != null) {

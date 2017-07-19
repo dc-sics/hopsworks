@@ -303,7 +303,7 @@
             </div>
 
             <!-- Services -->
-            <div class="row" ng-show="(newJobCtrl.jobtype === 1 || newJobCtrl.jobtype === 3 || newJobCtrl.jobtype === 4)" ng-click="newJobCtrl.getAllTopics()" style="margin-top: 10px">
+            <div class="row" ng-show="(newJobCtrl.jobtype === 1 || newJobCtrl.jobtype === 3 || newJobCtrl.jobtype === 4 || newJobCtrl.jobtype === 5)" ng-click="newJobCtrl.getAllTopics()" style="margin-top: 10px">
               <div class="text-right col-md-4">Settings & Services <i class="fa fa-info-circle" uib-tooltip="Indicates if this job makes use of the Kafka service." style="margin-left: 10px"></i></div>
               <div class="col-md-8">
                 <div class="row">
@@ -324,11 +324,11 @@
                     </div>
                   </div>
                   <div class="col-md-11" >
-                    <div class="row" ng-show="(newJobCtrl.jobtype === 1 || newJobCtrl.jobtype === 3 || newJobCtrl.jobtype === 4 || newJobCtrl.jobtype === 5) && newJobCtrl.settingsSelected" style="margin-top: 3px">
+                    <div class="row" ng-show="(newJobCtrl.jobtype === 1 || newJobCtrl.jobtype === 4 || newJobCtrl.jobtype === 5) && newJobCtrl.settingsSelected" style="margin-top: 3px">
                       <div class="col-md-12" >
                         <div class="row">
                           <div class="col-md-12">
-                            Properties<i class="fa fa-info-circle" uib-tooltip="Extra spark properties for this job." style="margin-left: 10px; text-align: left;" ></i>
+                            Properties<i class="fa fa-info-circle" uib-tooltip="Insert here your Spark job parameters in the form of key1=val1:key2:val2." style="margin-left: 10px; text-align: left;" ></i>
                           </div>
                         </div>
                         <div class="row">
