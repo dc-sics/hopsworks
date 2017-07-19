@@ -52,6 +52,8 @@ import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeView;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
+import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.metadata.Template;
 import io.hops.hopsworks.common.dao.metadata.db.TemplateFacade;
@@ -110,7 +112,7 @@ public class DataSetService {
   @EJB
   private AsynchronousJobExecutor async;
   @EJB
-  private UserFacade userfacade;
+  private UserFacade userFacade;
   @EJB
   private JobController jobcontroller;
   @EJB
@@ -123,6 +125,8 @@ public class DataSetService {
   private DownloadService downloader;
   @EJB
   private YarnJobsMonitor jobsMonitor;
+  @EJB
+  private JupyterFacade jupyterFacade;
 
   private Integer projectId;
   private Project project;
@@ -152,11 +156,30 @@ public class DataSetService {
           AppException, AccessControlException {
 
     Response.Status resp = Response.Status.OK;
+    if (path == null) {
+      path = "";
+    }
+    path = getFullPath(path);
+
+    // HDFS_USERNAME is the next param to the bash script
+    String email = sc.getUserPrincipal().getName();
+    Users user = userFacade.findByEmail(email);
+    String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
+    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
+    if (jp == null) {
+      throw new AppException(
+              Response.Status.NOT_FOUND.getStatusCode(),
+              "Error. Enable Python to create a private local scratch directory for unzipping files.");
+    }
+    String projectLocalScratchDir = jupyterFacade.getProjectPath(jp, project.getName(), hdfsUser);
+    
     List<String> commands = new ArrayList<>();
     commands.add("/bin/bash");
     commands.add("-c");
     commands.add(settings.getHopsworksDomainDir() + "/bin/unzip-background.sh");
+    commands.add(projectLocalScratchDir);
     commands.add(path);
+    commands.add(hdfsUser);
 
     SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands);
     String stdout = "", stderr = "";
@@ -212,7 +235,7 @@ public class DataSetService {
       inodeView = new InodeView(parent, ds, projPath + File.separator + ds.
               getInode()
               .getInodePK().getName());
-      user = userfacade.findByUsername(inodeView.getOwner());
+      user = userFacade.findByUsername(inodeView.getOwner());
       if (user != null) {
         inodeView.setOwner(user.getFname() + " " + user.getLname());
         inodeView.setEmail(user.getEmail());
@@ -242,7 +265,7 @@ public class DataSetService {
 
         inodeView = new InodeView(projectInode, newDS, projPath + File.separator
                 + ds.getInodePK().getName());
-        user = userfacade.findByUsername(inodeView.getOwner());
+        user = userFacade.findByUsername(inodeView.getOwner());
         if (user != null) {
           inodeView.setOwner(user.getFname() + " " + user.getLname());
           inodeView.setEmail(user.getEmail());
@@ -251,7 +274,7 @@ public class DataSetService {
       }
     }
     GenericEntity<List<InodeView>> inodViews
-            = new GenericEntity<List<InodeView>>(kids) {};
+            = new GenericEntity<List<InodeView>>(kids) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodViews).build();
   }
@@ -287,7 +310,7 @@ public class DataSetService {
     Users user;
     for (Inode i : cwdChildren) {
       inodeView = new InodeView(i, fullpath + "/" + i.getInodePK().getName());
-      user = userfacade.findByUsername(inodeView.getOwner());
+      user = userFacade.findByUsername(inodeView.getOwner());
       if (user != null) {
         inodeView.setOwner(user.getFname() + " " + user.getLname());
         inodeView.setEmail(user.getEmail());
@@ -295,7 +318,7 @@ public class DataSetService {
       kids.add(inodeView);
     }
     GenericEntity<List<InodeView>> inodeViews
-            = new GenericEntity<List<InodeView>>(kids) {};
+            = new GenericEntity<List<InodeView>>(kids) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodeViews).build();
   }
@@ -320,14 +343,14 @@ public class DataSetService {
 
     inodeView = new InodeView(inode, fullpath + "/" + inode.getInodePK().
             getName());
-    user = userfacade.findByUsername(inodeView.getOwner());
+    user = userFacade.findByUsername(inodeView.getOwner());
     if (user != null) {
       inodeView.setOwner(user.getFname() + " " + user.getLname());
       inodeView.setEmail(user.getEmail());
     }
 
     GenericEntity<InodeView> inodeViews
-            = new GenericEntity<InodeView>(inodeView) {};
+            = new GenericEntity<InodeView>(inodeView) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             inodeViews).build();
   }
@@ -494,7 +517,8 @@ public class DataSetService {
     List<Project> list = datasetFacade.findProjectSharedWith(project, dataSet.
             getName());
     GenericEntity<List<Project>> projects = new GenericEntity<List<Project>>(
-            list) { };
+            list) {
+    };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             projects).build();
@@ -1473,7 +1497,7 @@ public class DataSetService {
       path = path + File.separator;
     }
 
-    Users user = this.userfacade.findByEmail(context.getUserPrincipal().
+    Users user = this.userFacade.findByEmail(context.getUserPrincipal().
             getName());
 
     ErasureCodeJobConfiguration ecConfig

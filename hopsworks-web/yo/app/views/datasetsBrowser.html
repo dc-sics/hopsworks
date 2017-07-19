@@ -59,6 +59,9 @@
                                   ng-click="datasetsCtrl.openDir(datasetsCtrl.selectedFiles[datasetsCtrl.selected])"></button>
                           <button type="button" class="btn btn-default fa fa-camera" title="Preview"
                                   ng-click="datasetsCtrl.filePreview(datasetsCtrl.selected, true, false)"></button>
+                          <button type="button" class="btn btn-default fa fa-file-archive-o" title="Unzip" 
+                                  ng-hide="datasetsCtrl.isZippedfile()===false"
+                                  ng-click="datasetsCtrl.unzip(datasetsCtrl.selected)"></button>
                         </div>
                       </div>
                     </div>
@@ -181,11 +184,11 @@
                       <td uib-dropdown class="position-fixed" id="menu-{{ $index}}" style="border-top: none">
                         <ul uib-dropdown-menu class="dropdown-amore" role="menu">
                           <li ng-show="datasetsCtrl.isSelectedFiles() <= 1" 
-                              ng-hide="datasetsCtrl.isZippedfile(file.name)===false">
+                              ng-hide="datasetsCtrl.isZippedfile()===false">
                             <a class="pointer"
                                role="menuitem"
                                tabindex="10"
-                               ng-click="datasetsCtrl.unzip(file.name)"
+                               ng-click="datasetsCtrl.unzip()"
                                data-toggle="uib-tooltip" title="Decompress this archive file using the staging directory
                                on the scratch disk of the webserver."
                                >
@@ -197,7 +200,7 @@
                             <a class="pointer"
                                role="menuitem"
                                tabindex="1"
-                               ng-click="datasetsCtrl.filePreview(file.name, true, false)"
+                               ng-click="datasetsCtrl.filePreview(file, true, false)"
                                data-toggle="uib-tooltip" title="Click to display a preview of a text file."
                                >
                               <span><i class="fa fa-camera-retro" ></i>

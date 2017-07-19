@@ -369,9 +369,9 @@ This will make all its files unavailable to other projects unless you share it e
               return clippedPath;
             };
 
-            self.unzip = function (file) {
+            self.unzip = function () {
               var pathArray = self.pathArray.slice(0);
-              pathArray.push(file.name);
+              pathArray.push(self.selected);
               var filePath = getPath(pathArray);
 
               dataSetService.unzip(filePath).then(
@@ -387,11 +387,11 @@ This will make all its files unavailable to other projects unless you share it e
 
             };
 
-            self.isZippedfile = function (file) {
+            self.isZippedfile = function () {
 
 // https://stackoverflow.com/questions/680929/how-to-extract-extension-from-filename-string-in-javascript
               var re = /(?:\.([^.]+))?$/;
-              var ext = re.exec(file.name)[1];
+              var ext = re.exec(self.selected)[1];
               switch (ext) {
                 case "zip":
                   return true; 
