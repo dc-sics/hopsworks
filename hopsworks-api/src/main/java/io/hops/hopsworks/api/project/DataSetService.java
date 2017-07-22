@@ -52,7 +52,6 @@ import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeView;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
-import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.metadata.Template;
@@ -81,6 +80,8 @@ import io.hops.hopsworks.common.metadata.exception.DatabaseException;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.common.util.SystemCommandExecutor;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.commons.codec.digest.DigestUtils;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -165,19 +166,35 @@ public class DataSetService {
     String email = sc.getUserPrincipal().getName();
     Users user = userFacade.findByEmail(email);
     String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
-    JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
-    if (jp == null) {
-      throw new AppException(
-              Response.Status.NOT_FOUND.getStatusCode(),
-              "Error. Enable Python to create a private local scratch directory for unzipping files.");
-    }
-    String projectLocalScratchDir = jupyterFacade.getProjectPath(jp, project.getName(), hdfsUser);
-    
+
+    String secret = DigestUtils.sha256Hex(Integer.toString(
+            ThreadLocalRandom.current().nextInt()));
+
+    String scratchDir = settings.getHopsworksDomainDir() + File.separator
+            + Settings.DIR_SCRATCH + File.separator + secret;
+
+    File unzipDir = new File(scratchDir);
+    unzipDir.mkdirs();
+
+//    Set<PosixFilePermission> perms = new HashSet<>();
+//    //add owners permission
+//    perms.add(PosixFilePermission.OWNER_READ);
+//    perms.add(PosixFilePermission.OWNER_WRITE);
+//    perms.add(PosixFilePermission.OWNER_EXECUTE);
+//    //add group permissions
+//    perms.add(PosixFilePermission.GROUP_READ);
+//    perms.add(PosixFilePermission.GROUP_WRITE);
+//    perms.add(PosixFilePermission.GROUP_EXECUTE);
+//    //add others permissions
+//    perms.add(PosixFilePermission.OTHERS_READ);
+//    perms.add(PosixFilePermission.OTHERS_WRITE);
+//    perms.add(PosixFilePermission.OTHERS_EXECUTE);
+//    Files.setPosixFilePermissions(Paths.get(unzipDir), perms);
     List<String> commands = new ArrayList<>();
     commands.add("/bin/bash");
     commands.add("-c");
     commands.add(settings.getHopsworksDomainDir() + "/bin/unzip-background.sh");
-    commands.add(projectLocalScratchDir);
+    commands.add(scratchDir);
     commands.add(path);
     commands.add(hdfsUser);
 
@@ -517,8 +534,7 @@ public class DataSetService {
     List<Project> list = datasetFacade.findProjectSharedWith(project, dataSet.
             getName());
     GenericEntity<List<Project>> projects = new GenericEntity<List<Project>>(
-            list) {
-    };
+            list) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             projects).build();

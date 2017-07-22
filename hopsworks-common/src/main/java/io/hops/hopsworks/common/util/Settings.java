@@ -817,6 +817,7 @@ public class Settings implements Serializable {
   }
 
   //Directory names in HDFS
+  public static final String DIR_SCRATCH = "scratch";
   public static final String DIR_ROOT = "Projects";
   public static final String DIR_SAMPLES = "Samples";
   public static final String DIR_RESULTS = "Results";
@@ -1434,4 +1435,12 @@ public class Settings implements Serializable {
     }
     return aggregatedLogPath;
   }
+  
+  
+  public synchronized String[] getFilesBeingUnzipped(String hdfsPath) {
+    String[] files = new String[0];
+    
+    return files;
+  }
+  
 }
