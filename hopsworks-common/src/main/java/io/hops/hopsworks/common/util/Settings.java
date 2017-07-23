@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
@@ -1446,15 +1447,14 @@ public class Settings implements Serializable {
     return aggregatedLogPath;
   }
 
-  
   // For performance reasons, we have an in-memory cache of files being unzipped
   // Lazily remove them from the cache, when we check the FS and they aren't there.
   Set<String> unzippingFiles = new HashSet<>();
-  
+
   public synchronized void addUnzippingState(String hdfsPath) {
     unzippingFiles.add(hdfsPath);
   }
-  
+
   public synchronized String getUnzippingState(String hdfsPath) {
 
     if (!unzippingFiles.contains(hdfsPath)) {
@@ -1472,6 +1472,19 @@ public class Settings implements Serializable {
       state = "NONE";
       // lazily remove the file, probably because it has finished unzipping
       unzippingFiles.remove(hdfsPath);
+    }
+    // If a terminal state has been reached, removed the entry and the file.
+    if (state == null || state.isEmpty() || state.compareTo("FAILED") == 0
+            || state.compareTo("SUCCESS") == 0) {
+      try {
+        unzippingFiles.remove(hdfsPath);
+        java.nio.file.Files.deleteIfExists(Paths.get(fsmPath));
+      } catch (IOException ex) {
+        Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
+    if (state == null || state.isEmpty()) {
+      state = "NOT_FOUND";
     }
 
     return state;

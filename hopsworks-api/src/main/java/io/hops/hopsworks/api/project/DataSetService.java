@@ -188,8 +188,8 @@ public class DataSetService {
 //    perms.add(PosixFilePermission.OTHERS_EXECUTE);
 //    Files.setPosixFilePermissions(Paths.get(unzipDir), perms);
     List<String> commands = new ArrayList<>();
-    commands.add("/bin/bash");
-    commands.add("-c");
+//    commands.add("/bin/bash");
+//    commands.add("-c");
     commands.add(settings.getHopsworksDomainDir() + "/bin/unzip-background.sh");
     commands.add(scratchDir);
     commands.add(path);
