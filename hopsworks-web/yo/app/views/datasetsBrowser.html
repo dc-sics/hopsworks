@@ -145,7 +145,12 @@
                           dir-paginate="file in datasetsCtrl.files | orderBy:sortKey:reverse | filter:search | itemsPerPage:datasetsCtrl.itemsPerPage"
                           context-menu
                           data-target="menu-{{ $index}}"
-                          ng-class="{ 'highlight': datasetsCtrl.haveSelected(file) === true}"
+                          ng-class="{ 'highlight': datasetsCtrl.haveSelected(file) === true, 
+                                    'staging' : file.unzippingState === 'STAGING',
+                                    'unzipping' : file.unzippingState === 'UNZIPPING',
+                                    'uploading' : file.unzippingState === 'UPLOADING',
+                                    'failed' : file.unzippingState === 'FAILED'
+                          }"
                           id="table-{{ $index}}">
                           <td>
                       <md-button class="md-icon-button md-primary" aria-label="Select File" ng-show="!datasetsCtrl.haveSelected(file)" 

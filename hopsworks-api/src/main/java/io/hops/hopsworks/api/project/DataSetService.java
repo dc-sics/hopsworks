@@ -80,7 +80,6 @@ import io.hops.hopsworks.common.metadata.exception.DatabaseException;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.common.util.SystemCommandExecutor;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.codec.digest.DigestUtils;
 
 @RequestScoped
@@ -167,11 +166,9 @@ public class DataSetService {
     Users user = userFacade.findByEmail(email);
     String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
 
-    String secret = DigestUtils.sha256Hex(Integer.toString(
-            ThreadLocalRandom.current().nextInt()));
-
+    String localDir = DigestUtils.sha256Hex(path);
     String scratchDir = settings.getHopsworksDomainDir() + File.separator
-            + Settings.DIR_SCRATCH + File.separator + secret;
+            + Settings.DIR_SCRATCH + File.separator + localDir;
 
     File unzipDir = new File(scratchDir);
     unzipDir.mkdirs();
@@ -204,6 +201,12 @@ public class DataSetService {
       int result = commandExecutor.executeCommand();
       stdout = commandExecutor.getStandardOutputFromCommand();
       stderr = commandExecutor.getStandardErrorFromCommand();
+      if (result == 2) {
+        throw new AppException(Response.Status.EXPECTATION_FAILED.
+                getStatusCode(),
+                "Not enough free space on the local scratch directory to download and unzip this file."
+                + "Talk to your admin to increase disk space at the path: hopsworks/staging_dir");
+      }
       if (result != 0) {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
                 getStatusCode(),
@@ -219,6 +222,8 @@ public class DataSetService {
               getStatusCode(),
               "IOException. Could not unzip the file at path: " + path);
     }
+
+    settings.addUnzippingState(path);
 
     return noCacheResponse.getNoCacheResponseBuilder(resp).build();
   }
@@ -327,6 +332,8 @@ public class DataSetService {
     Users user;
     for (Inode i : cwdChildren) {
       inodeView = new InodeView(i, fullpath + "/" + i.getInodePK().getName());
+      inodeView.setUnzippingState(settings.getUnzippingState(
+              fullpath + "/" + i.getInodePK().getName()));
       user = userFacade.findByUsername(inodeView.getOwner());
       if (user != null) {
         inodeView.setOwner(user.getFname() + " " + user.getLname());
@@ -360,6 +367,8 @@ public class DataSetService {
 
     inodeView = new InodeView(inode, fullpath + "/" + inode.getInodePK().
             getName());
+    inodeView.setUnzippingState(settings.getUnzippingState(
+            fullpath + "/" + inode.getInodePK().getName()));
     user = userFacade.findByUsername(inodeView.getOwner());
     if (user != null) {
       inodeView.setOwner(user.getFname() + " " + user.getLname());

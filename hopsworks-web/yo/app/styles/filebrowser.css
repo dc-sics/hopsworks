@@ -368,6 +368,23 @@ md-backdrop.md-sidenav-backdrop {
   color:white;
 }
 
+.table-hover > tbody > tr.staging {
+  background-color:#FFC0CB;
+  color:white;
+}
+.table-hover > tbody > tr.unzipping {
+  background-color:#FFB6C1;
+  color:white;
+}
+.table-hover > tbody > tr.uploading {
+  background-color:#98FB98;
+  color:white;
+}
+.table-hover > tbody > tr.failed {
+  background-color:#FF1493;
+  color:white;
+}
+
 .md-tabs-content {
   overflow: auto;
   height: 88%;
