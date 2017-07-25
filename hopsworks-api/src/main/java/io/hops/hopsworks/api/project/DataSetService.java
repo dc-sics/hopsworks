@@ -167,10 +167,9 @@ public class DataSetService {
     String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
 
     String localDir = DigestUtils.sha256Hex(path);
-    String scratchDir = settings.getHopsworksDomainDir() + File.separator
-            + Settings.DIR_SCRATCH + File.separator + localDir;
+    String stagingDir = settings.getStagingDir() + File.separator + localDir;
 
-    File unzipDir = new File(scratchDir);
+    File unzipDir = new File(stagingDir);
     unzipDir.mkdirs();
 
 //    Set<PosixFilePermission> perms = new HashSet<>();
@@ -191,12 +190,13 @@ public class DataSetService {
 //    commands.add("/bin/bash");
 //    commands.add("-c");
     commands.add(settings.getHopsworksDomainDir() + "/bin/unzip-background.sh");
-    commands.add(scratchDir);
+    commands.add(stagingDir);
     commands.add(path);
     commands.add(hdfsUser);
 
     SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands);
     String stdout = "", stderr = "";
+    settings.addUnzippingState(path);
     try {
       int result = commandExecutor.executeCommand();
       stdout = commandExecutor.getStandardOutputFromCommand();
@@ -222,8 +222,6 @@ public class DataSetService {
               getStatusCode(),
               "IOException. Could not unzip the file at path: " + path);
     }
-
-    settings.addUnzippingState(path);
 
     return noCacheResponse.getNoCacheResponseBuilder(resp).build();
   }

@@ -145,11 +145,12 @@
                           dir-paginate="file in datasetsCtrl.files | orderBy:sortKey:reverse | filter:search | itemsPerPage:datasetsCtrl.itemsPerPage"
                           context-menu
                           data-target="menu-{{ $index}}"
-                          ng-class="{ 'highlight': datasetsCtrl.haveSelected(file) === true, 
-                                    'staging' : file.unzippingState === 'STAGING',
-                                    'unzipping' : file.unzippingState === 'UNZIPPING',
-                                    'uploading' : file.unzippingState === 'UPLOADING',
-                                    'failed' : file.unzippingState === 'FAILED'
+                          ng-class="{ 'highlight': datasetsCtrl.haveSelected(file) === true
+                            , 'staging' : file.unzippingState === 'STAGING'
+                            , 'unzipping' : file.unzippingState === 'UNZIPPING'
+                            , 'uploading' : file.unzippingState === 'UPLOADING'
+                            , 'success' : file.unzippingState === 'SUCCESS'
+                            , 'failed' : file.unzippingState === 'FAILED'
                           }"
                           id="table-{{ $index}}">
                           <td>
@@ -308,14 +309,36 @@
                           </li>
                         </ul>
                       </td>
+                      </td>
                       <td style="margin:0px;width:25px;" 
-                          ng-if="(file.underConstruction && !datasetsCtrl.working) ||
-                                                                            (file.dir && datasetsCtrl.working && ($index === datasetsCtrl.selected))">
+                          ng-if="(file.unzippingState !== 'NONE') || 
+                                  (file.underConstruction && !datasetsCtrl.working) ||
+                                  (file.dir && datasetsCtrl.working && ($index === datasetsCtrl.selected))">
                         <!--<i ng-if="$index >= 5 && (!file.underConstruction && !datasetsCtrl.working)"
                               title="This file is compressed"
                               style="color: lightgrey; margin-top:3px;"
                               class="glyphicon glyphicon-compressed">
                             </i>-->
+                        <i ng-if="file.unzippingState === 'SUCCESS'"
+                           title="File has been successfully unzipped/decompressed."
+                           style="color: darkgreen; margin-top:3px;"> Unzip Complete
+                        </i>
+                        <i ng-if="file.unzippingState === 'STAGING'"
+                           title="File is being copied to local staging directory from HDFS."
+                           style="color: darkgreen; margin-top:3px;"> Staging
+                        </i>
+                        <i ng-if="file.unzippingState === 'UNZIPPING'"
+                           title="File is being unzipped."
+                           style="color: darkgreen; margin-top:3px;"> Unzipping
+                        </i>
+                        <i ng-if="file.unzippingState === 'UPLOADING'"
+                           title="Unzipped file(s) are being uploaded to HDFS."
+                           style="color: darkgreen; margin-top:3px;"> Uploading
+                        </i>
+                        <i ng-if="file.unzippingState === 'FAILED'"
+                           title="Error when unzipping/decompressing the file."
+                           style="color: darkred; margin-top:3px;"> Unzip Failed
+                        </i>
                         <i ng-if="file.underConstruction && !datasetsCtrl.working"
                            title="File under construction"
                            style="color: lightgrey; margin-top:3px;"

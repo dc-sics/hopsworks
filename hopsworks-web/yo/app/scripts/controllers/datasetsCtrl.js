@@ -374,17 +374,15 @@ This will make all its files unavailable to other projects unless you share it e
               pathArray.push(self.selected);
               var filePath = getPath(pathArray);
 
-              dataSetService.unzip(filePath).then(
+                growl.info("Started unzipping...", 
+                {title: 'Unzipping Started', ttl: 2000, referenceId: 4});
+                dataSetService.unzip(filePath).then(
                       function (success) {
-//                          var fileDetails = JSON.parse(success.data.data);
-//                          var content = fileDetails.filePreviewDTO[0].content;
-//                          $scope.readme = $showdown.makeHtml(content);
+                growl.success("Refresh your browser when finished", 
+                {title: 'Unzipping in Background', ttl: 5000, referenceId: 4});
                       }, function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error unzipping file', ttl: 5000, referenceId: 4});
-//                  $scope.readme = null;
-              });
-
-
+              }); 
             };
 
             self.isZippedfile = function () {
