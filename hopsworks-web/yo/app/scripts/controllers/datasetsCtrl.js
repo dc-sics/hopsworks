@@ -393,6 +393,8 @@ This will make all its files unavailable to other projects unless you share it e
               switch (ext) {
                 case "zip":
                   return true; 
+                case "rar":
+                  return true;
                 case "tar":
                   return true;
                 case "tgz":
