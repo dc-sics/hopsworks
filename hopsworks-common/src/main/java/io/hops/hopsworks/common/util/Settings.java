@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.util;
 
-import com.google.common.io.Files;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.dao.util.Variables;
 import java.io.File;
@@ -57,6 +56,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_SPARK_USER = "spark_user";
   private static final String VARIABLE_YARN_SUPERUSER = "yarn_user";
   private static final String VARIABLE_HDFS_SUPERUSER = "hdfs_user";
+  private static final String VARIABLE_STAGING_DIR = "staging_dir";
   private static final String VARIABLE_ZEPPELIN_DIR = "zeppelin_dir";
   private static final String VARIABLE_ZEPPELIN_PROJECTS_DIR
           = "zeppelin_projects_dir";
@@ -112,6 +112,8 @@ public class Settings implements Serializable {
   private static final String VARIABLE_ANACONDA_DIR = "anaconda_dir";
   private static final String VARIABLE_ANACONDA_INSTALLED = "anaconda_enabled";
 
+  private static final String VARIABLE_HOPSUTIL_VERSION = "hopsutil_version";
+
   private static final String VARIABLE_INFLUXDB_IP = "influxdb_ip";
   private static final String VARIABLE_INFLUXDB_PORT = "influxdb_port";
   private static final String VARIABLE_INFLUXDB_USER = "influxdb_user";
@@ -122,7 +124,6 @@ public class Settings implements Serializable {
   private static final String VARIABLE_CERTS_DIRS = "certs_dir";
   private static final String VARIABLE_VAGRANT_ENABLED = "vagrant_enabled";
 
-  private static final String VARIABLE_STAGING_DIR = "staging_dir";
   private static final String VARIABLE_MAX_STATUS_POLL_RETRY
           = "max_status_poll_retry";
 
@@ -230,6 +231,7 @@ public class Settings implements Serializable {
       FLINK_USER = setVar(VARIABLE_FLINK_USER, FLINK_USER);
       FLINK_DIR = setDirVar(VARIABLE_FLINK_DIR, FLINK_DIR);
       String stagingDir = setDirVar(VARIABLE_STAGING_DIR, STAGING_DIR);
+      HOPSUTIL_VERSION = setVar(VARIABLE_HOPSUTIL_VERSION, HOPSUTIL_VERSION);
       ZEPPELIN_USER = setVar(VARIABLE_ZEPPELIN_USER, ZEPPELIN_USER);
       ZEPPELIN_DIR = setDirVar(VARIABLE_ZEPPELIN_DIR, ZEPPELIN_DIR);
       ZEPPELIN_PROJECTS_DIR = setDirVar(VARIABLE_ZEPPELIN_PROJECTS_DIR,
@@ -420,7 +422,7 @@ public class Settings implements Serializable {
   }
 
   // "/tmp" by default
-  private String STAGING_DIR = Files.createTempDir().getParent();
+  private String STAGING_DIR = "/srv/hops/domains/domain1/staging";
 
   public synchronized String getStagingDir() {
     checkCache();
@@ -660,8 +662,6 @@ public class Settings implements Serializable {
   public static final String SPARK_LOCALIZED_CONF_DIR = "__spark_conf__";
   public static final String SPARK_LOCALIZED_PYTHON_DIR = "__pyfiles__";
   public static final String SPARK_LOCRSC_APP_JAR = "__app__.jar";
-  public static final String HOPSUTIL_JAR = "hops-util-0.1.jar";
-  public static final String HOPS_KAFKA_TOUR_JAR = "hops-spark-0.1.jar";
 
   public static final String HOPS_TOUR_DATASET = "TestJob";
   // Distribution-defined classpath to add to processes
@@ -773,10 +773,6 @@ public class Settings implements Serializable {
     return "hdfs:///user/glassfish/log4j.properties";
   }
 
-  public static String getHopsutilPath(String sparkUser) {
-    return "hdfs:///user/" + sparkUser + "/" + HOPSUTIL_JAR;
-  }
-
   public synchronized String getSparkDefaultClasspath() {
     return sparkDefaultClasspath(getSparkDir());
   }
@@ -825,7 +821,6 @@ public class Settings implements Serializable {
   }
 
   //Directory names in HDFS
-  public static final String DIR_SCRATCH = "scratch";
   public static final String DIR_ROOT = "Projects";
   public static final String DIR_SAMPLES = "Samples";
   public static final String DIR_RESULTS = "Results";
@@ -1460,14 +1455,12 @@ public class Settings implements Serializable {
     if (!unzippingFiles.contains(hdfsPath)) {
       return "NONE";
     }
-    String localDir = DigestUtils.sha256Hex(hdfsPath);
-    String fsmPath = getHopsworksDomainDir() + File.separator
-            + Settings.DIR_SCRATCH + File.separator + localDir + "/fsm.txt";
-
+    String hashedPath = DigestUtils.sha256Hex(hdfsPath);
+    String fsmPath = getStagingDir() + "/fsm-" + hashedPath + ".txt";
     String state = "NOT_FOUND";
-
     try {
       state = new String(java.nio.file.Files.readAllBytes(Paths.get(fsmPath)));
+      state = state.trim();
     } catch (IOException ex) {
       state = "NONE";
       // lazily remove the file, probably because it has finished unzipping
@@ -1489,4 +1482,22 @@ public class Settings implements Serializable {
 
     return state;
   }
+
+  private static String HOPSUTIL_VERSION = "0.1.1";
+
+  public synchronized String getHopsUtilHdfsPath(String sparkUser) {
+    return "hdfs:///user/" + sparkUser + "/" + getHopsUtilFilename();
+  }
+
+  public synchronized String getHopsUtilFilename() {
+    checkCache();
+    return "hops-util-" + HOPSUTIL_VERSION + ".jar";
+  }
+
+  public synchronized String getKafkaTourFilename() {
+    checkCache();
+    return "hops-spark-" + HOPSUTIL_VERSION + ".jar";
+
+  }
+
 }
