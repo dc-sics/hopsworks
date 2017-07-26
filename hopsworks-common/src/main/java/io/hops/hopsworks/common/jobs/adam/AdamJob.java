@@ -37,15 +37,15 @@ public class AdamJob extends SparkJob {
    * @param sparkDir
    * @param adamUser
    * @param jobUser
-   * @param nameNodeIpPort
    * @param adamJarPath
    * @param jobsMonitor
    */
   public AdamJob(JobDescription job,
       AsynchronousJobExecutor services, Users user, String hadoopDir,
       String sparkDir, String adamUser, String jobUser,
-      String nameNodeIpPort, String adamJarPath, YarnJobsMonitor jobsMonitor) {
-    super(job, services, user, hadoopDir, sparkDir, nameNodeIpPort, adamUser, jobUser, jobsMonitor);
+      String adamJarPath, YarnJobsMonitor jobsMonitor, Settings settings) {
+    super(job, services, user, hadoopDir, sparkDir, adamUser,
+        jobUser, jobsMonitor, settings);
     if (!(job.getJobConfig() instanceof AdamJobConfiguration)) {
       throw new IllegalArgumentException(
           "JobDescription must contain a AdamJobConfiguration object. Received: "
@@ -118,7 +118,7 @@ public class AdamJob extends SparkJob {
     try {
       runner = runnerbuilder.
           getYarnRunner(jobDescription.getProject().getName(),
-              adamUser, jobUser, sparkDir, services);
+              adamUser, jobUser, sparkDir, services, settings);
     } catch (IOException e) {
       LOG.log(Level.SEVERE,
           "Failed to create YarnRunner.", e);
