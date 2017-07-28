@@ -2,6 +2,7 @@ package io.hops.hopsworks.api.airpal.proxy;
 
 import io.hops.hopsworks.api.kibana.MyRequestWrapper;
 import io.hops.hopsworks.api.kibana.ProxyServlet;
+import io.hops.hopsworks.common.constants.auth.AllowedRoles;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 //import io.hops.hopsworks.common.dao.project.Project;
@@ -10,15 +11,17 @@ import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceFacade;
 import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 //import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.project.ProjectController;
-//import io.hops.hopsworks.common.util.Settings;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -75,9 +78,14 @@ public class AirpalProxyServlet extends ProxyServlet {
   boolean projservicebool = false;
   boolean projidbool = false;
   boolean isAuth = false;
+  String cmd = null;
+  String someMessage = null;
+  String userRole;
 
   @EJB
   private ProjectFacade projectFacade;
+  @EJB
+  private ProjectTeamFacade projectTeamBean;
   @EJB
   private ProjectServiceFacade projectServiceFacade;
 
@@ -124,6 +132,9 @@ public class AirpalProxyServlet extends ProxyServlet {
         airpalFilter = airpalFilter.Airpal_Table;
 //        x = true;
       }
+    } else if (servletRequest.getRequestURI().contains(
+      "/api/execute")) {
+      airpalFilter = airpalFilter.Airpal_execute;
     }
     logger.info("servletRequest.getRequestURI() ======>" + servletRequest.getRequestURI());
     logger.info("servletRequest.getRequestURL() ======>" + servletRequest.getRequestURL().toString());
@@ -143,8 +154,8 @@ public class AirpalProxyServlet extends ProxyServlet {
     HttpRequest proxyRequest;
     //spec: RFC 2616, sec 4.3: either of these two headers signal that there is a message body.
     logger.info("proxyRequestUri ======>" + proxyRequestUri);
-    if (!(servletRequest.getRequestURI().contains(
-      "/app"))) {
+
+    if (!servletRequest.getRequestURI().contains("/app") && !servletRequest.getRequestURI().contains("/api/files")) {
 //      logger.info("inside AIrpaltable first swtch stmt==============");
       logger.info("Requesturi of api requests ==============" + requestURI);
 
@@ -161,6 +172,30 @@ public class AirpalProxyServlet extends ProxyServlet {
             "You don't have the access right for this application");
           return;
         }
+
+      }
+      if (servletRequest.getRequestURI().contains(
+        "/execute") && method.equalsIgnoreCase("put")) {
+        JSONObject body = new JSONObject(myRequestWrapper.getBody());
+        String query = (String) body.get("query");
+
+        logger.info("execute request put method ======body 177========" + body);
+
+        logger.info("execute request put method ======query 175========" + query);
+        String[] queryArray = query.split(" ");
+        if (queryArray.length > 1) {
+          cmd = queryArray[0];
+          Project project = projectFacade.find(Integer.parseInt(projid));
+          userRole = projectTeamBean.findCurrentRole(project, email);
+          if (userRole.equalsIgnoreCase(AllowedRoles.DATA_SCIENTIST)) {
+            if (!(cmd.equalsIgnoreCase("select"))) {
+              QueryDialog.infoBox("You dont have access to execute this query",
+                "Access Denied");
+
+            }
+          }
+        }
+
       }
 
       if (!(method.equalsIgnoreCase("post"))) {
@@ -308,7 +343,7 @@ public class AirpalProxyServlet extends ProxyServlet {
               String proj = tnameArray[1];
               if (projectID.equalsIgnoreCase(proj)) {
                 resultArray.put(jsonobject);
-                //logger.info("resultArray ==============" + resultArray);
+                logger.info("resultArray ==============" + resultArray);
               }
             }
             //logger.info("resultArray ===finallllllll===========" + resultArray);
@@ -406,19 +441,15 @@ public class AirpalProxyServlet extends ProxyServlet {
             logger.info("he is valid user continueeeeeeeeeeeeeeeeeeeeee");
             return isAuth;
           }
-          
+
         }
         break;
       }
 
     }
 
-    if (!projidbool || !projservicebool || !inTeam ) {
-      isAuth = false;
-
-    }
-    logger.info("isAuth==============="+isAuth);
-    return isAuth;
+    logger.info("isAuth===============" + isAuth);
+    return isAuth = false;
   }
 
   private String getProjid(String projectID) {
