@@ -9,6 +9,7 @@ import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.execution.HopsJob;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 
 public class ErasureCodeJob extends HopsJob {
 
@@ -17,10 +18,9 @@ public class ErasureCodeJob extends HopsJob {
   private ErasureCodeJobConfiguration jobConfig;
 
   public ErasureCodeJob(JobDescription job, AsynchronousJobExecutor services,
-          Users user,
-          String hadoopDir, String nameNodeIpPort) {
+          Users user, String hadoopDir, YarnJobsMonitor jobsMonitor) {
 
-    super(job, services, user, hadoopDir, nameNodeIpPort);
+    super(job, services, user, hadoopDir, jobsMonitor);
 
     if (!(job.getJobConfig() instanceof ErasureCodeJobConfiguration)) {
       throw new IllegalArgumentException(

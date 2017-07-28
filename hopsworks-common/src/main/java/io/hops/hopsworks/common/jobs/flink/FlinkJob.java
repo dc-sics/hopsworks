@@ -20,6 +20,7 @@ import org.apache.hadoop.fs.Path;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.jobs.yarn.YarnJob;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 import io.hops.hopsworks.common.util.Settings;
 
 /**
@@ -47,17 +48,18 @@ public class FlinkJob extends YarnJob {
    * @param flinkDir
    * @param flinkConfDir
    * @param flinkConfFile
-   * @param nameNodeIpPort
    * @param flinkUser
    * @param jobUser
    * @param glassfishDomainsDir
+   * @param jobsMonitor
    */
   public FlinkJob(JobDescription job, AsynchronousJobExecutor services,
       Users user, final String hadoopDir,
       final String flinkDir, final String flinkConfDir,
-      final String flinkConfFile, final String nameNodeIpPort,
-      String flinkUser, String jobUser, final String glassfishDomainsDir) {
-    super(job, services, user, jobUser, hadoopDir, nameNodeIpPort);
+      final String flinkConfFile, String flinkUser,
+      String jobUser, final String glassfishDomainsDir, YarnJobsMonitor jobsMonitor,
+      Settings settings) {
+    super(job, services, user, jobUser, hadoopDir, jobsMonitor, settings);
     if (!(job.getJobConfig() instanceof FlinkJobConfiguration)) {
       throw new IllegalArgumentException(
           "JobDescription must contain a FlinkJobConfiguration object. Received: "
@@ -129,7 +131,7 @@ public class FlinkJob extends YarnJob {
       runner = flinkBuilder.
           getYarnRunner(jobDescription.getProject().getName(),
               flinkUser, jobUser, hadoopDir, flinkDir, flinkConfDir,
-              flinkConfFile, nameNodeIpPort, glassfishDomainDir + "/domain1/config/");
+              flinkConfFile, glassfishDomainDir + "/domain1/config/", services);
 
     } catch (IOException e) {
       LOG.log(Level.SEVERE,
@@ -142,12 +144,12 @@ public class FlinkJob extends YarnJob {
       return false;
     }
 
-    String stdOutFinalDestination = Utils.getHdfsRootPath(hadoopDir,
+    String stdOutFinalDestination = Utils.getHdfsRootPath(
         jobDescription.
             getProject().
             getName())
         + Settings.FLINK_DEFAULT_OUTPUT_PATH;
-    String stdErrFinalDestination = Utils.getHdfsRootPath(hadoopDir,
+    String stdErrFinalDestination = Utils.getHdfsRootPath(
         jobDescription.
             getProject().
             getName())

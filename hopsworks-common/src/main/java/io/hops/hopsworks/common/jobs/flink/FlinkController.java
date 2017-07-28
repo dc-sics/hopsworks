@@ -1,7 +1,5 @@
 package io.hops.hopsworks.common.jobs.flink;
 
-import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptors;
-import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptorsFacade;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import java.io.File;
@@ -24,6 +22,7 @@ import io.hops.hopsworks.common.hdfs.UserGroupInformationService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 import io.hops.hopsworks.common.util.Settings;
 
 /**
@@ -37,6 +36,8 @@ public class FlinkController {
           getName());
 
   @EJB
+  YarnJobsMonitor jobsMonitor;
+  @EJB
   private DistributedFsService fops;
   @EJB
   private AsynchronousJobExecutor submitter;
@@ -48,8 +49,6 @@ public class FlinkController {
   private HdfsUsersController hdfsUsersBean;
   @EJB
   private Settings settings;
-  @EJB
-  private HdfsLeDescriptorsFacade hdfsLeDescriptorsFacade;
 
   /**
    * Start the Flink job as the given user.
@@ -89,11 +88,10 @@ public class FlinkController {
                   settings.getHadoopDir(), settings.getFlinkDir(),
                   settings.getFlinkConfDir(),
                   settings.getFlinkConfFile(),
-                  hdfsLeDescriptorsFacade.getSingleEndpoint(),
                   settings.getFlinkUser(),
                   hdfsUsersBean.getHdfsUserName(job.getProject(),
                           job.getCreator()),
-                  settings.getHopsworksDomainDir()
+                  settings.getHopsworksDomainDir(), jobsMonitor, settings
           );
         }
       });
@@ -134,10 +132,9 @@ public class FlinkController {
     FlinkJob flinkJob = new FlinkJob(job, submitter, user,
             settings.getHadoopDir(), settings.getFlinkDir(),
             settings.getFlinkConfDir(), settings.getFlinkConfFile(),
-            hdfsLeDescriptorsFacade.getSingleEndpoint(),
             settings.getFlinkUser(),
             job.getProject().getName() + "__" + user.getUsername(),
-            settings.getHopsworksDomainDir()
+            settings.getHopsworksDomainDir(), jobsMonitor, settings
     );
 
     submitter.stopExecution(flinkJob, appid);
@@ -210,10 +207,6 @@ public class FlinkController {
     if (!path.endsWith(".jar")) {
       throw new IllegalArgumentException("Path does not point to a jar file.");
     }
-    HdfsLeDescriptors hdfsLeDescriptors = hdfsLeDescriptorsFacade.findEndpoint();
-    // If the hdfs endpoint (ip:port - e.g., 10.0.2.15:8020) is missing, add it.
-    path = path.replaceFirst("hdfs:/*Projects",
-            "hdfs://" + hdfsLeDescriptors.getHostname() + "/Projects");
     LOG.log(Level.INFO, "Really executing Flink job by {0} at path: {1}",
             new Object[]{username, path});
 

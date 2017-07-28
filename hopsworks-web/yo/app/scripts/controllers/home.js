@@ -2,10 +2,10 @@
 
 angular.module('hopsWorksApp')
         .controller('HomeCtrl', ['ProjectService', 'UserService',
-        'ModalService', 'growl', 'ActivityService', '$q', 'TourService',
-        '$location', '$scope',
+        'ModalService', 'growl', 'ActivityService', '$q', 'TourService', 
+        'StorageService', '$location', '$scope',
           function (ProjectService, UserService, ModalService, growl,
-          ActivityService, $q, TourService, $location, $scope) {
+          ActivityService, $q, TourService, StorageService, $location, $scope) {
 
             var self = this;
 
@@ -27,8 +27,9 @@ angular.module('hopsWorksApp')
             self.showTourTips;
             self.getTours = function () {
               self.tours = [
-                {'name': 'spark', 'tip': 'Take a tour of HopsWorks by creating a project and running a Spark job!'},
-                {'name': 'kafka', 'tip': 'Take a tour of HopsWorks by creating a project and running a Kafka job!'}
+                {'name': 'Spark', 'tip': 'Take a tour of HopsWorks by creating a project and running a Spark job!'},
+                {'name': 'Kafka', 'tip': 'Take a tour of HopsWorks by creating a project and running a Kafka job!'},
+                {'name': 'TensorFlow', 'tip': 'Take a tour by creating a project and running a TensorFlow Mnist job!'}
 //                {'name': 'zeppelin', 'tip': 'Take a tour of Zeppelin by creating a Hopsworks project and running a Zeppelin notebook for Spark!'}
               ];
             };
@@ -181,7 +182,7 @@ angular.module('hopsWorksApp')
                   console.log("error");
                 }
               );
-            }
+            };
 
             self.loadToursState = function () {
                 return UserService.profile().then(
@@ -206,7 +207,7 @@ angular.module('hopsWorksApp')
 
             self.disableInformBalloon = function () {
               if (self.tourService.informAndTips) {
-                self.user.toursState = 1
+                self.user.toursState = 1;
                 self.updateProfile(self.tourService.setTipsOnlyState);
               } else if (self.tourService.informOnly) {
                 self.user.toursState = 3;
@@ -220,6 +221,7 @@ angular.module('hopsWorksApp')
               } else {
                 self.disableTourTips();
               }
+              StorageService.store("hopsworks-showtourtips",self.showTourTips);
             };
 
             self.disableTourTips = function () {
@@ -342,6 +344,8 @@ angular.module('hopsWorksApp')
 
             self.deleteProjectAndDatasets = function (projectId) {
               self.working[projectId] = true;
+              //Clear project StorageService state
+              StorageService.remove(projectId+"-tftour-finished");
               ProjectService.delete({id: projectId}).$promise.then(
                       function (success) {
                         growl.success(success.successMessage, {title: 'Success', ttl: 5000});

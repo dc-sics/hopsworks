@@ -46,7 +46,7 @@ angular.module('hopsWorksApp')
                 }else{
                   callback();
                 }
-            }
+            };
             
             var getAppIds = function () {
               if (self.job) {
@@ -58,7 +58,7 @@ angular.module('hopsWorksApp')
                   stopLoading();
                 });
               }
-            }
+            };
             
             var getJobUI = function () {
 
@@ -71,19 +71,17 @@ angular.module('hopsWorksApp')
                 console.log("Job object found was: ");
                 console.log(self.job);
                 getAppIds();
-                if(self.job != undefined && (self.job.jobType === "TENSORFLOW" || self.job.jobType === "FLINK")){
-                  getAppId(yarnUIInt);
-                } else {
                   getAppId(getJobUIInt);
-                }
               }
             };
 
             var getJobUIInt = function(){
               JobService.getExecutionUI(self.projectId, self.appId).then(
                         function (success) {
-
                           self.ui = success.data;
+                          if(self.job != undefined && self.job.jobType === "TENSORFLOW"){
+                            self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType="+self.job.jobType;
+                          }
                           self.current = "jobUI";
                           if (self.ui !== "") {
                             var iframe = document.getElementById('ui_iframe');
@@ -98,7 +96,7 @@ angular.module('hopsWorksApp')
                   stopLoading();
 
                 });
-            }
+            };
             
 
             self.jobUI = function () {
@@ -144,7 +142,7 @@ angular.module('hopsWorksApp')
                 growl.error(error.data.errorMsg, {title: 'Error fetching ui.', ttl: 15000});
                 stopLoading();
               });
-            }
+            };
             
             self.kibanaUI = function () {
               getAppId(kibanaUIInt);
@@ -156,7 +154,7 @@ angular.module('hopsWorksApp')
                         function (success) {
                           var projectName = success.data;
                           //if not zeppelin we should have a job
-                          self.ui = "/hopsworks-api/kibana/app/kibana#/discover?_g=(refreshInterval:" +
+                          self.ui = "/hopsworks-api/kibana/app/kibana?projectId="+self.projectId+"#/discover?_g=(refreshInterval:" +
                                   "(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))" +
                                   "&_a=(columns:!(%27timestamp%27,priority,application,logger_name,thread,message,host),index:" +
                                   projectName.toLowerCase() +
@@ -175,7 +173,7 @@ angular.module('hopsWorksApp')
                 });
 
               } else {
-                self.ui = "/hopsworks-api/kibana/app/kibana#/discover?_g=(refreshInterval:" +
+                self.ui = "/hopsworks-api/kibana/app/kibana?projectId="+self.projectId+"#/discover?_g=(refreshInterval:" +
                         "(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))" +
                         "&_a=(columns:!(%27timestamp%27,priority,application,logger_name,thread,message,host),index:" +
                         self.job.project.name.toLowerCase() +
@@ -189,7 +187,7 @@ angular.module('hopsWorksApp')
                 $timeout(stopLoading(), 1000);
               }
 
-            }
+            };
 
             self.grafanaUI = function () {
               startLoading("Loading Grafana UI...");
@@ -228,7 +226,7 @@ angular.module('hopsWorksApp')
                   ttl: 15000});
                 stopLoading();
               });
-            }
+            };
 
             self.vizopsUI = function () {
               startLoading("Loading Vizops...");
@@ -246,7 +244,7 @@ angular.module('hopsWorksApp')
             self.tfUI = function() {
               startLoading("Loading Tensorboard...");
               getAppId(tensorboardInt);
-            }
+            };
             
             var tensorboardInt = function() {
               self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType="+self.job.jobType;
@@ -256,7 +254,7 @@ angular.module('hopsWorksApp')
               if (iframe !== null) {
                 iframe.src = $sce.trustAsResourceUrl(self.ui);
               }
-            }
+            };
             
             getJobUI();
 

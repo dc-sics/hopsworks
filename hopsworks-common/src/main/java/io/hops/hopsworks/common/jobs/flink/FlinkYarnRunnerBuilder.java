@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.jobs.flink;
 
+import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.jobs.yarn.LocalResourceDTO;
 import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
@@ -306,15 +307,15 @@ public class FlinkYarnRunnerBuilder {
    * @param flinkDir
    * @param flinkConfDir
    * @param flinkConfFile
-   * @param nameNodeIpPort
    * @param certsDir
+   * @param services
    * @return
    * @throws java.io.IOException
    */
   protected YarnRunner getYarnRunner(String project, final String flinkUser,
           String jobUser, String hadoopDir, final String flinkDir,
           final String flinkConfDir, final String flinkConfFile,
-          final String nameNodeIpPort, final String certsDir) throws IOException {
+          final String certsDir, AsynchronousJobExecutor services) throws IOException {
 
     //Create the YarnRunner builder for Flink, proceed with setting values
     YarnRunner.Builder builder = new YarnRunner.Builder(Settings.FLINK_AM_MAIN);
@@ -347,7 +348,7 @@ public class FlinkYarnRunnerBuilder {
       Configuration conf = new Configuration();
       FileSystem fs = null;
       try {
-        fs = FileSystem.get(new URI("hdfs://" + nameNodeIpPort), conf);
+        fs = FileSystem.get(new URI("hdfs://"), conf);
         //Set the Configuration object for the returned YarnClient
       } catch (URISyntaxException ex) {
         Logger.getLogger(FlinkYarnRunnerBuilder.class.getName()).
@@ -359,9 +360,9 @@ public class FlinkYarnRunnerBuilder {
       for (LocalResourceDTO dto : extraFiles) {
         String pathToResource = dto.getPath();
         pathToResource = pathToResource.replaceFirst("hdfs:/*Projects",
-                "hdfs://" + nameNodeIpPort + "/Projects");
+                "hdfs:///Projects");
         pathToResource = pathToResource.replaceFirst("hdfs:/*user",
-                "hdfs://" + nameNodeIpPort + "/user");
+                "hdfs:///user");
         Path src = new Path(pathToResource);
         FileStatus scFileStat = fs.getFileStatus(src);
         LocalResource resource = LocalResource.newInstance(ConverterUtils.
@@ -433,7 +434,7 @@ public class FlinkYarnRunnerBuilder {
     if (!amargs.toString().equals("")) {
       builder.amArgs(amargs.toString());
     }
-    return builder.build(hadoopDir, flinkDir, nameNodeIpPort, JobType.FLINK);
+    return builder.build(flinkDir, JobType.FLINK,services);
   }
 
   public static class YarnDeploymentException extends RuntimeException {
