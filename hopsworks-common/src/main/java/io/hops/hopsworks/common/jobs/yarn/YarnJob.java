@@ -30,6 +30,7 @@ import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.execution.HopsJob;
 import io.hops.hopsworks.common.jobs.jobhistory.JobState;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
+import io.hops.hopsworks.common.util.Settings;
 
 public abstract class YarnJob extends HopsJob {
 
@@ -45,7 +46,8 @@ public abstract class YarnJob extends HopsJob {
   protected Map<String, String> jobSystemProperties;
 
   protected final String jobUser;
-  protected String sessionId = "";
+  protected String sessionId = null;
+  protected Settings settings = null;
 
   /**
    * Constructor for job interacting with the Kafka service.
@@ -56,12 +58,13 @@ public abstract class YarnJob extends HopsJob {
    * @param jobUser
    * @param hadoopDir
    * @param jobsMonitor
+   * @param settings
    * @param sessionId
    * @throws IllegalArgumentException If the JobDescription does not contain a
    * YarnJobConfiguration object.
    */
   public YarnJob(JobDescription job, AsynchronousJobExecutor services,
-      Users user, String jobUser, String hadoopDir, YarnJobsMonitor jobsMonitor, String sessionId) {
+      Users user, String jobUser, String hadoopDir, YarnJobsMonitor jobsMonitor, Settings settings, String sessionId) {
     super(job, services, user, hadoopDir, jobsMonitor);
     if (!(job.getJobConfig() instanceof YarnJobConfiguration)) {
       throw new IllegalArgumentException(
@@ -72,6 +75,7 @@ public abstract class YarnJob extends HopsJob {
     this.jobSystemProperties = new HashMap<>();
     this.projectLocalResources = new ArrayList<>();
     this.jobUser = jobUser;
+    this.settings = settings;
     this.sessionId = sessionId;
   }
 
@@ -84,12 +88,13 @@ public abstract class YarnJob extends HopsJob {
    * @param jobUser
    * @param hadoopDir
    * @param jobsMonitor
-   * @param sessionId
+   * @param settings
    * @throws IllegalArgumentException If the JobDescription does not contain a
    * YarnJobConfiguration object.
    */
   public YarnJob(JobDescription job, AsynchronousJobExecutor services,
-      Users user, String jobUser, String hadoopDir, YarnJobsMonitor jobsMonitor) {
+      Users user, String jobUser, String hadoopDir, YarnJobsMonitor jobsMonitor,
+      Settings settings) {
     super(job, services, user, hadoopDir, jobsMonitor);
     if (!(job.getJobConfig() instanceof YarnJobConfiguration)) {
       throw new IllegalArgumentException(
@@ -100,6 +105,7 @@ public abstract class YarnJob extends HopsJob {
     this.jobSystemProperties = new HashMap<>();
     this.projectLocalResources = new ArrayList<>();
     this.jobUser = jobUser;
+    this.settings = settings;
   }
 
   public final void setStdOutFinalDestination(String stdOutFinalDestination) {
@@ -144,7 +150,7 @@ public abstract class YarnJob extends HopsJob {
       updateState(JobState.APP_MASTER_START_FAILED);
       return false;
     } catch (YarnException | IOException | URISyntaxException e) {
-      LOG.log(Level.SEVERE, "Failed to start application master for execution " + execution 
+      LOG.log(Level.SEVERE, "Failed to start application master for execution " + execution
           + ". Aborting execution", e);
       writeLog("Failed to start application master for execution " + execution + ". Aborting execution", e, udfso);
       try {

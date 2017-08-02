@@ -82,7 +82,7 @@ public class SparkController {
           return new SparkJob(job, submitter, user, settings.
               getHadoopDir(), settings.getSparkDir(),
               settings.getSparkUser(), job.getProject().getName() + "__"
-              + user.getUsername(), jobsMonitor, sessionId);
+              + user.getUsername(), jobsMonitor, settings, sessionId);
         }
       });
     } catch (InterruptedException ex) {
@@ -121,8 +121,7 @@ public class SparkController {
     SparkJob sparkjob = new SparkJob(job, submitter, user, settings.
         getHadoopDir(), settings.getSparkDir(),
         settings.getSparkUser(),
-        hdfsUsersBean.getHdfsUserName(job.getProject(), job.getCreator()), jobsMonitor, null);
-
+        hdfsUsersBean.getHdfsUserName(job.getProject(), job.getCreator()), jobsMonitor, settings, null);
     submitter.stopExecution(sparkjob, appid);
 
   }
