@@ -633,7 +633,6 @@ public class Settings implements Serializable {
 
   //Spark constants
   public static final String SPARK_STAGING_DIR = ".sparkStaging";
-  //public static final String SPARK_LOCRSC_SPARK_JAR = "__spark__.jar";
   public static final String SPARK_JARS = "spark.yarn.jars";
   public static final String SPARK_ARCHIVE = "spark.yarn.archive";
   // Subdirectory where Spark libraries will be placed.
@@ -641,8 +640,8 @@ public class Settings implements Serializable {
   public static final String SPARK_LOCALIZED_CONF_DIR = "__spark_conf__";
   public static final String SPARK_LOCALIZED_PYTHON_DIR = "__pyfiles__";
   public static final String SPARK_LOCRSC_APP_JAR = "__app__.jar";
-  public static final String HOPSUTIL_JAR = "hops-util-0.1.jar";
-  public static final String HOPS_KAFKA_TOUR_JAR = "hops-spark-0.1.jar";
+  public static final String HOPSUTIL_JAR = "hops-util.jar";
+  public static final String HOPS_KAFKA_TOUR_JAR = "hops-spark.jar";
 
   public static final String HOPS_TOUR_DATASET = "TestJob";
   // Distribution-defined classpath to add to processes
@@ -1123,9 +1122,8 @@ public class Settings implements Serializable {
   private static final String INTERMEDIATE_CA_DIR = CA_DIR + "/intermediate";
   public static final String SSL_CREATE_CERT_SCRIPTNAME = "createusercerts.sh";
   public static final String SSL_DELETE_CERT_SCRIPTNAME = "deleteusercerts.sh";
+  public static final String SSL_DELETE_PROJECT_CERTS_SCRIPTNAME = "deleteprojectcerts.sh";
   public static final String UNZIP_FILES_SCRIPTNAME = "unzip-hdfs-files.sh";
-  public static final String SSL_DELETE_PROJECT_CERTS_SCRIPTNAME
-          = "deleteprojectcerts.sh";
   public static final int USERNAME_LEN = 8;
   public static final int MAX_USERNAME_SUFFIX = 99;
   public static final int MAX_RETRIES = 500;

@@ -55,6 +55,7 @@ public class FlinkController {
    * <p/>
    * @param job
    * @param user
+   * @param sessionId
    * @return
    * @throws IllegalStateException If Flink is not set up properly.
    * @throws IOException If starting the job fails.
@@ -62,7 +63,7 @@ public class FlinkController {
    * @throws IllegalArgumentException If the given job does not represent a
    * Flink job.
    */
-  public Execution startJob(final JobDescription job, final Users user) throws
+  public Execution startJob(final JobDescription job, final Users user, String sessionId) throws
           IllegalStateException,
           IOException, NullPointerException, IllegalArgumentException {
     //First: some parameter checking.
@@ -91,7 +92,7 @@ public class FlinkController {
                   settings.getFlinkUser(),
                   hdfsUsersBean.getHdfsUserName(job.getProject(),
                           job.getCreator()),
-                  settings.getHopsworksDomainDir(), jobsMonitor
+                  settings.getHopsworksDomainDir(), jobsMonitor, sessionId
           );
         }
       });
@@ -114,7 +115,7 @@ public class FlinkController {
     return execution;
   }
 
-  public void stopJob(JobDescription job, Users user, String appid) throws
+  public void stopJob(JobDescription job, Users user, String appid, String sessionId) throws
           IllegalStateException,
           IOException, NullPointerException, IllegalArgumentException {
     //First: some parameter checking.
@@ -128,13 +129,13 @@ public class FlinkController {
     } else if (!isFlinkJarAvailable()) {
       throw new IllegalStateException("Flink is not installed on this system.");
     }
-
+    
     FlinkJob flinkJob = new FlinkJob(job, submitter, user,
             settings.getHadoopDir(), settings.getFlinkDir(),
             settings.getFlinkConfDir(), settings.getFlinkConfFile(),
             settings.getFlinkUser(),
             job.getProject().getName() + "__" + user.getUsername(),
-            settings.getHopsworksDomainDir(), jobsMonitor
+            settings.getHopsworksDomainDir(), jobsMonitor, sessionId
     );
 
     submitter.stopExecution(flinkJob, appid);

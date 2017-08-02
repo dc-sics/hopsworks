@@ -336,16 +336,12 @@ public class SparkYarnRunnerBuilder {
 
     if (serviceProps != null) {
       addSystemProperty(Settings.HOPSWORKS_REST_ENDPOINT_ENV_VAR, serviceProps.getRestEndpoint());
-      addSystemProperty(Settings.KEYSTORE_PASSWORD_ENV_VAR, serviceProps.getKeystorePwd());
-      addSystemProperty(Settings.TRUSTSTORE_PASSWORD_ENV_VAR, serviceProps.getTruststorePwd());
       addSystemProperty(Settings.ELASTIC_ENDPOINT_ENV_VAR, serviceProps.getElastic().getRestEndpoint());
       addSystemProperty(Settings.HOPSUTIL_JOBNAME_ENV_VAR, serviceProps.getJobName());
       addSystemProperty(Settings.HOPSUTIL_JOBTYPE_ENV_VAR, jobType.getName());
 
       extraJavaOptions.append(" -D" + Settings.HOPSWORKS_REST_ENDPOINT_ENV_VAR + "=").
           append(serviceProps.getRestEndpoint()).
-          append(" -D" + Settings.KEYSTORE_PASSWORD_ENV_VAR + "=").append(serviceProps.getKeystorePwd()).
-          append(" -D" + Settings.TRUSTSTORE_PASSWORD_ENV_VAR + "=").append(serviceProps.getTruststorePwd()).
           append(" -D" + Settings.ELASTIC_ENDPOINT_ENV_VAR + "=").append(serviceProps.getElastic().getRestEndpoint()).
           append(" -D" + Settings.KAFKA_PROJECTID_ENV_VAR + "=").append(serviceProps.getProjectId()).
           append(" -D" + Settings.KAFKA_PROJECTNAME_ENV_VAR + "=").append(serviceProps.getProjectName()).
