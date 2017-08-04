@@ -68,7 +68,6 @@ public class ApplicationService {
   public Response sendEmail(@Context SecurityContext sc,
       @Context HttpServletRequest req, EmailJsonDTO mailInfo) throws
       AppException {
-    logger.info("skatoules2");
     String projectUser = checkAndGetProjectUser(mailInfo.
         getKeyStoreBytes(), mailInfo.getKeyStorePwd().toCharArray());
 
@@ -100,7 +99,6 @@ public class ApplicationService {
   public Response getSchemaForTopics(@Context SecurityContext sc,
       @Context HttpServletRequest req, TopicJsonDTO topicInfo) throws
       AppException {
-    logger.info("skatoules1");
     String projectUser = checkAndGetProjectUser(topicInfo.getKeyStoreBytes(),
         topicInfo.getKeyStorePwd().toCharArray());
 
