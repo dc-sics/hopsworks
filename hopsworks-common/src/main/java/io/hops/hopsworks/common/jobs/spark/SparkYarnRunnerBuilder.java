@@ -432,7 +432,9 @@ public class SparkYarnRunnerBuilder {
       //Check if anaconda is enabled
       if (jobType == JobType.TFSPARK) {
         builder.addToAppMasterEnvironment(Settings.SPARK_PYSPARK_PYTHON,
-            Settings.TFSPARK_PYTHON_NAME + "/bin/python");
+//            Settings.TFSPARK_PYTHON_NAME + "/bin/python"
+            "python"
+        );
       } else if (serviceProps.isAnacondaEnabled()) {
         //Add libs to PYTHONPATH
         builder.addToAppMasterEnvironment(Settings.SPARK_PYSPARK_PYTHON,
