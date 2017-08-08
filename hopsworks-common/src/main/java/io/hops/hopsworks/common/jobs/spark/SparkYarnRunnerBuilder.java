@@ -59,7 +59,7 @@ public class SparkYarnRunnerBuilder {
   private final Map<String, String> sysProps = new HashMap<>();
   private String classPath;
   private ServiceProperties serviceProps;
-
+  private String sessionId;
   final private Set<String> blacklistedProps = new HashSet<>();
 
   public SparkYarnRunnerBuilder(JobDescription jobDescription) {
@@ -369,12 +369,11 @@ public class SparkYarnRunnerBuilder {
     }
 
     if (serviceProps != null) {
+
       addSystemProperty(Settings.HOPSWORKS_REST_ENDPOINT_ENV_VAR, serviceProps.
           getRestEndpoint());
-      addSystemProperty(Settings.KEYSTORE_PASSWORD_ENV_VAR, serviceProps.
-          getKeystorePwd());
-      addSystemProperty(Settings.TRUSTSTORE_PASSWORD_ENV_VAR, serviceProps.
-          getTruststorePwd());
+      addSystemProperty(Settings.KEYSTORE_PASSWORD_ENV_VAR, Settings.KEYSTORE_VAL_ENV_VAR);
+      addSystemProperty(Settings.TRUSTSTORE_PASSWORD_ENV_VAR, Settings.TRUSTSTORE_VAL_ENV_VAR);
       addSystemProperty(Settings.ELASTIC_ENDPOINT_ENV_VAR, serviceProps.
           getElastic().getRestEndpoint());
       addSystemProperty(Settings.HOPSUTIL_JOBNAME_ENV_VAR, serviceProps.
@@ -384,22 +383,19 @@ public class SparkYarnRunnerBuilder {
       extraJavaOptions.append(" -D" + Settings.HOPSWORKS_REST_ENDPOINT_ENV_VAR
           + "=").
           append(serviceProps.getRestEndpoint()).
-          append(" -D" + Settings.KEYSTORE_PASSWORD_ENV_VAR + "=").append(
-          serviceProps.getKeystorePwd()).
-          append(" -D" + Settings.TRUSTSTORE_PASSWORD_ENV_VAR + "=").append(
-          serviceProps.getTruststorePwd()).
+          append(" -D" + Settings.KEYSTORE_PASSWORD_ENV_VAR + "=").append(Settings.KEYSTORE_VAL_ENV_VAR).
+          append(" -D" + Settings.TRUSTSTORE_PASSWORD_ENV_VAR + "=").append(Settings.TRUSTSTORE_VAL_ENV_VAR).
           append(" -D" + Settings.ELASTIC_ENDPOINT_ENV_VAR + "=").append(
           serviceProps.getElastic().getRestEndpoint()).
           append(" -D" + Settings.KAFKA_PROJECTID_ENV_VAR + "=").append(
           serviceProps.getProjectId()).
           append(" -D" + Settings.KAFKA_PROJECTNAME_ENV_VAR + "=").append(
           serviceProps.getProjectName()).
-          append(" -D" + Settings.KAFKA_PROJECTID_ENV_VAR + "=").append(
-          serviceProps.getProjectId()).
           append(" -D" + Settings.HOPSUTIL_JOBNAME_ENV_VAR + "=").append(
           serviceProps.getJobName()).
           append(" -D" + Settings.HOPSUTIL_JOBTYPE_ENV_VAR + "=").append(
-          jobType.getName());
+          jobType.getName()).
+          append(" -D" + Settings.SESSIONID_ENV_VAR + "=").append(sessionId);
       //Handle Kafka properties
       if (serviceProps.getKafka() != null) {
         addSystemProperty(Settings.KAFKA_BROKERADDR_ENV_VAR, serviceProps.
@@ -410,6 +406,7 @@ public class SparkYarnRunnerBuilder {
             serviceProps.getProjectId()));
         addSystemProperty(Settings.KAFKA_PROJECTNAME_ENV_VAR, serviceProps.
             getProjectName());
+        addSystemProperty(Settings.SESSIONID_ENV_VAR, sessionId);
 
         addSystemProperty(Settings.KAFKA_CONSUMER_GROUPS, serviceProps.
             getKafka().getConsumerGroups());
@@ -707,6 +704,10 @@ public class SparkYarnRunnerBuilder {
       classPath = classPath + ":" + s;
     }
     return this;
+  }
+
+  public void setSessionId(String sessionId) {
+    this.sessionId = sessionId;
   }
 
 }

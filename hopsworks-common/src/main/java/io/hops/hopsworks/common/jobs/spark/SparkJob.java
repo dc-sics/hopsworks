@@ -37,12 +37,13 @@ public class SparkJob extends YarnJob {
    * @param jobUser
    * @param jobsMonitor
    * @param settings
+   * @param sessionId
    */
   public SparkJob(JobDescription job, AsynchronousJobExecutor services,
       Users user, final String hadoopDir,
       final String sparkDir, String sparkUser,
-      String jobUser, YarnJobsMonitor jobsMonitor, Settings settings) {
-    super(job, services, user, jobUser, hadoopDir, jobsMonitor, settings);
+      String jobUser, YarnJobsMonitor jobsMonitor, Settings settings, String sessionId) {
+    super(job, services, user, jobUser, hadoopDir, jobsMonitor, settings, sessionId);
     if (!(job.getJobConfig() instanceof SparkJobConfiguration)) {
       throw new IllegalArgumentException(
           "JobDescription must contain a SparkJobConfiguration object. Received: "
@@ -99,6 +100,7 @@ public class SparkJob extends YarnJob {
     runnerbuilder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));
     //Set project specific resources, i.e. Kafka certificates
     runnerbuilder.addExtraFiles(projectLocalResources);
+    runnerbuilder.setSessionId(sessionId);
     if (jobSystemProperties != null && !jobSystemProperties.isEmpty()) {
       for (Entry<String, String> jobSystemProperty : jobSystemProperties.
           entrySet()) {
