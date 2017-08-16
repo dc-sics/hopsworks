@@ -5,7 +5,6 @@ import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.common.dao.host.HostEJB;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
-import io.hops.hopsworks.common.dao.pythonDeps.AnacondaRepo;
 import io.hops.hopsworks.common.dao.pythonDeps.OpStatus;
 import io.hops.hopsworks.common.dao.pythonDeps.LibVersions;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
@@ -81,11 +80,11 @@ public class PythonDepsService {
 
   public PythonDepsService() {
     preInstalledPythonDeps.add(new PythonDepJson("http://hops.io/conda",
-            "pydoop", "0.4", "true"));
+            "pydoop", "0.4", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("http://hops.io/conda",
-            "tfos", "0.1.0", "true"));
+            "TensorflowOnSpark", "0.1.0", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("http://hops.io/conda",
-            "hopsutil", "0.1.0", "true"));
+            "hopsutil", "0.1.0", "true", "Installed"));
   }
 
   @GET
@@ -105,8 +104,7 @@ public class PythonDepsService {
     }
 
     GenericEntity<Collection<PythonDepJson>> deps
-            = new GenericEntity<Collection<PythonDepJson>>(jsonDeps) {
-    };
+            = new GenericEntity<Collection<PythonDepJson>>(jsonDeps) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             deps).build();
   }
@@ -210,8 +208,7 @@ public class PythonDepsService {
     List<OpStatus> response = pythonDepsFacade.opStatus(project);
 
     GenericEntity<Collection<OpStatus>> opsFound
-            = new GenericEntity<Collection<OpStatus>>(response) {
-    };
+            = new GenericEntity<Collection<OpStatus>>(response) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             opsFound).build();
@@ -308,8 +305,7 @@ public class PythonDepsService {
     }
 
     GenericEntity<Collection<LibVersions>> libsFound
-            = new GenericEntity<Collection<LibVersions>>(response) {
-    };
+            = new GenericEntity<Collection<LibVersions>>(response) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             libsFound).build();
