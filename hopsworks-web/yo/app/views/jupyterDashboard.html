@@ -31,9 +31,13 @@
         </div> 
         <div class="content-wrapper">                      
           <div growl reference="10" class="pull-right" ></div>
+          
           <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''" style="margin-left:-50px">
-            <iframe id="ui_iframe" allowfullscreen  ng-src="{{trustSrc(jupyterCtrl.ui)}}" align="left" width="100%" height="100%" frameborder="0"></iframe> 
+            Local Private directory is: {{jupyterCtrl.config.privateDir}}
           </div>
+<!--          <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''" style="margin-left:-50px">
+            <iframe id="ui_iframe" allowfullscreen  ng-src="{{trustSrc(jupyterCtrl.ui)}}" align="left" width="100%" height="100%" frameborder="0"></iframe> 
+          </div>-->
           <div class="col-md-1 pull-right" ng-if="jupyterCtrl.ui !== ''">
             <button uib-tooltip="Shutdown Jupyter Notebook Server" ng-click="jupyterCtrl.stop()" 
                     type="button" class="btn btn-danger btn-sm" >

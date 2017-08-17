@@ -251,7 +251,7 @@ public class JupyterConfigFactory {
             getDriverCores(), jc.getDriverMemory(), jc.getNumExecutors(), jc.
             getExecutorCores(), jc.getExecutorMemory(), jc.getGpus(), jc.
             getArchives(), jc.getJars(), jc.getFiles(), jc.getPyFiles(),
-    jc.getNumParamServers(), jc.isTensorflow());
+    jc.getNumParamServers(), jc.isTensorflow(), jc.getProjectUserDirPath());
 
   }
 

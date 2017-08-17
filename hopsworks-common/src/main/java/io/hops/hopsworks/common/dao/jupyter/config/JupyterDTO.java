@@ -26,6 +26,7 @@ public class JupyterDTO {
   private String files="";
   private String pyFiles="";
   private String hostIp="";
+  private String privateDir="";
 
   public JupyterDTO() {
   }
@@ -33,7 +34,7 @@ public class JupyterDTO {
   public JupyterDTO(int port, String token, long pid, int driverCores,
           String driverMemory, int numExecutors, int executorCores, String executorMemory,
           int gpus, String archives, String jars, String files, String pyFiles,
-          int numParameterServers, boolean tensorflow) {
+          int numParameterServers, boolean tensorflow, String privateDir) {
     this.port = port;
     this.token = token;
     this.pid = pid;
@@ -55,6 +56,7 @@ public class JupyterDTO {
     }
     this.numParamServers = numParameterServers;
     this.tensorflow = tensorflow;
+    this.privateDir = privateDir;
   }
 
   public String getHostIp() {
@@ -187,4 +189,11 @@ public class JupyterDTO {
     this.tensorflow = tensorflow;
   }
 
+  public String getPrivateDir() {
+    return privateDir;
+  }
+
+  public void setPrivateDir(String privateDir) {
+    this.privateDir = privateDir;
+  }
 }
