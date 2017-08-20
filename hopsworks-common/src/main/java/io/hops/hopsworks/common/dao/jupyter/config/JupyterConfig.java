@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.dao.jupyter.config;
 
+import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.ConfigFileGenerator;
 import io.hops.hopsworks.common.util.Settings;
@@ -41,35 +42,17 @@ public class JupyterConfig {
   private final String projectPath;
   private final String projectUserDirPath;
   private final String confDirPath;
-  private final String notebookDirPath;
   private final String runDirPath;
-  private final String binDirPath;
   private final String logDirPath;
-  private final String libDirPath;
   private final int port;
   private long pid;
   private String secret;
   private String token;
-  private String driverMemory;
-  private Integer driverCores;
-  private Integer numExecutors;
-  private String executorMemory;
-  private Integer executorCores;
-  private Integer gpus;
-  private Integer numParamServers;
-  private boolean tensorflow;
-  private String archives;
-  private String jars;
-  private String files;
-  private String pyFiles;
   private String nameNodeEndpoint;
 
-  JupyterConfig(String projectName, String secret, String hdfsUser,
-          String nameNodeEndpoint,
-          Settings settings, int port, int driverCores, String driverMemory,
-          int numExecutors, int executorCores, String executorMemory, int gpus,
-          String archives, String jars, String files, String pyFiles,
-          int parameterServers, boolean tensorflow)
+  JupyterConfig(String projectName, String secretConfig, String hdfsUser,
+          String nameNodeEndpoint, Settings settings, int port, String token,
+          JupyterSettings js)
           throws AppException {
     this.projectName = projectName;
     this.hdfsUser = hdfsUser;
@@ -77,33 +60,18 @@ public class JupyterConfig {
     boolean newDir = false;
     boolean newFile = false;
     this.settings = settings;
-    this.secret = secret;
     this.port = port;
-    this.driverMemory = driverMemory;
-    this.driverCores = driverCores;
-    this.numExecutors = numExecutors;
-    this.executorCores = executorCores;
-    this.executorMemory = executorMemory;
-    this.gpus = gpus;
-    this.archives = archives;
-    this.jars = jars;
-    this.files = files;
-    this.pyFiles = pyFiles;
-    this.numParamServers = parameterServers;
-    this.tensorflow = tensorflow;
     projectPath = settings.getJupyterDir() + File.separator
             + Settings.DIR_ROOT + File.separator + this.projectName
             + File.separator + hdfsUser;
-    projectUserDirPath = projectPath + File.separator + secret;
+    projectUserDirPath = projectPath + File.separator + secretConfig;
     confDirPath = projectUserDirPath + File.separator + "conf";
-    notebookDirPath = projectUserDirPath + File.separator + "notebooks";
-    runDirPath = projectUserDirPath + File.separator + "run";
-    binDirPath = projectUserDirPath + File.separator + "bin";
     logDirPath = projectUserDirPath + File.separator + "logs";
-    libDirPath = projectUserDirPath + File.separator + "lib";
+    runDirPath = projectUserDirPath + File.separator + "r";
+    this.token = token;
     try {
       newDir = createJupyterDirs();
-      createConfigFiles(nameNodeEndpoint, port);
+      createConfigFiles(nameNodeEndpoint, port, js);
     } catch (Exception e) {
       if (newDir) { // if the folder was newly created delete it
         removeProjectDirRecursive();
@@ -130,86 +98,6 @@ public class JupyterConfig {
 
   public void setSecret(String secret) {
     this.secret = secret;
-  }
-
-  public int getNumExecutors() {
-    return numExecutors;
-  }
-
-  public void setNumExecutors(int numExecutors) {
-    this.numExecutors = numExecutors;
-  }
-
-  public String getDriverMemory() {
-    return driverMemory;
-  }
-
-  public void setDriverMemory(String driverMemory) {
-    this.driverMemory = driverMemory;
-  }
-
-  public int getDriverCores() {
-    return driverCores;
-  }
-
-  public void setDriverCores(int driverCores) {
-    this.driverCores = driverCores;
-  }
-
-  public int getExecutorCores() {
-    return executorCores;
-  }
-
-  public void setExecutorCores(int executorCores) {
-    this.executorCores = executorCores;
-  }
-
-  public String getExecutorMemory() {
-    return executorMemory;
-  }
-
-  public void setExecutorMemory(String executorMemory) {
-    this.executorMemory = executorMemory;
-  }
-
-  public int getGpus() {
-    return gpus;
-  }
-
-  public void setGpus(int gpus) {
-    this.gpus = gpus;
-  }
-
-  public String getArchives() {
-    return archives;
-  }
-
-  public void setArchives(String archives) {
-    this.archives = archives;
-  }
-
-  public String getJars() {
-    return jars;
-  }
-
-  public void setJars(String jars) {
-    this.jars = jars;
-  }
-
-  public String getFiles() {
-    return files;
-  }
-
-  public void setFiles(String files) {
-    this.files = files;
-  }
-
-  public String getPyFiles() {
-    return pyFiles;
-  }
-
-  public void setPyFiles(String pyFiles) {
-    this.pyFiles = pyFiles;
   }
 
   public String getHdfsUser() {
@@ -277,24 +165,12 @@ public class JupyterConfig {
     return projectUserDirPath;
   }
 
-  public String getLibDirPath() {
-    return libDirPath;
-  }
-
   public String getConfDirPath() {
     return confDirPath;
   }
 
-  public String getNotebookDirPath() {
-    return notebookDirPath;
-  }
-
   public String getRunDirPath() {
     return runDirPath;
-  }
-
-  public String getBinDirPath() {
-    return binDirPath;
   }
 
   public String getLogDirPath() {
@@ -318,23 +194,22 @@ public class JupyterConfig {
     perms.add(PosixFilePermission.GROUP_WRITE);
     perms.add(PosixFilePermission.GROUP_EXECUTE);
     //add others permissions
-//        perms.add(PosixFilePermission.OTHERS_READ);
-//        perms.add(PosixFilePermission.OTHERS_WRITE);
-//        perms.add(PosixFilePermission.OTHERS_EXECUTE);
+    perms.add(PosixFilePermission.OTHERS_READ);
+//    perms.add(PosixFilePermission.OTHERS_WRITE);
+    perms.add(PosixFilePermission.OTHERS_EXECUTE);
 
     Files.setPosixFilePermissions(Paths.get(projectUserDirPath), perms);
     Files.setPosixFilePermissions(Paths.get(projectPath), perms);
 
     new File(confDirPath + "/custom").mkdirs();
-    new File(notebookDirPath).mkdirs();
     new File(runDirPath).mkdirs();
-//    new File(binDirPath).mkdirs();
     new File(logDirPath).mkdirs();
     return true;
   }
 
   // returns true if one of the conf files were created anew 
-  private boolean createConfigFiles(String nameNodeEndpoint, Integer port)
+  private boolean createConfigFiles(String nameNodeEndpoint, Integer port,
+          JupyterSettings js)
           throws
           IOException {
     File jupyter_config_file = new File(confDirPath + JUPYTER_NOTEBOOK_CONFIG);
@@ -364,40 +239,45 @@ public class JupyterConfig {
                       "hdfs_user", this.hdfsUser,
                       "port", port.toString(),
                       "hadoop_home", this.settings.getHadoopDir(),
-                      "hdfs_home", this.settings.getHadoopDir()
+                      "hdfs_home", this.settings.getHadoopDir(),
+                      "secret_dir", this.settings.getStagingDir()
+                      + "/private_dirs/" + js.getSecret()
               );
       createdJupyter = ConfigFileGenerator.createConfigFile(jupyter_config_file,
               jupyter_notebook_config.toString());
     }
     if (!sparkmagic_config_file.exists()) {
 
-//                   "spark.eventLog.enabled" : "true",
-//             "spark.eventLog.dir" : "/user/%%spark_user%%/eventlog",
-//             "spark.dynamicAllocation.enabled" : "%%dynamic_executors%%",
-//             "spark.dynamicAllocation.initialExecutors" : "%%initial_executors%%",
-//             "spark.dynamicAllocation.minExecutors" : "%%min_executors%%",
-//             "spark.dynamicAllocation.maxExecutors" : "%%max_executors%%",
-//             "spark.yarn.historyServer.address" : "%%sparkhistoryserver_ip%%",
-      StringBuilder sparkmagic_sb = ConfigFileGenerator.
-              instantiateFromTemplate(ConfigFileGenerator.SPARKMAGIC_CONFIG_TEMPLATE,
+      StringBuilder sparkmagic_sb
+              = ConfigFileGenerator.
+              instantiateFromTemplate(
+                      ConfigFileGenerator.SPARKMAGIC_CONFIG_TEMPLATE,
                       "livy_ip", settings.getLivyIp(),
                       "hdfs_user", this.hdfsUser,
-                      "driver_cores", this.driverCores.toString(),
-                      "driver_memory", this.driverMemory,
-                      "num_executors", this.numExecutors.toString(),
-                      "executor_cores", this.executorCores.toString(),
-                      "executor_memory", this.executorMemory,
-                      "dynamic_executors", new Boolean(this.tensorflow).
-                      toString(),
-                      "min_executors", new Integer(1).toString(),
-                      "initial_executors", new Integer(1).toString(),
-                      "max_executors", new Integer(50).toString(),
-                      "archives", this.archives,
-                      "jars", this.jars,
-                      "files", this.files,
-                      "pyFiles", this.pyFiles,
-                      "yarn_queue", "default",
-                      "jupyter_home", this.confDirPath,
+                      "driver_cores", Integer.toString(js.getAppmasterCores()),
+                      "driver_memory", Integer.toString(js.getAppmasterMemory()),
+                      "num_executors", Integer.toString(js.getNumExecutors()),
+                      "executor_cores", Integer.toString(js.
+                              getNumExecutorCores()),
+                      "executor_memory", Integer.
+                      toString(js.getExecutorMemory()),
+                      "dynamic_executors", Boolean.toString(
+                              js.getMode().compareToIgnoreCase("sparkDynamic")
+                              == 0),
+                      "min_executors", Integer.toString(js.
+                              getDynamicMinExecutors()),
+                      "initial_executors", Integer.toString(js.
+                              getDynamicInitialExecutors()),
+                      "max_executors", Integer.toString(js.
+                              getDynamicMaxExecutors()),
+                      "archives", js.getArchives(),
+                      "jars", js.getJars(),
+                      "files", js.getFiles(),
+                      "pyFiles", js.getPyFiles(),
+                      "num_ps", Integer.toString(js.getNumTfPs()),
+                      "num_gpus", Integer.toString(js.getNumTfGpus()),
+                      "tensorflow", Boolean.toString(js.getMode().
+                              compareToIgnoreCase("tensorflow") == 0),
                       "jupyter_home", this.confDirPath,
                       "project", this.projectName,
                       "nn_endpoint", this.nameNodeEndpoint,
@@ -411,10 +291,7 @@ public class JupyterConfig {
                       "anaconda_env", this.settings.getAnacondaProjectDir(
                               projectName),
                       "sparkhistoryserver_ip", this.settings.
-                      getSparkHistoryServerIp(),
-                      "num_ps", this.numParamServers.toString(),
-                      "num_gpus", this.gpus.toString(),
-                      "tensorflow", new Boolean(this.tensorflow).toString()
+                      getSparkHistoryServerIp()
               );
       createdSparkmagic = ConfigFileGenerator.createConfigFile(
               sparkmagic_config_file,
@@ -476,12 +353,5 @@ public class JupyterConfig {
     return projectUserDirPath;
   }
 
-  public Integer getNumParamServers() {
-    return numParamServers;
-  }
-
-  public boolean isTensorflow() {
-    return tensorflow;
-  }
 
 }

@@ -1,101 +1,296 @@
-<!--<style>
-  .slow .toggle-group {
-    transition: left 1.8s;
-    -webkit-transition: left 1.8s;
-  }
-  .fast .toggle-group {
-    transition: left 0.1s;
-    -webkit-transition: left 0.1s;
-  }
-  .quick .toggle-group {
-    transition: none;
-    -webkit-transition: none;
-  }
-</style>-->
-
 <div ng-controller="MainCtrl as mainCtrl">
   <div ng-include="'nav.html'"></div>
   <div id="wrapper"
-       class="toggled"
-       ng-controller="JupyterCtrl as jupyterCtrl">
+       class="toggled"  ng-controller="JupyterCtrl as jupyterCtrl"
+       >
     <div class="overlay"></div>
     <div ng-include="'navProject.html'"></div>
     <div>
-      <section>  
 
+
+      <section>  
         <div ng-if="jupyterCtrl.loading" class="loadingwrap">
           <div class="loading-content">
             <div class="loader-in-wrap"></div>
             {{jupyterCtrl.loadingText}}
           </div>
         </div> 
+
+
         <div class="content-wrapper">                      
           <div growl reference="10" class="pull-right" ></div>
-          
-          <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''" style="margin-left:-50px">
-            Local Private directory is: {{jupyterCtrl.config.privateDir}}
+
+          <h3>
+            <div class="col-sm-2 col-md-2 col-lg-2  ">
+            </div>
+            <div class="col-sm-3 col-md-3 col-lg-3 " style="margin-top: -17px; margin-left: 15px;">
+
+              <!--jupyterCtrl.val.mode === 'tensorflow' ? jupyterCtrl.start() :--> 
+              <div class="btn-group" data-toggle="buttons">
+                <label class="btn btn-primary"                        
+                       ng-click="jupyterCtrl.val.mode='tensorflow'">
+                  <input type="radio" name="tf" id="option1" autocomplete="off"> Tensorflow
+                </label>
+                <label class="btn btn-primary"
+                       ng-click="jupyterCtrl.val.mode='sparkStatic'">
+                  <input type="radio" name="sparks" id="option2" autocomplete="off"> Spark (Static)
+
+                </label>
+                <label class="btn btn-primary"
+                       ng-click="jupyterCtrl.val.mode='sparkDynamic'">
+                  <input type="radio" name="sparkd" id="option3" autocomplete="off"> Spark (Dynamic)
+                </label>
+              </div>
+            </div>
+
+            <div class="col-sm-2 col-md-2 col-lg-2 " style=" margin-left: 15px;">
+            </div>
+            <ul class="nav navbar-nav pull-right" style="margin-right:30px;  margin-top:-10px;">
+              <!--              <li class="pull-left" 
+                                ng-class="{'connected-space' : jupyterCtrl.connectedStatus, 'disconnected-space':!jupyterCtrl.connectedStatus}">
+                            <hamburger-toggle state="jupyterCtrl.tgState" class="hamburger-toggle" ng-click="jupyterCtrl.deselect()">
+                            </hamburger-toggle>
+                            </li>-->
+              <li class="server-status">
+                <span class="fa fa-circle" ng-class="{'server-connected' :jupyterCtrl.connectedStatus, 'server-disconnected':!jupyterCtrl.connectedStatus}"></span>  
+                <span ng-show="jupyterCtrl.connectedStatus">Connected</span>
+                <span ng-show="!jupyterCtrl.connectedStatus">Disconnected</span>
+              </li>
+            </ul>
+          </h3>
+          <div ng-init="(iscollapsed$index) = true; jupyterCtrl.tgState = true;"
+               class="ds-content col-lg-12" ng-class="{'sidenav-open': jupyterCtrl.tgState}" style="margin-top: 5px;">
+            <div class="row row-no-margin-left" style="margin-top: 15px;">
+
+
+            </div>
           </div>
-<!--          <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''" style="margin-left:-50px">
-            <iframe id="ui_iframe" allowfullscreen  ng-src="{{trustSrc(jupyterCtrl.ui)}}" align="left" width="100%" height="100%" frameborder="0"></iframe> 
-          </div>-->
-          <div class="col-md-1 pull-right" ng-if="jupyterCtrl.ui !== ''">
+
+
+          <div class="row" ng-show="jupyterCtrl.val.mode !== ''">
+            <div class="col-sm-8 col-md-8 col-lg-8" style='margin-left: -20px;'>
+
+              <div class="row">
+                <div class="col-md-3"></div>
+                <div class="col-md-2 pull-left" style="margin-left: 43px;">
+                  <button class="btn btn-success" ng-click="jupyterCtrl.start()" type="button" id="newNotebook">
+                    Start Jupyter ({{jupyterCtrl.val.mode}})
+                  </button>
+                </div>
+                <div class="col-md-1"/>
+                <div class="col-md-4" style="margin-top: 12px; margin-left: 24px;"> 
+                  <label>Advanced
+                    <input type="checkbox" ng-model="jupyterCtrl.advanced">
+                  </label>
+                </div>
+              </div>
+              <div class="row top-buffer" ng-show="jupyterCtrl.advanced === true">
+<!--                <div class="row">
+                  <div class="col-md-6"/>
+                  <div class="col-md-5" style="margin-left: 34px;"> 
+                    <label>Save as default
+                      <input type="checkbox" ng-model="jupyterCtrl.val.saveSettings">
+                    </label>
+                  </div>
+
+                </div>-->
+
+                <div class="row"  ng-show="jupyterCtrl.val.mode === 'tensorflow'">
+
+                  <div class="row">
+                    <div class="text-right col-md-6">Parameter Servers <i class="fa fa-info-circle" 
+                                                                          uib-tooltip="Tensorflow's number of parameter servers that will be run." 
+                                                                          style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+                      <input type="number" 
+                             ng-model="jupyterCtrl.val.numTfPs" class="form-control">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="text-right col-md-6">GPUs<i class="fa fa-info-circle" 
+                                                            uib-tooltip="Tensorflow's number of GPUs used for training/inference." 
+                                                            style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+                      <input type="number"  ng-model="jupyterCtrl.val.numTfGpus" class="form-control">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row"  ng-show="jupyterCtrl.val.mode === 'tensorflow' || jupyterCtrl.val.mode === 'sparkStatic'">
+
+                  <div class="row">
+                    <div class="text-right col-md-6">AppMaster memory (MB)<i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be requested for the Yarn Application Master container." style="margin-left: 10px"></i></div>
+                    <div class="col-md-2 jupyter-left">
+                      <input type="number" ng-model="jupyterCtrl.val.appmasterMemory" min="0" class="form-control">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="text-right col-md-6">AppMaster vcores<i class="fa fa-info-circle" uib-tooltip="The number of cores that should be requested for the Yarn Application Master container." style="margin-left: 10px"></i></div>
+                    <div class="col-md-2 jupyter-left">
+                      <input type="number" ng-model="jupyterCtrl.val.appmasterCores" min="1" class="form-control">
+                    </div>
+                  </div>
+
+                </div>
+                <div class="row" ng-show="jupyterCtrl.val.mode === 'sparkDynamic'">
+                  <!--              <div class="row">
+                                  <div class="text-right col-md-6">Dynamic Executors <i class="fa fa-info-circle" uib-tooltip="Enable Spark Dynamic Executors." style="margin-left: 10px"></i></div>
+                                  <div class="col-md-2 jupyter-left"><input type="checkbox" ng-model="jupyterCtrl.val.dynamicExecutors" ng-click="jupyterCtrl.toggleSlider()"></div>
+                                </div>-->
+                  <div class="row top-buffer">
+                    <div class="col-md-4"></div>
+                    <div class="col-md-4">Slider: Set min and max number of executors</div>
+                    <div class="col-md-4"></div>
+                  </div>
+                  <div class="row top-buffer">
+                    <div class="col-md-4"></div>
+                    <div class="col-md-4">
+                      <rzslider style="margin-top: 32px;"
+                                rz-slider-model="jupyterCtrl.sliderOptions.min"
+                                rz-slider-high="jupyterCtrl.sliderOptions.max"
+                                rz-slider-options="jupyterCtrl.sliderOptions.options">
+                      </rzslider>
+                    </div>
+                    <div class="col-md-4"></div>
+                  </div>
+                  <div class="row top-buffer">
+                    <div class="text-right col-md-6">Initial number of executors <i class="fa fa-info-circle" 
+              uib-tooltip="The initial number of executors that should be requested. Must be greater than the minimum and smaller than the maximum number of executors." style="margin-left: 10px"></i></div>
+                                                                                    
+                                                                                    <div class="col-md-2 jupyter-left"><input type="number"  
+                    ng-change="jupyterCtrl.setInitExecs()" value="{{jupyterCtrl.val.dynamicMinExecutors}}" ng-model="jupyterCtrl.val.dynamicMinExecutors" 
+                    class="form-control">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row"  ng-show="jupyterCtrl.val.mode !== 'sparkDynamic'">
+                  <div class="row">
+                    <div class="text-right col-md-6">Number of executors <i class="fa fa-info-circle" 
+                                                                            uib-tooltip="The number of executors that should be requested for this job." style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left"><input type="number" ng-model="jupyterCtrl.val.numExecutors" class="form-control"></div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="row">
+                    <div class="text-right col-md-6">Number of executor cores <i class="fa fa-info-circle" 
+                                                                                 uib-tooltip="The number of cores that should be requested for each Spark executor in this job." style="margin-left: 10px"></i></div>
+                    <div class="col-md-2 jupyter-left"><input type="number" ng-model="jupyterCtrl.val.numExecutorCores" class="form-control"></div>
+                  </div>
+                  <div class="row">
+                    <div class="text-right col-md-6">Executor memory (MB) <i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be requested for each Spark executor in this job." style="margin-left: 10px"></i></div>
+                    <div class="col-md-2 jupyter-left"><input type="number" min="0" ng-model="jupyterCtrl.val.executorMemory" class="form-control"></div>
+                  </div>
+
+                  <div class="row">
+                    <div class="text-right col-md-6">
+                      <label for="archives">
+                        <button uib-tooltip='Select a .zip file' id="selectArchiveButton" class="btn btn-default" ng-click="jupyterCtrl.selectFile('.zip')">
+                          <span>Add archive file</span>
+                        </button>  
+                      </label>
+                      <i class="fa fa-info-circle" uib-tooltip='Select a .zip file' style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+                      <input uib-tooltip="comma-separated quoted list of .zip or .tgz files" ng-init="jupyterCtrl.val.archives = ''" type="text" class="form-control"
+                             id="archives" ng-model="jupyterCtrl.val.archives">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="text-right col-md-6">
+                      <label for="jars">
+                        <button uib-tooltip='Select a .jar file' id="selectJarButton" class="btn btn-default" 
+                                ng-click="jupyterCtrl.selectFile('.jar')">
+                          <span>Add jar file</span>
+                        </button>  
+                      </label>
+                      <i class="fa fa-info-circle" uib-tooltip='comma-separated quoted  list of .jar files' style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+                      <input uib-tooltip="comma-separated quoted list of files" ng-init="jupyterCtrl.val.jars = ''" 
+                             type="text" class="form-control" id="jars" ng-model="jupyterCtrl.val.jars">
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="text-right col-md-6">
+                      <label for="jars">
+                        <button uib-tooltip='Select a file' id="selectFileButton" class="btn btn-default" 
+                                ng-click="jupyterCtrl.selectFile('.jar')">
+                          <span>Add file</span>
+                        </button>  
+                      </label>                      
+                      <i class="fa fa-info-circle" uib-tooltip='Select a file' style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+                      <input uib-tooltip="comma-separated quoted list of files" ng-init="jupyterCtrl.val.files = ''" 
+                             type="text" class="form-control" id="files" ng-model="jupyterCtrl.val.files">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="text-right col-md-6">
+                      <label for="pyFiles">
+                        <button uib-tooltip='Select a .py file' id="selectPyFileButton" class="btn btn-default" 
+                                ng-click="jupyterCtrl.selectFile('.py')">
+                          <span>Add Python File</span>
+                        </button>
+                      </label>                      
+                      <i class="fa fa-info-circle" uib-tooltip='Select a .py file' style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+
+                      <input uib-tooltip="comma-separated quoted list of python files. E.g.: 'my.py', 'your.py'"
+                             ng-init="jupyterCtrl.val.pyFiles = ''" type="text" class="form-control"
+                             id="pyFiles" ng-model="jupyterCtrl.val.pyFiles">
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div> 
+        </div> 
+        <div class="col-sm-3 col-md-3 col-lg-3"/>
+    </div> 
+
+
+    <div class="row"  ng-if="jupyterCtrl.ui !== ''">
+      <div class="col-md-2">
+        <div class="col-md-8" ng-if="jupyterCtrl.ui !== ''">
+          <div class="row" ng-if="jupyterCtrl.ui !== ''">
             <button uib-tooltip="Shutdown Jupyter Notebook Server" ng-click="jupyterCtrl.stop()" 
                     type="button" class="btn btn-danger btn-sm" >
               <span class="glyphicon glyphicon-off" ></span>
             </button>  
-            <!--            <button uib-tooltip="Configure Jupyter Notebook Kernel" ng-click="jupyterCtrl.reconfigure()" 
-                                type="button" class="btn btn-default btn-sm" >
-                          <span class="glyphicon glyphicon-cog" ></span>
-                        </button>  -->
           </div>
 
-          <div ng-if="jupyterCtrl.ui === '' && jupyterCtrl.toggleValue == true">
-            <div class="row">The Jupyter Notebook is not available.</div> 
-            <div class="col-md-1 ">
-              <a ng-click="jupyterCtrl.goBack()">Go Back.</a>
-<!--              <button uib-tooltip="Leave Jupyter Notebook Server" ng-click="jupyterCtrl.goBack()" 
-                      type="button" class="btn btn-success btn-small" >
-                <span class="glyphicon glyphicon-on" ></span>Back
-              </button>  -->
-            </div>
+
+          <div class="row">
+            Local Private directory is: {{jupyterCtrl.config.privateDir}}
           </div>
+        </div>
+      </div>
+      <!--          <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''" style="margin-left:-50px">
+                  <iframe id="ui_iframe" allowfullscreen  ng-src="{{trustSrc(jupyterCtrl.ui)}}" align="left" width="100%" height="100%" frameborder="0"></iframe> 
+                </div>-->
 
-          <!--          <div class="col-sm-3 col-md-3 col-lg-3 ">
-          
-                      <toggle ng-model="jupyterCtrl.toggleValue" ng-change="toggleJupyter()" onstyle="btn-success" style="slow"
-                              offstyle="btn-danger" size="btn" on="<i class='fa fa-play'></i> On" 
-                              off="<i class='fa fa-stop'></i> Off"></toggle>
-          
-                    </div>-->
+      <div ng-if="jupyterCtrl.ui === '' && jupyterCtrl.toggleValue == true">
+        <div class="row">The Jupyter Notebook is not available.</div> 
+        <div class="col-md-1 ">
+          <a ng-click="jupyterCtrl.goBack()">Go Back.</a>
+        </div>
+      </div>
 
 
+    </div> 
+  </div> <!--content wrapper -->
 
-          <!--          <table class="table table-hover" style="width: 100%">
-                      <tbody>
-                        <tr>
-                          <td class="text-muted">{{jupyterServer.statusMsg}}</td>
-                          <td style="text-align: right">                                      
-                            <button ng-if="jupyterServer.notRunning"
-                                    ng-click="jupyterCtrl.start()"
-                                    type="button" class="btn btn-info btn-sm" 
-                                    ng-disabled="jupyterServer.notRunning">
-                              <span class="glyphicon glyphicon-eye-open" ></span>
-                            </button>
-                            <button ng-if="jupyterServer.notRunning === false"
-                                    ng-click="jupyterCtrl.stop()"
-                                    type="button" class="btn btn-danger btn-sm" 
-                                    ng-disabled="jupyterServer.notRunning">
-                              <span class="glyphicon glyphicon-off" ></span>
-                            </button>
-                          </td>
-                        </tr>
-          
-                      </tbody>                     
-                    </table>        -->
-        </div> <!--content wrapper -->
+</section>
+</div>
 
-      </section>
-    </div>
-
-  </div>
+</div>
 </div>

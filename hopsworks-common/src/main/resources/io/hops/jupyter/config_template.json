@@ -65,10 +65,13 @@
             "spark.pyspark.python" : "%%pyspark_bin%%",
             "spark.shuffle.service.enabled" : "true",
             "spark.submit.deployMode" : "cluster",
-            "spark.dynamicAllocation.enabled" : "%%tensorflow%%",
             "spark.tensorflow.application" : "%%tensorflow%%",
             "spark.tensorflow.num.ps" : "%%num_ps%%",
-            "spark.executor.gpus" : "%%num_gpus%%"
+            "spark.executor.gpus" : "%%num_gpus%%",
+            "spark.dynamicAllocation.enabled" : "%%dynamic_executors%%",
+            "spark.dynamicAllocation.initialExecutors" : "%%initial_executors%%",
+            "spark.dynamicAllocation.minExecutors" : "%%min_executors%%",
+            "spark.dynamicAllocation.maxExecutors" : "%%max_executors%%"            
         }
     },
     "use_auto_viz": true,

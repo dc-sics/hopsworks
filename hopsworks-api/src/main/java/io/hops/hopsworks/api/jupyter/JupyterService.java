@@ -18,6 +18,8 @@ import io.hops.hopsworks.api.util.LivyService;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
+import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
+import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
@@ -63,6 +65,8 @@ public class JupyterService {
   private JupyterConfigFactory jupyterConfigFactory;
   @EJB
   private JupyterFacade jupyterFacade;
+  @EJB
+  private JupyterSettingsFacade jupyterSettingsFacade;
   @EJB
   private HdfsUsersController hdfsUsersController;
   @EJB
@@ -125,6 +129,21 @@ public class JupyterService {
   }
 
   @GET
+  @Path("/settings")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response settings(@Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+
+    String loggedinemail = sc.getUserPrincipal().getName();
+    JupyterSettings js = jupyterSettingsFacade.findByProjectUser(projectId,
+            loggedinemail);
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            js).build();
+  }
+
+  @GET
   @Path("/running")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
@@ -173,7 +192,7 @@ public class JupyterService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response startNotebookServer(JupyterDTO jupyterConfig,
+  public Response startNotebookServer(JupyterSettings jupyterConfig,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
 
@@ -194,26 +213,31 @@ public class JupyterService {
               "First enable Anaconda. Click on 'Settings -> Python'");
     }
 
+//    String loggedinemail = sc.getUserPrincipal().getName();
+//    JupyterSettings js = jupyterSettingsFacade.findByProjectUser(projectId,
+//            loggedinemail);
+//
+//    if (js == null) {
+//      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+//              getStatusCode(),
+//              "Could not find Jupyter Settings for this project.");
+//    }
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
 
     if (jp == null) {
       HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
 
-      String secret = DigestUtils.sha256Hex(Integer.toString(
+      String configSecret = DigestUtils.sha256Hex(Integer.toString(
               ThreadLocalRandom.current().nextInt()));
       JupyterDTO dto;
       try {
 
-        dto = jupyterConfigFactory.startServerAsJupyterUser(project, secret,
-                hdfsUser,
-                jupyterConfig.getDriverCores(), jupyterConfig.getDriverMemory(),
-                jupyterConfig.getNumExecutors(),
-                jupyterConfig.getExecutorCores(), jupyterConfig.
-                getExecutorMemory(), jupyterConfig.getGpus(),
-                jupyterConfig.getArchives(), jupyterConfig.getJars(),
-                jupyterConfig.getFiles(), jupyterConfig.getPyFiles(),
-                jupyterConfig.getNumParamServers(),
-                jupyterConfig.isTensorflow());
+//        if (jupyterConfig.isSaveSettings()) {
+        jupyterSettingsFacade.update(jupyterConfig);
+//        }
+
+        dto = jupyterConfigFactory.startServerAsJupyterUser(project,
+                configSecret, hdfsUser, jupyterConfig);
       } catch (InterruptedException | IOException ex) {
         Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
                 ex);
@@ -229,13 +253,8 @@ public class JupyterService {
 
       String externalIp = Ip.getHost(req.getRequestURL().toString());
 
-      jp = jupyterFacade.
-              saveServer(externalIp, project, secret, dto.getPort(), user.
-                      getId(), dto.getToken(), dto.getPid(),
-                      dto.getDriverCores(), dto.getDriverMemory(),
-                      dto.getNumExecutors(), dto.getExecutorCores(),
-                      dto.getExecutorMemory(), dto.getGpus(), dto.getArchives(),
-                      dto.getJars(), dto.getFiles(), dto.getPyFiles());
+      jp = jupyterFacade.saveServer(externalIp, project, configSecret,
+              dto.getPort(), user.getId(), dto.getToken(), dto.getPid());
 
       if (jp == null) {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.

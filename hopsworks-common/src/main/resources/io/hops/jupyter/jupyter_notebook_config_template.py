@@ -17,6 +17,8 @@ c.NotebookApp.contents_manager_class='hdfscontents.hdfsmanager.HDFSContentsManag
 c.NotebookApp.ip = '127.0.0.1'
 c.NotebookApp.open_browser = False
 
+c.NotebookApp.notebook_dir = '%%secret_dir%%'
+
 c.NotebookApp.port_retries = 0
 c.NotebookApp.port = %%port%%
 
