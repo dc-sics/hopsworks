@@ -3,8 +3,8 @@
 angular.module('hopsWorksApp')
         .controller('JupyterCtrl', ['$scope', '$routeParams', '$route',
           'growl', 'ModalService', 'JupyterService', 'TensorFlowService', 'SparkService', '$location', '$timeout', '$window', '$sce',
-          function ($scope, $routeParams, $route, growl, ModalService, JupyterService, TensorFlowService, SparkService, 
-          $location, $timeout, $window, $sce) {
+          function ($scope, $routeParams, $route, growl, ModalService, JupyterService, TensorFlowService, SparkService,
+                  $location, $timeout, $window, $sce) {
 
             var self = this;
             self.connectedStatus = false;
@@ -32,7 +32,7 @@ angular.module('hopsWorksApp')
 //                      }, function (error) {
 //              }
 //            };
-            
+
             self.deselect = function () {
 //              self.selected = null;
 //              refresh();
@@ -84,25 +84,28 @@ angular.module('hopsWorksApp')
 
             //Set some (semi-)constants
             self.selectFileRegexes = {
-              "SPARK": /.jar\b/,
+              "JAR": /.jar\b/,
               "PY": /.py\b/,
-              "FILE": /[^]*/,
-              "ARCHIVE": /[^]*/
+              "*": /[^]*/,
+              "ZIP": /[^]*/
             };
             self.selectFileErrorMsgs = {
-              "SPARK": "Please select a JAR file.",
+              "JAR": "Please select a JAR file.",
               "PY": "Please select a Python file.",
-              "ARCHIVE": "Please select a file.",
-              "FILE": "Please select a folder."
+              "ZIP": "Please select a file.",
+              "*": "Please select a folder."
             };
 
-            this.selectFile = function (reason, parameter) {
-              if (reason.toUpperCase() === "PY") {
-                self.adamState.processparameter = parameter;
-              }
-              
-              ModalService.selectFile('lg', self.selectFileRegexes[reason],
-                      self.selectFileErrorMsgs["ADAM-FILE"]).then(
+//, parameter
+            this.selectFile = function (reason) {
+//              if (reason.toUpperCase() === "ZIP") {
+//              } else if (reason.toUpperCase() === "JAR") {
+//              } else if (reason.toUpperCase() === "*") {
+//              } else if (reason.toUpperCase() === "PY") {
+//              }
+
+              ModalService.selectFile('lg', self.selectFileRegexes[reason.toUpperCase()],
+                      self.selectFileErrorMsgs[reason.toUpperCase()]).then(
                       function (success) {
                         self.onFileSelected(reason, "hdfs://" + success);
                       }, function (error) {
@@ -110,23 +113,23 @@ angular.module('hopsWorksApp')
               });
             };
 
-            this.selectDir = function (reason, parameter) {
-              if (reason.toUpperCase() === reason) {
-                self.adamState.processparameter = parameter;
-              }
-              ModalService.selectDir('lg', self.selectFileRegexes[reason],
-                      self.selectFileErrorMsgs[reason]).then(
-                      function (success) {
-                        self.onFileSelected(reason, "hdfs://" + success);
-                        if (reason.toUpperCase() === reason) {
-                          growl.info("Insert output file name", {title: 'Required', ttl: 5000});
-                        }
-                      }, function (error) {
-                //The user changed their mind.
-              });
-            };
-            
-            
+//            this.selectDir = function (reason, parameter) {
+//              if (reason.toUpperCase() === reason) {
+//                self.adamState.processparameter = parameter;
+//              }
+//              ModalService.selectDir('lg', self.selectFileRegexes[reason],
+//                      self.selectFileErrorMsgs[reason]).then(
+//                      function (success) {
+//                        self.onFileSelected(reason, "hdfs://" + success);
+//                        if (reason.toUpperCase() === reason) {
+//                          growl.info("Insert output file name", {title: 'Required', ttl: 5000});
+//                        }
+//                      }, function (error) {
+//                //The user changed their mind.
+//              });
+//            };
+
+
             /**
              * Callback for when the user selected a file.
              * @param {String} reason
@@ -134,92 +137,60 @@ angular.module('hopsWorksApp')
              * @returns {undefined}
              */
             self.onFileSelected = function (reason, path) {
-              var filename = getFileName(path);
-              switch (reason.toUpperCase()) {
-                case "SPARK":
-                case "PYSPARK":
-                case "TFSPARK":
-                  self.sparkState.selectedJar = filename;
-                  SparkService.inspectJar(self.projectId, path).then(
-                          function (success) {
-                            self.runConfig = success.data;
-                            if(reason.toUpperCase() === "TFSPARK"){
-                              self.jobtype = 5;
-                            } else {
-                              if(self.runConfig.appPath.toLowerCase().endsWith(".py")){
-                                self.jobtype = 4;
-                              } else {
-                                self.jobtype = 1;
-                              }
-                            }
-                            //Update the min/max spark executors based on 
-                            //backend configuration 
-                            if (typeof self.runConfig !== 'undefined') {
-                              self.sliderOptions.options['floor'] = self.runConfig.
-                                      minExecutors;
-                              self.sliderOptions.options['ceil'] = self.runConfig.
-                                      maxExecutors;
-                            } else {
-                              self.sliderOptions.options['floor'] = 1;
-                              self.sliderOptions.options['ceil'] = 300;
-                            }
-                            self.mainFileSelected(filename);
-                            // For Kafka tour
-                            if (self.projectIsGuide) {
-                              self.tourService.currentStep_TourSeven = 6;
-                            }
-
-                            if (self.tourService.currentStep_TourFour > -1) {
-                              self.tourService.currentStep_TourFour = 6;
-                            }
-
-                          }, function (error) {
-                    growl.error(error.data.errorMsg, {title: 'Error', ttl: 15000});
-                  });
-                  break;
-                case "LIBRARY":
-                  //Push the new library into the localresources array
-                  var libType = 'file';
-                  if(path.endsWith(".zip") || path.endsWith(".tar") || path.endsWith(".gz")){
-                    libType = 'archive';
-                  } 
-                  self.localResources.push({
-                    'name': filename,
-                    'path': path,
-                    'type': libType,
-                    'visibility': 'application',
-                    'pattern': null
-                  });
-                  break;
-                case "ADAM":
-                  self.adamState.processparameter.value = path;
-                  if (typeof runConfig != 'undefined') {
-                    self.sliderOptions.options['floor'] = self.runConfig.minExecutors;
-                    self.sliderOptions.options['ceil'] = self.runConfig.
-                            maxExecutors;
+              var re = /(?:\.([^.]+))?$/;
+              var ext = re.exec(path)[1];
+//              switch (reason.toUpperCase()) {
+              switch (ext.toUpperCase()) {
+                case "JAR":
+                  if (reason.toUpperCase() !== ".JAR") {
+                    growl.error("Invalid file type selected. Expecting " + reason + " - Found: " + ext);
                   } else {
-                    self.sliderOptions.options['floor'] = 1;
-                    self.sliderOptions.options['ceil'] = 300;
+                    if (self.val.jars === "") {
+                      self.val.jars = path;
+                    } else {
+                      self.val.jars = self.val.jars.concat(",").concat(path);
+                    }
                   }
                   break;
-                case "TENSORFLOW":
-                  self.tensorflowState.selectedJar = filename;
-                  TensorFlowService.inspectProgram(self.projectId, path).then(
-                          function (success) {
-                            self.runConfig = success.data;
-                            self.mainFileSelected(filename);
-                            if (self.tourService.currentStep_TourFour > -1) {
-                              self.tourService.currentStep_TourFour = 6;
-                            }
-                          }, function (error) {
-                    growl.error(error.data.errorMsg, {title: 'Error', ttl: 15000});
-                  });
+                case "PY":
+                  if (reason.toUpperCase() !== ".PY") {
+                    growl.error("Invalid file type selected. Expecting " + reason + " - Found: " + ext);
+                  } else {
+                    if (self.val.py === "") {
+                      self.val.py = path;
+                    } else {
+                      self.val.py = self.val.py.concat(",").concat(path);
+                    }
+                  }
+                  break;
+                case "ZIP":
+                case "TGZ":
+                case "TAR.GZ":
+                case "GZ":
+                case "BZIP":
+                  if (reason.toUpperCase() !== ".ZIP") {
+                    growl.error("Invalid file type selected. Found: " + ext);
+                  } else {
+                    if (self.val.archives === "") {
+                      self.val.archives = path;
+                    } else {
+                      self.val.archives = self.val.archives.concat(",").concat(path);
+                    }
+                  }
+                  break;
+                case "*":
+                  if (self.val.files === "") {
+                    self.val.files = path;
+                  } else {
+                    self.val.files = self.val.files.concat(",").concat(path);
+                  }
                   break;
                 default:
+                  growl.error("Invalid file type selected: " + reason);
                   break;
               }
             };
-            
+
 
             $window.uploadDone = function () {
               stopLoading();
@@ -247,21 +218,27 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.config = success.data;
                         self.ui = "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
-                        $window.open(self.ui, '_blank');			  
+//                        $window.open(self.ui, '_blank');  
                         self.toggleValue = true;
                       }, function (error) {
-                        JupyterService.settings(projectId).then(
-                         function (success) {
-                           self.val = success.data;
-                           self.toggleValue = true;
-                         }, function (error) {
-                           growl.error("Could not stop the Jupyter Notebook Server.");
-                         }
-                        );
-                     }
+                JupyterService.settings(projectId).then(
+                        function (success) {
+                          self.val = success.data;
+                          self.sliderOptions.min = self.val.dynamicMinExecutors;
+                          self.sliderOptions.max = self.val.dynamicMaxExecutors;
+                          self.toggleValue = true;
+                        }, function (error) {
+                  growl.error("Could not stop the Jupyter Notebook Server.");
+                }
+                );
+              }
               );
 
             };
+            
+            self.openWindow = function() {
+              $window.open(self.ui, '_blank');
+            }
 
 
             var startLoading = function (label) {
@@ -327,11 +304,11 @@ angular.module('hopsWorksApp')
 
 
 
-            var start = function () {
+            self.start = function () {
               startLoading("Connecting to Jupyter...");
               $scope.tgState = true;
 
-              JupyterService.start(projectId, self.config).then(
+              JupyterService.start(projectId, self.val).then(
                       function (success) {
                         self.toggleValue = true;
                         self.config = success.data;
@@ -349,30 +326,6 @@ angular.module('hopsWorksApp')
 
             };
 
-
-            var configure = function () {
-              var val = {};
-              val.driverMemory = "500M";
-              val.executorMemory = "500M";
-              val.gpus = 1;
-              val.driverCores = 1;
-              val.executorCores = 1;
-              val.archives = "";
-              val.jars = "";
-              val.files = "";
-              val.pyFiles = "";
-//              ModalService.jupyterConfig('md', '', '', val).then(
-//                      function (success) {
-//                        self.config = success.val;
-//                        start();
-//                      },
-//                      function (error) {
-//                        growl.error("Could not activate Jupyter.");
-//                        self.toggleValue = true;
-//
-//                      });
-
-            };
 
 
           }]);

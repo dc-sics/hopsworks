@@ -335,6 +335,8 @@ public class Settings implements Serializable {
   /**
    * Default Directory locations
    */
+  public static String PRIVATE_DIRS = "/private_dirs/";
+
   private String SPARK_DIR = "/srv/hops/spark";
   public static final String SPARK_EXAMPLES_DIR = "/examples/jars";
   public static final String HOPS_VERSION = "2.4.0";

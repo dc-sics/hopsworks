@@ -12,6 +12,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -169,8 +170,9 @@ public class JupyterSettings implements Serializable {
   @Column(name = "py_files")
   private String pyFiles = "";
 
-//  @Transient
-//  private boolean saveSettings = false;
+  @Transient
+  private String privateDir = "";
+  
   @JoinColumn(name = "team_member",
           referencedColumnName = "email",
           insertable
@@ -360,13 +362,14 @@ public class JupyterSettings implements Serializable {
     this.advanced = advanced;
   }
 
-//  public boolean isSaveSettings() {
-//    return saveSettings;
-//  }
-//
-//  public void setSaveSettings(boolean saveSettings) {
-//    this.saveSettings = saveSettings;
-//  }
+  public String getPrivateDir() {
+    return privateDir;
+  }
+
+  public void setPrivateDir(String privateDir) {
+    this.privateDir = privateDir;
+  }
+
   @Override
   public int hashCode() {
     int hash = 0;

@@ -140,7 +140,7 @@ public class JupyterConfigFactory {
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public JupyterDTO startServerAsJupyterUser(Project project, 
+  public JupyterDTO startServerAsJupyterUser(Project project,
           String secretConfig,
           String hdfsUser, JupyterSettings js) throws
           AppException, IOException, InterruptedException {
@@ -169,16 +169,19 @@ public class JupyterConfigFactory {
       // use pidfile to kill any running servers
       port = ThreadLocalRandom.current().nextInt(40000, 59999);
 
-      jc = new JupyterConfig(project.getName(),secretConfig, hdfsUser, hdfsLeFacade.
-              getSingleEndpoint(), settings, port, token, js);
-      
+      jc = new JupyterConfig(project.getName(), secretConfig, hdfsUser,
+              hdfsLeFacade.
+                      getSingleEndpoint(), settings, port, token, js);
+
+      String secretDir = settings.getStagingDir() + Settings.PRIVATE_DIRS + js.
+              getSecret();
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       String[] command
               = {"/usr/bin/sudo", prog, "start", jc.getProjectDirPath(),
                 jc.getSettings().getHadoopDir(), settings.getJavaHome(),
                 settings.getAnacondaProjectDir(project.getName()), port.
                 toString(),
-                hdfsUser + "-" + port + ".log"};
+                hdfsUser + "-" + port + ".log", secretDir};
       logger.log(Level.INFO, Arrays.toString(command));
       ProcessBuilder pb = new ProcessBuilder(command);
       String pidfile = jc.getRunDirPath() + "/jupyter.pid";
@@ -428,7 +431,7 @@ public class JupyterConfigFactory {
     } catch (IOException | InterruptedException ex) {
       logger.log(Level.SEVERE,
               "Problem checking if Jupyter Notebook server is running: {0}", ex.
-              toString());
+                      toString());
       exitValue = -2;
     }
 

@@ -67,7 +67,7 @@ public class JupyterConfig {
     projectUserDirPath = projectPath + File.separator + secretConfig;
     confDirPath = projectUserDirPath + File.separator + "conf";
     logDirPath = projectUserDirPath + File.separator + "logs";
-    runDirPath = projectUserDirPath + File.separator + "r";
+    runDirPath = projectUserDirPath + File.separator + "run";
     this.token = token;
     try {
       newDir = createJupyterDirs();
@@ -241,7 +241,7 @@ public class JupyterConfig {
                       "hadoop_home", this.settings.getHadoopDir(),
                       "hdfs_home", this.settings.getHadoopDir(),
                       "secret_dir", this.settings.getStagingDir()
-                      + "/private_dirs/" + js.getSecret()
+                      + Settings.PRIVATE_DIRS + js.getSecret()
               );
       createdJupyter = ConfigFileGenerator.createConfigFile(jupyter_config_file,
               jupyter_notebook_config.toString());

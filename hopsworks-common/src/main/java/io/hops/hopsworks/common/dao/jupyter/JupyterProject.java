@@ -1,10 +1,13 @@
 package io.hops.hopsworks.common.dao.jupyter;
 
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterInterpreter;
 import io.hops.hopsworks.common.dao.project.Project;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
 import javax.persistence.Basic;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -12,12 +15,15 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 @Entity
 @Table(name = "jupyter_project",
@@ -47,6 +53,14 @@ import javax.xml.bind.annotation.XmlRootElement;
           query
           = "SELECT j FROM JupyterProject j WHERE j.pid = :pid")})
 public class JupyterProject implements Serializable {
+
+  @Basic(optional = false)
+  @NotNull
+  @Column(name = "pid")
+  private long pid;
+  @OneToMany(cascade = CascadeType.ALL,
+          mappedBy = "jupyterProject")
+  private Collection<JupyterInterpreter> jupyterInterpreterCollection;
 
   private static final long serialVersionUID = 1L;
   @Id
@@ -82,10 +96,6 @@ public class JupyterProject implements Serializable {
           max = 255)
   @Column(name = "token")
   private String token;
-  @Basic(optional = false)
-  @NotNull
-  @Column(name = "pid")
-  private Long pid;
   @JoinColumn(name = "project_id",
           referencedColumnName = "id")
   @ManyToOne(optional = false)
@@ -167,13 +177,6 @@ public class JupyterProject implements Serializable {
     this.token = token;
   }
 
-  public Long getPid() {
-    return pid;
-  }
-
-  public void setPid(Long pid) {
-    this.pid = pid;
-  }
 
   public Project getProjectId() {
     return projectId;
@@ -207,6 +210,25 @@ public class JupyterProject implements Serializable {
   public String toString() {
     return "io.hops.hopsworks.common.dao.jupyter.JupyterProject[ port=" + port
             + " ]";
+  }
+
+  public long getPid() {
+    return pid;
+  }
+
+  public void setPid(long pid) {
+    this.pid = pid;
+  }
+
+  @XmlTransient
+  @JsonIgnore
+  public Collection<JupyterInterpreter> getJupyterInterpreterCollection() {
+    return jupyterInterpreterCollection;
+  }
+
+  public void setJupyterInterpreterCollection(
+          Collection<JupyterInterpreter> jupyterInterpreterCollection) {
+    this.jupyterInterpreterCollection = jupyterInterpreterCollection;
   }
 
 }

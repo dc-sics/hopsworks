@@ -139,6 +139,8 @@ public class JupyterService {
     JupyterSettings js = jupyterSettingsFacade.findByProjectUser(projectId,
             loggedinemail);
 
+    js.setPrivateDir(settings.getStagingDir() + Settings.PRIVATE_DIRS + js.
+            getSecret());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             js).build();
   }
@@ -161,26 +163,24 @@ public class JupyterService {
               Response.Status.NOT_FOUND.getStatusCode(),
               "Could not find any Jupyter notebook server for this project.");
     }
-    if (jp != null) {
-      // Check to make sure the jupyter notebook server is running
-      boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
-      // if the notebook is not running but we have a database entry for it,
-      // we should remove the DB entry (and restart the notebook server).
-      if (!running) {
-        jupyterFacade.removeNotebookServer(hdfsUser);
-        throw new AppException(
-                Response.Status.NOT_FOUND.getStatusCode(),
-                "Found Jupyter notebook server for you, but it wasn't running.");
-      }
-      String externalIp = Ip.getHost(req.getRequestURL().toString());
-      settings.setHopsworksExternalIp(externalIp);
-      Integer port = req.getLocalPort();
-      String endpoint = externalIp + ":" + port;
-      if (endpoint.compareToIgnoreCase(jp.getHostIp()) != 0) {
-        // update the host_ip to whatever the client saw as the remote host:port
-        jp.setHostIp(endpoint);
-        jupyterFacade.update(jp);
-      }
+    // Check to make sure the jupyter notebook server is running
+    boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
+    // if the notebook is not running but we have a database entry for it,
+    // we should remove the DB entry (and restart the notebook server).
+    if (!running) {
+      jupyterFacade.removeNotebookServer(hdfsUser);
+      throw new AppException(
+              Response.Status.NOT_FOUND.getStatusCode(),
+              "Found Jupyter notebook server for you, but it wasn't running.");
+    }
+    String externalIp = Ip.getHost(req.getRequestURL().toString());
+    settings.setHopsworksExternalIp(externalIp);
+    Integer port = req.getLocalPort();
+    String endpoint = externalIp + ":" + port;
+    if (endpoint.compareToIgnoreCase(jp.getHostIp()) != 0) {
+      // update the host_ip to whatever the client saw as the remote host:port
+      jp.setHostIp(endpoint);
+      jupyterFacade.update(jp);
     }
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
@@ -213,15 +213,6 @@ public class JupyterService {
               "First enable Anaconda. Click on 'Settings -> Python'");
     }
 
-//    String loggedinemail = sc.getUserPrincipal().getName();
-//    JupyterSettings js = jupyterSettingsFacade.findByProjectUser(projectId,
-//            loggedinemail);
-//
-//    if (js == null) {
-//      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-//              getStatusCode(),
-//              "Could not find Jupyter Settings for this project.");
-//    }
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
 
     if (jp == null) {
