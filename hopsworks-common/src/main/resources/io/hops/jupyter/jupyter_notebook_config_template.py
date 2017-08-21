@@ -29,10 +29,14 @@ c.NotebookApp.iopub_data_rate_limit=10000000
 
 c.NotebookApp.base_url='/hopsworks-api/jupyter/%%port%%/'
 
+
+c.JupyterConsoleApp.kernel_name="PySpark"
+
 #
 # Disable the default Python2 kernel
 # https://github.com/jupyter/jupyter_client/issues/144
 #
+#c.KernelSpecManager.whitelist = ['Python 2', 'ir']
 #c.KernelSpecManager.whitelist = set(['Python 2', 'ir'])
 #c.KernelSpecManager.whitelist = set(['PySpark', 'ir'])
 #c.KernelSpecManager.whitelist = set(['PySpark3', 'ir'])
@@ -40,6 +44,24 @@ c.NotebookApp.base_url='/hopsworks-api/jupyter/%%port%%/'
 #c.KernelSpecManager.whitelist = set(['SparkR', 'ir'])
 #c.KernelSpecManager.whitelist = set(['pythonwithpixiedustspark21', 'ir'])
 #c.MultiKernelManager.default_kernel_name='PySpark'
+
+#c.KernelSpecManager.whitelist = {'python2'}
+#c.KernelSpecManager.whitelist = {}
+c.KernelSpecManager.whitelist = {'pysparkkernel', 'pyspark3kernel','sparkkernel', 'sparkrkernel','pythonwithpixiedustspark22', 
+'python-%%project%%' }
+c.KernelSpecMAnager.ensure_native_kernel=False
+
+#Available kernels:
+#  pyspark3kernel                /usr/local/share/jupyter/kernels/pyspark3kernel
+#  pysparkkernel                 /usr/local/share/jupyter/kernels/pysparkkernel
+#  python2                       /usr/local/share/jupyter/kernels/python2
+#  pythonwithpixiedustspark22    /usr/local/share/jupyter/kernels/pythonwithpixiedustspark22
+#  sparkkernel                   /usr/local/share/jupyter/kernels/sparkkernel
+#  sparkrkernel                  /usr/local/share/jupyter/kernels/sparkrkernel
+
+
+
+
 
 c.NotebookApp.allow_origin = '*'
 

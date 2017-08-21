@@ -192,7 +192,7 @@ public class JupyterService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response startNotebookServer(JupyterSettings jupyterConfig,
+  public Response startNotebookServer(JupyterSettings jupyterSettings,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
 
@@ -224,11 +224,11 @@ public class JupyterService {
       try {
 
 //        if (jupyterConfig.isSaveSettings()) {
-        jupyterSettingsFacade.update(jupyterConfig);
+        jupyterSettingsFacade.update(jupyterSettings);
 //        }
 
         dto = jupyterConfigFactory.startServerAsJupyterUser(project,
-                configSecret, hdfsUser, jupyterConfig);
+                configSecret, hdfsUser, jupyterSettings);
       } catch (InterruptedException | IOException ex) {
         Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
                 ex);

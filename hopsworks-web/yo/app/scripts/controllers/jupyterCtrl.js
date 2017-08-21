@@ -10,6 +10,7 @@ angular.module('hopsWorksApp')
             self.connectedStatus = false;
             self.loading = false;
             self.advanced = false;
+            self.details = false;
             self.loadingText = "";
             $scope.tgState = true;
             self.jupyterServer;
@@ -218,9 +219,11 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.config = success.data;
                         self.ui = "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
-//                        $window.open(self.ui, '_blank');  
                         self.toggleValue = true;
                       }, function (error) {
+                        // nothing to do
+                    }
+              );
                 JupyterService.settings(projectId).then(
                         function (success) {
                           self.val = success.data;
@@ -228,11 +231,9 @@ angular.module('hopsWorksApp')
                           self.sliderOptions.max = self.val.dynamicMaxExecutors;
                           self.toggleValue = true;
                         }, function (error) {
-                  growl.error("Could not stop the Jupyter Notebook Server.");
+                  growl.error("Could not get Jupyter Notebook Server Settings.");
                 }
                 );
-              }
-              );
 
             };
             
@@ -261,6 +262,7 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.ui = "";
                         stopLoading();
+                        self.mode="dynamicSpark";
                       }, function (error) {
                 growl.error("Could not stop the Jupyter Notebook Server.");
                 stopLoading();

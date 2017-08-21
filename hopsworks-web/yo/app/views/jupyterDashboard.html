@@ -21,29 +21,31 @@
           <div growl reference="10" class="pull-right" ></div>
 
           <h3>
-            <div class="col-sm-2 col-md-2 col-lg-2  ">
-            </div>
-            <div class="col-sm-3 col-md-3 col-lg-3 " style="margin-top: -17px; margin-left: 15px;">
-
-              <!--jupyterCtrl.val.mode === 'tensorflow' ? jupyterCtrl.start() :--> 
-              <div class="btn-group" data-toggle="buttons">
-                <label class="btn btn-primary"                        
-                       ng-click="jupyterCtrl.val.mode = 'tensorflow'">
-                  <input type="radio" name="tf" id="option1" autocomplete="off"> Tensorflow
-                </label>
-                <label class="btn btn-primary"
-                       ng-click="jupyterCtrl.val.mode = 'sparkStatic'">
-                  <input type="radio" name="sparks" id="option2" autocomplete="off"> Spark (Static)
-
-                </label>
-                <label class="btn btn-primary"
-                       ng-click="jupyterCtrl.val.mode = 'sparkDynamic'">
-                  <input type="radio" name="sparkd" id="option3" autocomplete="off"> Spark (Dynamic)
-                </label>
+            <div class="row" ng-show="jupyterCtrl.ui === ''">
+              <div class="col-sm-2 col-md-2 col-lg-2  ">
               </div>
-            </div>
+              <div class="col-sm-3 col-md-3 col-lg-3 " style="margin-top: -17px; margin-left: 15px;">
 
-            <div class="col-sm-2 col-md-2 col-lg-2 " style=" margin-left: 15px;"/>
+                <!--jupyterCtrl.val.mode === 'tensorflow' ? jupyterCtrl.start() :--> 
+                <div class="btn-group" data-toggle="buttons">
+                  <label class="btn btn-primary"                        
+                         ng-click="jupyterCtrl.val.mode = 'tensorflow'">
+                    <input type="radio" name="tf" id="option1" autocomplete="off"> Tensorflow
+                  </label>
+                  <label class="btn btn-primary"
+                         ng-click="jupyterCtrl.val.mode = 'sparkStatic'">
+                    <input type="radio" name="sparks" id="option2" autocomplete="off"> Spark (Static)
+
+                  </label>
+                  <label class="btn btn-primary"
+                         ng-click="jupyterCtrl.val.mode = 'sparkDynamic'">
+                    <input type="radio" name="sparkd" id="option3" autocomplete="off"> Spark (Dynamic)
+                  </label>
+                </div>
+              </div>
+
+              <div class="col-sm-2 col-md-2 col-lg-2 " style=" margin-left: 15px;"></div>
+            </div>
             <ul class="nav navbar-nav pull-right" style="margin-right:30px;  margin-top:-10px;">
               <!--              <li class="pull-left" 
                                 ng-class="{'connected-space' : jupyterCtrl.connectedStatus, 'disconnected-space':!jupyterCtrl.connectedStatus}">
@@ -51,9 +53,10 @@
                             </hamburger-toggle>
                             </li>-->
               <li class="server-status">
-                <span class="fa fa-circle" ng-class="{'server-connected' :jupyterCtrl.connectedStatus, 'server-disconnected':!jupyterCtrl.connectedStatus}"></span>  
-                <span ng-show="jupyterCtrl.connectedStatus">Connected</span>
-                <span ng-show="!jupyterCtrl.connectedStatus">Disconnected</span>
+                <span class="fa fa-circle" ng-class="{'server-connected' :jupyterCtrl.ui !== '', 
+                          'server-disconnected':jupyterCtrl.ui === ''}"></span>  
+                <span ng-show="jupyterCtrl.jupyterCtrl.ui !== ''">Connected</span>
+                <span ng-show="jupyterCtrl.jupyterCtrl.ui === ''">Disconnected</span>
               </li>
             </ul>
           </h3>
@@ -66,7 +69,7 @@
           </div>
 
 
-          <div class="row" ng-show="jupyterCtrl.val.mode !== ''">
+          <div class="row" ng-show="jupyterCtrl.val.mode !== '' && jupyterCtrl.ui === ''">
             <div class="col-sm-8 col-md-8 col-lg-8" style='margin-left: -20px;'>
 
               <div class="row">
@@ -253,54 +256,102 @@
             </div>
           </div> 
         </div> 
-        <div class="col-sm-2 col-md-2 col-lg-2"></div>
+        <!--<div class="col-sm-2 col-md-2 col-lg-2"></div>-->
 
 
         <div class="col-md-10"  ng-if="jupyterCtrl.ui !== ''">
-          <div class="col-md-1"></div>
-          <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''">
+          <div class="col-md-12" ng-if="jupyterCtrl.ui !== ''">
             <div class="row">
-              <div class="col-md-3"/>
-              <div class="col-md-3">
+              <div class="col-md-3"></div>
+              <div class="col-md-2">
+                Shutdown
                 <button uib-tooltip="Shutdown Jupyter Notebook Server" ng-click="jupyterCtrl.stop()" 
                         type="button" class="btn btn-danger btn-sm" >
                   <span class="glyphicon glyphicon-off" ></span>
                 </button>  
               </div>
-              <div class="col-md-6">
-                <button uib-tooltip="Launch Window for Jupyter Notebook Server" ng-click="jupyterCtrl.launchWindow()" 
+              <div class="col-md-1" style="margin-top:-20px;">
+                <div class="row" style="margin-left: -40px">
+                  <img width="75" src="images/jupyter.png"/>
+                </div>
+            <div class="row top-buffer">
+              <span class="fa" type="button"
+                    ng-class="jupyterCtrl.details ? 'fa-angle-double-up fa-2x' : 'fa-angle-double-down fa-2x'" 
+                    ng-click="jupyterCtrl.details = !jupyterCtrl.details">
+              </span>
+            </div>                
+              </div>
+              <div class="col-md-3">
+                Open 
+                <button uib-tooltip="Open a new Window to connect to the running Jupyter Notebook Server" 
+                        ng-click="jupyterCtrl.openWindow()" 
                         type="button" class="btn btn-success btn-sm" >
-                  <span class="glyphicon glyphicon-on" ></span>
+                  <span class="glyphicon glyphicon-off" ></span>
                 </button>  
               </div>
-              <div class="col-md-3"></div>
             </div>
           </div>
 
-          <div class="row">
-            Local Private directory for storing files when using the Python kernel:
-            <div class="row">
-              $PDIR or {{jupyterCtrl.val.privateDir}}
+<!--          <div class="row top-buffer"></div>  
+          <div class="row top-buffer">  
+            <div class="col-md-4"></div>
+            <div class="col-md-6">
+              <span class="fa" type="button"
+                    ng-class="jupyterCtrl.details ? 'fa-angle-double-up fa-2x' : 'fa-angle-double-down fa-2x'" 
+                    ng-click="jupyterCtrl.details = !jupyterCtrl.details">
+              </span>
+            </div>
+          </div>-->
+          <!--<span class="fa fa-angle-double-down"></span></div>-->
+          <div class="row top-buffer" ng-show="jupyterCtrl.details">
+
+            <div class="col-md-1"></div>
+            <div class="col-md-10 panel panel-default">
+              <div class="panel-heading" ><span style="margin-left: 100px; font-weight: bold;">Jupyter Notebook Server Details</span></div>
+              <div class="panel-body">
+                <div class="row">
+                  <div class="text-right col-md-2">Port <i class="fa fa-info-circle" 
+                                                           uib-tooltip="Port number where this Jupyter Notebook Server is listening" 
+                                                           style="margin-left: 10px"></i>
+                  </div>
+                  <div class="jupyter-left">
+                    {{jupyterCtrl.config.port}}
+                  </div>
+                </div>              
+                <div class="row">
+                  <div class="text-right col-md-2">Token <i class="fa fa-info-circle" 
+                                                            uib-tooltip="Secret token used to authenticate with this Jupyter Notebook Server." 
+                                                            style="margin-left: 10px"></i>
+                  </div>
+                  <div class="jupyter-left">
+                    {{jupyterCtrl.config.token}}
+                  </div>
+                </div>   
+                <div class="row">
+                  <div class="text-right col-md-2">$PDIR <i class="fa fa-info-circle" 
+                                                            uib-tooltip="Private local directory on this server for Python Notebooks." 
+                                                            style="margin-left: 10px"></i>
+                  </div>
+                  <div class="jupyter-left">
+                    {{jupyterCtrl.val.privateDir}}
+                  </div>
+                </div>   
+                <div class="row top-buffer">
+                  <div class="text-right col-md-2"></div>
+                  <i class="fa fa-info" aria-hidden="true">
+                    Jupyter Kernels (pyspark, python2) cannot be opened in the root folder - open within a directory 
+                    (e.g., 'Resources' or 'Jupyter').</i>
+                </div>
+
+              </div>
             </div>
           </div>
-        </div> 
+        </div>
 
-        <!--        <div class="col-md-11" ng-if="jupyterCtrl.ui !== ''" style="margin-left:-50px">
-                  <iframe id="ui_iframe" allowfullscreen  ng-src="{{trustSrc(jupyterCtrl.ui)}}" align="left" width="100%" height="100%" frameborder="0"></iframe> 
-                </div>-->
+    </div> <!--content wrapper -->
 
-<!--        <div ng-if="jupyterCtrl.ui === '' && jupyterCtrl.toggleValue == true">
-          <div class="row">The Jupyter Notebook is not available.</div> 
-          <div class="col-md-1 ">
-            <a ng-click="jupyterCtrl.goBack()">Go Back.</a>
-          </div>
-        </div>-->
-    </div>
-
-  </div> <!--content wrapper -->
-
-</section>
-</div>
+    </section>
+  </div>
 
 </div>
 </div>

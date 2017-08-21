@@ -184,6 +184,10 @@ public class JupyterConfig {
     File baseDir = new File(projectUserDirPath);
     baseDir.mkdirs();
     // Set owner persmissions
+    Set<PosixFilePermission> xOnly = new HashSet<>();
+    xOnly.add(PosixFilePermission.OWNER_WRITE);
+    xOnly.add(PosixFilePermission.OWNER_EXECUTE);
+
     Set<PosixFilePermission> perms = new HashSet<>();
     //add owners permission
     perms.add(PosixFilePermission.OWNER_READ);
@@ -199,7 +203,7 @@ public class JupyterConfig {
     perms.add(PosixFilePermission.OTHERS_EXECUTE);
 
     Files.setPosixFilePermissions(Paths.get(projectUserDirPath), perms);
-    Files.setPosixFilePermissions(Paths.get(projectPath), perms);
+    Files.setPosixFilePermissions(Paths.get(projectPath), xOnly);
 
     new File(confDirPath + "/custom").mkdirs();
     new File(runDirPath).mkdirs();
