@@ -209,3 +209,16 @@ div.story h3, div.task h3 {
 .jupyter-left { 
   margin-left:10px; 
 }
+
+.shift-left { 
+  margin-left:-50px; 
+}
+
+.blocks .btn-primary
+{
+    padding: 4px 5px;
+    margin: 0 50px 0 0;
+    border-radius: 1;
+    border: 2px solid #fff;
+}
+

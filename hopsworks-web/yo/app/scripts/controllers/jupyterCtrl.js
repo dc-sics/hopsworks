@@ -10,9 +10,8 @@ angular.module('hopsWorksApp')
             self.connectedStatus = false;
             self.loading = false;
             self.advanced = false;
-            self.details = false;
+            self.details = true;
             self.loadingText = "";
-            $scope.tgState = true;
             self.jupyterServer;
             self.toggleValue = false;
             var projectId = $routeParams.projectID;
@@ -30,6 +29,7 @@ angular.module('hopsWorksApp')
             ];
             self.selected = self.dirs[1];
 
+		
 
             self.changeBaseDir = function () {
                self.val.baseDir = self.selected.name;
@@ -37,8 +37,6 @@ angular.module('hopsWorksApp')
             
             self.deselect = function () {
 //              self.selected = null;
-//              refresh();
-//              getNotesInProject(null, false);
             };
 
 
@@ -234,6 +232,7 @@ angular.module('hopsWorksApp')
                         self.sliderOptions.min = self.val.dynamicMinExecutors;
                         self.sliderOptions.max = self.val.dynamicMaxExecutors;
                         self.toggleValue = true;
+                        self.val.mode = "sparkDynamic";
                       }, function (error) {
                 growl.error("Could not get Jupyter Notebook Server Settings.");
               }

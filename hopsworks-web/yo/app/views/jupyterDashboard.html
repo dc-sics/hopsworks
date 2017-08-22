@@ -20,24 +20,24 @@
         <div class="content-wrapper">                      
           <div growl reference="10" class="pull-right" ></div>
 
-          <h3>
+          <h4>
             <div class="row" ng-show="jupyterCtrl.ui === ''">
-              <div class="col-sm-2 col-md-2 col-lg-2  ">
-              </div>
-              <div class="col-sm-3 col-md-3 col-lg-3 " style="margin-top: -17px; margin-left: 15px;">
+              <div class="col-md-2 col-lg-2"> <img height="40" src="images/jupyter.png"/>
+	      </div>
+              <div class="col-sm-3 col-md-3 col-lg-3 " style="margin-top: 0px; margin-left: 15px;">
 
                 <!--jupyterCtrl.val.mode === 'tensorflow' ? jupyterCtrl.start() :--> 
-                <div class="btn-group" data-toggle="buttons">
-                  <label class="btn btn-primary"                        
+                <div class="btn-group blocks" data-toggle="buttons">
+                  <label class="btn btn-primary" ng-class="{active: jupyterCtrl.val.mode == 'tensorflow', focus: jupyterCtrl.val.mode == 'tensorflow'}"
                          ng-click="jupyterCtrl.val.mode = 'tensorflow'">
                     <input type="radio" name="tf" id="option1" autocomplete="off"> Tensorflow
                   </label>
-                  <label class="btn btn-primary"
+                  <label class="btn btn-primary" ng-class="{active: jupyterCtrl.val.mode == 'sparkStatic', focus: jupyterCtrl.val.mode == 'sparkStatic'}"
                          ng-click="jupyterCtrl.val.mode = 'sparkStatic'">
                     <input type="radio" name="sparks" id="option2" autocomplete="off"> Spark (Static)
 
                   </label>
-                  <label class="btn btn-primary"
+                  <label class="btn btn-primary" ng-class="{active: jupyterCtrl.val.mode == 'sparkDynamic', focus: jupyterCtrl.val.mode == 'sparkDynamic'}"
                          ng-click="jupyterCtrl.val.mode = 'sparkDynamic'">
                     <input type="radio" name="sparkd" id="option3" autocomplete="off"> Spark (Dynamic)
                   </label>
@@ -46,12 +46,12 @@
 
               <div class="col-sm-2 col-md-2 col-lg-2 " style=" margin-left: 15px;"></div>
             </div>
-            <ul class="nav navbar-nav pull-right" style="margin-right:30px;  margin-top:-10px;">
-              <!--              <li class="pull-left" 
+            <ul class="nav navbar-nav pull-right" style="margin-right:30px;  margin-top:-25px;">
+              <li class="pull-left" 
                                 ng-class="{'connected-space' : jupyterCtrl.connectedStatus, 'disconnected-space':!jupyterCtrl.connectedStatus}">
                             <hamburger-toggle state="jupyterCtrl.tgState" class="hamburger-toggle" ng-click="jupyterCtrl.deselect()">
                             </hamburger-toggle>
-                            </li>-->
+                            </li>
               <li class="server-status">
                 <span class="fa fa-circle" ng-class="{'server-connected' :jupyterCtrl.ui !== '', 
                           'server-disconnected':jupyterCtrl.ui === ''}"></span>  
@@ -59,7 +59,7 @@
                 <span ng-show="jupyterCtrl.jupyterCtrl.ui === ''">Disconnected</span>
               </li>
             </ul>
-          </h3>
+          </h4>
           <div ng-init="(iscollapsed$index) = true; jupyterCtrl.tgState = true;"
                class="ds-content col-lg-12" ng-class="{'sidenav-open': jupyterCtrl.tgState}" style="margin-top: 5px;">
             <div class="row row-no-margin-left" style="margin-top: 15px;">
@@ -70,7 +70,7 @@
 
 
           <div class="row" ng-show="jupyterCtrl.val.mode !== '' && jupyterCtrl.ui === ''">
-            <div class="col-sm-8 col-md-8 col-lg-8" style='margin-left: -20px;'>
+            <div class="col-sm-8 col-md-8 col-lg-8" style='margin-top:20px; margin-left: -20px;'>
 
               <div class="row">
                 <div class="col-md-3"></div>
@@ -105,9 +105,9 @@
                       </ui-select>
                     </div>
                   </div>
-                  <div class="row jupyter-left" style="margin-left: 50px" ng-show="jupyterCtrl.selected.name === '/'" 
-                       style="font-weight: bold; color: red;">
-                    Warning: You cannot create notebooks in the '/' (root) folder - you can only create Notebooks when you are inside a dataset.
+                  <div class="row jupyter-left" ng-show="jupyterCtrl.selected.name === '/'" 
+                       style="margin-left: 150px; font-weight: bold; color: red;">
+                    Info: You cannot create notebooks in the '/' (root) folder of your project - Enter a dataset and then create a new Notebook.
                   </div>
                 </div>
 
@@ -269,18 +269,12 @@
         </div> 
         <!--<div class="col-sm-2 col-md-2 col-lg-2"></div>-->
 
+	<!--
 
         <div class="col-md-10"  ng-if="jupyterCtrl.ui !== ''">
           <div class="col-md-12" ng-if="jupyterCtrl.ui !== ''">
             <div class="row">
               <div class="col-md-3"></div>
-              <div class="col-md-2">
-                Shutdown
-                <button uib-tooltip="Shutdown Jupyter Notebook Server" ng-click="jupyterCtrl.stop()" 
-                        type="button" class="btn btn-danger btn-sm" >
-                  <span class="glyphicon glyphicon-off" ></span>
-                </button>  
-              </div>
               <div class="col-md-1" style="margin-top:-20px;">
                 <div class="row" style="margin-left: -40px">
                   <img width="75" src="images/jupyter.png"/>
@@ -292,17 +286,9 @@
                   </span>
                 </div>                
               </div>
-              <div class="col-md-3">
-                Open 
-                <button uib-tooltip="Open a new Window to connect to the running Jupyter Notebook Server" 
-                        ng-click="jupyterCtrl.openWindow()" 
-                        type="button" class="btn btn-success btn-sm" >
-                  <span class="glyphicon glyphicon-off" ></span>
-                </button>  
-              </div>
             </div>
           </div>
-
+-->
           <!--          <div class="row top-buffer"></div>  
                     <div class="row top-buffer">  
                       <div class="col-md-4"></div>
@@ -314,12 +300,16 @@
                       </div>
                     </div>-->
           <!--<span class="fa fa-angle-double-down"></span></div>-->
-          <div class="row top-buffer" ng-show="jupyterCtrl.details">
+          <div class="row top-buffer" ng-show="jupyterCtrl.ui !== ''">
 
-            <div class="col-md-1"></div>
-            <div class="col-md-10 panel panel-default">
-              <div class="panel-heading" ><span style="margin-left: 100px; font-weight: bold;">Jupyter Notebook Server Details</span></div>
-              <div class="panel-body">
+            <div class="col-md-1"></div> 
+            <div class="col-md-8 panel panel-default shift-left">
+              <div class="panel-heading" >
+		<div class="row">
+		<span style="margin-left: 100px; font-weight: bold;">Jupyter Notebook Server Details</span>
+	      </div>
+	      </div>
+              <div class="panel-body shift-left">
                 <div class="row">
                   <div class="text-right col-md-2">Port <i class="fa fa-info-circle" 
                                                            uib-tooltip="Port number where this Jupyter Notebook Server is listening" 
@@ -359,6 +349,58 @@
           </div>
         </div>
 
+
+
+
+    <div class="ds-sidenav" ng-class="{open: jupyterCtrl.tgState}" ng-show="jupyterCtrl.ui !== ''">
+      <div class="ibox float-e-margins" style="margin-bottom: -25px; height: 95%;">
+        <div class="file-manager">
+          <div>
+            <md-content class="md-padding" style="padding-top: 0px;">
+              <md-tabs md-dynamic-height md-border-bottom>
+                <md-tab label="Notebook Servers">
+                  <md-content>
+                    <table class="table table-hover" style="width: 100%">
+                      <tbody>
+                        <tr>
+                          <td><span>Open Jupyter in a new Tab</span></td>
+                          <td style="text-align: right">                                      
+                            <button
+                               uib-tooltip="Open a new Browser Tab to connect to the running Jupyter Notebook Server" 
+                               ng-click="jupyterCtrl.openWindow()" 
+                               type="button" class="btn btn-info btn-sm">
+                              <span class="glyphicon glyphicon-eye-open" ></span>
+                            </button>
+                          </td>
+			</tr>
+			<tr>
+			  <td><span>Shutdown Notebook Server</span></td>
+                          <td style="text-align: right">                                      			  
+			    <button uib-tooltip="Shutdown Jupyter Notebook Server." ng-click="jupyterCtrl.stop()" 
+				    type="button" class="btn btn-danger btn-sm" >
+			      <span class="glyphicon glyphicon-off" ></span>
+			    </button>
+			    </td>
+			</tr>
+                      </tbody>                     
+                    </table>
+                    <p style="line-height: 1.02; margin-top: 10px"><span class="glyphicon glyphicon-info-sign" >
+
+                      </span>                      Info: You cannot create notebooks in the '/' (root) folder of your project as you cannot store files in the project root directory. Files belong in datasets - so enter a dataset and then you can create/save a new Notebook :)  </p>
+                  </md-content>
+                </md-tab>
+              </md-tabs>
+            </md-content>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+
+
+
+    
     </div> <!--content wrapper -->
 
     </section>
