@@ -123,7 +123,8 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) { };
+            = new GenericEntity<List<JupyterProject>>(listServers) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
   }
@@ -139,8 +140,10 @@ public class JupyterService {
     JupyterSettings js = jupyterSettingsFacade.findByProjectUser(projectId,
             loggedinemail);
 
-    js.setPrivateDir(settings.getStagingDir() + Settings.PRIVATE_DIRS + js.
-            getSecret());
+    if (settings.isPythonKernelEnabled()) {
+      js.setPrivateDir(settings.getStagingDir() + Settings.PRIVATE_DIRS + js.
+              getSecret());
+    }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             js).build();
   }

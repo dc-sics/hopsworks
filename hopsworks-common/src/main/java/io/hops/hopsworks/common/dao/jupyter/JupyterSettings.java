@@ -174,7 +174,7 @@ public class JupyterSettings implements Serializable {
   private String privateDir = "";
 
   @Transient
-  private String baseDir = "";
+  private String baseDir = "/Jupyter/";
   
   @JoinColumn(name = "team_member",
           referencedColumnName = "email",

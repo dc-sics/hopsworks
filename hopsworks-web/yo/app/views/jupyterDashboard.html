@@ -91,7 +91,7 @@
                 <div class="row">
                   <div class="row">
                     <div class="text-right col-md-6">Base Directory <i class="fa fa-info-circle" 
-                                                                       uib-tooltip="Base HDFS Directory for Jupyter Notebooks." style="margin-left: 10px"></i>
+                                                                       uib-tooltip="Root Directory for Jupyter Notebooks." style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left">
 
@@ -107,7 +107,7 @@
                   </div>
                   <div class="row jupyter-left" ng-show="jupyterCtrl.selected.name === '/'" 
                        style="margin-left: 150px; font-weight: bold; color: red;">
-                    Info: You cannot create notebooks in the '/' (root) folder of your project - Enter a dataset and then create a new Notebook.
+                    Info: You can only create notebooks inside a dataset - not in the '/' (root) directory.
                   </div>
                 </div>
 
