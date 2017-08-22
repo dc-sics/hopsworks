@@ -66,7 +66,7 @@
 
 
         <div class="row" ng-show="jupyterCtrl.val.mode !== '' && jupyterCtrl.ui === ''">
-          <div class="col-sm-8 col-md-8 col-lg-8" style='margin-top:20px; margin-left: -20px;'>
+          <div class="col-sm-8 col-md-8 col-lg-8" style='margin-top:20px; margin-left: 20px;'>
 
             <div class="row">
               <div class="col-md-3"></div>
@@ -87,7 +87,7 @@
               <div class="row">
                 <div class="row">
                   <div class="text-right col-md-6">Base Directory <i class="fa fa-info-circle" 
-                                                                     uib-tooltip="Root Directory for Jupyter Notebooks." style="margin-left: 10px"></i>
+                                                                     uib-tooltip="Root Directory for Jupyter Notebooks. If your Notebook is not stored in the '/Jupyter' Dataset, choose '/'." style="margin-left: 10px"></i>
                   </div>
                   <div class="col-md-2 jupyter-left">
 
@@ -317,22 +317,22 @@
 
 
 <!--, top-buffer: jupyterCtrl.ui !== ''-->
-       <!--ng-show="jupyterCtrl.ui !== ''"-->
 
-  <div class="ds-sidenav" ng-class="{open: jupyterCtrl.tgState}">
+  <div class="ds-sidenav" ng-class="{open: jupyterCtrl.tgState}" ng-show="jupyterCtrl.ui !== ''">
     <div class="ibox float-e-margins" style="margin-bottom:-25px; height: 95%;">
       <div class="file-manager">
         <div>
           <md-content class="md-padding" style="padding-top: 0px;">
             <md-tabs md-dynamic-height md-border-bottom>
-              <md-tab label="Notebook Servers">
+              <md-tab label="Notebook Server">
                 <md-content>
                   <table class="table table-hover" style="width: 100%">
                     <tbody>
+                      <tr></tr>
                       <tr>
                         <td><span>Open Jupyter in a new Tab</span></td>
                         <td style="text-align: right">                                      
-                          <button
+                          <button tooltip-placement='bottom'
                             uib-tooltip="Open a new Browser Tab to connect to the running Jupyter Notebook Server" 
                             ng-click="jupyterCtrl.openWindow()" 
                             type="button" class="btn btn-info btn-sm">
@@ -343,7 +343,8 @@
                       <tr>
                         <td><span>Shutdown Notebook Server</span></td>
                         <td style="text-align: right">                                      			  
-                          <button uib-tooltip="Shutdown Jupyter Notebook Server." ng-click="jupyterCtrl.stop()" 
+                          <button tooltip-placement='bottom'
+                                  uib-tooltip="Shutdown Jupyter Notebook Server." ng-click="jupyterCtrl.stop()" 
                                   type="button" class="btn btn-danger btn-sm" >
                             <span class="glyphicon glyphicon-off" ></span>
                           </button>
@@ -353,7 +354,7 @@
                   </table>
                   <p style="line-height: 1.02; margin-top: 10px"><span class="glyphicon glyphicon-info-sign" >
 
-                    </span>                      Info: You cannot create notebooks in the '/' (root) folder of your project as you cannot store files in the project root directory. Files belong in datasets - so enter a dataset and then you can create/save a new Notebook :)  </p>
+                    </span>                      Info: You cannot create notebooks in the '/' (root) folder of your project as you cannot store files in the project root directory. Notebooks are stored as files in HDFS, and files must be stored in datasets in Hopsworks. So, in Jupyter, navigate to a dataset from where you can create/save a new Notebook :)  </p>
                 </md-content>
               </md-tab>
             </md-tabs>
