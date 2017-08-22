@@ -214,11 +214,15 @@ div.story h3, div.task h3 {
   margin-left:-50px; 
 }
 
+.top-big-buffer { 
+  margin-top:100px; 
+}
+
 .blocks .btn-primary
 {
     padding: 4px 5px;
     margin: 0 50px 0 0;
-    border-radius: 1;
-    border: 2px solid #fff;
+    border-radius: 5px;
+    border: 1px solid #fff;
 }
 
