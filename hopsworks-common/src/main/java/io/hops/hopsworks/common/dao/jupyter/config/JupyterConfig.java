@@ -232,6 +232,12 @@ public class JupyterConfig {
       String[] nn = nameNodeEndpoint.split(":");
       String nameNodeIp = nn[0];
       String nameNodePort = nn[1];
+      
+      String pythonKernel = "";
+      
+      if (settings.isPythonKernelEnabled()) {
+        pythonKernel = ", 'python-"+projectName+"'";
+      }
 
       StringBuilder jupyter_notebook_config = ConfigFileGenerator.
               instantiateFromTemplate(
@@ -242,6 +248,7 @@ public class JupyterConfig {
                       "hopsworks_ip", settings.getHopsworksIp(),
                       "hdfs_user", this.hdfsUser,
                       "port", port.toString(),
+                      "python-kernel", pythonKernel,
                       "hadoop_home", this.settings.getHadoopDir(),
                       "hdfs_home", this.settings.getHadoopDir(),
                       "secret_dir", this.settings.getStagingDir()

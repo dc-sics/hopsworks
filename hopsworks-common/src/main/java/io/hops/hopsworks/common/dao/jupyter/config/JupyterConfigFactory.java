@@ -310,7 +310,7 @@ public class JupyterConfigFactory {
 
   }
 
-   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public void killServerJupyterUser(String projectPath, Long pid, Integer port)
           throws AppException {
     if (projectPath == null || pid == null || port == null) {
