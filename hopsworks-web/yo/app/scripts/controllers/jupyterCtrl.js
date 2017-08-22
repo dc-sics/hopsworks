@@ -3,7 +3,7 @@
 angular.module('hopsWorksApp')
         .controller('JupyterCtrl', ['$scope', '$routeParams', '$route',
           'growl', 'ModalService', 'JupyterService', 'TensorFlowService', 'SparkService', '$location', '$timeout', '$window', '$sce',
-          function ($scope, $routeParams, $route, growl, ModalService, JupyterService, TensorFlowService, SparkService,
+            function ($scope, $routeParams, $route, growl, ModalService, JupyterService, TensorFlowService, SparkService,
                   $location, $timeout, $window, $sce) {
 
             var self = this;
@@ -24,16 +24,17 @@ angular.module('hopsWorksApp')
             self.val = {};
             $scope.tgState = true;
             self.config = {};
+            self.dirs = [
+              {id: 1, name: '/'},
+              {id: 2, name: '/Jupyter/'},
+            ];
+            self.selected = self.dirs[1];
 
-//            self.settings = function () {
-//              JupyterService.settings(projectId).then(
-//                      function (success) {
-//                        self.val = success.data;
-//                        self.toggleValue = true;
-//                      }, function (error) {
-//              }
-//            };
 
+            self.changeBaseDir = function () {
+               self.val.baseDir = self.selected.name;
+            };
+            
             self.deselect = function () {
 //              self.selected = null;
 //              refresh();
@@ -221,23 +222,26 @@ angular.module('hopsWorksApp')
                         self.ui = "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
                         self.toggleValue = true;
                       }, function (error) {
-                        // nothing to do
-                    }
+                // nothing to do
+              }
               );
-                JupyterService.settings(projectId).then(
-                        function (success) {
-                          self.val = success.data;
-                          self.sliderOptions.min = self.val.dynamicMinExecutors;
-                          self.sliderOptions.max = self.val.dynamicMaxExecutors;
-                          self.toggleValue = true;
-                        }, function (error) {
-                  growl.error("Could not get Jupyter Notebook Server Settings.");
-                }
-                );
+              JupyterService.settings(projectId).then(
+                      function (success) {
+                        self.val = success.data;
+                        if (self.val.dynamicMinExecutors < 1) {
+                          self.val.dynamicMinExecutors = 1;
+                        }
+                        self.sliderOptions.min = self.val.dynamicMinExecutors;
+                        self.sliderOptions.max = self.val.dynamicMaxExecutors;
+                        self.toggleValue = true;
+                      }, function (error) {
+                growl.error("Could not get Jupyter Notebook Server Settings.");
+              }
+              );
 
             };
-            
-            self.openWindow = function() {
+
+            self.openWindow = function () {
               $window.open(self.ui, '_blank');
             }
 
@@ -262,7 +266,7 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.ui = "";
                         stopLoading();
-                        self.mode="dynamicSpark";
+                        self.mode = "dynamicSpark";
                       }, function (error) {
                 growl.error("Could not stop the Jupyter Notebook Server.");
                 stopLoading();

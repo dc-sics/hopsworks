@@ -2,7 +2,7 @@
 c = get_config()
 c.HDFSContentsManager.hdfs_namenode_host='%%namenode_ip%%'
 c.HDFSContentsManager.hdfs_namenode_port=%%namenode_port%%
-c.HDFSContentsManager.root_dir='/Projects/%%project%%/' 
+c.HDFSContentsManager.root_dir='/Projects/%%project%%%%base_dir%%' 
 c.HDFSContentsManager.hdfs_user = '%%hdfs_user%%'
 
 c.NotebookApp.contents_manager_class='hdfscontents.hdfsmanager.HDFSContentsManager'

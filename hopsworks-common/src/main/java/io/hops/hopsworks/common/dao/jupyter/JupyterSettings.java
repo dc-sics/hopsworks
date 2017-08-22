@@ -172,6 +172,9 @@ public class JupyterSettings implements Serializable {
 
   @Transient
   private String privateDir = "";
+
+  @Transient
+  private String baseDir = "";
   
   @JoinColumn(name = "team_member",
           referencedColumnName = "email",
@@ -370,6 +373,15 @@ public class JupyterSettings implements Serializable {
     this.privateDir = privateDir;
   }
 
+  public String getBaseDir() {
+    return baseDir;
+  }
+
+  public void setBaseDir(String baseDir) {
+    this.baseDir = baseDir;
+  }
+
+  
   @Override
   public int hashCode() {
     int hash = 0;

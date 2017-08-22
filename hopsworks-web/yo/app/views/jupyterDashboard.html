@@ -87,15 +87,30 @@
                 </div>
               </div>
               <div class="row top-buffer" ng-show="jupyterCtrl.advanced === true">
-                <!--                <div class="row">
-                                  <div class="col-md-6"/>
-                                  <div class="col-md-5" style="margin-left: 34px;"> 
-                                    <label>Save as default
-                                      <input type="checkbox" ng-model="jupyterCtrl.val.saveSettings">
-                                    </label>
-                                  </div>
-                
-                                </div>-->
+
+                <div class="row">
+                  <div class="row">
+                    <div class="text-right col-md-6">Base Directory <i class="fa fa-info-circle" 
+                                                                       uib-tooltip="Base HDFS Directory for Jupyter Notebooks." style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+
+                      <ui-select ng-model="jupyterCtrl.selected" theme="bootstrap" on-select="jupyterCtrl.changeBaseDir()">
+                        <ui-select-match>
+                          <span ng-bind="$select.selected.name"></span>
+                        </ui-select-match>
+                        <ui-select-choices repeat="dir in (jupyterCtrl.dirs | filter: $select.search) track by dir.name">
+                          <div ng-bind="dir.name | highlight: $select.search"></div>
+                        </ui-select-choices>
+                      </ui-select>
+                    </div>
+                  </div>
+                  <div class="row jupyter-left" style="margin-left: 50px" ng-show="jupyterCtrl.selected.name === '/'" 
+                       style="font-weight: bold; color: red;">
+                    Warning: You cannot create notebooks in the '/' (root) folder - you can only create Notebooks when you are inside a dataset.
+                  </div>
+                </div>
+
 
                 <div class="row"  ng-show="jupyterCtrl.val.mode === 'tensorflow'">
 
@@ -110,9 +125,9 @@
                     </div>
                   </div>
                   <div class="row">
-                    <div class="text-right col-md-6">GPUs<i class="fa fa-info-circle" 
-                                                            uib-tooltip="Tensorflow's number of GPUs used for training/inference." 
-                                                            style="margin-left: 10px"></i>
+                    <div class="text-right col-md-6">Number of GPUs per worker<i class="fa fa-info-circle" 
+                                                                                 uib-tooltip="Tensorflow's number of GPUs used for training/inference." 
+                                                                                 style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left">
                       <input type="number"  ng-model="jupyterCtrl.val.numTfGpus" class="form-control">
@@ -137,10 +152,6 @@
 
                 </div>
                 <div class="row" ng-show="jupyterCtrl.val.mode === 'sparkDynamic'">
-                  <!--              <div class="row">
-                                  <div class="text-right col-md-6">Dynamic Executors <i class="fa fa-info-circle" uib-tooltip="Enable Spark Dynamic Executors." style="margin-left: 10px"></i></div>
-                                  <div class="col-md-2 jupyter-left"><input type="checkbox" ng-model="jupyterCtrl.val.dynamicExecutors" ng-click="jupyterCtrl.toggleSlider()"></div>
-                                </div>-->
                   <div class="row top-buffer">
                     <div class="col-md-3"></div>
                     <div class="col-md-6" style="margin-left:20px;">Set min and max number of executors with the Slider below.</div>
@@ -274,12 +285,12 @@
                 <div class="row" style="margin-left: -40px">
                   <img width="75" src="images/jupyter.png"/>
                 </div>
-            <div class="row top-buffer">
-              <span class="fa" type="button"
-                    ng-class="jupyterCtrl.details ? 'fa-angle-double-up fa-2x' : 'fa-angle-double-down fa-2x'" 
-                    ng-click="jupyterCtrl.details = !jupyterCtrl.details">
-              </span>
-            </div>                
+                <div class="row top-buffer">
+                  <span class="fa" type="button"
+                        ng-class="jupyterCtrl.details ? 'fa-angle-double-up fa-2x' : 'fa-angle-double-down fa-2x'" 
+                        ng-click="jupyterCtrl.details = !jupyterCtrl.details">
+                  </span>
+                </div>                
               </div>
               <div class="col-md-3">
                 Open 
@@ -292,16 +303,16 @@
             </div>
           </div>
 
-<!--          <div class="row top-buffer"></div>  
-          <div class="row top-buffer">  
-            <div class="col-md-4"></div>
-            <div class="col-md-6">
-              <span class="fa" type="button"
-                    ng-class="jupyterCtrl.details ? 'fa-angle-double-up fa-2x' : 'fa-angle-double-down fa-2x'" 
-                    ng-click="jupyterCtrl.details = !jupyterCtrl.details">
-              </span>
-            </div>
-          </div>-->
+          <!--          <div class="row top-buffer"></div>  
+                    <div class="row top-buffer">  
+                      <div class="col-md-4"></div>
+                      <div class="col-md-6">
+                        <span class="fa" type="button"
+                              ng-class="jupyterCtrl.details ? 'fa-angle-double-up fa-2x' : 'fa-angle-double-down fa-2x'" 
+                              ng-click="jupyterCtrl.details = !jupyterCtrl.details">
+                        </span>
+                      </div>
+                    </div>-->
           <!--<span class="fa fa-angle-double-down"></span></div>-->
           <div class="row top-buffer" ng-show="jupyterCtrl.details">
 

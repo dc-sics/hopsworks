@@ -232,11 +232,11 @@ public class JupyterConfig {
       String[] nn = nameNodeEndpoint.split(":");
       String nameNodeIp = nn[0];
       String nameNodePort = nn[1];
-      
+
       String pythonKernel = "";
-      
+
       if (settings.isPythonKernelEnabled()) {
-        pythonKernel = ", 'python-"+projectName+"'";
+        pythonKernel = ", 'python-" + projectName + "'";
       }
 
       StringBuilder jupyter_notebook_config = ConfigFileGenerator.
@@ -246,6 +246,7 @@ public class JupyterConfig {
                       "namenode_ip", nameNodeIp,
                       "namenode_port", nameNodePort,
                       "hopsworks_ip", settings.getHopsworksIp(),
+                      "base_dir", js.getBaseDir(),
                       "hdfs_user", this.hdfsUser,
                       "port", port.toString(),
                       "python-kernel", pythonKernel,
@@ -261,49 +262,56 @@ public class JupyterConfig {
 
       StringBuilder sparkmagic_sb
               = ConfigFileGenerator.
-              instantiateFromTemplate(
-                      ConfigFileGenerator.SPARKMAGIC_CONFIG_TEMPLATE,
-                      "livy_ip", settings.getLivyIp(),
-                      "hdfs_user", this.hdfsUser,
-                      "driver_cores", Integer.toString(js.getAppmasterCores()),
-                      "driver_memory", Integer.toString(js.getAppmasterMemory()),
-                      "num_executors", Integer.toString(js.getNumExecutors()),
-                      "executor_cores", Integer.toString(js.
-                              getNumExecutorCores()),
-                      "executor_memory", Integer.
-                      toString(js.getExecutorMemory()),
-                      "dynamic_executors", Boolean.toString(
-                              js.getMode().compareToIgnoreCase("sparkDynamic")
-                              == 0),
-                      "min_executors", Integer.toString(js.
-                              getDynamicMinExecutors()),
-                      "initial_executors", Integer.toString(js.
-                              getDynamicInitialExecutors()),
-                      "max_executors", Integer.toString(js.
-                              getDynamicMaxExecutors()),
-                      "archives", js.getArchives(),
-                      "jars", js.getJars(),
-                      "files", js.getFiles(),
-                      "pyFiles", js.getPyFiles(),
-                      "num_ps", Integer.toString(js.getNumTfPs()),
-                      "num_gpus", Integer.toString(js.getNumTfGpus()),
-                      "tensorflow", Boolean.toString(js.getMode().
-                              compareToIgnoreCase("tensorflow") == 0),
-                      "jupyter_home", this.confDirPath,
-                      "project", this.projectName,
-                      "nn_endpoint", this.nameNodeEndpoint,
-                      "spark_user", this.settings.getSparkUser(),
-                      "java_home", this.settings.getJavaHome(),
-                      "hadoop_home", this.settings.getHadoopDir(),
-                      "pyspark_bin", this.settings.getAnacondaProjectDir(
-                              projectName) + "/bin/python",
-                      "anaconda_dir", this.settings.getAnacondaDir(),
-                      "cuda_dir", this.settings.getCudaDir(),
-                      "anaconda_env", this.settings.getAnacondaProjectDir(
-                              projectName),
-                      "sparkhistoryserver_ip", this.settings.
-                      getSparkHistoryServerIp()
-              );
+                      instantiateFromTemplate(
+                              ConfigFileGenerator.SPARKMAGIC_CONFIG_TEMPLATE,
+                              "livy_ip", settings.getLivyIp(),
+                              "hdfs_user", this.hdfsUser,
+                              "driver_cores", Integer.toString(js.
+                                      getAppmasterCores()),
+                              "driver_memory", Integer.toString(js.
+                                      getAppmasterMemory()) + "m",
+                              "num_executors", Integer.toString(js.
+                                      getNumExecutors()),
+                              "executor_cores", Integer.toString(js.
+                                      getNumExecutorCores()),
+                              "executor_memory", Integer.
+                                      toString(js.getExecutorMemory()) + "m",
+                              "dynamic_executors", Boolean.toString(
+                                      js.getMode().compareToIgnoreCase(
+                                              "sparkDynamic")
+                                      == 0),
+                              "min_executors", Integer.toString(js.
+                                      getDynamicMinExecutors()),
+                              "initial_executors", Integer.toString(js.
+                                      getDynamicInitialExecutors()),
+                              "max_executors", Integer.toString(js.
+                                      getDynamicMaxExecutors()),
+                              "archives", js.getArchives(),
+                              "jars", js.getJars(),
+                              "files", js.getFiles(),
+                              "pyFiles", js.getPyFiles(),
+                              "yarn_queue", "default",
+                              "num_ps", Integer.toString(js.getNumTfPs()),
+                              "num_gpus", Integer.toString(js.getNumTfGpus()),
+                              "tensorflow", Boolean.toString(js.getMode().
+                                      compareToIgnoreCase("tensorflow") == 0),
+                              "jupyter_home", this.confDirPath,
+                              "project", this.projectName,
+                              "nn_endpoint", this.nameNodeEndpoint,
+                              "spark_user", this.settings.getSparkUser(),
+                              "java_home", this.settings.getJavaHome(),
+                              "hadoop_home", this.settings.getHadoopDir(),
+                              "pyspark_bin", this.settings.
+                                      getAnacondaProjectDir(
+                                              projectName) + "/bin/python",
+                              "anaconda_dir", this.settings.getAnacondaDir(),
+                              "cuda_dir", this.settings.getCudaDir(),
+                              "anaconda_env", this.settings.
+                                      getAnacondaProjectDir(
+                                              projectName),
+                              "sparkhistoryserver_ip", this.settings.
+                                      getSparkHistoryServerIp()
+                      );
       createdSparkmagic = ConfigFileGenerator.createConfigFile(
               sparkmagic_config_file,
               sparkmagic_sb.toString());
@@ -363,6 +371,5 @@ public class JupyterConfig {
   public String getProjectUserDirPath() {
     return projectUserDirPath;
   }
-
 
 }
