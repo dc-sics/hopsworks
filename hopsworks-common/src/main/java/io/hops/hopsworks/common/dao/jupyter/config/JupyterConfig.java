@@ -294,7 +294,7 @@ public class JupyterConfig {
                               "num_ps", Integer.toString(js.getNumTfPs()),
                               "num_gpus", Integer.toString(js.getNumTfGpus()),
                               "tensorflow", Boolean.toString(js.getMode().
-                                      compareToIgnoreCase("tensorflow") == 0),
+                                      startsWith("tensorflow")),
                               "jupyter_home", this.confDirPath,
                               "project", this.projectName,
                               "nn_endpoint", this.nameNodeEndpoint,

@@ -146,7 +146,6 @@ public class JupyterConfigFactory {
           AppException, IOException, InterruptedException {
 
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
-//    getHadoopClasspath();
 
     JupyterProject jp = null;
     String token = null;
