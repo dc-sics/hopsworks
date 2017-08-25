@@ -2,6 +2,7 @@ package io.hops.hopsworks.common.jobs.spark;
 
 import com.google.common.base.Strings;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.jobs.yarn.LocalResourceDTO;
@@ -24,6 +25,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 
 /**
  * Builder class for a Spark YarnRunner. Implements the common logic needed
@@ -91,8 +93,8 @@ public class SparkYarnRunnerBuilder {
    * @throws IOException If creation failed.
    */
   public YarnRunner getYarnRunner(String project, String sparkUser,
-      String jobUser, final String sparkDir,
-      AsynchronousJobExecutor services,
+      String jobUser, final String sparkDir, AsynchronousJobExecutor services,
+      final DistributedFileSystemOps dfsClient, final YarnClient yarnClient,
       Settings settings)
       throws IOException {
 
@@ -118,6 +120,17 @@ public class SparkYarnRunnerBuilder {
     //Create a builder
     YarnRunner.Builder builder = new YarnRunner.Builder(Settings.SPARK_AM_MAIN);
     builder.setJobType(jobType);
+    builder.setYarnClient(yarnClient);
+    builder.setDfsClient(dfsClient);
+    builder.setJobUser(jobUser);
+    try {
+      String password = services.getBaseHadoopClientsService()
+          .getProjectSpecificUserCertPassword(jobUser);
+      builder.setKeyStorePassword(password);
+      builder.setTrustStorePassword(password);
+    } catch (Exception ex) {
+      throw new IOException(ex);
+    }
 
     String stagingPath = "/Projects/ " + project + "/"
         + Settings.PROJECT_STAGING_DIR + "/.sparkjobstaging";
@@ -261,6 +274,41 @@ public class SparkYarnRunnerBuilder {
     builder.addToAppMasterEnvironment("SPARK_YARN_MODE", "true");
     builder.addToAppMasterEnvironment("SPARK_YARN_STAGING_DIR", stagingPath);
     builder.addToAppMasterEnvironment("SPARK_USER", jobUser);
+
+    //Set TensorFlowOnSpark required environment variables
+    if (jobType == JobType.TFSPARK) {
+
+      //Should always be false in case of TFoS
+      dynamicExecutors = false;
+
+      //No point in retrying since clusterspec is static
+      addSystemProperty(Settings.SPARK_MAX_APP_ATTEMPTS, "1");
+
+      //This is needed to solve a bug where the driver is able to allocate GPUs
+      builder.addToAppMasterEnvironment("CUDA_VISIBLE_DEVICES", "''");
+
+      //The following configuration is based on:
+      //https://github.com/yahoo/TensorFlowOnSpark/wiki/GetStarted_YARN
+
+      //IMPORTANT, if TFoS still can't find cuda libraries there may be issues with cuda installation
+      // 1. ssh to machine where the container failed
+      // 2. Make sure /usr/local/cuda exists and is a symlink pointing to e.g. /usr/local/cuda-8.0
+      // 3. Make sure /etc/ld.so.conf.d directory on the host has an entry pointing to /usr/local/cuda/lib64
+      // 4. Run 'sudo ldconfig'
+
+      String binCuda = settings.getCudaDir() + "/bin";
+      String libCuda = settings.getCudaDir() + "/lib64";
+      String libJVM = settings.getJavaHome() + "/jre/lib/amd64/server";
+      String libHDFS = settings.getHadoopDir() + "/lib/native";
+
+      builder.addToAppMasterEnvironment("PATH", binCuda + ":$PATH");
+      builder.addToAppMasterEnvironment("LD_LIBRARY_PATH", libCuda);
+
+      addSystemProperty(Settings.SPARK_EXECUTORENV_PATH, binCuda + ":$PATH");
+      addSystemProperty(Settings.SPARK_EXECUTORENV_LD_LIBRARY_PATH,
+              libCuda + ":" + libJVM + ":" + libHDFS);
+    }
+
     for (String key : envVars.keySet()) {
       builder.addToAppMasterEnvironment(key, envVars.get(key));
     }
