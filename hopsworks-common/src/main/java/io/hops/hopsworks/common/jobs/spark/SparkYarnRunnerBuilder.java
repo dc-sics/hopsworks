@@ -283,8 +283,8 @@ public class SparkYarnRunnerBuilder {
       // 3. Make sure /etc/ld.so.conf.d directory on the host has an entry pointing to /usr/local/cuda/lib64
       // 4. Run 'sudo ldconfig'
 
-      String binCuda = "/usr/local/cuda/bin";
-      String libCuda = "/usr/local/cuda/lib64";
+      String binCuda = settings.getCudaDir() + "/bin";
+      String libCuda = settings.getCudaDir() + "/lib64";
       String libJVM = settings.getJavaHome() + "/jre/lib/amd64/server";
       String libHDFS = settings.getHadoopDir() + "/lib/native";
 
