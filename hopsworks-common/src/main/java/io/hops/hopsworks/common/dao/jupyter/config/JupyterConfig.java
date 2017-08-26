@@ -22,7 +22,7 @@ import javax.ws.rs.core.Response;
 
 public class JupyterConfig {
 
-  private static final Logger LOGGGER = Logger.getLogger(JupyterConfig.class.
+  private static final Logger LOGGER = Logger.getLogger(JupyterConfig.class.
           getName());
   private static final String LOG4J_PROPS = "/log4j.properties";
   private static final String JUPYTER_NOTEBOOK_CONFIG
@@ -78,7 +78,7 @@ public class JupyterConfig {
       } else if (newFile) { // if the conf files were newly created delete them
         removeProjectConfFiles();
       }
-      LOGGGER.log(Level.SEVERE,
+      LOGGER.log(Level.SEVERE,
               "Error in initializing JupyterConfig for project: {0}. {1}",
               new Object[]{this.projectName, e});
       throw new AppException(

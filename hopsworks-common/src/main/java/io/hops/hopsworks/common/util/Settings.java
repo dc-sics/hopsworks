@@ -1363,6 +1363,7 @@ public class Settings implements Serializable {
     return VAGRANT_ENABLED == 1;
   }
 
+  public static String JUPYTER_PIDS = " /tmp/jupyterNotebookServer.pids";
   public String RESOURCE_DIRS = ".sparkStaging;spark-warehouse";
 
   public synchronized String getResourceDirs() {
