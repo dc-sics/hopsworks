@@ -112,6 +112,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_GLASSFISH_CERT_CENERATED
           = "glassfish_cert";
   private static final String VARIABLE_CUDA_DIR = "conda_dir";
+  private static final String VARIABLE_ANACONDA_USER = "anaconda_user";
   private static final String VARIABLE_ANACONDA_DIR = "anaconda_dir";
   private static final String VARIABLE_ANACONDA_INSTALLED = "anaconda_enabled";
 
@@ -312,6 +313,7 @@ public class Settings implements Serializable {
               HOPSWORKS_REST_ENDPOINT);
       REST_PORT = setIntVar(VARIABLE_REST_PORT, REST_PORT);
       CUDA_DIR = setDirVar(VARIABLE_CUDA_DIR, CUDA_DIR);
+      ANACONDA_USER = setStrVar(VARIABLE_ANACONDA_USER, ANACONDA_USER);
       ANACONDA_DIR = setDirVar(VARIABLE_ANACONDA_DIR, ANACONDA_DIR);
       ANACONDA_ENV = setStrVar(VARIABLE_ANACONDA_ENV, ANACONDA_ENV);
       ANACONDA_INSTALLED = Boolean.parseBoolean(setStrVar(
@@ -1054,6 +1056,13 @@ public class Settings implements Serializable {
   public synchronized String getKafkaDir() {
     checkCache();
     return KAFKA_DIR;
+  }
+
+  private String ANACONDA_USER = "anaconda";
+
+  public synchronized String getAnacondaUser() {
+    checkCache();
+    return ANACONDA_USER;
   }
 
   private String ANACONDA_DIR = "/srv/hops/anaconda/anaconda";
