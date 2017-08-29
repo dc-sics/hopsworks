@@ -80,49 +80,6 @@ public class AgentResource {
     return "Kmon: Pong";
   }
 
-//    @GET
-//    @Path("load/{name}")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    public Response getLoadAvg(@PathParam("name") String name) {
-//        JSONObject json = new JSONObject();
-//        try {
-//            Host host = hostEJB.findByHostname(name);
-//            json.put("hostname", host.getHostname());
-//            json.put("cores", host.getCores());
-//            json.put("load1", host.getLoad1());
-//            json.put("load5", host.getLoad5());
-//            json.put("load15", host.getLoad15());
-//        } catch (Exception ex) {
-//            // TODO - Should log all exceptions          
-//            logger.log(Level.SEVERE, "Exception: {0}", ex);
-//            if (ex.getMessage().equals("NoResultException")) {
-//                return Response.status(Response.Status.NOT_FOUND).build();
-//            }
-//            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//        }
-//        return Response.ok(json).build();
-//    }
-//    @GET
-//    @Path("loads")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    public Response getLoads() {
-//        JSONArray jsonArray = new JSONArray();
-//        List<Host> hosts = hostEJB.find();
-//        for (Host host : hosts) {
-//            try {
-//                JSONObject json = new JSONObject();
-//                json.put("hostname", host.getHostname());
-//                json.put("cores", host.getCores());
-//                json.put("load1", host.getLoad1());
-//                json.put("load5", host.getLoad5());
-//                json.put("load15", host.getLoad15());
-//                jsonArray.put(json);
-//            } catch (Exception ex) {
-//                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//            }
-//        }
-//        return Response.ok(jsonArray).build();
-//    }
   @POST
   @Path("/heartbeat")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -178,9 +135,10 @@ public class AgentResource {
         try {
           role = roleFacade.find(hostId, cluster, service, roleName);
         } catch (Exception ex) {
-          logger.warning("Problem finding a role, transaction timing out? "
-                  + ex.toString());
+          logger.warning("Problem finding a role, transaction timing out? " + ex.toString());
+          continue;
         }
+
         if (role == null) {
           role = new Role();
           role.setHostId(hostId);
@@ -203,7 +161,7 @@ public class AgentResource {
         }
         if (s.containsKey("status")) {
           if ((role.getStatus() == null || !role.getStatus().equals(Status.Started)) && Status.valueOf(s.getString(
-              "status")).equals(Status.Started)) {
+                  "status")).equals(Status.Started)) {
             role.setStartTime(agentTime);
           }
           role.setStatus(Status.valueOf(s.getString("status")));
@@ -399,7 +357,7 @@ public class AgentResource {
     }
 
     GenericEntity<Collection<CondaCommands>> commandsForKagent
-            = new GenericEntity<Collection<CondaCommands>>(commands) { };
+            = new GenericEntity<Collection<CondaCommands>>(commands) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             commandsForKagent).build();
   }
