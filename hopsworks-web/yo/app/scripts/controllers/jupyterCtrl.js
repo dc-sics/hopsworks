@@ -20,7 +20,7 @@ angular.module('hopsWorksApp')
             self.sparkStatic = false;
             self.sparkDynamic = false;
             self.tensorflow = false;
-            self.interpreters = [];
+            $scope.sessions = [];
             self.val = {};
             $scope.tgState = true;
             self.config = {};
@@ -40,26 +40,29 @@ angular.module('hopsWorksApp')
             };
 
 
-            var getInterpreterStatus = function (loading) {
-              self.interpreters = [];
-              if (loading) {
-                startLoading(loading);
+            self.livySessions = function (projectId) {
+              JupyterService.livySessions(projectId).then(
+                      function (success) {
+                        self.sessions = success.data;
+                      }, function (error) {
+                        // nothing to do
+                        console.info("No livy sessions running.");
+                        self.sessions = null;
               }
-              var interpreter;
-              JupyterService.interpreters().then(function (success) {
-//                console.log('Receive interpreters<< %o', success);
-                for (var k in success.data.body) {
-                  interpreter = {interpreter: success.data.body[k],
-                    statusMsg: statusMsgs[(success.data.body[k].notRunning ? 0 : 1)]};
-                  self.interpreters.push(interpreter);
-                }
-                stopLoading();
-              }, function (error) {
-                growl.warning(error.data.errorMsg + " Try reloading the page.",
-                        {title: 'Error', ttl: 5000, referenceId: 10});
-                stopLoading();
-              });
+              );
+
             };
+            
+            self.showLivyUI = function (sessionId) {
+              JupyterService.getLivySessionAppId(sessionId)
+                      .then(function (success) {
+                        var appId = success.data;
+                        $location.path('project/' + projectId + '/jobMonitor-app/' + appId + "/true");
+                      }, function (error) {
+                        growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 10});
+                      });
+            };
+            
 
 
             self.sliderVisible = false;
@@ -259,6 +262,7 @@ angular.module('hopsWorksApp')
                 growl.error("Could not get Jupyter Notebook Server Settings.");
               }
               );
+              self.livySessions(projectId);
 
             };
 
