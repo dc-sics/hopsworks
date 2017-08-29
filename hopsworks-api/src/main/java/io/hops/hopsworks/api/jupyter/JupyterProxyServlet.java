@@ -19,22 +19,6 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class JupyterProxyServlet extends URITemplateProxyServlet {
 
-//  @EJB
-//  private UserManager userManager;
-//  @EJB
-//  private HdfsUsersController hdfsUsersBean;
-//  @EJB
-//  private ProjectController projectController;
-//
-//  /**
-//   * These are the "hop-by-hop" headers that should not be copied.
-//   * http://www.w3.org/Protocols/rfc2616/rfc2616-sec13.html
-//   * I use an HttpClient HeaderGroup class instead of Set<String> because this
-//   * approach does case insensitive lookup faster.
-//   */
-//  protected static final HeaderGroup wsHopByHopHeaders;
-//  
-//
 //  static {
 //    // Allow 'Upgrade' hop-by-hop header to pass through
 //    // Also allow "Keep-Alive" to pass through
@@ -57,7 +41,5 @@ public class JupyterProxyServlet extends URITemplateProxyServlet {
     super.service(servletRequest, servletResponse);
 
   }
-
-
 
 }

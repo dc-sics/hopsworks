@@ -3,7 +3,7 @@
 angular.module('hopsWorksApp')
         .controller('JupyterCtrl', ['$scope', '$routeParams', '$route',
           'growl', 'ModalService', 'JupyterService', 'TensorFlowService', 'SparkService', '$location', '$timeout', '$window', '$sce',
-            function ($scope, $routeParams, $route, growl, ModalService, JupyterService, TensorFlowService, SparkService,
+          function ($scope, $routeParams, $route, growl, ModalService, JupyterService, TensorFlowService, SparkService,
                   $location, $timeout, $window, $sce) {
 
             var self = this;
@@ -20,6 +20,7 @@ angular.module('hopsWorksApp')
             self.sparkStatic = false;
             self.sparkDynamic = false;
             self.tensorflow = false;
+            self.interpreters = [];
             self.val = {};
             $scope.tgState = true;
             self.config = {};
@@ -29,14 +30,35 @@ angular.module('hopsWorksApp')
             ];
             self.selected = self.dirs[1];
 
-		
+
 
             self.changeBaseDir = function () {
-               self.val.baseDir = self.selected.name;
+              self.val.baseDir = self.selected.name;
             };
-            
+
             self.deselect = function () {
-//              self.selected = null;
+            };
+
+
+            var getInterpreterStatus = function (loading) {
+              self.interpreters = [];
+              if (loading) {
+                startLoading(loading);
+              }
+              var interpreter;
+              JupyterService.interpreters().then(function (success) {
+//                console.log('Receive interpreters<< %o', success);
+                for (var k in success.data.body) {
+                  interpreter = {interpreter: success.data.body[k],
+                    statusMsg: statusMsgs[(success.data.body[k].notRunning ? 0 : 1)]};
+                  self.interpreters.push(interpreter);
+                }
+                stopLoading();
+              }, function (error) {
+                growl.warning(error.data.errorMsg + " Try reloading the page.",
+                        {title: 'Error', ttl: 5000, referenceId: 10});
+                stopLoading();
+              });
             };
 
 

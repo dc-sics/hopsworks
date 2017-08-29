@@ -176,7 +176,7 @@ public class AgentResource {
         String service = s.getString("service");
         Role role = null;
         try {
-          roleFacade.find(hostId, cluster, service, roleName);
+          role = roleFacade.find(hostId, cluster, service, roleName);
         } catch (Exception ex) {
           logger.warning("Problem finding a role, transaction timing out? "
                   + ex.toString());
