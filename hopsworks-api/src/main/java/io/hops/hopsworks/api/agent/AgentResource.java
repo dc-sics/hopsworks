@@ -55,7 +55,7 @@ import javax.ws.rs.core.SecurityContext;
 @Api(value = "Agent Service",
         description = "Agent Service")
 public class AgentResource {
-  
+
   @EJB
   private HostEJB hostFacade;
   @EJB
@@ -70,9 +70,9 @@ public class AgentResource {
   private NoCacheResponse noCacheResponse;
   @EJB
   private Settings settings;
-  
+
   final static Logger logger = Logger.getLogger(AgentResource.class.getName());
-  
+
   @GET
   @Path("ping")
   @Produces(MediaType.TEXT_PLAIN)
@@ -133,9 +133,9 @@ public class AgentResource {
     // Commands are sent back to the kagent as a response to this heartbeat.
     // Kagent then executes the commands received in order.
     List<CondaCommands> commands = new ArrayList<>();
-    
+
     try {
-      
+
       InputStream stream = new ByteArrayInputStream(jsonHb.getBytes(
               StandardCharsets.UTF_8));
       JsonObject json = Json.createReader(stream).readObject();
@@ -161,11 +161,11 @@ public class AgentResource {
       host.setMemoryCapacity(json.getJsonNumber("memory-capacity").longValue());
       host.setCores(json.getInt("cores"));
       hostFacade.storeHost(host, false);
-      
+
       JsonArray roles = json.getJsonArray("services");
       for (int i = 0; i < roles.size(); i++) {
         JsonObject s = roles.getJsonObject(i);
-        
+
         if (!s.containsKey("cluster") || !s.containsKey("service") || !s.
                 containsKey("role")) {
           logger.warning("Badly formed JSON object describing a service.");
@@ -189,7 +189,7 @@ public class AgentResource {
           role.setRole(roleName);
           role.setStartTime(agentTime);
         }
-        
+
         String webPort = s.containsKey("web-port") ? s.getString("web-port")
                 : "0";
         String pid = s.containsKey("pid") ? s.getString("pid") : "-1";
@@ -217,21 +217,21 @@ public class AgentResource {
           role.setStopTime(agentTime);
         }
         Long stopTime = role.getStopTime();
-        
-        if ( startTime != null && stopTime != null) {
+
+        if (startTime != null && stopTime != null) {
           role.setUptime(stopTime - startTime);
         } else {
-          role.setUptime(0);          
+          role.setUptime(0);
         }
-        
+
         roleFacade.store(role);
       }
-      
+
       if (json.containsKey("conda-ops")) {
         JsonArray condaOps = json.getJsonArray("conda-ops");
         for (int j = 0; j < condaOps.size(); j++) {
           JsonObject entry = condaOps.getJsonObject(j);
-          
+
           String projName = entry.getString("proj");
           String op = entry.getString("op");
           PythonDepsFacade.CondaOp opType = PythonDepsFacade.CondaOp.valueOf(
@@ -245,7 +245,7 @@ public class AgentResource {
           PythonDepsFacade.CondaStatus agentStatus
                   = PythonDepsFacade.CondaStatus.valueOf(status.toUpperCase());
           int commmandId = Integer.parseInt(entry.getString("id"));
-          
+
           CondaCommands command = pythonDepsFacade.
                   findCondaCommand(commmandId);
           // If the command object does not exist, then the project
@@ -265,16 +265,16 @@ public class AgentResource {
           }
         }
       }
-      
+
       List<CondaCommands> differenceList = new ArrayList<>();
-      
+
       if (json.containsKey("block-report")) {
         Map<String, BlockReport> mapReports = new HashMap<>();
-        
+
         JsonObject envs = json.getJsonObject("block-report");
         for (String s : envs.keySet()) {
           JsonArray installedLibs = envs.getJsonArray(s);
-          
+
           String projName = s;
           BlockReport br = new BlockReport();
           mapReports.put(projName, br);
@@ -295,11 +295,11 @@ public class AgentResource {
         // Any extra blocks reported need to be removed. Any missing need to
         // be added
         for (Project project : allProjs) {
-          
+
           Collection<CondaCommands> allCcs = project.
                   getCondaCommandsCollection();
           logger.log(Level.INFO, "AnacondaReport: {0}", project.getName());
-          
+
           if ((!mapReports.containsKey(project.getName()))
                   && (project.getName().compareToIgnoreCase(settings.
                           getAnacondaEnv())) != 0) {
@@ -324,7 +324,7 @@ public class AgentResource {
               // Need to create env on node
               differenceList.add(cc);
             }
-            
+
           } else { // This project exists as a conda env
             BlockReport br = mapReports.get(project.getName());
             for (PythonDep lib : project.getPythonDepCollection()) {
@@ -365,7 +365,7 @@ public class AgentResource {
 
           logger.log(Level.INFO, "BlockReport: {0} - {1}", new Object[]{br.
             getProject(), br.getLibs().size()});
-          
+
           if (br.getProject().compareToIgnoreCase(settings.getAnacondaEnv())
                   == 0) {
             continue;
@@ -379,10 +379,10 @@ public class AgentResource {
           differenceList.add(cc);
         }
       }
-      
+
       Collection<CondaCommands> allCommands = host.
               getCondaCommandsCollection();
-      
+
       Collection<CondaCommands> commandsToExec = new ArrayList<>();
       for (CondaCommands cc : allCommands) {
         if (cc.getStatus() != PythonDepsFacade.CondaStatus.FAILED) {
@@ -392,7 +392,7 @@ public class AgentResource {
       }
       commands.addAll(commandsToExec);
       commands.addAll(differenceList);
-      
+
     } catch (Exception ex) {
       logger.log(Level.SEVERE, ex.getMessage());
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
@@ -403,7 +403,7 @@ public class AgentResource {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             commandsForKagent).build();
   }
-  
+
   @POST
   @Path("/alert")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -455,7 +455,7 @@ public class AgentResource {
         alert.setFailureMax(json.getString("FailureMax"));
       }
       alertFacade.persistAlert(alert);
-      
+
     } catch (Exception ex) {
       logger.log(Level.SEVERE, "Exception: {0}", ex);
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
