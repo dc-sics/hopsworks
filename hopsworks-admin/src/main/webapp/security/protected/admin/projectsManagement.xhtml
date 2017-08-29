@@ -100,7 +100,7 @@
                             filterBy="#{projectsmanagement.getHdfsQuota(project.name)}"
                             sortBy="#{projectsmanagement.getHdfsQuota(project.name)}"
                             filterMatchMode="contains"
-                            headerText="Disk quota (MB)"
+                            headerText="Disk quota"
                             style=" font-size: 12px; text-align: center;">
                     <p:cellEditor>
                       <f:facet name="output">
@@ -109,10 +109,8 @@
                       </f:facet>
                       <f:facet name="input">
                         <p:inputText
-                          value="#{projectsmanagement.hdfsquota}" style="width:100%">
-                          <f:validateLongRange
-                            maximum="10000000000000"
-                            minimum="0" />
+                          value="#{projectsmanagement.hdfsquotastring}" style="width:100%">
+                          <f:validateRegex pattern = "([0-9]+([GMT]B)*)"/>
                         </p:inputText>
                       </f:facet>
                     </p:cellEditor>
