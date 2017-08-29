@@ -400,8 +400,7 @@ public class AgentResource {
     }
 
     GenericEntity<Collection<CondaCommands>> commandsForKagent
-            = new GenericEntity<Collection<CondaCommands>>(commands) {
-    };
+            = new GenericEntity<Collection<CondaCommands>>(commands) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             commandsForKagent).build();
   }
