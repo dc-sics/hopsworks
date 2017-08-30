@@ -135,7 +135,7 @@ public class AgentResource {
         try {
           role = roleFacade.find(hostId, cluster, service, roleName);
         } catch (Exception ex) {
-          logger.warning("Problem finding a role, transaction timing out? " + ex.toString());
+          logger.debug("Could not find a role for the kagent heartbeat.");
           continue;
         }
 
