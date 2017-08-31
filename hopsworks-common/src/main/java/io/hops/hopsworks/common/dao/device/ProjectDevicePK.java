@@ -71,7 +71,7 @@ public class ProjectDevicePK implements Serializable {
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectDevicePK[ projectId=" + 
+    return "io.hops.hopsworks.common.dao.device.ProjectDevicePK[ projectId=" +
         this.projectId +  ", deviceUuid=" + this.deviceUuid + " ]";
 
   }

@@ -1045,7 +1045,7 @@ public class KafkaFacade {
       //configure the ssl parameters
       props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils. //TODO: Add  File.separator "device" 
           getProjectTruststoreName(projectName, userName));
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
           settings.getHopsworksMasterPasswordSsl());
@@ -1060,7 +1060,7 @@ public class KafkaFacade {
       producer = new KafkaProducer<>(props);
       for (String record: records) {
         // Asynchronous production
-        producer.send(new ProducerRecord<Integer, String>(topicName, record));
+        producer.send(new ProducerRecord<Integer, String>(topicName, record)); // TODO: Get the Callback and delete the certs there.
 
         // Synchronous production
         //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();

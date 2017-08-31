@@ -25,6 +25,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.jobs.FlinkService.class);
     register(io.hops.hopsworks.api.jobs.JobService.class);
     register(io.hops.hopsworks.api.jobs.KafkaService.class);
+    register(io.hops.hopsworks.api.jobs.DeviceService.class);
     register(io.hops.hopsworks.api.jobs.SparkService.class);
     register(io.hops.hopsworks.api.jobs.TensorflowService.class);
     register(io.hops.hopsworks.api.project.DataSetService.class);
