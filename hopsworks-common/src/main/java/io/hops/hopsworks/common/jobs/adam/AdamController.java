@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.jobs.adam;
 
-import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptorsFacade;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import java.io.IOException;
@@ -16,6 +15,7 @@ import io.hops.hopsworks.common.hdfs.UserGroupInformationService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 import io.hops.hopsworks.common.util.Settings;
 
 /**
@@ -29,13 +29,13 @@ public class AdamController {
           getName());
 
   @EJB
+  private YarnJobsMonitor jobsMonitor;
+  @EJB
   private AsynchronousJobExecutor submitter;
   @EJB
   private ActivityFacade activityFacade;
   @EJB
   private Settings settings;
-  @EJB
-  private HdfsLeDescriptorsFacade hdfsEndpoint;
   @EJB
   private HdfsUsersController hdfsUsersBean;
   @EJB
@@ -82,8 +82,7 @@ public class AdamController {
                   settings.getSparkDir(), settings.getAdamUser(),
                   hdfsUsersBean.getHdfsUserName(job.getProject(), job.
                           getCreator()),
-                  hdfsEndpoint.getSingleEndpoint(),
-                  settings.getAdamJarHdfsPath());
+                  settings.getAdamJarHdfsPath(), jobsMonitor, settings);
         }
       });
     } catch (InterruptedException ex) {
@@ -124,8 +123,7 @@ public class AdamController {
             getSparkDir(), settings.getAdamUser(),
             hdfsUsersBean.getHdfsUserName(job.getProject(), job.
                     getCreator()),
-            hdfsEndpoint.getSingleEndpoint(),
-            settings.getAdamJarHdfsPath());
+            settings.getAdamJarHdfsPath(), jobsMonitor, settings);
 
     submitter.stopExecution(adamJob, appid);
 

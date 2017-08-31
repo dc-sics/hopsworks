@@ -29,7 +29,6 @@ angular.module('hopsWorksApp')
             self.endpoint = '...';
 
             // We could instead implement a service to get all the available types but this will do it for now
-//              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
             self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
             $scope.activeService = "home";
 
@@ -62,12 +61,18 @@ angular.module('hopsWorksApp')
             };
 
             self.initTour = function () {
-              if (angular.equals(self.currentProject.projectName.substr(0, 10),
+              if (angular.equals(self.currentProject.projectName.substr(0,
+                      self.tourService.sparkProjectPrefix.length),
                       self.tourService.sparkProjectPrefix)) {
                 self.tourService.setActiveTour('spark');
               } else if (angular.equals(self.currentProject.projectName
-                      .substr(0, 10), self.tourService.kafkaProjectPrefix)) {
+                      .substr(0, self.tourService.kafkaProjectPrefix.length),
+                      self.tourService.kafkaProjectPrefix)) {
                 self.tourService.setActiveTour('kafka');
+              } else if (angular.equals(self.currentProject.projectName
+                      .substr(0, self.tourService.tensorflowProjectPrefix.length),
+                      self.tourService.tensorflowProjectPrefix)) {
+                self.tourService.setActiveTour('tensorflow');
               }
 
               // Angular adds '#' symbol to the url when click on the home logo
@@ -225,13 +230,13 @@ angular.module('hopsWorksApp')
             self.goToHopsworksInstance = function (endpoint, serviceName) {
               $scope.activeService = serviceName;
               $location.path('http://' + endpoint + '/project/' + self.projectId + '/' + serviceName);
-            }
+            };
 
 
             self.goToUrl = function (serviceName) {
               $scope.activeService = serviceName;
               $location.path('project/' + self.projectId + '/' + serviceName);
-            }
+            };
 
             self.goToDatasets = function () {
               self.goToUrl('datasets');
@@ -270,11 +275,23 @@ angular.module('hopsWorksApp')
                       growl.info("Enable anaconda before running Jupyter.", 
                       {title: 'Enable Anaconda First', ttl: 2000});
                         $timeout(function () {
-                          self.goToUrl('settings')
+                          self.goToUrl('settings');
                         }, 2000); 
               });
-
-
+            };
+            
+            self.goToZeppelin = function () {
+              self.enabling = true;
+              PythonDepsService.enabled(self.projectId).then( function (success) {
+                  self.goToUrl('zeppelin');
+                }, function (error) {
+                   ModalService.confirm('sm', 'Enable anaconda', 'You need to enable anaconda to use pyspark!')
+                      .then(function (success) {
+                        self.goToUrl('settings');
+                      }, function (error) {
+                        self.goToUrl('zeppelin');
+                   });
+              });
             };
 
 

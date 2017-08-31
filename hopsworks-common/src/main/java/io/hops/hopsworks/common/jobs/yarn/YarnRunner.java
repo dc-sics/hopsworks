@@ -2,6 +2,8 @@ package io.hops.hopsworks.common.jobs.yarn;
 
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
+import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.hdfs.Utils;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.flink.YarnClusterClient;
@@ -10,14 +12,14 @@ import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.IoUtils;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.common.yarn.YarnClientWrapper;
+import io.hops.tensorflow.Client;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -28,6 +30,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import io.hops.hopsworks.common.yarn.YarnClientService;
+import io.hops.tensorflow.LocalResourceInfo;
 import org.apache.flink.client.program.PackagedProgram;
 import org.apache.flink.client.program.ProgramInvocationException;
 
@@ -36,7 +41,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.yarn.api.ApplicationConstants;
 import org.apache.hadoop.yarn.api.protocolrecords.GetNewApplicationResponse;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
@@ -54,7 +58,6 @@ import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.codehaus.plexus.util.FileUtils;
 
 /**
- *
  * <p>
  */
 public class YarnRunner {
@@ -66,7 +69,6 @@ public class YarnRunner {
   public static final String KEY_CLASSPATH = "CLASSPATH";
   private static final String LOCAL_LOG_DIR_PLACEHOLDER = "<LOG_DIR>";
 
-  private YarnClient yarnClient;
   private Configuration conf;
   private ApplicationId appId = null;
   //Type of Job to run, Spark/Flink/Adam...
@@ -74,7 +76,7 @@ public class YarnRunner {
   //The parallelism parameter of Flink
   private int parallelism;
   private YarnClusterDescriptor flinkCluster;
-
+  private Client tfClient;
   private String appJarPath;
   private final String amJarLocalName;
   private final String amJarPath;
@@ -88,20 +90,19 @@ public class YarnRunner {
   private final Map<String, LocalResourceDTO> amLocalResourcesOnHDFS;
   private final Map<String, String> amEnvironment;
   private String localResourcesBasePath;
-  private String aggregatedLogPath;
-  private String stdOutPath;
-  private String stdErrPath;
   private final boolean shouldCopyAmJarToLocalResources;
   private final List<String> filesToBeCopied;
-  private final boolean logPathsAreHdfs;
-  private final boolean logPathsAreAggregated;
   private final List<YarnSetupCommand> commands;
   private final List<String> javaOptions;
   private final List<String> filesToRemove;
-  private String hadoopDir;
   private String serviceDir;
-  private String nameNodeIpPort;
-
+  private final AsynchronousJobExecutor services;
+  private DistributedFileSystemOps dfsClient;
+  private YarnClient yarnClient;
+  private final String keyStorePassword;
+  private final String trustStorePassword;
+  private String jobUser;
+  
   private boolean readyToSubmit = false;
   private ApplicationSubmissionContext appContext;
 
@@ -145,14 +146,13 @@ public class YarnRunner {
    * certificates in FlinkJob since it's a little bit problematic the way it
    * submits a job to Yarn
    *
-   * @param services
    * @param project
    * @param jobType
    * @param dfso
    * @param username
    * @param applicationId
    */
-  private void copyUserCertificates(AsynchronousJobExecutor services,
+  private void copyUserCertificates(
       Project project, JobType jobType, DistributedFileSystemOps dfso,
       String username, String applicationId) {
     List<LocalResourceDTO> materialResources = new ArrayList<>(2);
@@ -161,13 +161,8 @@ public class YarnRunner {
     HopsUtils.copyUserKafkaCerts(services.getUserCerts(), project, username,
         services.getSettings().getHopsworksTmpCertDir(),
         services.getSettings().getHdfsTmpCertDir(), jobType,
-        dfso, materialResources, systemProperties, nameNodeIpPort,
-        applicationId);
-
-    String appDir = "hdfs://" + nameNodeIpPort + services.getSettings().getHdfsTmpCertDir()
-        + "/" + project.getName() + Settings.DOUBLE_UNDERSCORE
-        + username + File.separator + applicationId;
-    filesToRemove.add(appDir);
+        dfso, materialResources, systemProperties,
+        applicationId, services.getCertificateMaterializer());
 
     for (LocalResourceDTO materialDTO : materialResources) {
       amLocalResourcesOnHDFS.put(materialDTO.getName(), materialDTO);
@@ -184,8 +179,6 @@ public class YarnRunner {
   //---------------------------------------------------------------------------
   /**
    * Start the Yarn Application Master.
-   * <p/>
-   * @param services
    * @param project
    * @param dfso
    * @param username
@@ -195,27 +188,25 @@ public class YarnRunner {
    * files.
    * @throws java.net.URISyntaxException
    */
-  public YarnMonitor startAppMaster(AsynchronousJobExecutor services,
-      Project project, DistributedFileSystemOps dfso,
-      String username)
-      throws
-      YarnException, IOException,
-      URISyntaxException {
+  public YarnMonitor startAppMaster(YarnClientService ycs, String dfsUsername,
+      Project project, DistributedFileSystemOps dfso, String username) throws
+      YarnException, IOException, URISyntaxException {
     logger.info("Starting application master.");
-    YarnClient newClient = YarnClient.createYarnClient();
+    // Create a new client for monitoring
+    YarnClientWrapper newYarnClientWrapper = ycs.getYarnClient(dfsUsername);
+    
     YarnMonitor monitor = null;
     if (jobType == JobType.SPARK || jobType == JobType.PYSPARK || jobType == JobType.ADAM || 
         jobType == JobType.TFSPARK) {
       //Get application id
-      yarnClient.start();
-
+      
       YarnClientApplication app = yarnClient.createApplication();
       GetNewApplicationResponse appResponse = app.getNewApplicationResponse();
       appId = appResponse.getApplicationId();
       //And replace all occurences of $APPID with the real id.
       fillInAppid(appId.toString());
 
-      copyUserCertificates(services, project, jobType, dfso, username,
+      copyUserCertificates(project, jobType, dfso, username,
           appId.toString());
 
       //Check resource requests and availabilities
@@ -227,26 +218,19 @@ public class YarnRunner {
       appContext.setApplicationType("HopsWorks-Yarn");
 
       //Add local resources to AM container
-      Map<String, LocalResource> localResources = addAllToLocalResources(
-          nameNodeIpPort);
+      Map<String, LocalResource> localResources = addAllToLocalResources();
 
       //Copy files to HDFS that are expected to be there
       copyAllToHDFS();
       
-      if (jobType == JobType.TFSPARK) {
-        String tensorboardFile = "hdfs://" + nameNodeIpPort + File.separator + Settings.DIR_ROOT
-            + File.separator + project.getName() + File.separator + Settings.PROJECT_STAGING_DIR + File.separator
-            + ".tensorboard." + appId.toString();
-        filesToRemove.add(tensorboardFile);
-      }
-
       //Set up environment
       Map<String, String> env = new HashMap<>();
       env.putAll(amEnvironment);
-      setUpClassPath(env, services);
+      setUpClassPath(env);
 
       //Set up commands
-      List<String> amCommands = setUpCommands();
+      String hdfsUser = project.getName() + "__" + username;
+      List<String> amCommands = setUpCommands(hdfsUser);
       //Set up container launch context
       ContainerLaunchContext amContainer = ContainerLaunchContext.newInstance(
           localResources, env, amCommands, null, null, null);
@@ -264,13 +248,15 @@ public class YarnRunner {
         c.execute(this);
       }
 
+      // Set keystore and truststore passwords
+      appContext.setKeyStorePassword(keyStorePassword);
+      appContext.setTrustStorePassword(trustStorePassword);
+      
       //And submit
       logger.log(Level.INFO,
           "Submitting application {0} to applications manager.", appId);
       yarnClient.submitApplication(appContext);
-      // Create a new client for monitoring
-      newClient.init(conf);
-      monitor = new YarnMonitor(appId, newClient);
+      monitor = new YarnMonitor(appId, newYarnClientWrapper, ycs);
 
     } else if (jobType == JobType.FLINK) {
       // Objects needed for materializing user certificates
@@ -278,13 +264,9 @@ public class YarnRunner {
 
       YarnClusterClient client = flinkCluster.deploy();
       appId = client.getApplicationId();
-      String certsAppDir = Paths.get(services.getSettings()
-          .getFlinkKafkaCertDir(), appId.toString()).toString();
-      filesToRemove.add(certsAppDir);
 
       fillInAppid(appId.toString());
-      newClient.init(conf);
-      monitor = new YarnMonitor(appId, newClient);
+      monitor = new YarnMonitor(appId, newYarnClientWrapper, ycs);
       String[] args = {};
       if (amArgs != null) {
         if (!javaOptions.isEmpty()) {
@@ -333,20 +315,61 @@ public class YarnRunner {
             ex);
         //Kill the flink job here
         Runtime rt = Runtime.getRuntime();
-        rt.exec(hadoopDir + "/bin/yarn application -kill " + appId.toString());
+        rt.exec(services.getSettings().getHadoopDir() + "/bin/yarn application -kill " + appId.toString());
         throw new IOException("Error while submitting Flink job to cluster:"+ex.getMessage());
       } finally {
         //Remove local flink app jar
         FileUtils.deleteDirectory(localPathAppJarDir);
-        yarnClient.close();
         flinkCluster = null;
-        yarnClient = null;
         appId = null;
         appContext = null;
         //Try to delete any local certificates for this project
         logger.log(Level.INFO, "Deleting local flink app jar:{0}", appJarPath);
       }
 
+    } else if (jobType == JobType.TENSORFLOW) {
+      try {
+        
+        tfClient.setConf(conf);
+        tfClient.initYarnClient();
+        YarnClientApplication app = tfClient.createApplication();
+        appId = app.getNewApplicationResponse().getApplicationId();
+        
+        copyUserCertificates(project, jobType, dfso, username, appId.toString());
+        
+        String kstore = "hdfs://" + services.getSettings().getHdfsTmpCertDir()
+            + File.separator + project.getName() + HdfsUsersController
+            .USER_NAME_DELIMITER + username + File.separator + appId.toString()
+            + File.separator + HopsUtils.getProjectKeystoreName(project.getName(),
+            username);
+        
+  
+        String tstore = "hdfs://" + services.getSettings().getHdfsTmpCertDir()
+            + File.separator + project.getName() + HdfsUsersController
+            .USER_NAME_DELIMITER + username + File.separator +appId.toString()
+            + File.separator + HopsUtils.getProjectTruststoreName(project.getName(),
+            username);
+        
+        tfClient.addFile(kstore);
+        tfClient.addFile(tstore);
+        tfClient.getFilesInfo().put(kstore, new LocalResourceInfo(Settings
+            .K_CERTIFICATE, kstore, LocalResourceVisibility.PRIVATE.toString(),
+            LocalResourceType.FILE.toString(), null));
+        tfClient.getFilesInfo().put(tstore, new LocalResourceInfo(Settings
+            .T_CERTIFICATE, tstore, LocalResourceVisibility.PRIVATE.toString(),
+            LocalResourceType.FILE.toString(), null));
+        logger.log(Level.INFO, "Adding local resource {0}", kstore);
+        logger.log(Level.INFO, "Adding local resource {0}", tstore);
+        
+        tfClient.submitApplication(app);
+//        String logstashInfo = tfClient.getEnvironment().get(Settings.LOGSTASH_JOB_INFO);
+//        logstashInfo = logstashInfo.replaceAll(APPID_REGEX, appId.toString());
+//        tfClient.addEnvironmentVariable(Settings.LOGSTASH_JOB_INFO, logstashInfo);
+        fillInAppid(appId.toString());
+        monitor = new YarnMonitor(appId, newYarnClientWrapper, ycs);
+      } finally {
+        appId = null;
+      }
     }
 
     return monitor;
@@ -361,7 +384,7 @@ public class YarnRunner {
    * Commands. Invoking it before the ApplicationSubmissionContext is properly
    * set up will result in an
    * IllegalStateException.
-   * <p/>
+   * 
    * @return
    */
   public ApplicationSubmissionContext getAppContext() {
@@ -371,21 +394,22 @@ public class YarnRunner {
     }
     return appContext;
   }
-
+  
+  public void stop(DistributedFsService dfs) {
+    if (dfsClient != null && dfs != null) {
+      dfs.closeDfsClient(dfsClient);
+    }
+  }
+  
   //---------------------------------------------------------------------------
   //------------------------- UTILITY METHODS ---------------------------------
   //---------------------------------------------------------------------------
   private void fillInAppid(String id) {
     localResourcesBasePath = localResourcesBasePath.replaceAll(APPID_REGEX, id).replace("\\", "");
-    if (logPathsAreAggregated) {
-      aggregatedLogPath = aggregatedLogPath.replaceAll(APPID_REGEX, id);
-    }
     appName = appName.replaceAll(APPID_REGEX, id);
     if (amArgs != null) {
       amArgs = amArgs.replaceAll(APPID_REGEX, id);
     }
-    stdOutPath = stdOutPath.replaceAll(APPID_REGEX, id);
-    stdErrPath = stdErrPath.replaceAll(APPID_REGEX, id);
     for (Entry<String, LocalResourceDTO> entry : amLocalResourcesToCopy.
         entrySet()) {
       entry.getValue().setName(entry.getValue().getName().
@@ -419,8 +443,7 @@ public class YarnRunner {
     }
   }
 
-  private Map<String, LocalResource> addAllToLocalResources(
-      String nameNodeIpPort) throws IOException, URISyntaxException {
+  private Map<String, LocalResource> addAllToLocalResources() throws IOException, URISyntaxException {
     Map<String, LocalResource> localResources = new HashMap<>();
     //If an AM jar has been specified: include that one
     if (shouldCopyAmJarToLocalResources && amJarLocalName != null
@@ -439,7 +462,7 @@ public class YarnRunner {
       }
     }
     //Construct basepath
-    FileSystem fs = FileSystem.get(conf);
+    FileSystem fs = dfsClient.getFilesystem();
     String hdfsPrefix = conf.get("fs.defaultFS");
     String basePath = hdfsPrefix + localResourcesBasePath;
     logger.log(Level.FINER, "Base path: {0}", basePath);
@@ -477,9 +500,9 @@ public class YarnRunner {
       String key = entry.getKey();
       String pathToResource = entry.getValue().getPath();
       pathToResource = pathToResource.replaceFirst("hdfs:/*Projects",
-          "hdfs://" + nameNodeIpPort + "/Projects");
+          "hdfs:///Projects");
       pathToResource = pathToResource.replaceFirst("hdfs:/*user",
-          "hdfs://" + nameNodeIpPort + "/user");
+          "hdfs:///user");
       Path src = new Path(pathToResource);
       FileStatus scFileStat = fs.getFileStatus(src);
       LocalResource scRsrc = LocalResource.newInstance(ConverterUtils.
@@ -528,7 +551,7 @@ public class YarnRunner {
   }
 
   private void copyAllToHDFS() throws IOException {
-    FileSystem fs = FileSystem.get(conf);
+    FileSystem fs = dfsClient.getFilesystem();
     String hdfsPrefix = conf.get("fs.defaultFS");
     String basePath = hdfsPrefix + localResourcesBasePath;
     for (String path : filesToBeCopied) {
@@ -560,7 +583,7 @@ public class YarnRunner {
     }
   }
 
-  private void setUpClassPath(Map<String, String> env, AsynchronousJobExecutor services) {
+  private void setUpClassPath(Map<String, String> env) {
     // Add AppMaster.jar location to classpath
     StringBuilder classPathEnv = new StringBuilder();
     for (String c : conf.getStrings(
@@ -574,8 +597,8 @@ public class YarnRunner {
       classPathEnv.append(':');
       classPathEnv.append(System.getProperty("java.class.path"));
     }
-    classPathEnv.append(HopsUtils.getHadoopClasspathGlob(services.getSettings().
-                      getHadoopDir() + "/bin/hadoop", "classpath", "--glob"));
+    String hadoopDir = services.getSettings().getHadoopDir();
+    classPathEnv.append(HopsUtils.getHadoopClasspathGlob(hadoopDir + "/bin/hadoop", "classpath", "--glob"));
     //Check whether a classpath variable was already set, and if so: merge them
     //TODO(Theofilos): clean this up so no doubles are found in the classpath.
     if (env.containsKey(KEY_CLASSPATH)) {
@@ -584,6 +607,7 @@ public class YarnRunner {
     } else {
       env.put(KEY_CLASSPATH, classPathEnv.toString());
     }
+    
     env.put(Settings.HADOOP_HOME_KEY, hadoopDir);
     //Put some environment vars in env
     env.put(Settings.HADOOP_COMMON_HOME_KEY, hadoopDir);
@@ -592,7 +616,7 @@ public class YarnRunner {
     env.put(Settings.HADOOP_YARN_HOME_KEY, hadoopDir);
   }
 
-  private List<String> setUpCommands() {
+  private List<String> setUpCommands(String hdfsUser) {
     // Set the necessary command to execute the application master
     List<CharSequence> vargs = new ArrayList<>();
     // Set java executable command
@@ -614,10 +638,10 @@ public class YarnRunner {
     vargs.add(amArgs);
 
     vargs.add("1> ");
-    vargs.add(stdOutPath);
+    vargs.add(LOCAL_LOG_DIR_PLACEHOLDER + "/stdout");
 
     vargs.add("2> ");
-    vargs.add(stdErrPath);
+    vargs.add(LOCAL_LOG_DIR_PLACEHOLDER + "/stderr");
 
     // Get final commmand
     StringBuilder amcommand = new StringBuilder();
@@ -631,19 +655,6 @@ public class YarnRunner {
     return amCommands;
   }
 
-  protected void removeAllNecessary() throws IOException {
-    FileSystem fs = FileSystem.get(conf);
-    for (String s : filesToRemove) {
-      if (s.startsWith("hdfs:") && fs.exists(new Path(s))) {
-        fs.delete(new Path(s), true);
-
-      } else {
-        org.apache.commons.io.FileUtils.deleteQuietly(new File(s));
-      }
-    }
-    conf = null;
-  }
-
   //---------------------------------------------------------------------------        
   //------------------------- CONSTRUCTOR -------------------------------------
   //---------------------------------------------------------------------------
@@ -653,6 +664,7 @@ public class YarnRunner {
     this.jobType = builder.jobType;
     this.parallelism = builder.parallelism;
     this.flinkCluster = builder.flinkCluster;
+    this.tfClient = builder.tfClient;
     this.appJarPath = builder.appJarPath;
     this.amQueue = builder.amQueue;
     this.amMemory = builder.amMemory;
@@ -664,22 +676,20 @@ public class YarnRunner {
     this.amLocalResourcesOnHDFS = builder.amLocalResourcesOnHDFS;
     this.amEnvironment = builder.amEnvironment;
     this.localResourcesBasePath = builder.localResourcesBasePath;
-    this.aggregatedLogPath = builder.aggregatedLogPath;
     this.yarnClient = builder.yarnClient;
+    this.dfsClient = builder.dfsClient;
+    this.keyStorePassword = builder.keyStorePassword;
+    this.trustStorePassword = builder.trustStorePassword;
+    this.jobUser = builder.jobUser;
     this.conf = builder.conf;
     this.shouldCopyAmJarToLocalResources
         = builder.shouldAddAmJarToLocalResources;
     this.filesToBeCopied = builder.filesToBeCopied;
-    this.logPathsAreHdfs = builder.logPathsAreRelativeToResources;
-    this.logPathsAreAggregated = builder.logPathsAreAggregated;
-    this.stdOutPath = builder.stdOutPath;
-    this.stdErrPath = builder.stdErrPath;
     this.commands = builder.commands;
     this.javaOptions = builder.javaOptions;
     this.filesToRemove = builder.filesToRemove;
-    this.hadoopDir = builder.hadoopDir;
     this.serviceDir = builder.serviceDir;
-    this.nameNodeIpPort = builder.nameNodeIpPort;
+    this.services = builder.services;
   }
 
   //---------------------------------------------------------------------------
@@ -693,34 +703,10 @@ public class YarnRunner {
     return localResourcesBasePath;
   }
 
-  public String getStdOutPath() {
-    if (logPathsAreHdfs && !logPathsAreAggregated) {
-      return localResourcesBasePath + File.separator + stdOutPath;
-    } else if (logPathsAreAggregated) {
-      return aggregatedLogPath;
-    } else {
-      return stdOutPath;
-    }
+  public List<String> getFilesToRemove(){
+    return filesToRemove;
   }
-
-  public String getStdErrPath() {
-    if (logPathsAreHdfs && !logPathsAreAggregated) {
-      return localResourcesBasePath + File.separator + stdErrPath;
-    } else if (logPathsAreAggregated) {
-      return aggregatedLogPath;
-    } else {
-      return stdErrPath;
-    }
-  }
-
-  public boolean areLogPathsHdfs() {
-    return logPathsAreHdfs;
-  }
-
-  public boolean areLogPathsAggregated() {
-    return logPathsAreAggregated;
-  }
-
+  
   public void cancelJob(String appid) throws YarnException, IOException {
     ApplicationId applicationId = ConverterUtils.toApplicationId(appid);
     yarnClient.killApplication(applicationId);
@@ -744,6 +730,8 @@ public class YarnRunner {
     private int parallelism;
     private YarnClusterDescriptor flinkCluster;
     private String appJarPath;
+    //TensorFlow client
+    private Client tfClient;
     //Optional attributes
     // Queue for App master
     private String amQueue = "default"; //TODO(Theofilos): enable changing this, or infer from user data
@@ -765,16 +753,6 @@ public class YarnRunner {
     private Map<String, String> amEnvironment = new HashMap<>();
     //Path where the application master expects its local resources to be (added to fs.getHomeDirectory)
     private String localResourcesBasePath;
-    //aggregated yarn logs path
-    private String aggregatedLogPath;
-    //Path to file where stdout should be written, default in tmp folder
-    private String stdOutPath;
-    //Path to file where stderr should be written, default in tmp folder
-    private String stdErrPath;
-    //Signify whether the log paths are relative to the localResourcesBasePath
-    private boolean logPathsAreRelativeToResources = false;
-    //Signify whether the log paths are aggregated
-    private boolean logPathsAreAggregated = false;
     //Signify whether the application master jar should be added to local resources
     private boolean shouldAddAmJarToLocalResources = true;
     //List of files to be copied to localResourcesBasePath
@@ -790,11 +768,15 @@ public class YarnRunner {
     private Configuration conf;
     //YarnClient
     private YarnClient yarnClient;
+    private DistributedFileSystemOps dfsClient;
+    private String jobUser;
 
-    private String hadoopDir;
+    private String keyStorePassword;
+    private String trustStorePassword;
+    
     private String serviceDir;
-    private String nameNodeIpPort;
-
+    private AsynchronousJobExecutor services;
+    
     //Constructors
     public Builder(String amMainClass) {
       this.amMainClass = amMainClass;
@@ -804,7 +786,44 @@ public class YarnRunner {
       this.amJarPath = amJarPath;
       this.amJarLocalName = amJarLocalName;
     }
+    
+    /**
+     * Sets the configured DFS client
+     *
+     * @param dfsClient
+     * @return
+     */
+    public Builder setDfsClient(DistributedFileSystemOps dfsClient) {
+      this.dfsClient = dfsClient;
+      return this;
+    }
+  
+    /**
+     * Sets the configured Yarn client
+     *
+     * @param yarnClient
+     * @return
+     */
+    public Builder setYarnClient(YarnClient yarnClient) {
+      this.yarnClient = yarnClient;
+      return this;
+    }
 
+    public Builder setJobUser(String jobUser) {
+      this.jobUser = jobUser;
+      return this;
+    }
+    
+    public Builder setKeyStorePassword(String password) {
+      this.keyStorePassword = password;
+      return this;
+    }
+    
+    public Builder setTrustStorePassword(String password) {
+      this.trustStorePassword = password;
+      return this;
+    }
+    
     /**
      * Sets the arguments to be passed to the Application Master.
      * <p/>
@@ -886,6 +905,10 @@ public class YarnRunner {
       this.flinkCluster = flinkCluster;
     }
 
+    public void setTfClient(Client tfClient) {
+      this.tfClient = tfClient;
+    }
+    
     public void setAppJarPath(String path) {
       this.appJarPath = path;
     }
@@ -907,66 +930,6 @@ public class YarnRunner {
 //      for (LocalResourceDTO dto : config.getLocalResources()) {
 //        addLocalResource(dto,false);
 //      }
-      return this;
-    }
-
-    /**
-     * Set a file to be copied over to HDFS. It will be copied to
-     * localresourcesBasePath/filename and the original will
-     * be removed. Equivalent to addFileToBeCopied(path,true).
-     * <p/>
-     * @param path
-     * @return
-     */
-    public Builder addFilePathToBeCopied(String path) {
-      return addFilePathToBeCopied(path, true);
-    }
-
-    /**
-     * Set a file to be copied over to HDFS. It will be copied to
-     * localresourcesBasePath/filename. If removeAfterCopy is
-     * true, the file will also be removed after copying.
-     * <p/>
-     * @param path
-     * @param removeAfterCopy
-     * @return
-     */
-    public Builder addFilePathToBeCopied(String path, boolean removeAfterCopy) {
-      filesToBeCopied.add(path);
-      if (removeAfterCopy) {
-        filesToRemove.add(path);
-      }
-      return this;
-    }
-
-    public void addFilesToRemove(String path) {
-      filesToRemove.add(path);
-    }
-
-    /**
-     * Sets the path to which to write the Application Master's stdout.
-     * <p/>
-     * @param path
-     * @return
-     */
-    public Builder stdOutPath(String path) {
-      this.stdOutPath = path;
-      return this;
-    }
-
-    /**
-     * Sets the path to which to write the Application Master's stderr.
-     * <p/>
-     * @param path
-     * @return
-     */
-    public Builder stdErrPath(String path) {
-      this.stdErrPath = path;
-      return this;
-    }
-
-    public Builder logPathsRelativeToResourcesPath(boolean value) {
-      this.logPathsAreRelativeToResources = value;
       return this;
     }
 
@@ -1078,43 +1041,28 @@ public class YarnRunner {
     /**
      * Build the YarnRunner instance
      * <p/>
-     * @param hadoopDir
      * @param serviceDir
-     * @param nameNodeIpPort
      * @param jobType
+     * @param services
      * @return
      * @throws IllegalStateException Thrown if (a) configuration is not found,
      * (b) invalid main class name
      * @throws IOException Thrown if stdOut and/or stdErr path have not been set
      * and temp files could not be created
      */
-    public YarnRunner build(String hadoopDir, String serviceDir,
-        String nameNodeIpPort, JobType jobType) throws IllegalStateException,
+    public YarnRunner build(String serviceDir, JobType jobType, AsynchronousJobExecutor services) throws
+        IllegalStateException,
         IOException {
       //Set configuration
       try {
-        setConfiguration(hadoopDir, serviceDir, nameNodeIpPort);
+        this.services = services;
+        conf = services.getSettings().getConfiguration();
+        this.serviceDir = serviceDir;
+        if (jobType == JobType.FLINK) {
+          flinkCluster.setConf(conf);
+        }
       } catch (IllegalStateException e) {
         throw new IllegalStateException("Failed to load configuration", e);
-      }
-
-      logPathsAreAggregated = conf.getBoolean(
-          YarnConfiguration.LOG_AGGREGATION_ENABLED,
-          YarnConfiguration.DEFAULT_LOG_AGGREGATION_ENABLED);
-      if (logPathsAreAggregated) {
-        //{yarn.nodemanager.remote-app-log-dir}/${user}/{yarn.nodemanager.remote-app-log-dir-suffix}
-        String[] nmRemoteLogDirs = conf.getStrings(
-            YarnConfiguration.NM_REMOTE_APP_LOG_DIR,
-            YarnConfiguration.DEFAULT_NM_REMOTE_APP_LOG_DIR);
-
-        String[] nmRemoteLogDirSuffix = conf.getStrings(
-            YarnConfiguration.NM_REMOTE_APP_LOG_DIR_SUFFIX,
-            YarnConfiguration.DEFAULT_NM_REMOTE_APP_LOG_DIR_SUFFIX);
-        aggregatedLogPath = nmRemoteLogDirs[0] + File.separator + getUser()
-            + File.separator + nmRemoteLogDirSuffix[0] + File.separator
-            + APPID_PLACEHOLDER;
-        stdOutPath = LOCAL_LOG_DIR_PLACEHOLDER + "/stdout";
-        stdErrPath = LOCAL_LOG_DIR_PLACEHOLDER + "/stderr";
       }
 
       if (yarnClient == null) {
@@ -1135,134 +1083,9 @@ public class YarnRunner {
       if (localResourcesBasePath == null) {
         localResourcesBasePath = File.separator + APPID_PLACEHOLDER;
       }
-      //Default log locations: tmp files
-      if (stdOutPath == null || stdOutPath.isEmpty()) {
-        try {
-          stdOutPath = Files.createTempFile("stdOut", "").toString();
-        } catch (IOException e) {
-          throw new IOException("Failed to create tmp log file.", e);
-        }
-      }
-      if (stdErrPath == null || stdErrPath.isEmpty()) {
-        try {
-          stdErrPath = Files.createTempFile("stdErr", "").toString();
-        } catch (IOException e) {
-          throw new IOException("Failed to create tmp log file.", e);
-        }
-      }
       return new YarnRunner(this);
     }
 
-    private void setConfiguration(String hadoopDir, String serviceDir,
-        String nameNodeIpPort)
-        throws IllegalStateException {
-      //Get the path to the Yarn configuration file from environment variables
-      String yarnConfDir = System.getenv(Settings.ENV_KEY_YARN_CONF_DIR);
-//      If not found in environment variables: warn and use default,
-      if (yarnConfDir == null) {
-        logger.log(Level.WARNING,
-            "Environment variable "
-            + Settings.ENV_KEY_YARN_CONF_DIR
-            + " not found, using settings: {0}", Settings.getYarnConfDir(
-                hadoopDir));
-        yarnConfDir = Settings.getYarnConfDir(hadoopDir);
-
-      }
-
-      //Get the configuration file at found path
-      this.hadoopDir = hadoopDir;
-      this.serviceDir = serviceDir;
-      this.nameNodeIpPort = nameNodeIpPort;
-
-      Path confPath = new Path(yarnConfDir);
-      File confFile = new File(confPath + File.separator
-          + Settings.DEFAULT_YARN_CONFFILE_NAME);
-      if (!confFile.exists()) {
-        logger.log(Level.SEVERE,
-            "Unable to locate Yarn configuration file in {0}. Aborting exectution.",
-            confFile);
-        throw new IllegalStateException("No Yarn conf file");
-      }
-
-      //Also add the hadoop config
-      String hadoopConfDir = System.getenv(Settings.ENV_KEY_HADOOP_CONF_DIR);
-      //If not found in environment variables: warn and use default
-      if (hadoopConfDir == null) {
-        logger.log(Level.WARNING,
-            "Environment variable "
-            + Settings.ENV_KEY_HADOOP_CONF_DIR
-            + " not found, using default {0}",
-            (hadoopDir + "/" + Settings.HADOOP_CONF_RELATIVE_DIR));
-        hadoopConfDir = hadoopDir + "/" + Settings.HADOOP_CONF_RELATIVE_DIR;
-      }
-      confPath = new Path(hadoopConfDir);
-      File hadoopConf = new File(confPath + "/"
-          + Settings.DEFAULT_HADOOP_CONFFILE_NAME);
-      if (!hadoopConf.exists()) {
-        logger.log(Level.SEVERE,
-            "Unable to locate Hadoop configuration file in {0}. Aborting exectution.",
-            hadoopConf);
-        throw new IllegalStateException("No Hadoop conf file");
-      }
-
-      File hdfsConf = new File(confPath + "/"
-          + Settings.DEFAULT_HDFS_CONFFILE_NAME);
-      if (!hdfsConf.exists()) {
-        logger.log(Level.SEVERE,
-            "Unable to locate HDFS configuration file in {0}. Aborting exectution.",
-            hdfsConf);
-        throw new IllegalStateException("No HDFS conf file");
-      }
-
-      //Set the Configuration object for the returned YarnClient
-      conf = new Configuration();
-      conf.addResource(new Path(confFile.getAbsolutePath()));
-      conf.addResource(new Path(hadoopConf.getAbsolutePath()));
-      conf.addResource(new Path(hdfsConf.getAbsolutePath()));
-
-      addPathToConfig(conf, confFile);
-      addPathToConfig(conf, hadoopConf);
-      setDefaultConfValues(conf);
-
-      if (jobType == JobType.FLINK) {
-        flinkCluster.setConf(conf);
-      }
-    }
-
-    public static void addPathToConfig(Configuration conf, File path) {
-      // chain-in a new classloader
-      URL fileUrl = null;
-      try {
-        fileUrl = path.toURL();
-      } catch (MalformedURLException e) {
-        throw new RuntimeException("Erroneous config file path", e);
-      }
-      URL[] urls = {fileUrl};
-      ClassLoader cl = new URLClassLoader(urls, conf.getClassLoader());
-      conf.setClassLoader(cl);
-    }
-
-    public static void setDefaultConfValues(Configuration conf) {
-      if (conf.get("fs.hdfs.impl", null) == null) {
-        conf.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
-      }
-      if (conf.get("fs.file.impl", null) == null) {
-        conf.set("fs.file.impl", "org.apache.hadoop.fs.LocalFileSystem");
-      }
-    }
-
-    private static String getUser() {
-      UserGroupInformation hdfsUser;
-      try {
-        hdfsUser = UserGroupInformation.getCurrentUser();
-      } catch (IOException ex) {
-        logger.log(Level.SEVERE, null, ex);
-        throw new IllegalArgumentException(
-            "Exception while trying to retrieve hadoop UserGroupInformation: "
-            + ex.getMessage());
-      }
-      return hdfsUser.getUserName();
-    }
   }
 
   //---------------------------------------------------------------------------        

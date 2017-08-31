@@ -72,7 +72,7 @@ public class ZeppelinConfig {
   private SearchService noteSearchService;
   private final Settings settings;
   private final String projectName;
-
+  private final Integer projectId;
   private final String projectDirPath;
   private final String confDirPath;
   private final String notebookDirPath;
@@ -82,10 +82,13 @@ public class ZeppelinConfig {
   private final String interpreterDirPath;
   private final String libDirPath;
   private final String repoDirPath;
+  private final String owner;
 
-  public ZeppelinConfig(String projectName, String owner, Settings settings,
+  public ZeppelinConfig(String projectName, Integer projectId, String owner, Settings settings,
           String interpreterConf) {
     this.projectName = projectName;
+    this.projectId = projectId;
+    this.owner = owner;
     this.settings = settings;
     this.projectDirPath = settings.getZeppelinDir() + File.separator
             + Settings.DIR_ROOT + File.separator
@@ -160,9 +163,11 @@ public class ZeppelinConfig {
     }
   }
 
-  public ZeppelinConfig(ZeppelinConfig zConf, NotebookServer nbs) {
+  public ZeppelinConfig(ZeppelinConfig zConf, NotebookServer nbs, String owner) {
     this.settings = zConf.getSettings();
     this.projectName = zConf.getProjectName();
+    this.projectId = zConf.getProjectId();
+    this.owner = zConf.getOwner();
     this.projectDirPath = zConf.getProjectDirPath();
     this.confDirPath = zConf.getConfDirPath();
     this.notebookDirPath = zConf.getNotebookDirPath();
@@ -281,6 +286,14 @@ public class ZeppelinConfig {
 
   public String getProjectName() {
     return projectName;
+  }
+
+  public Integer getProjectId() {
+    return projectId;
+  }
+
+  public String getOwner() {
+    return owner;
   }
 
   public String getProjectDirPath() {
@@ -442,7 +455,7 @@ public class ZeppelinConfig {
       if (System.getenv().containsKey("LD_LIBRARY_PATH")) {
         ldLibraryPath = System.getenv("LD_LIBRARY_PATH");
       }
-      String javaHome = Settings.JAVA_HOME;
+      String javaHome = settings.getJavaHome();
       if (System.getenv().containsKey("JAVA_HOME")) {
         javaHome = System.getenv("JAVA_HOME");
       }
@@ -494,12 +507,49 @@ public class ZeppelinConfig {
       interpreter_file.delete();
     }
 
+    //Set Hopsworks properties to be available in Zeppelin
     String jobName = this.projectName.toLowerCase() + "-zeppelin";
     String logstashID = "-D" + Settings.LOGSTASH_JOB_INFO + "="
-            + this.projectName.toLowerCase() + "," + jobName + "," + jobName;
+        + this.projectName.toLowerCase() + "," + jobName + "," + jobName;
+    String restEndpointProp = " -D" + Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY + "=" + settings.getRestEndpoint();
+    String keystorePwProp = " -D" + Settings.HOPSWORKS_KEYSTORE_PROPERTY + "=" + Settings.KEYSTORE_VAL_ENV_VAR;
+    String truststorePwProp = " -D" + Settings.HOPSWORKS_TRUSTSTORE_PROPERTY + "=" + Settings.TRUSTSTORE_VAL_ENV_VAR;
+    String elasticEndpointProp = " -D" + Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY + "=" + settings.
+        getElasticRESTEndpoint();
+    String projectIdProp = " -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=" + this.projectId;
+    String projectNameProp = " -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=" + this.projectName;
+    String userProp = " -D" + Settings.HOPSWORKS_PROJECTUSER_PROPERTY + "=" + this.owner;
+    //String sessionIdProp =  " -D" + Settings.HOPSWORKS_SESSIONID_PROPERTY + "=" + this.sessionId;
     String extraSparkJavaOptions = " -Dlog4j.configuration=./log4j.properties "
-            + logstashID;
+        + logstashID + restEndpointProp + keystorePwProp + truststorePwProp + elasticEndpointProp + projectIdProp
+        + projectNameProp + userProp;
     String hdfsResourceDir = "hdfs://" + resourceDir + File.separator;
+    // Comma-separated files to be added as local resources to Spark interpreter
+    StringBuilder sparkDistFiles = new StringBuilder();
+    sparkDistFiles
+        // KeyStore
+        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+        .append(this.projectName).append(File.separator)
+        .append(this.projectName).append("__kstore.jks#")
+        .append(Settings.K_CERTIFICATE).append(",")
+        // TrustStore
+        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+        .append(this.projectName).append(File.separator)
+        .append(this.projectName).append("__tstore.jks#")
+        .append(Settings.T_CERTIFICATE);
+    
+    // Comma-separated files to be added as local resources to Livy interpreter
+    StringBuilder livySparkDistFiles = new StringBuilder();
+    livySparkDistFiles
+        // KeyStore
+        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+        .append(owner).append(File.separator).append(owner)
+        .append("__kstore.jks#").append(Settings.K_CERTIFICATE).append(",")
+        // TrustStore
+        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+        .append(owner).append(File.separator).append(owner)
+        .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
+    
     if (interpreterConf == null) {
       StringBuilder interpreter_json = ConfigFileGenerator.
               instantiateFromTemplate(
@@ -508,16 +558,17 @@ public class ZeppelinConfig {
                       "zeppelin_home_dir", home,
                       "livy_url", settings.getLivyUrl(),
                       "metrics-properties_local_path", "./metrics.properties",
-                      "metrics-properties_path", metricsPath + "," + log4jPath,
+                      "metrics-properties_path", metricsPath + "," + log4jPath
+                      + "," +livySparkDistFiles.toString(),
                       "extra_spark_java_options", extraSparkJavaOptions,
                       "spark.sql.warehouse.dir", hdfsResourceDir
                       + "spark-warehouse",
                       "spark.yarn.stagingDir", hdfsResourceDir,
                       "livy.spark.sql.warehouse.dir", hdfsResourceDir
                       + "spark-warehouse",
-                      "anaconda_env_dir", settings.getAnacondaDir() + "/envs/",
                       "livy.spark.yarn.stagingDir", hdfsResourceDir,
-                      "zeppelin.python_conda_path", zeppelinPythonPath
+                      "zeppelin.python_conda_path", zeppelinPythonPath,
+                      "spark.yarn.dist.files", sparkDistFiles.toString()
               );
       interpreterConf = interpreter_json.toString();
     }

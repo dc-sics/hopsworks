@@ -44,6 +44,11 @@ import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.EJB;
 
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
+import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.util.HopsUtils;
+import io.hops.hopsworks.common.util.Settings;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
 import org.apache.zeppelin.display.AngularObject;
@@ -101,14 +106,15 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
-import io.hops.hopsworks.api.zeppelin.json.NotebookTypeAdapterFactory;
+import io.hops.hopsworks.api.zeppelin.util.ZeppelinResource;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import org.apache.zeppelin.display.Input;
 import org.apache.zeppelin.interpreter.Interpreter;
-import org.apache.zeppelin.notebook.ParagraphRuntimeInfo;
+import org.apache.zeppelin.notebook.NotebookImportDeserializer;
 
 /**
  * Zeppelin websocket service.
@@ -136,24 +142,12 @@ public class NotebookServer implements
     }
   }
 
-  private static final Logger LOG = Logger.getLogger(NotebookServer.class.
-          getName());
-
-  Gson gson = new GsonBuilder()
-          .registerTypeAdapterFactory(new NotebookTypeAdapterFactory<Paragraph>(Paragraph.class) {
-            @Override
-            protected void beforeWrite(Paragraph source, JsonElement toSerialize) {
-              Map<String, ParagraphRuntimeInfo> runtimeInfos = source.getRuntimeInfos();
-              if (runtimeInfos != null) {
-                JsonElement jsonTree = gson.toJsonTree(runtimeInfos);
-                if (toSerialize instanceof JsonObject) {
-                  JsonObject jsonObj = (JsonObject) toSerialize;
-                  jsonObj.add("runtimeInfos", jsonTree);
-                }
-              }
-            }
-          }).setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-          .registerTypeAdapterFactory(Input.TypeAdapterFactory).create();
+  private static final Logger LOG = Logger.getLogger(NotebookServer.class.getName());
+  private static Gson gson = new GsonBuilder()
+      .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+      .registerTypeAdapter(Date.class, new NotebookImportDeserializer())
+      .setPrettyPrinting()
+      .registerTypeAdapterFactory(Input.TypeAdapterFactory).create();
   private static final Map<String, List<Session>> noteSocketMap = new HashMap<>();
   private static final Queue<Session> connectedSockets = new ConcurrentLinkedQueue<>();
   private static final Map<String, Queue<Session>> userConnectedSockets = new ConcurrentHashMap<>();
@@ -182,6 +176,14 @@ public class NotebookServer implements
   private ZeppelinConfigFactory zeppelin;
   @EJB
   private HdfsUsersController hdfsUsersController;
+  @EJB
+  private Settings settings;
+  @EJB
+  private DistributedFsService dfsService;
+  @EJB
+  private CertificateMaterializer certificateMaterializer;
+  @EJB
+  private ZeppelinResource zeppelinResource;
 
   public NotebookServer() {
   }
@@ -191,14 +193,13 @@ public class NotebookServer implements
   }
 
   @OnOpen
-  public void open(Session conn, EndpointConfig config,
-          @PathParam("projectID") String projectId) {
+  public void open(Session conn, EndpointConfig config, @PathParam("projectID") String projectId) {
     this.session = conn;
     this.sender = (String) config.getUserProperties().get("user");
     this.project = getProject(projectId);
     authenticateUser(conn, this.project, this.sender);
     if (this.userRole == null) {
-      LOG.log(Level.INFO, "User not authorized for Zeepelin Access: {0}",
+      LOG.log(Level.INFO, "User not authorized for Zeppelin Access: {0}",
               this.sender);
       return;
     }
@@ -236,9 +237,8 @@ public class NotebookServer implements
           LOG.log(Level.INFO, "{0} message: invalid ticket {1} != {2}", new Object[]{
             messagereceived.op, messagereceived.ticket, ticket});
         } else if (!messagereceived.op.equals(OP.PING)) {
-          conn.getBasicRemote().sendText(serializeMessage(new Message(OP.SESSION_LOGOUT).put("info",
-                  "Your ticket is invalid possibly due to server restart. "
-                  + "Please login again.")));
+          sendMsg(conn, serializeMessage(new Message(OP.SESSION_LOGOUT).put("info",
+                  "Your ticket is invalid possibly due to server restart. Please login again.")));
         }
         try {
           session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE,
@@ -265,7 +265,7 @@ public class NotebookServer implements
         }
       }
 
-      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal,
+      AuthenticationInfo subject = new AuthenticationInfo(messagereceived.principal, messagereceived.roles,
               messagereceived.ticket);
       /**
        * Lets be elegant here
@@ -427,13 +427,13 @@ public class NotebookServer implements
     connectedSockets.remove(conn);
     removeUserConnection(this.hdfsUsername, conn);
   }
-
+  
   @OnError
   public void onError(Session conn, Throwable exc) {
     removeConnectionFromAllNote(conn);
     connectedSockets.remove(conn);
   }
-
+  
   private void removeUserConnection(String user, Session conn) {
     if (userConnectedSockets.containsKey(user)) {
       userConnectedSockets.get(user).remove(conn);
@@ -488,10 +488,11 @@ public class NotebookServer implements
     try {
       if (this.session.isOpen()) {
         this.session.getBasicRemote().sendText("Restarting zeppelin.");
-        this.session.close(new CloseReason(
-                CloseReason.CloseCodes.SERVICE_RESTART,
-                "Restarting zeppelin."));
+        this.session.close(new CloseReason(CloseReason.CloseCodes.SERVICE_RESTART, "Restarting zeppelin."));
       }
+      removeConnectionFromAllNote(this.session);
+      connectedSockets.remove(this.session);
+      removeUserConnection(this.hdfsUsername, this.session);
     } catch (IOException ex) {
       LOG.log(Level.SEVERE, null, ex);
     }
@@ -550,9 +551,7 @@ public class NotebookServer implements
       LOG.log(Level.FINE, "SEND >> {0}", m.op);
       for (Session conn : socketLists) {
         try {
-          if (conn.isOpen()) {
-            conn.getBasicRemote().sendText(serializeMessage(m));
-          }
+          sendMsg(conn, serializeMessage(m));
         } catch (IOException ex) {
           LOG.log(Level.SEVERE, "Unable to send message " + m, ex);
         }
@@ -573,9 +572,7 @@ public class NotebookServer implements
           continue;
         }
         try {
-          if (conn.isOpen()) {
-            conn.getBasicRemote().sendText(serializeMessage(m));
-          }
+          sendMsg(conn, serializeMessage(m));
         } catch (IOException ex) {
           LOG.log(Level.SEVERE, "Unable to send message " + m, ex);
         }
@@ -596,7 +593,7 @@ public class NotebookServer implements
 
   private void unicast(Message m, Session conn) {
     try {
-      conn.getBasicRemote().sendText(serializeMessage(m));
+      sendMsg(conn, serializeMessage(m));
     } catch (IOException e) {
       LOG.log(Level.SEVERE, "socket error", e);
     }
@@ -612,7 +609,7 @@ public class NotebookServer implements
     response.put("lastResponseUnixTime", System.currentTimeMillis());
     response.put("jobs", noteJobs);
 
-    conn.getBasicRemote().sendText(serializeMessage(new Message(OP.LIST_NOTE_JOBS).put("noteJobs", response)));
+    sendMsg(conn, serializeMessage(new Message(OP.LIST_NOTE_JOBS).put("noteJobs", response)));
   }
 
   public void broadcastUpdateNoteJobInfo(long lastUpdateUnixTime) throws IOException {
@@ -644,8 +641,8 @@ public class NotebookServer implements
               new TypeToken<ArrayList<String>>() {}.getType());
       AuthenticationInfo subject = new AuthenticationInfo(this.hdfsUsername);
       notebook().bindInterpretersToNote(subject.getUser(), noteId, settingIdList);
-      broadcastInterpreterBindings(noteId,
-              InterpreterBindingUtils.getInterpreterBindings(notebook(), noteId));
+      broadcastInterpreterBindings(noteId, InterpreterBindingUtils.getInterpreterBindings(notebook(), noteId));
+      zeppelinResource.persistToDB(this.project);
     } catch (Exception e) {
       LOG.log(Level.SEVERE, "Error while saving interpreter bindings", e);
     }
@@ -655,8 +652,7 @@ public class NotebookServer implements
     String noteId = (String) fromMessage.data.get("noteId");
     List<InterpreterSettingsList> settingList = InterpreterBindingUtils.
             getInterpreterBindings(notebook(), noteId);
-    conn.getBasicRemote().sendText(serializeMessage(
-            new Message(OP.INTERPRETER_BINDINGS).put("interpreterBindings", settingList)));
+    sendMsg(conn, serializeMessage(new Message(OP.INTERPRETER_BINDINGS).put("interpreterBindings", settingList)));
   }
 
   public List<Map<String, String>> generateNotesInfo(boolean needsReload,
@@ -793,7 +789,7 @@ public class NotebookServer implements
             "Cannot {0}. Connection readers {1}. Allowed readers {2}",
             new Object[]{op, userAndRoles, allowed});
     Users user = userBean.findByEmail(this.sender);
-    conn.getBasicRemote().sendText(serializeMessage(new Message(OP.AUTH_INFO).
+    sendMsg(conn, serializeMessage(new Message(OP.AUTH_INFO).
             put("info", "Insufficient privileges to " + op + "note.\n\n"
                     + "Allowed users or roles: " + allowed
                     .toString() + "\n\n" + "But the user " + user.getLname()
@@ -883,17 +879,16 @@ public class NotebookServer implements
       if (note.isPersonalizedMode()) {
         note = note.getUserNote(user);
       }
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.NOTE).put("note", note)));
+      sendMsg(conn, serializeMessage(new Message(OP.NOTE).put("note", note)));
       sendAllAngularObjects(note, user, conn);
     } else {
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.NOTE).put("note", null)));
+      sendMsg(conn, serializeMessage(new Message(OP.NOTE).put("note", null)));
     }
   }
 
   private void sendHomeNote(Session conn, HashSet<String> userAndRoles, Notebook notebook,
           Message fromMessage) throws IOException {
-    String noteId = notebook.getConf().getString(
-            ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN);
+    String noteId = notebook.getConf().getString(ConfVars.ZEPPELIN_NOTEBOOK_HOMESCREEN);
     String user = this.hdfsUsername;
     Note note = null;
     if (noteId != null) {
@@ -907,11 +902,11 @@ public class NotebookServer implements
       }
 
       addConnectionToNote(note.getId(), conn);
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.NOTE).put("note", note)));
+      sendMsg(conn, serializeMessage(new Message(OP.NOTE).put("note", note)));
       sendAllAngularObjects(note, user, conn);
     } else {
       removeConnectionFromAllNote(conn);
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.NOTE).put("note", null)));
+      sendMsg(conn, serializeMessage(new Message(OP.NOTE).put("note", null)));
     }
   }
 
@@ -950,8 +945,7 @@ public class NotebookServer implements
   }
 
   private void updatePersonalizedMode(Session conn, HashSet<String> userAndRoles,
-          Notebook notebook, Message fromMessage) throws SchedulerException,
-          IOException {
+          Notebook notebook, Message fromMessage) throws SchedulerException, IOException {
     String noteId = (String) fromMessage.get("id");
     String personalized = (String) fromMessage.get("personalized");
     boolean isPersonalized = personalized.equals("true") ? true : false;
@@ -1092,10 +1086,10 @@ public class NotebookServer implements
 
       note.persist(subject);
       addConnectionToNote(note.getId(), (Session) conn);
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.NEW_NOTE).put("note", note)));
+      sendMsg(conn, serializeMessage(new Message(OP.NEW_NOTE).put("note", note)));
     } catch (FileSystemException e) {
       LOG.log(Level.SEVERE, "Exception from createNote", e);
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.ERROR_INFO).put("info",
+      sendMsg(conn, serializeMessage(new Message(OP.ERROR_INFO).put("info",
               "Oops! There is something wrong with the notebook file system. "
               + "Please check the logs for more details.")));
       return;
@@ -1294,7 +1288,7 @@ public class NotebookServer implements
     Note newNote = notebook.cloneNote(noteId, name, new AuthenticationInfo(fromMessage.principal));
     AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
     addConnectionToNote(newNote.getId(), conn);
-    conn.getBasicRemote().sendText(serializeMessage(new Message(OP.NEW_NOTE).put("note", newNote)));
+    sendMsg(conn, serializeMessage(new Message(OP.NEW_NOTE).put("note", newNote)));
     broadcastNoteList(subject, userAndRoles);
   }
 
@@ -1395,14 +1389,14 @@ public class NotebookServer implements
     int cursor = (int) Double.parseDouble(fromMessage.get("cursor").toString());
     Message resp = new Message(OP.COMPLETION_LIST).put("id", paragraphId);
     if (paragraphId == null) {
-      conn.getBasicRemote().sendText(serializeMessage(resp));
+      sendMsg(conn, serializeMessage(resp));
       return;
     }
 
     final Note note = notebook.getNote(getOpenNoteId(conn));
     List<InterpreterCompletion> candidates = note.completion(paragraphId, buffer, cursor);
     resp.put("completions", candidates);
-    conn.getBasicRemote().sendText(serializeMessage(resp));
+    sendMsg(conn, serializeMessage(resp));
   }
 
   /**
@@ -1647,8 +1641,15 @@ public class NotebookServer implements
             userAndRoles, fromMessage.principal, "write")) {
       return null;
     }
+    Map<String, Object> config;
+    if (fromMessage.get("config") != null) {
+      config = (Map<String, Object>) fromMessage.get("config");
+    } else {
+      config = new HashMap<>();
+    }
 
     Paragraph newPara = note.insertNewParagraph(index, subject);
+    newPara.setConfig(config);
     note.persist(subject);
     broadcastNewParagraph(note, newPara);
 
@@ -1749,6 +1750,23 @@ public class NotebookServer implements
     p.setErrorMessage((String) fromMessage.get("errorMessage"));
     p.setStatusWithoutNotification(status);
 
+    // Spell uses ISO 8601 formatted string generated from moment
+    String dateStarted = (String) fromMessage.get("dateStarted");
+    String dateFinished = (String) fromMessage.get("dateFinished");
+    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+
+    try {
+      p.setDateStarted(df.parse(dateStarted));
+    } catch (ParseException e) {
+      LOG.log(Level.SEVERE,"Failed parse dateStarted: {0}", e);
+    }
+
+    try {
+      p.setDateFinished(df.parse(dateFinished));
+    } catch (ParseException e) {
+      LOG.log(Level.SEVERE,"Failed parse dateFinished: {0}", e);
+    }
+
     addNewParagraphIfLastParagraphIsExecuted(note, p);
     if (!persistNoteWithAuthInfo(conn, note, p)) {
       return;
@@ -1813,7 +1831,7 @@ public class NotebookServer implements
       return true;
     } catch (FileSystemException ex) {
       LOG.log(Level.SEVERE, "Exception from run", ex);
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.ERROR_INFO).put("info",
+      sendMsg(conn, serializeMessage(new Message(OP.ERROR_INFO).put("info",
               "Oops! There is something wrong with the notebook file system. "
               + "Please check the logs for more details.")));
       // don't run the paragraph when there is error on persisting the note information
@@ -1827,7 +1845,47 @@ public class NotebookServer implements
     if (!persistNoteWithAuthInfo(conn, note, p)) {
       return;
     }
-
+  
+    // Materialize certificates both in local filesystem and
+    // in HDFS for the interpreters
+    // Interpreter group is in the form GROUP_ID:shared_process
+    // GROUP_ID: 2CFZ6Q3A2 -> Spark group
+    // GROUP_ID: 2CHUQQW33 -> Livy group
+    String[] interpreterGrp = p.getCurrentRepl().getInterpreterGroup()
+        .getId().split(":");
+    String interpreterGroup;
+    if (interpreterGrp.length >=2) {
+      interpreterGroup = interpreterGrp[0];
+    } else {
+      interpreterGroup = p.getCurrentRepl().getInterpreterGroup().getId();
+    }
+    
+    if (certificateMaterializer.openedInterpreter(project.getId(),
+        interpreterGroup)) {
+      DistributedFileSystemOps dfso = dfsService.getDfsOps();
+      try {
+        HopsUtils.materializeCertificatesForUser(project.getName(),
+            project.getOwner().getUsername(),
+            settings.getHopsworksTmpCertDir(),
+            settings.getHdfsTmpCertDir(), dfso, certificateMaterializer,
+            settings, true);
+      } catch (IOException ex) {
+        // Cleanup certificates here
+        HopsUtils
+            .cleanupCertificatesForUser(project.getOwner().getUsername(),
+                project.getName(), settings.getHdfsTmpCertDir(), dfso,
+                certificateMaterializer, true);
+        LOG.log(Level.WARNING, "User certificates could not be materialized",
+            ex);
+        throw ex;
+      } finally {
+        if (null != dfso) {
+          dfso.close();
+          dfso = null;
+        }
+      }
+    }
+    
     try {
       note.run(p.getId());
     } catch (Exception ex) {
@@ -1846,7 +1904,7 @@ public class NotebookServer implements
     Paragraph p = note.getParagraph(paragraphId);
     p.setText(text);
     p.setTitle(title);
-    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal, fromMessage.ticket);
+    AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal, fromMessage.roles, fromMessage.ticket);
     p.setAuthenticationInfo(subject);
     p.settings.setParams(params);
     p.setConfig(config);
@@ -1869,16 +1927,15 @@ public class NotebookServer implements
 
     Map<String, String> configurations = conf.dumpConfigurations(conf,
             new ZeppelinConfiguration.ConfigurationKeyPredicate() {
-          @Override
-          public boolean apply(String key) {
-            return !key.contains("password") && !key.equals(
-                    ZeppelinConfiguration.ConfVars.ZEPPELIN_NOTEBOOK_AZURE_CONNECTION_STRING.
-                    getVarName());
-          }
+        @Override
+        public boolean apply(String key) {
+          return !key.contains("password") && !key.equals(
+                  ZeppelinConfiguration.ConfVars.ZEPPELIN_NOTEBOOK_AZURE_CONNECTION_STRING.
+                  getVarName());
+        }
       });
 
-    conn.getBasicRemote().sendText(serializeMessage(
-            new Message(OP.CONFIGURATIONS_INFO).put("configurations", configurations)));
+    sendMsg(conn, serializeMessage(new Message(OP.CONFIGURATIONS_INFO).put("configurations", configurations)));
   }
 
   private void checkpointNote(Session conn, Notebook notebook, Message fromMessage)
@@ -1889,11 +1946,9 @@ public class NotebookServer implements
     Revision revision = notebook.checkpointNote(noteId, commitMessage, subject);
     if (!Revision.isEmpty(revision)) {
       List<Revision> revisions = notebook.listRevisionHistory(noteId, subject);
-      conn.getBasicRemote().sendText(serializeMessage(new Message(
-              OP.LIST_REVISION_HISTORY).put("revisionList", revisions)));
+      sendMsg(conn, serializeMessage(new Message(OP.LIST_REVISION_HISTORY).put("revisionList", revisions)));
     } else {
-      conn.getBasicRemote().sendText(serializeMessage(
-              new Message(OP.ERROR_INFO).put("info",
+      sendMsg(conn, serializeMessage(new Message(OP.ERROR_INFO).put("info",
                       "Couldn't checkpoint note revision: possibly storage "
                       + "doesn't support versioning. Please check the logs for"
                       + " more details.")));
@@ -1906,8 +1961,7 @@ public class NotebookServer implements
     AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
     List<Revision> revisions = notebook.listRevisionHistory(noteId, subject);
 
-    conn.getBasicRemote().sendText(serializeMessage(new Message(
-            OP.LIST_REVISION_HISTORY).put("revisionList", revisions)));
+    sendMsg(conn, serializeMessage(new Message(OP.LIST_REVISION_HISTORY).put("revisionList", revisions)));
   }
 
   private void setNoteRevision(Session conn, HashSet<String> userAndRoles, Notebook notebook,
@@ -1935,15 +1989,13 @@ public class NotebookServer implements
       notebook.loadNoteFromRepo(noteId, subject);
     }
 
-    conn.getBasicRemote().sendText(serializeMessage(new Message(OP.SET_NOTE_REVISION)
-            .put("status", setRevisionStatus)));
+    sendMsg(conn, serializeMessage(new Message(OP.SET_NOTE_REVISION).put("status", setRevisionStatus)));
 
     if (setRevisionStatus) {
       Note reloadedNote = notebook.getNote(headNote.getId());
       broadcastNote(reloadedNote);
     } else {
-      conn.getBasicRemote().sendText(serializeMessage(new Message(OP.ERROR_INFO).put("info",
-              "Couldn't set note to the given revision. "
+      sendMsg(conn, serializeMessage(new Message(OP.ERROR_INFO).put("info", "Couldn't set note to the given revision. "
               + "Please check the logs for more details.")));
     }
   }
@@ -1954,8 +2006,7 @@ public class NotebookServer implements
     String revisionId = (String) fromMessage.get("revisionId");
     AuthenticationInfo subject = new AuthenticationInfo(fromMessage.principal);
     Note revisionNote = notebook.getNoteByRevision(noteId, revisionId, subject);
-    conn.getBasicRemote().sendText(serializeMessage(
-            new Message(OP.NOTE_REVISION).put("noteId", noteId).put("revisionId", revisionId)
+    sendMsg(conn, serializeMessage(new Message(OP.NOTE_REVISION).put("noteId", noteId).put("revisionId", revisionId)
             .put("note", revisionNote)));
   }
 
@@ -2315,10 +2366,8 @@ public class NotebookServer implements
       AngularObjectRegistry registry = intpSetting.getInterpreterGroup(user, note.getId()).getAngularObjectRegistry();
       List<AngularObject> objects = registry.getAllWithGlobal(note.getId());
       for (AngularObject object : objects) {
-        conn.getBasicRemote().sendText(serializeMessage(
-                new Message(OP.ANGULAR_OBJECT_UPDATE).put("angularObject", object)
-                .put("interpreterGroupId",
-                        intpSetting.getInterpreterGroup(user, note.getId()).getId())
+        sendMsg(conn, serializeMessage(new Message(OP.ANGULAR_OBJECT_UPDATE).put("angularObject", object)
+                .put("interpreterGroupId", intpSetting.getInterpreterGroup(user, note.getId()).getId())
                 .put("noteId", note.getId()).put("paragraphId", object.getParagraphId())));
       }
     }
@@ -2383,16 +2432,14 @@ public class NotebookServer implements
     Message resp = new Message(OP.EDITOR_SETTING);
     resp.put("paragraphId", paragraphId);
     Interpreter interpreter = notebook().getInterpreterFactory().getInterpreter(user, noteId, replName);
-    resp.put("editor", notebook().getInterpreterSettingManager().
-            getEditorSetting(interpreter, user, noteId, replName));
-    conn.getBasicRemote().sendText(serializeMessage(resp));
+    resp.put("editor", notebook().getInterpreterSettingManager().getEditorSetting(interpreter, user, noteId, replName));
+    sendMsg(conn, serializeMessage(resp));
   }
 
   private void getInterpreterSettings(Session conn, AuthenticationInfo subject)
           throws IOException {
     List<InterpreterSetting> availableSettings = notebook().getInterpreterSettingManager().get();
-    conn.getBasicRemote().sendText(serializeMessage(
-            new Message(OP.INTERPRETER_SETTINGS).put("interpreterSettings", availableSettings)));
+    sendMsg(conn, serializeMessage(new Message(OP.INTERPRETER_SETTINGS).put("interpreterSettings", availableSettings)));
   }
 
   @Override
@@ -2442,7 +2489,7 @@ public class NotebookServer implements
         }
 
         try {
-          conn.getBasicRemote().sendText(serialized);
+          sendMsg(conn, serialized);
         } catch (IOException e) {
           LOG.log(Level.SEVERE, "Cannot broadcast message to watcher", e);
         }
@@ -2458,10 +2505,8 @@ public class NotebookServer implements
       }
       for (Session watcher : watcherSockets) {
         try {
-          watcher.getBasicRemote().sendText(
-                  WatcherMessage.builder(noteId).subject(subject).message(
-                  serializeMessage(message))
-                  .build().serialize());
+          sendMsg(watcher, WatcherMessage.builder(noteId).subject(subject).message(serializeMessage(message)).build().
+                  toJson());
         } catch (IOException e) {
           LOG.log(Level.SEVERE, "Cannot broadcast message to watcher", e);
         }
@@ -2515,6 +2560,14 @@ public class NotebookServer implements
       }
     }
     setting.clearNoteIdAndParaMap();
+  }
+  
+  private void sendMsg(Session conn, String msg) throws IOException {
+    if (conn == null || !conn.isOpen()) {
+      LOG.log(Level.SEVERE, "Can't handle messag. The connection has been closed.");
+      return;
+    }
+    conn.getBasicRemote().sendText(msg);
   }
 
   private void authenticateUser(Session session, Project project, String user) {

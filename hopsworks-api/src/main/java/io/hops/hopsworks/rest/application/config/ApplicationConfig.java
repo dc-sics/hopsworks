@@ -27,7 +27,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.jobs.KafkaService.class);
     register(io.hops.hopsworks.api.jobs.DeviceService.class);
     register(io.hops.hopsworks.api.jobs.SparkService.class);
-    register(io.hops.hopsworks.api.jobs.TensorflowService.class);
+    register(io.hops.hopsworks.api.jobs.TensorFlowService.class);
     register(io.hops.hopsworks.api.project.DataSetService.class);
     register(io.hops.hopsworks.api.project.HistoryService.class);
     register(io.hops.hopsworks.api.project.MessageService.class);
@@ -35,6 +35,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.project.ProjectMembersService.class);
     register(io.hops.hopsworks.api.project.ProjectService.class);
     register(io.hops.hopsworks.api.project.RequestService.class);
+    register(io.hops.hopsworks.api.project.CertService.class);
     register(io.hops.hopsworks.api.pythonDeps.PythonDepsService.class);
     register(io.hops.hopsworks.api.user.ActivityService.class);
     register(io.hops.hopsworks.api.user.AuthService.class);
