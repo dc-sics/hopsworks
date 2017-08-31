@@ -135,7 +135,7 @@ public class AgentResource {
         try {
           role = roleFacade.find(hostId, cluster, service, roleName);
         } catch (Exception ex) {
-          logger.debug("Could not find a role for the kagent heartbeat.");
+          logger.log(Level.FINE, "Could not find a role for the kagent heartbeat.");
           continue;
         }
 
@@ -155,8 +155,7 @@ public class AgentResource {
           role.setWebPort(Integer.parseInt(webPort));
           role.setPid(Integer.parseInt(pid));
         } catch (NumberFormatException ex) {
-          logger.log(Level.WARNING,
-                  "Invalid webport or pid - not a number for: {0}", role);
+          logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", role);
           continue;
         }
         if (s.containsKey("status")) {
