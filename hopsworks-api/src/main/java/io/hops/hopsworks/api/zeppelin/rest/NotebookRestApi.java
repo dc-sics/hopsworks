@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.ejb.EJB;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.Consumes;
@@ -18,7 +19,14 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.enterprise.context.RequestScoped;
+
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
+import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.util.HopsUtils;
+import io.hops.hopsworks.common.util.Settings;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.Paragraph;
 import org.slf4j.Logger;
@@ -41,9 +49,10 @@ import io.hops.hopsworks.api.zeppelin.socket.NotebookServer;
 import io.hops.hopsworks.api.zeppelin.types.InterpreterSettingsList;
 import io.hops.hopsworks.api.zeppelin.util.InterpreterBindingUtils;
 import io.hops.hopsworks.api.zeppelin.util.SecurityUtils;
-import io.hops.hopsworks.common.constants.message.ResponseMessages;
+import io.hops.hopsworks.api.zeppelin.util.ZeppelinResource;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.exception.AppException;
+import java.util.LinkedList;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.notebook.NoteInfo;
 import org.apache.zeppelin.notebook.Notebook;
@@ -58,8 +67,18 @@ import org.quartz.CronExpression;
 @RequestScoped
 public class NotebookRestApi {
 
+  @EJB
+  private DistributedFsService dfsService;
+  @EJB
+  private CertificateMaterializer certificateMaterializer;
+  @EJB
+  private Settings settings;
+  @EJB
+  private ZeppelinResource zeppelinResource;
+  
   private static final Logger LOG = LoggerFactory.getLogger(
           NotebookRestApi.class);
+  
   Gson gson = new Gson();
   private Notebook notebook;
   private NotebookServer notebookServer;
@@ -212,9 +231,6 @@ public class NotebookRestApi {
     HashSet<String> writers = permMap.get("writers");
     // Set readers, if writers and owners is empty -> set to user requesting the change
     if (readers != null && !readers.isEmpty()) {
-      if (writers.isEmpty()) {
-        writers = Sets.newHashSet(SecurityUtils.getPrincipal());
-      }
       if (owners.isEmpty()) {
         owners = Sets.newHashSet(SecurityUtils.getPrincipal());
       }
@@ -325,7 +341,7 @@ public class NotebookRestApi {
   /**
    * import new note REST API
    *
-   * @param req - notebook Json
+   * @param req - note Json
    * @return JSON with new note ID
    * @throws IOException
    */
@@ -348,14 +364,16 @@ public class NotebookRestApi {
   public Response createNote(String message) throws IOException {
     String user = SecurityUtils.getPrincipal();
     LOG.info("Create new note by JSON {}", message);
-    NewNoteRequest request = gson.fromJson(message, NewNoteRequest.class);
+    NewNoteRequest request = NewNoteRequest.fromJson(message);
     AuthenticationInfo subject = new AuthenticationInfo(user);
     Note note = notebook.createNote(subject);
-    List<NewParagraphRequest> initialParagraphs = request.getParagraphs();
-    if (initialParagraphs != null) {
-      for (NewParagraphRequest paragraphRequest : initialParagraphs) {
-        Paragraph p = note.addNewParagraph(subject);
-        initParagraph(p, paragraphRequest, user);
+    if (request != null) {
+      List<NewParagraphRequest> initialParagraphs = request.getParagraphs();
+      if (initialParagraphs != null) {
+        for (NewParagraphRequest paragraphRequest : initialParagraphs) {
+          Paragraph p = note.addNewParagraph(subject);
+          initParagraph(p, paragraphRequest, user);
+        }
       }
     }
     note.addNewParagraph(subject); // add one paragraph to the last
@@ -399,7 +417,7 @@ public class NotebookRestApi {
    * Clone note REST API
    *
    * @param noteId ID of Note
-   * @return JSON with status.CREATED
+   * @return JSON with status.OK
    * @throws IOException, CloneNotSupportedException, IllegalArgumentException
    */
   @POST
@@ -408,7 +426,7 @@ public class NotebookRestApi {
           throws IOException, CloneNotSupportedException, IllegalArgumentException {
     LOG.info("clone note by JSON {}", message);
     checkIfUserCanWrite(noteId, "Insufficient privileges you cannot clone this note");
-    NewNoteRequest request = gson.fromJson(message, NewNoteRequest.class);
+    NewNoteRequest request = NewNoteRequest.fromJson(message);
     String newNoteName = null;
     if (request != null) {
       newNoteName = request.getName();
@@ -438,7 +456,7 @@ public class NotebookRestApi {
     checkIfNoteIsNotNull(note);
     checkIfUserCanWrite(noteId, "Insufficient privileges you cannot add paragraph to this note");
 
-    NewParagraphRequest request = gson.fromJson(message, NewParagraphRequest.class);
+    NewParagraphRequest request = NewParagraphRequest.fromJson(message);
     AuthenticationInfo subject = new AuthenticationInfo(user);
     Paragraph p;
     Double indexDouble = request.getIndex();
@@ -579,7 +597,42 @@ public class NotebookRestApi {
 
     return new JsonResponse(Status.OK, "").build();
   }
-
+  
+  private void materializeCertificates(List<Paragraph> paragraphs)
+    throws IOException {
+    DistributedFileSystemOps dfso = null;
+    try {
+      dfso = dfsService.getDfsOps();
+      for (Paragraph p : paragraphs) {
+        Interpreter interpreter = p.getCurrentRepl();
+        if (null != interpreter) {
+          String interpreterGroup = interpreter.getInterpreterGroup().getId()
+              .split(":")[0];
+          if (certificateMaterializer.openedInterpreter(project.getId(),
+              interpreterGroup)) {
+            try {
+              HopsUtils.materializeCertificatesForUser(project.getName(),
+                  project.getOwner().getUsername(), settings
+                      .getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(),
+                  dfso, certificateMaterializer, settings, true);
+            } catch (IOException ex) {
+              LOG.warn("Could not materialize certificates for user: " +
+                  project.getName() + "__" + project.getOwner().getUsername());
+              HopsUtils.cleanupCertificatesForUser(project.getOwner()
+                  .getUsername(), project.getName(), settings
+                  .getHdfsTmpCertDir(), dfso, certificateMaterializer, true);
+              throw ex;
+            }
+          }
+        }
+      }
+    } finally {
+      if (null != dfso) {
+        dfso.close();
+      }
+    }
+  }
+  
   /**
    * Run note jobs REST API
    *
@@ -595,7 +648,9 @@ public class NotebookRestApi {
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
     checkIfUserCanWrite(noteId, "Insufficient privileges you cannot run job for this note");
-
+    
+    materializeCertificates(note.getParagraphs());
+  
     try {
       note.runAll();
     } catch (Exception ex) {
@@ -603,7 +658,6 @@ public class NotebookRestApi {
       return new JsonResponse<>(Status.PRECONDITION_FAILED,
               ex.getMessage() + "- Not selected or Invalid Interpreter bind").build();
     }
-
     return new JsonResponse<>(Status.OK).build();
   }
 
@@ -689,8 +743,7 @@ public class NotebookRestApi {
   public Response runParagraph(@PathParam("noteId") String noteId,
           @PathParam("paragraphId") String paragraphId, String message)
           throws IOException, IllegalArgumentException {
-    LOG.info("run paragraph job asynchronously {} {} {}", noteId, paragraphId,
-            message);
+    LOG.info("run paragraph job asynchronously {} {} {}", noteId, paragraphId, message);
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
@@ -727,8 +780,7 @@ public class NotebookRestApi {
           @PathParam("paragraphId") String paragraphId,
           String message) throws
           IOException, IllegalArgumentException {
-    LOG.info("run paragraph synchronously {} {} {}", noteId, paragraphId,
-            message);
+    LOG.info("run paragraph synchronously {} {} {}", noteId, paragraphId, message);
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
@@ -789,7 +841,7 @@ public class NotebookRestApi {
           throws IOException, IllegalArgumentException {
     LOG.info("Register cron job note={} request cron msg={}", noteId, message);
 
-    CronRequest request = gson.fromJson(message, CronRequest.class);
+    CronRequest request = CronRequest.fromJson(message);
 
     Note note = notebook.getNote(noteId);
     checkIfNoteIsNotNull(note);
@@ -931,7 +983,7 @@ public class NotebookRestApi {
           throws IOException {
     // handle params if presented
     if (!StringUtils.isEmpty(message)) {
-      RunParagraphWithParametersRequest request = gson.fromJson(message, RunParagraphWithParametersRequest.class);
+      RunParagraphWithParametersRequest request = RunParagraphWithParametersRequest.fromJson(message);
       Map<String, Object> paramsForUpdating = request.getParams();
       if (paramsForUpdating != null) {
         paragraph.settings.getParams().putAll(paramsForUpdating);
@@ -980,17 +1032,26 @@ public class NotebookRestApi {
   @Path("/new")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.ALL})
-  public Response createNew(NewNotebookRequest newNote) throws
-          AppException {
-    if (project == null) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              ResponseMessages.PROJECT_NOT_FOUND);
-    }
+  public Response createNew(NewNotebookRequest newNote) throws AppException {
     Note note;
     NoteInfo noteInfo;
     AuthenticationInfo subject = new AuthenticationInfo(this.hdfsUserName);
     try {
-      note = notebook.createNote(subject);
+      String defaultInterpreterId = newNote.getDefaultInterpreterId();
+      if (defaultInterpreterId != null && !defaultInterpreterId.isEmpty()) {
+        List<String> interpreterSettingIds = new LinkedList<>();
+        interpreterSettingIds.add(defaultInterpreterId);
+        for (String interpreterSettingId : notebook.getInterpreterSettingManager().
+                getDefaultInterpreterSettingList()) {
+          if (!interpreterSettingId.equals(defaultInterpreterId)) {
+            interpreterSettingIds.add(interpreterSettingId);
+          }
+        }
+        note = notebook.createNote(interpreterSettingIds, subject);
+      } else {
+        note = notebook.createNote(subject);
+      }
+
       note.addNewParagraph(subject); // it's an empty note. so add one paragraph
       String noteName = newNote.getName();
       if (noteName == null || noteName.isEmpty()) {
@@ -999,6 +1060,7 @@ public class NotebookRestApi {
       note.setName(noteName);
       note.persist(subject);
       noteInfo = new NoteInfo(note);
+      zeppelinResource.persistToDB(this.project);
     } catch (IOException ex) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Could not create notebook. " + ex.getMessage());
