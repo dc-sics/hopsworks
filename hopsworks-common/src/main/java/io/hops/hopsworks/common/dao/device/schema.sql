@@ -6,8 +6,7 @@ CREATE TABLE `project_devices`(
 	`user_id` INT(11) NOT NULL,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`enabled` TINYINT(1) NOT NULL DEFAULT '1',
-	`last_produced` TIMESTAMP DEFAULT NULL,
-	`produce_counter` INT(11) DEFAULT '0',
+	`last_produced` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`project_id`, `device_uuid`),
 	FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,
 	FOREIGN KEY (`user_id`) REFERENCES `users` (`uid`) ON DELETE CASCADE ON UPDATE NO ACTION

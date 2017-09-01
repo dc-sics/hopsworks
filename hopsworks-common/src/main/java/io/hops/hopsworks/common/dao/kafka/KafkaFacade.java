@@ -1043,7 +1043,7 @@ public class KafkaFacade {
     try {
       String bootstrapServers = getAllBootstrapServers();
       HopsUtils.copyUserKafkaCerts(userCerts, project, userName,
-          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir());
+          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
       Properties props = new Properties();
       props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
       props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
@@ -1054,7 +1054,7 @@ public class KafkaFacade {
       //configure the ssl parameters
       props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils. //TODO: Add  File.separator "device" 
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils. //TODO:Add File.separator "device" 
           getProjectTruststoreName(projectName, userName));
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
           settings.getHopsworksMasterPasswordSsl());
@@ -1069,7 +1069,7 @@ public class KafkaFacade {
       producer = new KafkaProducer<>(props);
       for (String record: records) {
         // Asynchronous production
-        producer.send(new ProducerRecord<Integer, String>(topicName, record)); // TODO: Get the Callback and delete the certs there.
+        producer.send(new ProducerRecord<Integer, String>(topicName, record)); //TODO:Get Callback & delete certs there
 
         // Synchronous production
         //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();
@@ -1081,13 +1081,7 @@ public class KafkaFacade {
       if (producer != null) {
         producer.close();
       }
-      //Remove certificates from local dir
-      Files.deleteIfExists(FileSystems.getDefault().getPath(
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectTruststoreName(projectName, userName)));
-      Files.deleteIfExists(FileSystems.getDefault().getPath(
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectKeystoreName(projectName, userName)));
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
     }
     return true;
   }

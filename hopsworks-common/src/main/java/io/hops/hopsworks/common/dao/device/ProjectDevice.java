@@ -55,7 +55,13 @@ public class ProjectDevice implements Serializable{
   @NotNull
   @Column(name = "enabled")
   private Integer enabled;
-
+  
+  @Basic(optional = false)
+  @NotNull
+  @Temporal(TemporalType.TIMESTAMP)
+  @Column(name = "last_produced")
+  private Date lastProduced;
+  
   public ProjectDevice() {}
 
   public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId) {
@@ -111,6 +117,14 @@ public class ProjectDevice implements Serializable{
 
   public void setEnabled(Integer enabled) {
     this.enabled = enabled;
+  }
+
+  public Date getLastProduced() {
+    return lastProduced;
+  }
+
+  public void setLastProduced(Date lastProduced) {
+    this.lastProduced = lastProduced;
   }
 
   @Override

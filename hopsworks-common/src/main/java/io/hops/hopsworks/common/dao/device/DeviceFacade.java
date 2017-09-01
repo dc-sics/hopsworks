@@ -5,8 +5,6 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
-import io.hops.hopsworks.common.dao.kafka.ProjectTopics;
-
 public class DeviceFacade {
 
   private final static Logger LOG = Logger.getLogger(DeviceFacade.class.
