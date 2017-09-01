@@ -60,6 +60,8 @@ public class DeviceService {
   private static final String JWT_HEADER = "jwt";
   private static final String TOPIC = "topic";
   private static final String RECORDS = "records";
+  private static final String SCHEMA = "schema";
+  private static final String SCHEMA_PAYLOAD = "schemaPayload";
 
   @EJB
   private NoCacheResponse noCacheResponse;
@@ -318,8 +320,8 @@ public class DeviceService {
 
     try {
       JSONObject json = new JSONObject(jsonString);
-      String topicName = json.getString("topic");
-      JSONArray records = json.getJSONArray("records");
+      String topicName = json.getString(TOPIC);
+      JSONArray records = json.getJSONArray(RECORDS);
 
       //TODO: Check if ArrayList of String works.
       ArrayList<String> recordsStringified = new ArrayList<>();
@@ -328,8 +330,6 @@ public class DeviceService {
       }
 
       Users user = userManager.getUserByUid(userId);
-
-      //TODO: Optional validation of schema with posted data.
 
       try {
         kafkaFacade.produce(projectId, user, topicName, recordsStringified);
@@ -373,9 +373,9 @@ public class DeviceService {
 
     try {
       JSONObject json = new JSONObject(jsonString);
-      String topicName = json.getString("topic");
-      String schemaName = json.getString("schema");
-      String schemaPayload = json.getString("payload").trim();
+      String topicName = json.getString(TOPIC);
+      String schemaName = json.getString(SCHEMA);
+      String schemaPayload = json.getString(SCHEMA_PAYLOAD).trim();
       
       SchemaDTO schemaDTO = kafkaFacade.getSchemaForTopic(topicName);
       if(schemaDTO.getName().equals(schemaName)){
