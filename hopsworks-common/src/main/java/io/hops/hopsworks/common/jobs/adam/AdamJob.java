@@ -15,7 +15,9 @@ import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.Utils;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 import io.hops.hopsworks.common.util.Settings;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 
 public class AdamJob extends SparkJob {
 
@@ -36,15 +38,16 @@ public class AdamJob extends SparkJob {
    * @param sparkDir
    * @param adamUser
    * @param jobUser
-   * @param nameNodeIpPort
    * @param adamJarPath
+   * @param jobsMonitor
+   * @param settings
    */
   public AdamJob(JobDescription job,
       AsynchronousJobExecutor services, Users user, String hadoopDir,
       String sparkDir, String adamUser, String jobUser,
-      String nameNodeIpPort, String adamJarPath) {
-    super(job, services, user, hadoopDir, sparkDir, nameNodeIpPort, adamUser,
-        jobUser);
+      String adamJarPath, YarnJobsMonitor jobsMonitor, Settings settings) {
+    super(job, services, user, hadoopDir, sparkDir, adamUser,
+        jobUser, jobsMonitor, settings, null);
     if (!(job.getJobConfig() instanceof AdamJobConfiguration)) {
       throw new IllegalArgumentException(
           "JobDescription must contain a AdamJobConfiguration object. Received: "
@@ -66,54 +69,12 @@ public class AdamJob extends SparkJob {
     if (!proceed) {
       return;
     }
-    proceed = monitor();
-    //If not ok: return
-    if (!proceed) {
-      return;
-    }
-    copyLogs(udfso);
-    makeOutputAvailable(dfso);
-    updateState(getFinalState());
-  }
-
-  /**
-   * For all the output files that were created, create an Inode for them and
-   * create entries in the DB.
-   */
-  private void makeOutputAvailable(DistributedFileSystemOps dfso) {
-    for (AdamArgumentDTO arg : jobconfig.getSelectedCommand().getArguments()) {
-      if (arg.isOutputPath() && !(arg.getValue() == null || arg.getValue().
-          isEmpty())) {
-        try {
-          if (dfso.exists(arg.getValue())) {
-            services.getJobOutputFileFacade().create(getExecution(), Utils.
-                getFileName(arg.getValue()), arg.getValue());
-          }
-        } catch (IOException e) {
-          LOG.log(Level.SEVERE, "Failed to create Inodes for HDFS path "
-              + arg.getValue() + ".", e);
-        }
-      }
-    }
-
-    for (AdamOptionDTO opt : jobconfig.getSelectedCommand().getOptions()) {
-      if (opt.isOutputPath() && opt.getValue() != null && !opt.getValue().
-          isEmpty()) {
-        try {
-          if (dfso.exists(opt.getValue())) {
-            services.getJobOutputFileFacade().create(getExecution(), Utils.
-                getFileName(opt.getValue()), opt.getValue());
-          }
-        } catch (IOException e) {
-          LOG.log(Level.SEVERE, "Failed to create Inodes for HDFS path "
-              + opt.getValue() + ".", e);
-        }
-      }
-    }
+    jobsMonitor.addToMonitor(execution.getAppId(), execution, monitor);
+   
   }
 
   @Override
-  protected boolean setupJob(DistributedFileSystemOps dfso) {
+  protected boolean setupJob(DistributedFileSystemOps dfso, YarnClient yarnClient) {
     //Get to starting the job
     List<String> missingArgs = checkIfRequiredPresent(jobconfig); //thows an IllegalArgumentException if not ok.
     if (!missingArgs.isEmpty()) {
@@ -136,7 +97,7 @@ public class AdamJob extends SparkJob {
     jobDescription.setJobConfig(jobconfig);
     
     runnerbuilder = new SparkYarnRunnerBuilder(jobDescription);
-    super.setupJob(dfso);
+    super.setupJob(dfso, yarnClient);
     //Set some ADAM-specific property values   
     runnerbuilder.addSystemProperty("spark.serializer",
         "org.apache.spark.serializer.KryoSerializer");
@@ -158,8 +119,10 @@ public class AdamJob extends SparkJob {
 
     try {
       runner = runnerbuilder.
-          getYarnRunner(jobDescription.getProject().getName(),
-              adamUser, jobUser, hadoopDir, sparkDir, nameNodeIpPort);
+              getYarnRunner(jobDescription.getProject().getName(),
+                      adamUser, jobUser, sparkDir, services, services
+                      .getFileOperations(hdfsUser.getUserName()), yarnClient,
+                  settings);
     } catch (IOException e) {
       LOG.log(Level.SEVERE,
           "Failed to create YarnRunner.", e);
@@ -171,13 +134,9 @@ public class AdamJob extends SparkJob {
       return false;
     }
 
-    String stdOutFinalDestination = Utils.getHdfsRootPath(hadoopDir,
-        jobDescription.
-            getProject().
-            getName())
+    String stdOutFinalDestination = Utils.getHdfsRootPath(jobDescription.getProject().getName())
         + Settings.ADAM_DEFAULT_OUTPUT_PATH;
-    String stdErrFinalDestination = Utils.getHdfsRootPath(hadoopDir,
-        jobDescription.getProject().getName())
+    String stdErrFinalDestination = Utils.getHdfsRootPath(jobDescription.getProject().getName())
         + Settings.ADAM_DEFAULT_OUTPUT_PATH;
     setStdOutFinalDestination(stdOutFinalDestination);
     setStdErrFinalDestination(stdErrFinalDestination);

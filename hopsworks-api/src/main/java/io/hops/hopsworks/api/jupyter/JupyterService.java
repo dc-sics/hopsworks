@@ -14,9 +14,12 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.util.LivyService;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
+import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
+import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
@@ -26,7 +29,11 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
+import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Ip;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
@@ -49,8 +56,6 @@ public class JupyterService {
 
   private final static Logger LOGGER = Logger.getLogger(JupyterService.class.
           getName());
-  private static final Logger logger = Logger.getLogger(
-          JupyterService.class.getName());
 
   @EJB
   private ProjectFacade projectFacade;
@@ -65,11 +70,19 @@ public class JupyterService {
   @EJB
   private JupyterFacade jupyterFacade;
   @EJB
+  private JupyterSettingsFacade jupyterSettingsFacade;
+  @EJB
   private HdfsUsersController hdfsUsersController;
   @EJB
   private HdfsUsersFacade hdfsUsersFacade;
   @EJB
   private Settings settings;
+  @EJB
+  private LivyService livyService;
+  @EJB
+  private CertificateMaterializer certificateMaterializer;
+  @EJB
+  private DistributedFsService dfsService;
 
   private Integer projectId;
   private Project project;
@@ -118,9 +131,28 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-            = new GenericEntity<List<JupyterProject>>(listServers) {};
+            = new GenericEntity<List<JupyterProject>>(listServers) {   };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             notebookServers).build();
+  }
+
+  @GET
+  @Path("/settings")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response settings(@Context SecurityContext sc,
+          @Context HttpServletRequest req) throws AppException {
+
+    String loggedinemail = sc.getUserPrincipal().getName();
+    JupyterSettings js = jupyterSettingsFacade.findByProjectUser(projectId,
+            loggedinemail);
+
+    if (settings.isPythonKernelEnabled()) {
+      js.setPrivateDir(settings.getStagingDir() + Settings.PRIVATE_DIRS + js.
+              getSecret());
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
+            js).build();
   }
 
   @GET
@@ -141,26 +173,24 @@ public class JupyterService {
               Response.Status.NOT_FOUND.getStatusCode(),
               "Could not find any Jupyter notebook server for this project.");
     }
-    if (jp != null) {
-      // Check to make sure the jupyter notebook server is running
-      boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
-      // if the notebook is not running but we have a database entry for it,
-      // we should remove the DB entry (and restart the notebook server).
-      if (!running) {
-        jupyterFacade.removeNotebookServer(hdfsUser);
-        throw new AppException(
-                Response.Status.NOT_FOUND.getStatusCode(),
-                "Found Jupyter notebook server for you, but it wasn't running.");
-      }
-      String externalIp = Ip.getHost(req.getRequestURL().toString());
-      settings.setHopsworksExternalIp(externalIp);
-      Integer port = req.getLocalPort();
-      String endpoint = externalIp + ":" + port;
-      if (endpoint.compareToIgnoreCase(jp.getHostIp()) != 0) {
-        // update the host_ip to whatever the client saw as the remote host:port
-        jp.setHostIp(endpoint);
-        jupyterFacade.update(jp);
-      }
+    // Check to make sure the jupyter notebook server is running
+    boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
+    // if the notebook is not running but we have a database entry for it,
+    // we should remove the DB entry (and restart the notebook server).
+    if (!running) {
+      jupyterFacade.removeNotebookServer(hdfsUser);
+      throw new AppException(
+              Response.Status.NOT_FOUND.getStatusCode(),
+              "Found Jupyter notebook server for you, but it wasn't running.");
+    }
+    String externalIp = Ip.getHost(req.getRequestURL().toString());
+    settings.setHopsworksExternalIp(externalIp);
+    Integer port = req.getLocalPort();
+    String endpoint = externalIp + ":" + port;
+    if (endpoint.compareToIgnoreCase(jp.getHostIp()) != 0) {
+      // update the host_ip to whatever the client saw as the remote host:port
+      jp.setHostIp(endpoint);
+      jupyterFacade.update(jp);
     }
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
@@ -172,7 +202,7 @@ public class JupyterService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response startNotebookServer(JupyterDTO jupyterConfig,
+  public Response startNotebookServer(JupyterSettings jupyterSettings,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
 
@@ -198,25 +228,41 @@ public class JupyterService {
     if (jp == null) {
       HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
 
-      String secret = DigestUtils.sha256Hex(Integer.toString(
+      String configSecret = DigestUtils.sha256Hex(Integer.toString(
               ThreadLocalRandom.current().nextInt()));
       JupyterDTO dto;
+      DistributedFileSystemOps dfso = dfsService.getDfsOps();
+      String[] project_user = hdfsUser.split(HdfsUsersController.USER_NAME_DELIMITER);
+      
       try {
 
-        dto = jupyterConfigFactory.startServerAsJupyterUser(project, secret,
-                hdfsUser,
-                jupyterConfig.getDriverCores(), jupyterConfig.getDriverMemory(),
-                jupyterConfig.getNumExecutors(),
-                jupyterConfig.getExecutorCores(), jupyterConfig.
-                getExecutorMemory(), jupyterConfig.getGpus(),
-                jupyterConfig.getArchives(), jupyterConfig.getJars(),
-                jupyterConfig.getFiles(), jupyterConfig.getPyFiles());
+        jupyterSettingsFacade.update(jupyterSettings);
+
+        dto = jupyterConfigFactory.startServerAsJupyterUser(project,
+                configSecret, hdfsUser, jupyterSettings);
+        
+        HopsUtils.materializeCertificatesForUser(project.getName(),
+            project_user[1], settings.getHopsworksTmpCertDir(), settings
+                .getHdfsTmpCertDir(), dfso, certificateMaterializer,
+            settings, false);
       } catch (InterruptedException | IOException ex) {
         Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
                 ex);
+        try {
+          HopsUtils.cleanupCertificatesForUser(project_user[1], project
+                  .getName(), settings.getHdfsTmpCertDir(), dfso,
+              certificateMaterializer, false);
+        } catch (IOException e) {
+          LOGGER.log(Level.SEVERE, "Could not cleanup certificates for " +
+              hdfsUser);
+        }
         throw new AppException(
                 Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
                 "Problem starting a Jupyter notebook server.");
+      } finally {
+        if (dfso != null) {
+          dfsService.closeDfsClient(dfso);
+        }
       }
 
       if (dto == null) {
@@ -226,13 +272,8 @@ public class JupyterService {
 
       String externalIp = Ip.getHost(req.getRequestURL().toString());
 
-      jp = jupyterFacade.
-              saveServer(externalIp, project, secret, dto.getPort(), user.
-                      getId(), dto.getToken(), dto.getPid(),
-                      dto.getDriverCores(), dto.getDriverMemory(),
-                      dto.getNumExecutors(), dto.getExecutorCores(),
-                      dto.getExecutorMemory(), dto.getGpus(), dto.getArchives(),
-                      dto.getJars(), dto.getFiles(), dto.getPyFiles());
+      jp = jupyterFacade.saveServer(externalIp, project, configSecret,
+              dto.getPort(), user.getId(), dto.getToken(), dto.getPid());
 
       if (jp == null) {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
@@ -289,6 +330,7 @@ public class JupyterService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Could not find Jupyter entry for user: " + hdfsUser);
     }
+    livyService.deleteAllJupyterLivySessions(hdfsUser);
     String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
@@ -296,6 +338,20 @@ public class JupyterService {
             getPort());
     // remove the reference to th e server in the DB.
     jupyterFacade.removeNotebookServer(hdfsUser);
+  
+    String[] project_user = hdfsUser.split(HdfsUsersController.USER_NAME_DELIMITER);
+    DistributedFileSystemOps dfso = dfsService.getDfsOps();
+    try {
+      HopsUtils.cleanupCertificatesForUser(project_user[1], project
+              .getName(), settings.getHdfsTmpCertDir(), dfso,
+          certificateMaterializer, false);
+    } catch (IOException e) {
+      LOGGER.log(Level.SEVERE, "Could not cleanup certificates for " + hdfsUser);
+    } finally {
+      if (dfso != null) {
+        dfsService.closeDfsClient(dfso);
+      }
+    }
   }
 
   private String getHdfsUser(SecurityContext sc) throws AppException {

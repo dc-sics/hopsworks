@@ -16,7 +16,7 @@
         </a>
       </li>
 
-      <li ng-click="projectCtrl.goToService('Zeppelin')" ng-show="projectCtrl.showZeppelin()">
+      <li ng-click="projectCtrl.goToZeppelin()" ng-show="projectCtrl.showZeppelin()">
         <a>
           Zeppelin <img class="pull-right" style="margin-right:5px" width="30" src="images/zeppelin_logo.png"/>
         </a>
@@ -144,5 +144,19 @@
     tourtip-next-label="Next"
     on-proceed="projectCtrl.goToKafka()"
     tourtip-offset-vertical="-15"
+    ></virtual-step>
+  
+  <virtual-step
+    ng-if="projectCtrl.tourService.activeTour === 'tensorflow'"
+    id="TourTwo"
+    class="ng-scope"
+    tourtip="Click Next, OR click on the Jobs tab to continue"
+    tourtip-step="0"
+    tourtip-element="#jobsTab"
+    tourtip-placement="right"
+    tourtip-next-label="Next"
+    on-proceed="projectCtrl.goToJobs()"
+    tourtip-offset-vertical="-18"
+    tourtip-offset-horizontal="-13"
     ></virtual-step>
 </tour>
