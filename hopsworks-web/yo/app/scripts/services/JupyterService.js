@@ -26,9 +26,9 @@ angular.module('hopsWorksApp')
               livySessions: function (projectId) {
                 return $http.get('/api/project/'+ projectId + '/jupyter/livy/sessions');
               },
-              getLivySessionAppId: function (projectId, sessionId) {
-                return $http.get('/api/project/'+ projectId + '/jupyter/livy/sessions/appId/' + sessionId);
-              },
+//              getLivySessionAppId: function (projectId, sessionId) {
+//                return $http.get('/api/project/'+ projectId + '/jupyter/livy/sessions/appId/' + sessionId);
+//              },
               stopAdmin: function (projectId, hdfsUsername) {
                 return $http.get('/api/project/' + projectId + '/jupyter/stopAdmin/' + hdfsUsername );
               },

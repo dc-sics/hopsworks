@@ -20,7 +20,7 @@ angular.module('hopsWorksApp')
             self.sparkStatic = false;
             self.sparkDynamic = false;
             self.tensorflow = false;
-            $scope.sessions = [];
+            $scope.sessions = null;
             self.val = {};
             $scope.tgState = true;
             self.config = {};
@@ -43,28 +43,20 @@ angular.module('hopsWorksApp')
             self.livySessions = function (projectId) {
               JupyterService.livySessions(projectId).then(
                       function (success) {
-                        self.sessions = success.data;
+                        $scope.sessions = success.data;
                       }, function (error) {
                         // nothing to do
-                        console.info("No livy sessions running.");
-                        self.sessions = null;
+//                        console.info("No livy sessions running.");
+                        $scope.sessions = null;
               }
               );
 
             };
             
-            self.showLivyUI = function (sessionId) {
-              JupyterService.getLivySessionAppId(sessionId)
-                      .then(function (success) {
-                        var appId = success.data;
-                        $location.path('project/' + projectId + '/jobMonitor-app/' + appId + "/true");
-                      }, function (error) {
-                        growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 10});
-                      });
+            self.showLivyUI = function (appId) {
+              $location.path('project/' + projectId + '/jobMonitor-app/' + appId + "/true");
             };
             
-
-
             self.sliderVisible = false;
 
             self.sliderOptions = {
