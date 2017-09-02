@@ -174,12 +174,18 @@ public class DeviceService {
   @Path("/endpoints")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response getEndpoints(
       @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
     checkForProjectId();
 
-    return null;
+    try {
+      JSONObject json = new JSONObject(jsonString);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    }catch(JSONException e) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Json request is malformed! Required properties are [deviceUuid, passUuid, userId].");
+    }
   }
 
   /**
@@ -189,7 +195,7 @@ public class DeviceService {
   @Path("/activate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response activate(
       @Context SecurityContext sc,
       @Context HttpServletRequest req,
@@ -216,6 +222,7 @@ public class DeviceService {
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response registerDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     checkForProjectId();
@@ -247,6 +254,7 @@ public class DeviceService {
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response loginDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     checkForProjectId();
@@ -291,6 +299,7 @@ public class DeviceService {
   @Path("/produce")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response produce(@Context HttpServletRequest req, String jsonString) throws AppException {
     checkForProjectId();
     
@@ -353,6 +362,7 @@ public class DeviceService {
   @Path("/validate-schema")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response validateSchema(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     checkForProjectId();
