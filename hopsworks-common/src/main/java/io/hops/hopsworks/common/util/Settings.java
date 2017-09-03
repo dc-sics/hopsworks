@@ -821,7 +821,7 @@ public class Settings implements Serializable {
   }
 
   public String getSparkMetricsPath() {
-    return "hdfs:///user/" + getHdfsSuperUser() + "/metrics.properties";
+    return "hdfs:///user/" + getSparkUser() + "/metrics.properties";
   }
 
   //TODO put the spark metrics in each project and take it from there
