@@ -29,8 +29,19 @@ angular.module('hopsWorksApp')
               {id: 2, name: '/Jupyter/'},
             ];
             self.selected = self.dirs[1];
+            self.log_levels = [
+              {id: 1, name: 'FINE'},
+              {id: 2, name: 'DEBUG'},
+              {id: 3, name: 'INFO'},
+              {id: 4, name: 'WARN'},
+              {id: 5, name: 'ERROR'},
+            ];
+            self.logLevel = self.dirs[3];
 
 
+            self.changeLogLevel = function () {
+              self.val.logLevel = self.logLevel.name;
+            };
 
             self.changeBaseDir = function () {
               self.val.baseDir = self.selected.name;

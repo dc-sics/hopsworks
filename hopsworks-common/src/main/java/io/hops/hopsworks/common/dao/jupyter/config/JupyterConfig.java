@@ -219,6 +219,7 @@ public class JupyterConfig {
     File jupyter_config_file = new File(confDirPath + JUPYTER_NOTEBOOK_CONFIG);
     File sparkmagic_config_file = new File(confDirPath + SPARKMAGIC_CONFIG);
     File custom_js = new File(confDirPath + JUPYTER_CUSTOM_JS);
+    File log4j_file = new File(confDirPath + LOG4J_PROPS);
     boolean createdJupyter = false;
     boolean createdSparkmagic = false;
     boolean createdCustomJs = false;
@@ -260,6 +261,19 @@ public class JupyterConfig {
     }
     if (!sparkmagic_config_file.exists()) {
 
+      // TODO: Add this local file to 'spark: file' to copy it to hdfs and localize it.
+      StringBuilder log4j_sb
+          = ConfigFileGenerator.instantiateFromTemplate(
+              ConfigFileGenerator.LOG4J_TEMPLATE_JUPYTER,
+              "logstash_ip", settings.getLogstashIp(),
+              "logstash_port", settings.getLogstashPort().toString(),
+              "log_level", js.getLogLevel().toUpperCase()
+          );
+      ConfigFileGenerator.createConfigFile(log4j_file, log4j_sb.toString());
+
+      StringBuilder executorFiles = new StringBuilder();
+      executorFiles.append(log4j_file.toURI().toString());
+
       StringBuilder sparkFiles = new StringBuilder();
       sparkFiles
           // Keystore
@@ -270,8 +284,6 @@ public class JupyterConfig {
           .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
           .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
           .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
-
-      String metricsPath = "hdfs://Projects/" + project.getName() + "/Jupyter/metrics.properties";
 
       StringBuilder sparkmagic_sb
           = ConfigFileGenerator.
@@ -325,6 +337,7 @@ public class JupyterConfig {
                   "sparkhistoryserver_ip", this.settings.
                       getSparkHistoryServerIp(),
                   "metrics_path", settings.getSparkMetricsPath(),
+                  "spark_yarn_files", executorFiles.toString(),
                   "spark_files", sparkFiles.toString()
               );
       createdSparkmagic = ConfigFileGenerator.createConfigFile(
@@ -342,6 +355,7 @@ public class JupyterConfig {
           custom_js, custom_js_sb.toString());
     }
 
+    // Add this local file to 'spark: file' to copy it to hdfs and localize it.
     return createdJupyter || createdSparkmagic || createdCustomJs;
   }
 

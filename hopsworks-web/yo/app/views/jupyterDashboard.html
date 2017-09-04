@@ -115,6 +115,24 @@
                     </div>
                   </div>
                 </div>
+                
+                  <div class="row clusterparams">
+                    <div class="text-right col-md-6">Log Level <i class="fa fa-info-circle" 
+                                                                          uib-tooltip="Log4j LOG_LEVEL - INFO, DEBUG, WARN, ERROR, FINE." 
+                                                                          style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left">
+
+                      <ui-select ng-model="jupyterCtrl.logLevel" theme="bootstrap" on-select="jupyterCtrl.changeLogLevel()">
+                        <ui-select-match>
+                          <span ng-bind="$select.logLevel.name"></span>
+                        </ui-select-match>
+                        <ui-select-choices repeat="level in (jupyterCtrl.log_levels | filter: $select.search) track by level.name">
+                          <div ng-bind="level.name | highlight: $select.search"></div>
+                        </ui-select-choices>
+                      </ui-select>
+                    </div>
+                  </div>                
 
 
                 <div class="row"  ng-if="jupyterCtrl.val.mode === 'distributedTensorflow'">
