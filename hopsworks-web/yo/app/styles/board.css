@@ -219,16 +219,16 @@ div.story h3, div.task h3 {
   margin-top:100px; 
 }
 
-.blocks .btn-primary .active .focus
+/*.blocks .btn-primary .active .focus
 {
     background-color: #5cb85c;
-}
+}*/
 .blocks .btn-primary
 {
     margin: 0 50px 0 0;
     border-radius: 10px;
     border: 2px solid #ddd;
-    background-color: #2e353d;
+/*    background-color: #2e353d;*/
 }
 
 .blocks .btn-group.btn-block {
