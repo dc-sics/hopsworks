@@ -46,6 +46,7 @@ public class ClusterUtilisationService {
         multiplicator).build();
   }
 
+
   @GET
   @Path("/gpus")
   @Produces(MediaType.APPLICATION_JSON)
@@ -54,7 +55,7 @@ public class ClusterUtilisationService {
     Response response = null;
     String rmUrl = "http://" + settings.getRmIp() + ":" + settings.getRmPort() + "/ws/v1/cluster/metrics";
     Client client = ClientBuilder.newClient();
-    WebTarget target = client.target(rmUrl).path("/sessions");
+    WebTarget target = client.target(rmUrl);
     try {
       response = target.request().get();
     } finally {

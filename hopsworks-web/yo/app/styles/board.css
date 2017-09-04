@@ -238,3 +238,12 @@ div.story h3, div.task h3 {
 .clusterparams { 
   margin-top:10px; 
 }
+
+.customHr {
+    font-size: 1px;
+    color: rgba(0, 0, 0, 0);
+    line-height: 1px;
+    background-color: grey;
+    margin-top: 3px;
+    margin-bottom: 5px;
+}

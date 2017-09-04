@@ -36,9 +36,9 @@ angular.module('hopsWorksApp')
             var getGpuUtilization = function () {
               ClusterUtilService.getYarnGpu().then(
                       function (success) {
-                        self.allocatedGPUs = success.data.allocatedGPUs;
-                        self.reservedGPUs = success.data.reservedGPUs;
-                        self.availableGPUs = success.data.availableGPUs;
+                        self.allocatedGPUs = success.data.clusterMetrics.allocatedGPUs;
+                        self.reservedGPUs = success.data.clusterMetrics.reservedGPUs;
+                        self.availableGPUs = success.data.clusterMetrics.availableGPUs;
                         var totalGpus = self.availableGPUs + self.allocatedGPUs;
                         if (self.availableGPUs > 0 && self.reservedGPUs == 0) {
                           self.progressBarClass = 'progress-bar-success';
