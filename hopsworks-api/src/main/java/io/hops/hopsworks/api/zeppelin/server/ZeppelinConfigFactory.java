@@ -15,8 +15,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -56,7 +54,7 @@ public class ZeppelinConfigFactory {
   @PostConstruct
   public void init() {
     ZeppelinConfig.COMMON_CONF = loadConfig();
-    checkInterpreterJsonValidity(ConfigFileGenerator.INTERPRETER_TEMPLATE);
+    checkInterpreterJsonValidity();
   }
 
   @PreDestroy
@@ -245,22 +243,13 @@ public class ZeppelinConfigFactory {
   /**
    * Check if interpreter json is valid.
    *
-   * @param path
    */
-  public void checkInterpreterJsonValidity(String path) {
-    File interpreter_file = new File(path);
-    if (!interpreter_file.exists()) {
-      LOGGER.log(Level.SEVERE, "Zeppelin Default interpreter json not found.");
-      throw new IllegalStateException("Default interpreter json not found.");
-    }
-    byte[] encoded;
-    try {
-      encoded = Files.readAllBytes(interpreter_file.toPath());
-    } catch (IOException ex) {
-      LOGGER.log(Level.SEVERE, "Could not read Zeppelin default interpreter json.", ex);
+  public void checkInterpreterJsonValidity() {
+    String json = ConfigFileGenerator.getZeppelinDefaultInterpreterJson();
+    if (json == null || json.isEmpty()) {
+      LOGGER.log(Level.SEVERE, "Could not read Zeppelin default interpreter json.");
       throw new IllegalStateException("Could not read default interpreter json.");
     }
-    String json = new String(encoded, StandardCharsets.UTF_8);
     if (!zeppelinResource.isJSONValid(json)) {
       LOGGER.log(Level.SEVERE, "Zeppelin Default interpreter json not valid.");
       throw new IllegalStateException("Default interpreter json not valid.");
