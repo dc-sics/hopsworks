@@ -275,7 +275,8 @@
         "users": [],
         "isUserImpersonate": false
       }
-    },
+    }
+  },
   "interpreterBindings": {},
   "interpreterRepositories": [
     {

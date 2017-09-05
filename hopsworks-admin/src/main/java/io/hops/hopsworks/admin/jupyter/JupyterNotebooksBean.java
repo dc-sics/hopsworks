@@ -90,9 +90,8 @@ public class JupyterNotebooksBean {
     try {
       projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, notebook);
       jupyterConfigFactory.killServerJupyterUser(projectPath, notebook.getPid(), notebook.getPort());
-      MessagesController.addInfoMessage("Notebook Server killed", "Port: " + notebook.getPort() + " for project_user "
-          + hdfsUser);
-
+      MessagesController.addMessageToGrowl("Notebook Server killed for project_user "+ hdfsUser);
+      jupyterFacade.removeNotebookServer(hdfsUser);
     } catch (AppException ex) {
       Logger.getLogger(JupyterNotebooksBean.class.getName()).log(Level.SEVERE, null, ex);
       MessagesController.addErrorMessage("Killing notebook server failed.");

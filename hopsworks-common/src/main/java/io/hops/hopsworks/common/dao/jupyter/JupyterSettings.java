@@ -142,11 +142,11 @@ public class JupyterSettings implements Serializable {
   @Column(name = "secret")
   private String secret;
 
-  @Basic(optional = false)
+  @Basic(optional = true)
   @Size(min = 3,
           max = 15)
   @Column(name = "log_level")
-  private String logLevel;
+  private String logLevel = "INFO";
 
   @Basic(optional = false)
   @NotNull
