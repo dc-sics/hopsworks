@@ -175,7 +175,7 @@ public class JupyterConfigFactory {
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       String[] command
           = {"/usr/bin/sudo", prog, "start", jc.getNotebookPath(),
-            jc.getSettings().getHadoopDir(), settings.getJavaHome(),
+            jc.getSettings().getHadoopDir() + "-" + settings.getHadoopVersion(), settings.getJavaHome(),
             settings.getAnacondaProjectDir(project.getName()), port.
             toString(),
             hdfsUser + "-" + port + ".log", secretDir};

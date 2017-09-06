@@ -247,3 +247,16 @@ div.story h3, div.task h3 {
     margin-top: 3px;
     margin-bottom: 5px;
 }
+
+
+.ui-select-bootstrap {
+  .ui-select-toggle > .caret {
+    display: none;
+  }
+  .ui-select-toggle::after {
+    font-family: FontAwesome;
+    content: "\f0d7";
+    position: absolute;
+    right: 1em;
+  }
+}

@@ -74,9 +74,6 @@
             "spark.dynamicAllocation.maxExecutors" : "%%max_executors%%",
             "spark.files" : "%%spark_files%%",
             "spark.metrics.conf": "%%metrics_path%%"
-                             
-
-      
         }
     },
     "use_auto_viz": true,

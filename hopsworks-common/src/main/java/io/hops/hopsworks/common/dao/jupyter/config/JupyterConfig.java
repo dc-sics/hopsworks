@@ -272,7 +272,7 @@ public class JupyterConfig {
       ConfigFileGenerator.createConfigFile(log4j_file, log4j_sb.toString());
 
       StringBuilder executorFiles = new StringBuilder();
-      executorFiles.append(log4j_file.toURI().toString());
+//      executorFiles.append(log4j_file.toURI().toString());
 
       StringBuilder sparkFiles = new StringBuilder();
       sparkFiles

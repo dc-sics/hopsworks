@@ -42,6 +42,7 @@ public class Settings implements Serializable {
    * Global Variables taken from the DB
    */
   private static final String VARIABLE_PYTHON_KERNEL = "python_kernel";
+  private static final String VARIABLE_HADOOP_VERSION = "hadoop_version";
   private static final String VARIABLE_JAVA_HOME = "java_home";
   private static final String VARIABLE_HOPSWORKS_IP = "hopsworks_ip";
   private static final String VARIABLE_HOPSWORKS_PORT = "hopsworks_port";
@@ -259,6 +260,7 @@ public class Settings implements Serializable {
               ZEPPELIN_PROJECTS_DIR);
       ZEPPELIN_SYNC_INTERVAL = setLongVar(VARIABLE_ZEPPELIN_SYNC_INTERVAL,
               ZEPPELIN_SYNC_INTERVAL);
+      HADOOP_VERSION = setVar(VARIABLE_HADOOP_VERSION, HADOOP_VERSION);
       JUPYTER_DIR = setDirVar(VARIABLE_JUPYTER_DIR, JUPYTER_DIR);
       ADAM_USER = setVar(VARIABLE_ADAM_USER, ADAM_USER);
       ADAM_DIR = setDirVar(VARIABLE_ADAM_DIR, ADAM_DIR);
@@ -670,6 +672,14 @@ public class Settings implements Serializable {
     return num;
   }
 
+  
+  private static String HADOOP_VERSION = "2.8.2";
+  
+  public synchronized String getHadoopVersion() {
+    checkCache();
+    return HADOOP_VERSION;
+  }
+  
   //Hadoop locations
   public synchronized String getHadoopConfDir() {
     return hadoopConfDir(getHadoopDir());

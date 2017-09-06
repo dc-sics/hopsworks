@@ -17,7 +17,6 @@
  */
 package io.hops.hopsworks.admin.jupyter;
 
-import io.hops.hopsworks.admin.lims.MessagesController;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
@@ -32,6 +31,8 @@ import javax.faces.bean.ViewScoped;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
 
 @ManagedBean(name = "JupyterNotebooks")
 @ViewScoped
@@ -90,11 +91,13 @@ public class JupyterNotebooksBean {
     try {
       projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, notebook);
       jupyterConfigFactory.killServerJupyterUser(projectPath, notebook.getPid(), notebook.getPort());
-      MessagesController.addMessageToGrowl("Notebook Server killed for project_user "+ hdfsUser);
       jupyterFacade.removeNotebookServer(hdfsUser);
+      FacesContext context = FacesContext.getCurrentInstance();
+      context.addMessage(null, new FacesMessage("Successful", "Successfully killed Jupyter Notebook Server."));
     } catch (AppException ex) {
       Logger.getLogger(JupyterNotebooksBean.class.getName()).log(Level.SEVERE, null, ex);
-      MessagesController.addErrorMessage("Killing notebook server failed.");
+      FacesContext context = FacesContext.getCurrentInstance();
+      context.addMessage(null, new FacesMessage("Failure", "Failed to kill Jupyter Notebook Server."));
       return "KILL_NOTEBOOK_FAILED";
     }
     return "KILL_NOTEBOOK_SUCCESS";
