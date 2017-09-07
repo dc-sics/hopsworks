@@ -55,7 +55,7 @@ hopsworks-kmon/.settings/
 hopsworks-web/.classpath
 hopsworks-web/.project
 hopsworks-web/.settings/
-
+hopsworks-web/overlays/
 ### Java ###
 *.class
 

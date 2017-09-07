@@ -1,12 +1,12 @@
-package io.hops.hopsworks.api.jobs;
+package io.hops.hopsworks.api.device;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.UUID;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
+import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
@@ -21,8 +21,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.SecurityContext;
 
+import io.swagger.annotations.Api;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,7 +35,6 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.util.JsonResponse;
-import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
@@ -47,6 +46,10 @@ import io.hops.hopsworks.common.exception.AppException;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
+@Path("/device")
+@Stateless
+@Api(value = "Application Service",
+    description = "Application Service")
 public class DeviceService {
 
   private final static Logger LOGGER = Logger.getLogger(
@@ -55,8 +58,7 @@ public class DeviceService {
   private static final String DEVICE_UUID = "deviceUuid";
   private static final String PASS_UUID = "passUuid";
   private static final String USER_ID = "userId";
-
-  private static final String JWT_DURATION = "jwtDuration"; // Measured in hours
+  
   private static final String JWT_HEADER = "jwt";
   private static final String TOPIC = "topic";
   private static final String RECORDS = "records";
@@ -170,51 +172,6 @@ public class DeviceService {
     return verifier.verify(token);
   }
 
-  @GET
-  @Path("/endpoints")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
-  public Response getEndpoints(
-      @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
-    checkForProjectId();
-
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-    }catch(JSONException e) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties are [deviceUuid, passUuid, userId].");
-    }
-  }
-
-  /**
-   * Needs to be activated only once per project.
-   */
-  @POST
-  @Path("/activate")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
-  public Response activate(
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req,
-      String jsonString) throws AppException {
-
-    checkForProjectId();
-
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      String projectSecret = UUID.randomUUID().toString();
-      Integer projectTokenDurationInHours = json.getInt(JWT_DURATION);
-      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-    }catch(JSONException e) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties are [deviceUuid, passUuid, userId].");
-    }
-  }
-
   /**
    * Register end-point for project devices. COMPLETED.
    */
@@ -222,7 +179,6 @@ public class DeviceService {
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response registerDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     checkForProjectId();
@@ -254,7 +210,6 @@ public class DeviceService {
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response loginDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     checkForProjectId();
@@ -299,7 +254,6 @@ public class DeviceService {
   @Path("/produce")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response produce(@Context HttpServletRequest req, String jsonString) throws AppException {
     checkForProjectId();
     
@@ -323,7 +277,8 @@ public class DeviceService {
       decodedJwt = getDecodedJwt(secret, jwtToken);
       userId = decodedJwt.getClaim(USER_ID).asInt();
     }catch(Exception e) {
-      return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
+      return failedJsonResponse(
+          Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
     }
     // Device is correlated to a userId at this point.
 
@@ -344,7 +299,7 @@ public class DeviceService {
         kafkaFacade.produce(projectId, user, topicName, recordsStringified);
       } catch (Exception e) {
         return failedJsonResponse(
-            Status.INTERNAL_SERVER_ERROR, "Something went wrong while producing to Kafka.");
+            Status.INTERNAL_SERVER_ERROR,"Something went wrong while producing to Kafka.");
       }
       return successfullJsonResponse(Status.OK, null);
     }catch(JSONException e) {
@@ -362,7 +317,6 @@ public class DeviceService {
   @Path("/validate-schema")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response validateSchema(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     checkForProjectId();

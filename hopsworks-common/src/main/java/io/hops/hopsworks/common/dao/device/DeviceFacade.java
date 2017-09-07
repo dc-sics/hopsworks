@@ -7,13 +7,14 @@ import javax.persistence.TypedQuery;
 
 public class DeviceFacade {
 
-  private final static Logger LOG = Logger.getLogger(DeviceFacade.class.
+  private final static Logger LOGGER = Logger.getLogger(DeviceFacade.class.
       getName());
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
-  public void addProjectDevice(Integer projectId, Integer userId, String deviceUuid, String passUuid) {
+  public void addProjectDevice(Integer projectId, Integer userId,
+      String deviceUuid, String passUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
     ProjectDevice pd = new ProjectDevice(pdKey, passUuid, userId);
     em.persist(pd);
@@ -28,8 +29,10 @@ public class DeviceFacade {
     return query.getSingleResult();
   }
 
-  public void addProjectSecret(Integer projectId, String projectSecret, Integer projectTokenDurationInHours) {
-    em.persist(new ProjectSecret(projectId, projectSecret, projectTokenDurationInHours));
+  public void addProjectSecret(Integer projectId, String projectSecret,
+      Integer projectTokenDurationInHours) {
+    em.persist(new ProjectSecret(projectId, projectSecret,
+        projectTokenDurationInHours));
   }
 
   public ProjectSecret getProjectSecret(Integer projectId) {

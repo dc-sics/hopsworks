@@ -68,14 +68,6 @@ public class RequestAuthFilter implements ContainerRequestFilter {
                 path);
         return;
       }
-      
-      if (pathParts.length > 3 && pathParts[2].equalsIgnoreCase("device")) {
-        // Public end-points exist within a project for user devices
-        // that do not require a user to be logged in. Devices use a separate
-        // auth system that is based on jwt tokens.
-        log.log(Level.FINEST, "Accessing device endpoints that are public.");
-        return;
-      }
 
       Project project = projectBean.find(projectId);
       if (project == null) {

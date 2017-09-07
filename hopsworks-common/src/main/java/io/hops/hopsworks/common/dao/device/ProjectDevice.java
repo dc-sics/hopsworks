@@ -21,11 +21,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(
-      name = "ProjectDevices.findAll",
+      name = "ProjectDevice.findAll",
       query = "SELECT pd FROM ProjectDevice pd"),
   @NamedQuery(
-      name = "ProjectDevices.findByProjectDevicePK",
-      query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
+      name = "ProjectDevice.findByProjectDevicePK",
+      query= "SELECT pd FROM ProjectDevice pd " +
+          "WHERE pd.projectDevicePK = :projectDevicePK")})
 public class ProjectDevice implements Serializable{
 
   private static final long serialVersionUID = 1L;
@@ -64,14 +65,15 @@ public class ProjectDevice implements Serializable{
   
   public ProjectDevice() {}
 
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId) {
+  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid,
+      Integer userId) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
     this.userId = userId;
   }
 
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId, Date createdAt,
-      Integer enabled) {
+  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid,
+      Integer userId, Date createdAt, Integer enabled) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
     this.userId = userId;
@@ -130,7 +132,8 @@ public class ProjectDevice implements Serializable{
   @Override
   public int hashCode() {
     int hash = 0;
-    hash += (this.projectDevicePK != null ? this.projectDevicePK.hashCode() : 0);
+    hash += (
+        this.projectDevicePK != null ? this.projectDevicePK.hashCode() : 0);
     return hash;
   }
 
@@ -149,7 +152,8 @@ public class ProjectDevice implements Serializable{
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectDevice[ projectDevicePK= " + this.projectDevicePK + " ]";
+    return "io.hops.hopsworks.common.dao.device.ProjectDevice[ " +
+        "projectDevicePK= " + this.projectDevicePK + " ]";
   }
 
 }
