@@ -31,7 +31,6 @@ import io.hops.hopsworks.common.dao.jobs.description.JobDescriptionFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
-import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
@@ -170,8 +169,6 @@ public class ProjectController {
   private ExecutionFacade execFacade;
   @EJB
   private CertificateMaterializer certificateMaterializer;
-  @EJB
-  private JupyterProject jupyterProject;
 
   @EJB
   private HdfsUsersController hdfsUsersController;
