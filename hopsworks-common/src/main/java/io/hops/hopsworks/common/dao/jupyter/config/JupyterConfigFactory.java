@@ -105,7 +105,7 @@ public class JupyterConfigFactory {
   public String getHadoopClasspath() throws IOException,
       InterruptedException {
     if (this.hadoopClasspath == null) {
-      ProcessBuilder ps = new ProcessBuilder(settings.getHadoopDir()
+      ProcessBuilder ps = new ProcessBuilder(settings.getHadoopSymbolicLinkDir()
           + "/bin/hadoop", "classpath", "--glob");
       ps.redirectErrorStream(true);
       Process pr = ps.start();
@@ -175,7 +175,7 @@ public class JupyterConfigFactory {
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       String[] command
           = {"/usr/bin/sudo", prog, "start", jc.getNotebookPath(),
-            jc.getSettings().getHadoopDir() + "-" + settings.getHadoopVersion(), settings.getJavaHome(),
+            jc.getSettings().getHadoopSymbolicLinkDir() + "-" + settings.getHadoopVersion(), settings.getJavaHome(),
             settings.getAnacondaProjectDir(project.getName()), port.
             toString(),
             hdfsUser + "-" + port + ".log", secretDir};
