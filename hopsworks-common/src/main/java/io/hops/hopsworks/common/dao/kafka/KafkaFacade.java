@@ -1034,61 +1034,6 @@ public class KafkaFacade {
     return brokerAddress;
   }
 
-  public boolean produce(Integer projectId, Users user, String topicName,
-      ArrayList<String> records) throws Exception{
-
-    Project project = projectsFacade.find(projectId);
-    String projectName = project.getName();
-    String userName = user.getUsername();
-
-    KafkaProducer<Integer, String> producer = null;
-    try {
-      String bootstrapServers = getAllBootstrapServers();
-      HopsUtils.copyUserKafkaCerts(userCerts, project, userName,
-          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
-      Properties props = new Properties();
-      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.IntegerSerializer");
-      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.StringSerializer");
-
-      //configure the ssl parameters
-      props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectTruststoreName(projectName, userName)); //TODO:Add File.separator "device"
-      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectKeystoreName(projectName, userName));
-      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-
-      producer = new KafkaProducer<>(props);
-      for (String record: records) {
-        // Asynchronous production
-        producer.send(new ProducerRecord<Integer, String>(topicName, record));
-        //TODO:Get Callback & delete certs there
-
-        // Synchronous production
-        //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();
-      }
-    }catch (Exception ex){
-      ex.printStackTrace();
-      return false;
-    } finally {
-      if (producer != null) {
-        producer.close();
-      }
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
-    }
-    return true;
-  }
-
 
   public class ZookeeperWatcher implements Watcher {
 
