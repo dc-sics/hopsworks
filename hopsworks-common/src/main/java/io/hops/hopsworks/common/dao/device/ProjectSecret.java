@@ -21,8 +21,7 @@ import javax.xml.bind.annotation.XmlRootElement;
       query = "SELECT ps FROM ProjectSecret ps"),
   @NamedQuery(
       name = "ProjectSecret.findByProjectId",
-      query= "SELECT ps FROM ProjectSecret ps WHERE ps.projectId = :projectId")
-})
+      query= "SELECT ps FROM ProjectSecret ps WHERE ps.projectId = :projectId")})
 public class ProjectSecret implements Serializable{
 
   private static final long serialVersionUID = 1L;
