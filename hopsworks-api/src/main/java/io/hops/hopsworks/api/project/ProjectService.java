@@ -69,7 +69,6 @@ import javax.ws.rs.core.SecurityContext;
 import org.apache.hadoop.security.AccessControlException;
 
 @Path("/project")
-//@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Project Service", description = "Project Service")
 @Produces(MediaType.APPLICATION_JSON)
 @Stateless
