@@ -936,9 +936,10 @@ public class KafkaFacade {
   
       String projectSpecificUser = hdfsUsersController.getHdfsUserName(project,
           user);
-      String certPassword = baseHadoopService.getProjectSpecificUserCertPassword
-          (projectSpecificUser);
-      
+      String certPassword;
+      certPassword = baseHadoopService.getProjectSpecificUserCertPassword(
+          projectSpecificUser);
+  
       for (String brokerAddress : brokers) {
         brokerAddress = brokerAddress.split("://")[1];
         Properties props = new Properties();
@@ -1033,7 +1034,8 @@ public class KafkaFacade {
     return brokerAddress;
   }
 
-  public boolean produce(Integer projectId, Users user, String topicName, ArrayList<String> records) throws Exception{
+  public boolean produce(Integer projectId, Users user, String topicName,
+      ArrayList<String> records) throws Exception{
 
     Project project = projectsFacade.find(projectId);
     String projectName = project.getName();
@@ -1054,8 +1056,8 @@ public class KafkaFacade {
       //configure the ssl parameters
       props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils. //TODO:Add File.separator "device" 
-          getProjectTruststoreName(projectName, userName));
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
+          getProjectTruststoreName(projectName, userName)); //TODO:Add File.separator "device"
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
           settings.getHopsworksMasterPasswordSsl());
       props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
@@ -1069,7 +1071,8 @@ public class KafkaFacade {
       producer = new KafkaProducer<>(props);
       for (String record: records) {
         // Asynchronous production
-        producer.send(new ProducerRecord<Integer, String>(topicName, record)); //TODO:Get Callback & delete certs there
+        producer.send(new ProducerRecord<Integer, String>(topicName, record));
+        //TODO:Get Callback & delete certs there
 
         // Synchronous production
         //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();

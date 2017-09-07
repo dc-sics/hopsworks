@@ -61,18 +61,15 @@ public class ProjectDevicePK implements Serializable {
       return false;
     }
     ProjectDevicePK other = (ProjectDevicePK) object;
-    if (this.projectId != other.projectId) {
-      return false;
-    }
-
-    return this.deviceUuid.equals(other.deviceUuid);
-
+    return this.projectId == other.projectId &&
+        this.deviceUuid.equals(other.deviceUuid);
+  
   }
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectDevicePK[ projectId=" +
-        this.projectId +  ", deviceUuid=" + this.deviceUuid + " ]";
+    return "io.hops.hopsworks.common.dao.device.ProjectDevicePK[ projectId="
+        + this.projectId +  ", deviceUuid=" + this.deviceUuid + " ]";
 
   }
 }
