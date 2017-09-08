@@ -9,6 +9,9 @@ angular.module('hopsWorksApp')
               running: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/jupyter/running' );
               },
+              settings: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/jupyter/settings' );
+              },
               start: function (projectId, sparkConfig) {
                 var req = {
                   method: 'POST',
@@ -20,6 +23,12 @@ angular.module('hopsWorksApp')
                 };
                 return $http(req);
               },
+              livySessions: function (projectId) {
+                return $http.get('/api/project/'+ projectId + '/jupyter/livy/sessions');
+              },
+//              getLivySessionAppId: function (projectId, sessionId) {
+//                return $http.get('/api/project/'+ projectId + '/jupyter/livy/sessions/appId/' + sessionId);
+//              },
               stopAdmin: function (projectId, hdfsUsername) {
                 return $http.get('/api/project/' + projectId + '/jupyter/stopAdmin/' + hdfsUsername );
               },

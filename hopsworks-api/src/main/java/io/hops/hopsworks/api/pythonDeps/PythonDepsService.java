@@ -76,8 +76,15 @@ public class PythonDepsService {
     return project;
   }
 
-  public PythonDepsService() {
+  Collection<PythonDepJson> preInstalledPythonDeps = new ArrayList<>();
 
+  public PythonDepsService() {
+    preInstalledPythonDeps.add(new PythonDepJson("http://hops.io/conda",
+            "pydoop", "0.4", "true", "Installed"));
+    preInstalledPythonDeps.add(new PythonDepJson("http://hops.io/conda",
+            "tensorflowonspark", "0.1.2", "true", "Installed"));
+    preInstalledPythonDeps.add(new PythonDepJson("http://hops.io/conda",
+            "hopsutil", "0.1.0", "true", "Installed"));
   }
 
   @GET
@@ -92,6 +99,10 @@ public class PythonDepsService {
       jsonDeps.add(new PythonDepJson(pd));
     }
 
+    for (PythonDepJson pdj : preInstalledPythonDeps) {
+      jsonDeps.add(pdj);
+    }
+
     GenericEntity<Collection<PythonDepJson>> deps
             = new GenericEntity<Collection<PythonDepJson>>(jsonDeps) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
@@ -99,13 +110,22 @@ public class PythonDepsService {
   }
 
   @GET
-  @Path("/enable/{version}")
+  @Path("/enable/{version}/{pythonKernelEnable}")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response enable(@PathParam("version") String version,
+          @PathParam("pythonKernelEnable") String pythonKernelEnable,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     Map<String, String> deps = pythonDepsFacade.getPreInstalledLibs(project);
-    pythonDepsFacade.createProjectInDb(project, deps, version);
+    Boolean enablePythonKernel = Boolean.parseBoolean(pythonKernelEnable);
+    if (!enablePythonKernel) {
+      // 'X' indicates that the python kernel should not be enabled in Conda
+      version=version + "X";
+    }
+    pythonDepsFacade.createProjectInDb(project, deps, version, enablePythonKernel);
+     
+    project.setPythonVersion(version);
+    projectFacade.update(project);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
@@ -197,7 +217,7 @@ public class PythonDepsService {
     List<OpStatus> response = pythonDepsFacade.opStatus(project);
 
     GenericEntity<Collection<OpStatus>> opsFound
-            = new GenericEntity<Collection<OpStatus>>(response) {};
+            = new GenericEntity<Collection<OpStatus>>(response) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             opsFound).build();
@@ -294,7 +314,7 @@ public class PythonDepsService {
     }
 
     GenericEntity<Collection<LibVersions>> libsFound
-            = new GenericEntity<Collection<LibVersions>>(response) {};
+            = new GenericEntity<Collection<LibVersions>>(response) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             libsFound).build();

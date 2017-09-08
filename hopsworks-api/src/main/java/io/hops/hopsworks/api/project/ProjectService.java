@@ -65,6 +65,7 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.xml.rpc.ServiceException;
 import org.apache.hadoop.security.AccessControlException;
 
 @Path("/project")
@@ -100,7 +101,8 @@ public class ProjectService {
   private WorkflowService workflowService;
   @Inject
   private PythonDepsService pysparkService;
-
+  @Inject
+  private CertService certs;
   @EJB
   private ActivityFacade activityFacade;
   @EJB
@@ -112,8 +114,6 @@ public class ProjectService {
   @EJB
   private HdfsUsersController hdfsUsersBean;
 
-  @EJB
-  private ActivityFacade activityController;
   @EJB
   private UsersController usersController;
   @EJB
@@ -367,95 +367,85 @@ public class ProjectService {
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response updateProject(
-    ProjectDTO projectDTO,
-    @PathParam("id") Integer id,
-    @Context SecurityContext sc,
-    @Context HttpServletRequest req) throws AppException {
+      ProjectDTO projectDTO,
+      @PathParam("id") Integer id,
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
+
     JsonResponse json = new JsonResponse();
+    String userEmail = sc.getUserPrincipal().getName();
+    Users user = userManager.getUserByEmail(userEmail);
+    Project project = projectController.findProjectById(id);
+
     boolean updated = false;
 
-    Project project = projectController.findProjectById(id);
-    String userEmail = sc.getUserPrincipal().getName();
-
-    // Update the description if it have been chenged
-    if (project.getDescription() == null || !project.getDescription().equals(
-      projectDTO.getDescription())) {
-      projectController.updateProject(project, projectDTO, userEmail);
-
+    if (projectController.updateProjectDescription(project,
+        projectDTO.getDescription(), user)){
       json.setSuccessMessage(ResponseMessages.PROJECT_DESCRIPTION_CHANGED);
       updated = true;
     }
 
-    // Update the retention period if it have been chenged
-    if (project.getRetentionPeriod() == null || !project.getRetentionPeriod().
-      equals(
-        projectDTO.getRetentionPeriod())) {
-      projectController.updateProject(project, projectDTO,
-        userEmail);
-      activityController.persistActivity("Changed   retention period to "
-        + projectDTO.getRetentionPeriod(), project, userEmail);
-      json.setSuccessMessage(ResponseMessages.PROJECT_RETENTON_CHANGED);
+    if (projectController.updateProjectRetention(project,
+        projectDTO.getRetentionPeriod(), user)){
+      json.setSuccessMessage(json.getSuccessMessage() + "\n" +
+          ResponseMessages.PROJECT_RETENTON_CHANGED);
       updated = true;
     }
 
-    // Add all the new services
-    List<ProjectServiceEnum> projectServices = new ArrayList<>();
-    for (String s : projectDTO.getServices()) {
-      try {
-        ProjectServiceEnum se = ProjectServiceEnum.valueOf(s.toUpperCase());
-        se.toString();
-        if (se.equals(ProjectServiceEnum.ZEPPELIN)) {
-          Users user = userManager.getUserByEmail(userEmail);
-          DistributedFileSystemOps udfso = null;
-          DistributedFileSystemOps dfso = null;
-          Settings.DefaultDataset ds = Settings.DefaultDataset.ZEPPELIN;
-          try {
-            String username = hdfsUsersBean.getHdfsUserName(project, user);
-            udfso = dfs.getDfsOps(username);
-            dfso = dfs.getDfsOps();
-            datasetController.createDataset(user, project, ds.getName(), ds.
-              getDescription(), -1, false, true, dfso, dfso);
-            datasetController.generateReadme(udfso, ds.getName(),
-              ds.getDescription(), project.getName());
-          } catch (IOException | AppException ex) {
-            logger.log(Level.SEVERE, "Could not create zeppelin notebook dir.",
-              ex);
-            json.setErrorMsg(json.getErrorMsg() + "\n "
-              + "Failed to create zeppelin notebook dir. "
-              + "Zeppelin will not work properly. "
-              + "Try recreating " + ds.getName() + " dir manualy.");
-          } finally {
-            if (udfso != null) {
-              udfso.close();
-            }
-            if (dfso != null) {
-              dfso.close();
-            }
+    if (!projectDTO.getServices().isEmpty()) {
+      // Create dfso here and pass them to the different controllers
+      DistributedFileSystemOps dfso = dfs.getDfsOps();
+      DistributedFileSystemOps udfso = dfs.getDfsOps(hdfsUsersBean.getHdfsUserName(project, user));
+
+      for (String s : projectDTO.getServices()) {
+        ProjectServiceEnum se = null;
+        try {
+          se = ProjectServiceEnum.valueOf(s.toUpperCase());
+          if (projectController.addService(project, se, user, dfso, udfso)) {
+            // Service successfully enabled
+            json.setSuccessMessage(json.getSuccessMessage() + "\n"
+                + ResponseMessages.PROJECT_SERVICE_ADDED
+                + s
+            );
+            updated = true;
           }
+        } catch (IllegalArgumentException iex) {
+          logger.log(Level.SEVERE,
+              ResponseMessages.PROJECT_SERVICE_NOT_FOUND);
+          json.setErrorMsg(s + ResponseMessages.PROJECT_SERVICE_NOT_FOUND + "\n "
+              + json.getErrorMsg());
+        } catch (ServiceException sex) {
+          // Error enabling the service
+          String error = null;
+          switch (se) {
+            case ZEPPELIN:
+              error = ResponseMessages.ZEPPELIN_ADD_FAILURE + Settings.ServiceDataset.ZEPPELIN.getName();
+              break;
+            case JUPYTER:
+              error = ResponseMessages.JUPYTER_ADD_FAILURE + Settings.ServiceDataset.JUPYTER.getName();
+              break;
+            default:
+              error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
+          }
+          json.setErrorMsg(json.getErrorMsg() + "\n" + error);
         }
-        projectServices.add(se);
-      } catch (IllegalArgumentException iex) {
-        logger.log(Level.SEVERE,
-          ResponseMessages.PROJECT_SERVICE_NOT_FOUND);
-        json.setErrorMsg(s + ResponseMessages.PROJECT_SERVICE_NOT_FOUND + "\n "
-          + json.getErrorMsg());
+      }
+
+      // close dfsos
+      if (dfso != null) {
+        dfso.close();
+      }
+      if (udfso != null) {
+        dfs.closeDfsClient(udfso);
       }
     }
 
-    if (!projectServices.isEmpty()) {
-      boolean added = projectController.addServices(project, projectServices,
-        userEmail);
-      if (added) {
-        json.setSuccessMessage(ResponseMessages.PROJECT_SERVICE_ADDED);
-        updated = true;
-      }
-    }
     if (!updated) {
-      json.setSuccessMessage("Nothing to update.");
+      json.setSuccessMessage(ResponseMessages.NOTHING_TO_UPDATE);
     }
 
     return noCacheResponse.getNoCacheResponseBuilder(
-      Response.Status.CREATED).entity(json).build();
+        Response.Status.CREATED).entity(json).build();
   }
 
   private void populateActiveServices(List<String> projectServices,
@@ -533,7 +523,7 @@ public class ProjectService {
         dfso.close();
       }
       if (udfso != null) {
-        udfso.close();
+        dfs.closeDfsClient(udfso);
       }
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.CREATED).
@@ -562,7 +552,7 @@ public class ProjectService {
     projectController.createProject(projectDTO, user, failedMembers, req.getSession().getId());
 
     JsonResponse json = new JsonResponse();
-    json.setStatus("201");// Created 
+    json.setStatus("201");// Created
     json.setSuccessMessage(ResponseMessages.PROJECT_CREATED);
 
     if (failedMembers != null && !failedMembers.isEmpty()) {
@@ -659,6 +649,18 @@ public class ProjectService {
     AppException {
     Project project = projectController.findProjectById(projectId);
     return this.biobanking.setProject(project);
+  }
+  
+  @Path("{projectId}/certs")
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public CertService certs(@PathParam("projectId") Integer projectId) throws
+      AppException {
+    Project project = projectController.findProjectById(projectId);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    return this.certs.setProject(project);
   }
 
   @GET

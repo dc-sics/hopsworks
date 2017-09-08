@@ -214,7 +214,7 @@ public class ProxyServlet extends HttpServlet {
   /**
    * The http client used.
    *
-   * @return 
+   * @return
    * @see #createHttpClient(HttpParams)
    */
   protected HttpClient getProxyClient() {
@@ -225,6 +225,7 @@ public class ProxyServlet extends HttpServlet {
    * Reads a servlet config parameter by the name {@code hcParamName} of type
    * {@code type}, and
    * set it in {@code hcParams}.
+   *
    * @param hcParams
    * @param hcParamName
    * @param type
@@ -298,10 +299,10 @@ public class ProxyServlet extends HttpServlet {
         getInputStream(), servletRequest.getContentLength()));
       proxyRequest = eProxyRequest;
     } else {
-      
+
       proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
     }
-    
+
     copyRequestHeaders(servletRequest, proxyRequest);
 
     setXForwardedForHeader(servletRequest, proxyRequest);
@@ -369,7 +370,6 @@ public class ProxyServlet extends HttpServlet {
     log("End of Service method======= ");
   }
 
-  
   protected boolean doResponseRedirectOrNotModifiedLogic(
     HttpServletRequest servletRequest, HttpServletResponse servletResponse,
     HttpResponse proxyResponse, int statusCode)
@@ -451,6 +451,7 @@ public class ProxyServlet extends HttpServlet {
 
   /**
    * Copy request headers from the servlet client to the proxy request.
+   *
    * @param servletRequest
    * @param proxyRequest
    */
@@ -514,7 +515,7 @@ public class ProxyServlet extends HttpServlet {
       if (header.getName().
         equalsIgnoreCase(org.apache.http.cookie.SM.SET_COOKIE) || header.
         getName().equalsIgnoreCase(org.apache.http.cookie.SM.SET_COOKIE2)) {
-        copyProxyCookie(servletRequest, servletResponse, header);
+        copyProxyCookie(servletRequest, servletResponse, header.getValue());
       } else {
         servletResponse.addHeader(header.getName(), header.getValue());
       }
@@ -526,8 +527,8 @@ public class ProxyServlet extends HttpServlet {
    * Replaces cookie path to local path and renames cookie to avoid collisions.
    */
   protected void copyProxyCookie(HttpServletRequest servletRequest,
-    HttpServletResponse servletResponse, Header header) {
-    List<HttpCookie> cookies = HttpCookie.parse(header.getValue());
+    HttpServletResponse servletResponse, String header) {
+    List<HttpCookie> cookies = HttpCookie.parse(header);
     String path = servletRequest.getContextPath(); // path starts with / or is empty string
     path += servletRequest.getServletPath(); // servlet path starts with / or is empty string
 

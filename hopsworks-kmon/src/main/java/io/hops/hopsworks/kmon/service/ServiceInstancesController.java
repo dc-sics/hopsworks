@@ -34,7 +34,7 @@ public class ServiceInstancesController {
   private RoleEJB roleEjb;
   private static final SelectItem[] statusOptions;
   private static final SelectItem[] healthOptions;
-  private List<InstanceInfo> filteredInstances;
+  private List<InstanceInfo> filteredInstances = new ArrayList<>();
   private static final Logger logger = Logger.getLogger(
           ServiceInstancesController.class.getName());
   private enum servicesWithMetrics {
@@ -67,13 +67,39 @@ public class ServiceInstancesController {
     this.service = service;
   }
 
-  public boolean getServiceWithMetrics() {
-    try{
-      servicesWithMetrics.valueOf(service);
-      return true;
-    }catch(IllegalArgumentException ex){
-      return false;
+  public boolean isYarnService() {
+    if (service != null) {
+      try {
+        if (ServiceType.valueOf(service).equals(ServiceType.YARN)) {
+          return true;
+        }
+      } catch (IllegalArgumentException ex) {
+      }
     }
+    return false;
+  }
+
+  public boolean isHDFSService() {
+    if (service != null) {
+      try {
+        if (ServiceType.valueOf(service).equals(ServiceType.HDFS)) {
+          return true;
+        }
+      } catch (IllegalArgumentException ex) {
+      }
+    }
+    return false;
+  }
+  
+  public boolean getServiceWithMetrics() {
+    if (service != null) {
+      try {
+        servicesWithMetrics.valueOf(service);
+        return true;
+      } catch (IllegalArgumentException ex) {
+      }
+    }
+    return false;
   }
   
   public void setCluster(String cluster) {
@@ -156,6 +182,7 @@ public class ServiceInstancesController {
               getService(), r.getRole().getRole(),
               r.getRole().getHostId(), r.getStatus(), r.getHealth().toString()));
     }
+    filteredInstances.addAll(instances);
     return instances;
   }
   

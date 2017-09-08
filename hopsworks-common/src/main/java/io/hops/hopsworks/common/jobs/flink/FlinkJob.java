@@ -22,6 +22,7 @@ import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.jobs.yarn.YarnJob;
 import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 import io.hops.hopsworks.common.util.Settings;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 
 /**
  * Orchestrates the execution of a Flink job: run job, update history object.
@@ -52,14 +53,16 @@ public class FlinkJob extends YarnJob {
    * @param jobUser
    * @param glassfishDomainsDir
    * @param jobsMonitor
+   * @param settings
+   * @param sessionId
    */
   public FlinkJob(JobDescription job, AsynchronousJobExecutor services,
       Users user, final String hadoopDir,
       final String flinkDir, final String flinkConfDir,
       final String flinkConfFile, String flinkUser,
       String jobUser, final String glassfishDomainsDir, YarnJobsMonitor jobsMonitor,
-      Settings settings) {
-    super(job, services, user, jobUser, hadoopDir, jobsMonitor, settings);
+      Settings settings, String sessionId) {
+    super(job, services, user, jobUser, hadoopDir, jobsMonitor, settings, sessionId);
     if (!(job.getJobConfig() instanceof FlinkJobConfiguration)) {
       throw new IllegalArgumentException(
           "JobDescription must contain a FlinkJobConfiguration object. Received: "
@@ -76,8 +79,8 @@ public class FlinkJob extends YarnJob {
   }
 
   @Override
-  protected boolean setupJob(DistributedFileSystemOps dfso) {
-    super.setupJob(dfso);
+  protected boolean setupJob(DistributedFileSystemOps dfso, YarnClient yarnClient) {
+    super.setupJob(dfso, yarnClient);
     
     //Then: actually get to running.
     if (jobconfig.getAppName() == null || jobconfig.getAppName().isEmpty()) {
@@ -131,7 +134,9 @@ public class FlinkJob extends YarnJob {
       runner = flinkBuilder.
           getYarnRunner(jobDescription.getProject().getName(),
               flinkUser, jobUser, hadoopDir, flinkDir, flinkConfDir,
-              flinkConfFile, glassfishDomainDir + "/domain1/config/", services);
+              flinkConfFile, services.getFileOperations
+                  (hdfsUser.getUserName()), yarnClient, glassfishDomainDir +
+                  "/domain1/config/", services);
 
     } catch (IOException e) {
       LOG.log(Level.SEVERE,
