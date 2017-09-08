@@ -4,7 +4,6 @@ import io.hops.hopsworks.api.device.DeviceManagementService;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.jobs.BiobankingService;
-import io.hops.hopsworks.api.device.DeviceService;
 import io.hops.hopsworks.api.jobs.JobService;
 import io.hops.hopsworks.api.jobs.KafkaService;
 import io.hops.hopsworks.api.jupyter.JupyterService;

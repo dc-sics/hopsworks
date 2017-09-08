@@ -213,8 +213,8 @@ public class DeviceService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response testDevice(
       @Context HttpServletRequest req, String jsonString) throws AppException {
-
-      return successfullJsonResponse(Status.OK, null);
+    
+    return successfullJsonResponse(Status.OK, null);
   }
 
   /**
