@@ -307,7 +307,7 @@ public class JupyterConfigFactory {
 //
 //  }
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public int killHardJupyterWithPid(Long pid){
+  public int killHardJupyterWithPid(Long pid) {
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
     int exitValue;
     Integer id = 1;
@@ -388,8 +388,8 @@ public class JupyterConfigFactory {
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public void stopProject(Project project)
-      throws AppException {
+  public void stopProject(Project project) //      throws AppException 
+  {
     Collection<JupyterSettings> jupyterSettings = project.getJupyterSettingsCollection();
     String path = "";
     for (JupyterProject jp : project.getJupyterProjectCollection()) {
@@ -401,9 +401,10 @@ public class JupyterConfigFactory {
         }
       }
       if (path.isEmpty()) {
-        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Couldnt find path for user: "
-            + jp.
-                getHdfsUserId());
+//        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Couldnt find path for user: "
+//            + jp.
+//                getHdfsUserId());
+        logger.severe("Couldnt delete project for user: " + hdfsUser.getUsername());
       }
       try {
         killServerJupyterUser(path, jp.getPid(), jp.getPort());

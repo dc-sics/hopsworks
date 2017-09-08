@@ -142,7 +142,9 @@ public class JupyterNotebooksBean {
       jp.setPort(-1);
       jp.setLastAccessed(Date.from(Instant.now()));
       jp.setHdfsUserId(-1);
+      allNotebooks.add(jp);
     }
+    file.deleteOnExit();
 
     return allNotebooks;
   }
