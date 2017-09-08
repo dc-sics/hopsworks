@@ -8,7 +8,8 @@ angular.module('hopsWorksApp').directive('hwCard', function() {
       limit: '=',
       cardIndex: '=',
       pageNo: '=',
-      detailsFn: '&'
+      detailsFn: '&',
+      downloadFn: '&'
     },
     templateUrl:'views/card.html',
     controller: 'CardCtrl as cardCtrl'

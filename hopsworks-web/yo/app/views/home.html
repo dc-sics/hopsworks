@@ -1,12 +1,12 @@
 <div class="container" ng-controller="MainCtrl as mainCtrl" style="width: 1500px;">
   <div ng-include="'nav.html'"></div>
-  <div ng-show="mainCtrl.searchTerm.length > 3" class="row">
+  <div ng-if="mainCtrl.searchTerm.length > 3" class="row">
     <div id="projectSearchResults">
       <div ng-include="'views/search.html'"></div>
     </div>
   </div>
 
-  <div ng-show="mainCtrl.searchTerm.length <= 3" class="row" ng-controller="HomeCtrl as homeCtrl">
+  <div ng-if="mainCtrl.searchTerm.length <= 3" class="row" ng-controller="HomeCtrl as homeCtrl">
     <div class="col-sm-6 col-md-2 col-lg-2" id="toursBox">
       <div class="col-md-10 sidebar pull-left" style="min-width: 300px; max-width: 300px">
         <div class="list-group">
@@ -58,8 +58,8 @@
             Need support?
             <span class="glyphicon glyphicon-earphone pull-right" style="margin-right: 1px;"></span>
           </a>
+            </div>
         </div>
-      </div>
 
 
     </div>
