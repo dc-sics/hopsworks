@@ -1,10 +1,12 @@
 package io.hops.hopsworks.common.dao.device;
 
 import java.util.logging.Logger;
+import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
+@Stateless
 public class DeviceFacade {
 
   private final static Logger LOGGER = Logger.getLogger(DeviceFacade.class.
