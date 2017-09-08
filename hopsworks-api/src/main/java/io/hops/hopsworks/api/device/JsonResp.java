@@ -13,6 +13,9 @@ public class JsonResp {
   
   private String jwt;
   
+  public JsonResp(){
+  }
+  
   public JsonResp(Integer code, String message) {
     this.code = code;
     this.message = message;
