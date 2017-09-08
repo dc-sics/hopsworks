@@ -65,6 +65,15 @@ public class ApplicationConfig extends ResourceConfig {
     
     register(org.glassfish.jersey.media.multipart.MultiPartFeature.class);
     
+    //dela
+    register(io.hops.hopsworks.api.dela.DelaService.class);
+    register(io.hops.hopsworks.api.dela.DelaProjectService.class);
+    register(io.hops.hopsworks.api.dela.RemoteDelaService.class);
+    register(io.hops.hopsworks.api.hopssite.PublicDatasetService.class);
+    register(io.hops.hopsworks.api.hopssite.CommentService.class);
+    register(io.hops.hopsworks.api.hopssite.RatingService.class);
+    //
+    
     //swagger
     register(io.swagger.jaxrs.listing.ApiListingResource.class);
     register(io.swagger.jaxrs.listing.SwaggerSerializers.class);
