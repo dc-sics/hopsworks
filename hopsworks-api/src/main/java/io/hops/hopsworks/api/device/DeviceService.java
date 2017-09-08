@@ -1,14 +1,14 @@
 package io.hops.hopsworks.api.device;
 
-import java.text.MessageFormat;
-import java.util.ArrayList;
+//import java.text.MessageFormat;
+//import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
+//import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -19,9 +19,10 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import io.swagger.annotations.Api;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+//import org.json.JSONArray;
+//import org.json.JSONException;
+//import org.json.JSONObject;
+
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
@@ -31,12 +32,12 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.util.JsonResponse;
-import io.hops.hopsworks.common.dao.device.DeviceFacade;
+//import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
-import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
-import io.hops.hopsworks.common.dao.user.Users;
+//import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
+//import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 
@@ -65,8 +66,10 @@ public class DeviceService {
   @EJB
   private UserManager userManager;
 
+  /**
   @EJB
   private DeviceFacade deviceFacade;
+   */
   
   @EJB
   private KafkaFacade kafkaFacade;
@@ -168,10 +171,24 @@ public class DeviceService {
     JWTVerifier verifier = JWT.require(algorithm).build();
     return verifier.verify(token);
   }
-
+  
+  /**
+   * Test end-point
+   */
+  @GET
+  @Path("/test")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response testDevice(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+    
+    return successfullJsonResponse(Status.OK, null);
+  }
+  
+  
   /**
    * Register end-point for project devices. COMPLETED.
-   */
+
   @POST
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -202,22 +219,11 @@ public class DeviceService {
     }
   }
   
-  /**
-   * Login end-point for project devices. COMPLETED.
-   */
-  @GET
-  @Path("/test")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response testDevice(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
-    
-    return successfullJsonResponse(Status.OK, null);
-  }
+
 
   /**
    * Login end-point for project devices. COMPLETED.
-   */
+
   @GET
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -335,7 +341,6 @@ public class DeviceService {
 
   /**
    * Validate the schema of a topic before producing to that topic. COMPLETED.
-   */
   @GET
   @Path("/validate-schema")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -385,7 +390,7 @@ public class DeviceService {
           "Json request is malformed! " +
               "Required properties are [topic, schema, version, payload].");
     }
-  }
+  }*/
 
 }
 
