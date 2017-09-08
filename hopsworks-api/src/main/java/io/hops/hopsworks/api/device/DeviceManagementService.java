@@ -2,7 +2,6 @@ package io.hops.hopsworks.api.device;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -34,8 +33,12 @@ public class DeviceManagementService {
 
   private final static Logger LOGGER = Logger.getLogger(
       DeviceManagementService.class.getName());
-
-  private static final String JWT_DURATION = "jwtDuration"; // Measured in hours
+  
+  /***
+   * Determines the duration of time that a jwt token is valid for.
+   * It is measured in number of hours.
+   */
+  private static final String JWT_DURATION = "jwtDuration"; //
 
   @EJB
   private NoCacheResponse noCacheResponse;
@@ -71,7 +74,8 @@ public class DeviceManagementService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.ALL})
   public Response getEndpoints(
-      @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
+      @Context SecurityContext sc, @Context HttpServletRequest req,
+      String jsonString) throws AppException {
     checkForProjectId();
 
     try {
@@ -79,7 +83,8 @@ public class DeviceManagementService {
       return noCacheResponse.getNoCacheResponseBuilder(Status.OK).build();
     }catch(JSONException e) {
       throw new AppException(Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties are [deviceUuid, passUuid, userId].");
+          "Json request is malformed! Required properties " +
+              "are [deviceUuid, passUuid, userId].");
     }
   }
 
@@ -102,11 +107,13 @@ public class DeviceManagementService {
       JSONObject json = new JSONObject(jsonString);
       String projectSecret = UUID.randomUUID().toString();
       Integer projectTokenDurationInHours = json.getInt(JWT_DURATION);
-      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade.addProjectSecret(
+          projectId, projectSecret, projectTokenDurationInHours);
       return noCacheResponse.getNoCacheResponseBuilder(Status.OK).build();
     }catch(JSONException e) {
       throw new AppException(Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties are [deviceUuid, passUuid, userId].");
+          "Json request is malformed! Required properties " +
+              "are [deviceUuid, passUuid, userId].");
     }
   }
   

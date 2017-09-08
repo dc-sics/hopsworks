@@ -7,9 +7,6 @@ import java.util.Date;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
-import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -44,12 +41,10 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 
-@RequestScoped
-@TransactionAttribute(TransactionAttributeType.NEVER)
 @Path("/device")
 @Stateless
-@Api(value = "Application Service",
-    description = "Application Service")
+@Api(value = "Device Service",
+    description = "Device Service")
 public class DeviceService {
 
   private final static Logger LOGGER = Logger.getLogger(
@@ -58,6 +53,7 @@ public class DeviceService {
   private static final String DEVICE_UUID = "deviceUuid";
   private static final String PASS_UUID = "passUuid";
   private static final String USER_ID = "userId";
+  private static final String PROJECT_ID = "projectId";
   
   private static final String JWT_HEADER = "jwt";
   private static final String TOPIC = "topic";
@@ -76,24 +72,12 @@ public class DeviceService {
   
   @EJB
   private KafkaFacade kafkaFacade;
-  
-  private Integer projectId;
 
   public DeviceService() {
   }
-
-  public void setProjectId(Integer projectId) {
-    this.projectId = projectId;
-  }
-
-  private void checkForProjectId() throws AppException {
-    if (projectId == null) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Incomplete request! Project id not present!");
-    }
-  }
-
-  private static Response failedJsonResponse(Status status, String errorMessage) {
+  
+  private static Response failedJsonResponse(
+      Status status, String errorMessage) {
     JsonResponse json = new JsonResponse();
     json.setErrorMsg(errorMessage);
     ResponseBuilder rb = Response.status(status);
@@ -102,7 +86,8 @@ public class DeviceService {
     return rb.build();
   }
 
-  private static Response successfullJsonResponse(Status status, JsonResponse jsonResponse) {
+  private static Response successfullJsonResponse(
+      Status status, JsonResponse jsonResponse) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
     if (jsonResponse != null) {
@@ -111,7 +96,8 @@ public class DeviceService {
     return rb.build();
   }
   
-  private static Response successfullJsonResponseWithJwt(Status status, JsonResponse jsonResponse, String jwtToken) {
+  private static Response successfullJsonResponseWithJwt(
+      Status status, JsonResponse jsonResponse, String jwtToken) {
     ResponseBuilder rb = Response.status(status);
     rb.header(JWT_HEADER, jwtToken);
     rb.type(MediaType.APPLICATION_JSON);
@@ -124,7 +110,8 @@ public class DeviceService {
   /**
    * This method uses this JWT implementation: https://github.com/auth0/java-jwt
    */
-  private static String generateJwt(ProjectSecret projectSecret, ProjectDevice projectDevice) {
+  private static String generateJwt(
+      ProjectSecret projectSecret, ProjectDevice projectDevice) {
 
     Calendar cal = Calendar.getInstance();
     cal.setTime(new Date());
@@ -135,8 +122,11 @@ public class DeviceService {
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
       String token = JWT.create()
           .withExpiresAt(expirationDate)
-          .withClaim(DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
+          .withClaim(
+              PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
           .withClaim(USER_ID, projectDevice.getUserId())
+          .withClaim(
+              DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
           .sign(algorithm);
       return token;
     } catch (Exception e) {
@@ -146,12 +136,16 @@ public class DeviceService {
   }
 
   /**
-   *  Returns an automated failed JsonResponse if there is something wrong with the jwtToken.
+   *  Returns an automated failed JsonResponse if there is something wrong
+   *  with the jwtToken.
    *  If the jwtToken is successfully verified then null is returned.
    */
-  private static Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
+  private static Response verifyJwt(
+      ProjectSecret projectSecret, String jwtToken) {
     if (jwtToken == null) {
-      return failedJsonResponse(Status.UNAUTHORIZED, "No jwt token is present in the request.");
+      return failedJsonResponse(
+          Status.UNAUTHORIZED,
+          "No jwt token is present in the request.");
     }
     
     try {
@@ -160,13 +154,18 @@ public class DeviceService {
       verifier.verify(jwtToken);
       return null;
     }catch (TokenExpiredException exception){
-      return failedJsonResponse(Status.UNAUTHORIZED, "Jwt token has expired. Try to login again.");
+      return failedJsonResponse(
+          Status.UNAUTHORIZED,
+          "Jwt token has expired. Try to login again.");
     }catch (Exception exception){
-      return failedJsonResponse(Status.UNAUTHORIZED, "Invalid jwt token. You are doing something fishy.");
+      return failedJsonResponse(
+          Status.UNAUTHORIZED,
+          "The Jwt token is invalid.");
     }
   }
   
-  private static DecodedJWT getDecodedJwt(ProjectSecret projectSecret, String token) throws Exception {
+  private static DecodedJWT getDecodedJwt(
+      ProjectSecret projectSecret, String token) throws Exception {
     Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
     JWTVerifier verifier = JWT.require(algorithm).build();
     return verifier.verify(token);
@@ -179,28 +178,43 @@ public class DeviceService {
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response registerDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
-
-    checkForProjectId();
-
+  public Response registerDevice(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+    
     try {
       JSONObject json = new JSONObject(jsonString);
       String deviceUuid = json.getString(DEVICE_UUID);
       String passUuid = json.getString(PASS_UUID);
       Integer userId = json.getInt(USER_ID);
+      Integer projectId = json.getInt(PROJECT_ID);
       try {
         deviceFacade.addProjectDevice(projectId, userId, deviceUuid, passUuid);
         return successfullJsonResponse(Status.OK, null);
       }catch (Exception e) {
         return failedJsonResponse(
             Status.UNAUTHORIZED, MessageFormat.format(
-                "Device is already registered for this project and/or {0} is invalid.", USER_ID));
+                "Device is already registered for this project " +
+                    "and/or {0} is invalid.", USER_ID));
       }
     }catch(JSONException e) {
       return failedJsonResponse(
-          Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}, {2}]", DEVICE_UUID, PASS_UUID, USER_ID));
+          Status.BAD_REQUEST, MessageFormat.format("Json request is " +
+              "malformed! Required properties are [{0}, {1}, {2}]",
+              DEVICE_UUID, PASS_UUID, USER_ID));
     }
+  }
+  
+  /**
+   * Login end-point for project devices. COMPLETED.
+   */
+  @GET
+  @Path("/test")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response testDevice(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+
+      return successfullJsonResponse(Status.OK, null);
   }
 
   /**
@@ -210,20 +224,22 @@ public class DeviceService {
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response loginDevice(@Context HttpServletRequest req, String jsonString) throws AppException {
-
-    checkForProjectId();
-
+  public Response loginDevice(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+    
     try {
       JSONObject jsonRequest = new JSONObject(jsonString);
       String deviceUuid = jsonRequest.getString(DEVICE_UUID);
       String passUuid = jsonRequest.getString(PASS_UUID);
+      Integer projectId = jsonRequest.getInt(PROJECT_ID);
 
       ProjectSecret secret;
       try {
         secret = deviceFacade.getProjectSecret(projectId);
       }catch (Exception e) {
-        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
+        return failedJsonResponse(
+            Status.FORBIDDEN,
+            "Project devices feature is not active.");
       }
 
       ProjectDevice device;
@@ -232,7 +248,8 @@ public class DeviceService {
       }catch (Exception e) {
         return failedJsonResponse(
             Status.UNAUTHORIZED, MessageFormat.format(
-                "No device is registered with the given {0}.", DEVICE_UUID)) ;
+                "No device is registered with the given {0}.",
+                DEVICE_UUID));
       }
 
       if (device.getPassUuid().equals(passUuid)) {
@@ -246,7 +263,8 @@ public class DeviceService {
     }catch(JSONException e) {
       return failedJsonResponse(
           Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}]", DEVICE_UUID, PASS_UUID));
+              "Json request is malformed! Required properties " +
+                  "are [{0}, {1}]", DEVICE_UUID, PASS_UUID));
     }
   }
 
@@ -254,14 +272,19 @@ public class DeviceService {
   @Path("/produce")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response produce(@Context HttpServletRequest req, String jsonString) throws AppException {
-    checkForProjectId();
+  public Response produce(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+  
+    JSONObject json = new JSONObject(jsonString);
+    Integer projectId = json.getInt(PROJECT_ID);
     
     ProjectSecret secret;
     try {
       secret = deviceFacade.getProjectSecret(projectId);
     }catch (Exception e) {
-      return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
+      return failedJsonResponse(
+          Status.FORBIDDEN,
+          "Project devices feature is not active.") ;
     }
     
     String jwtToken = req.getHeader(JWT_HEADER);
@@ -278,12 +301,12 @@ public class DeviceService {
       userId = decodedJwt.getClaim(USER_ID).asInt();
     }catch(Exception e) {
       return failedJsonResponse(
-          Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
+          Status.INTERNAL_SERVER_ERROR,
+          "I hate it when this happens.");
     }
     // Device is correlated to a userId at this point.
 
     try {
-      JSONObject json = new JSONObject(jsonString);
       String topicName = json.getString(TOPIC);
       JSONArray records = json.getJSONArray(RECORDS);
 
@@ -299,13 +322,15 @@ public class DeviceService {
         kafkaFacade.produce(projectId, user, topicName, recordsStringified);
       } catch (Exception e) {
         return failedJsonResponse(
-            Status.INTERNAL_SERVER_ERROR,"Something went wrong while producing to Kafka.");
+            Status.INTERNAL_SERVER_ERROR,
+            "Something went wrong while producing to Kafka.");
       }
       return successfullJsonResponse(Status.OK, null);
     }catch(JSONException e) {
       return failedJsonResponse(
           Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}]", TOPIC, RECORDS));
+              "Json request is malformed! Required properties " +
+                  "are [{0}, {1}]", TOPIC, RECORDS));
     }
 
   }
@@ -317,15 +342,18 @@ public class DeviceService {
   @Path("/validate-schema")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response validateSchema(@Context HttpServletRequest req, String jsonString) throws AppException {
-
-    checkForProjectId();
+  public Response validateSchema(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+  
+    JSONObject json = new JSONObject(jsonString);
+    Integer projectId = json.getInt(PROJECT_ID);
     
     ProjectSecret secret;
     try {
       secret = deviceFacade.getProjectSecret(projectId);
     }catch (Exception e) {
-      return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
+      return failedJsonResponse(Status.FORBIDDEN,
+          "Project devices feature is not active.") ;
     }
     
     String jwtToken = req.getHeader(JWT_HEADER);
@@ -336,7 +364,6 @@ public class DeviceService {
     //Device is authenticated at this point
 
     try {
-      JSONObject json = new JSONObject(jsonString);
       String topicName = json.getString(TOPIC);
       String schemaName = json.getString(SCHEMA);
       String schemaPayload = json.getString(SCHEMA_PAYLOAD).trim();
@@ -347,14 +374,18 @@ public class DeviceService {
           return successfullJsonResponse(Status.OK, null);
         }else {
           return failedJsonResponse(
-              Status.BAD_REQUEST, "Schema name is the same but the actual schema for the topic is different.");
+              Status.BAD_REQUEST,
+              "Schema name is the same but the actual schema " +
+                  "for the topic is different.");
         }
       }else {
-        return failedJsonResponse(Status.BAD_REQUEST, "Schema name for topic is different");
+        return failedJsonResponse(Status.BAD_REQUEST,
+            "Schema name for topic is different");
       }
     }catch(JSONException e) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties are [topic, schema, version, payload].");
+          "Json request is malformed! " +
+              "Required properties are [topic, schema, version, payload].");
     }
   }
 
