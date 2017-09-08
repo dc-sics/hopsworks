@@ -31,7 +31,6 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
@@ -79,32 +78,30 @@ public class DeviceService {
   
   private static Response failedJsonResponse(
       Status status, String errorMessage) {
-    JsonResponse json = new JsonResponse();
-    json.setErrorMsg(errorMessage);
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
-    rb.entity(json);
+    JsonResp resp = new JsonResp(
+        status.getStatusCode(), status.getReasonPhrase(), errorMessage);
+    rb.entity(resp);
     return rb.build();
   }
 
-  private static Response successfullJsonResponse(
-      Status status, JsonResponse jsonResponse) {
+  private static Response successfulJsonResponse(Status status) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
-    if (jsonResponse != null) {
-      rb.entity(jsonResponse);
-    }
+    JsonResp resp = new JsonResp(
+        status.getStatusCode(), status.getReasonPhrase());
+    rb.entity(resp);
     return rb.build();
   }
   
-  private static Response successfullJsonResponseWithJwt(
-      Status status, JsonResponse jsonResponse, String jwtToken) {
+  private static Response successfulJsonResponse(Status status, String jwt) {
     ResponseBuilder rb = Response.status(status);
-    rb.header(JWT_HEADER, jwtToken);
     rb.type(MediaType.APPLICATION_JSON);
-    if (jsonResponse != null) {
-      rb.entity(jsonResponse);
-    }
+    JsonResp resp = new JsonResp(
+        status.getStatusCode(), status.getReasonPhrase());
+    resp.setJwt(jwt);
+    rb.entity(resp);
     return rb.build();
   }
 
@@ -137,7 +134,7 @@ public class DeviceService {
   }
 
   /**
-   *  Returns an automated failed JsonResponse if there is something wrong
+   *  Returns an automated failed JsonResp if there is something wrong
    *  with the jwtToken.
    *  If the jwtToken is successfully verified then null is returned.
    */
@@ -176,46 +173,36 @@ public class DeviceService {
    * Test end-point
    */
   @GET
-  @Path("/test")
+  @Path("/success")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response testDevice(
       @Context HttpServletRequest req, String jsonString) throws AppException {
-    String objectToReturn = "{ projectId: 1, secret: 'suahf8357hf37' }";
-    JsonResponse jsonResponse = new JsonResponse();
-    jsonResponse.setData(objectToReturn);
-    return successfullJsonResponse(Status.OK, jsonResponse);
+    return successfulJsonResponse(Status.OK);
   }
   
   /**
    * Test end-point
    */
   @GET
-  @Path("/test2")
+  @Path("/jwt")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response test2Device(
       @Context HttpServletRequest req, String jsonString) throws AppException {
-    String objectToReturn = "{ projectId: 1, secret: 'suahf8357hf37' }";
-    JSONObject json = new JSONObject(objectToReturn);
-    JsonResponse jsonResponse = new JsonResponse();
-    jsonResponse.setData(json);
-    return successfullJsonResponse(Status.OK, jsonResponse);
+    return successfulJsonResponse(Status.OK, "jwtTokenValue");
   }
   
   /**
    * Test end-point
    */
   @GET
-  @Path("/test3")
+  @Path("/fail")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response test3Device(
       @Context HttpServletRequest req, String jsonString) throws AppException {
-    JSONObject json = new JSONObject(jsonString);
-    JsonResponse jsonResponse = new JsonResponse();
-    jsonResponse.setData(json);
-    return successfullJsonResponse(Status.OK, jsonResponse);
+    return failedJsonResponse(Status.OK, "I hate it when this happens");
   }
   
   /**
@@ -236,7 +223,7 @@ public class DeviceService {
       Integer projectId = json.getInt(PROJECT_ID);
       try {
         deviceFacade.addProjectDevice(projectId, userId, deviceUuid, passUuid);
-        return successfullJsonResponse(Status.OK, null);
+        return successfulJsonResponse(Status.OK, null);
       }catch (Exception e) {
         return failedJsonResponse(
             Status.UNAUTHORIZED, MessageFormat.format(
@@ -289,8 +276,8 @@ public class DeviceService {
       }
 
       if (device.getPassUuid().equals(passUuid)) {
-        return successfullJsonResponseWithJwt(
-            Status.OK, null, generateJwt(secret, device));
+        return successfulJsonResponse(
+            Status.OK, generateJwt(secret, device));
       }else {
         return failedJsonResponse(
             Status.UNAUTHORIZED, MessageFormat.format(
@@ -361,7 +348,7 @@ public class DeviceService {
             Status.INTERNAL_SERVER_ERROR,
             "Something went wrong while producing to Kafka.");
       }
-      return successfullJsonResponse(Status.OK, null);
+      return successfulJsonResponse(Status.OK, null);
     }catch(JSONException e) {
       return failedJsonResponse(
           Status.BAD_REQUEST, MessageFormat.format(
@@ -407,7 +394,7 @@ public class DeviceService {
       SchemaDTO schemaDTO = kafkaFacade.getSchemaForTopic(topicName);
       if(schemaDTO.getName().equals(schemaName)){
         if (schemaDTO.getContents().trim().equals(schemaPayload)) {
-          return successfullJsonResponse(Status.OK, null);
+          return successfulJsonResponse(Status.OK, null);
         }else {
           return failedJsonResponse(
               Status.BAD_REQUEST,
