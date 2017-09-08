@@ -10,7 +10,7 @@
     <servlet-class>io.hops.hopsworks.api.airpal.proxy.AirpalProxyServlet</servlet-class>
     <init-param>
       <param-name>targetUri</param-name>
-      <param-value>http://bbc2.sics.se:64364</param-value>
+      <param-value>http://bbc2.sics.se:37196</param-value>
     </init-param>
     <init-param>
       <param-name>log</param-name>

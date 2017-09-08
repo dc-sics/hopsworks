@@ -618,7 +618,7 @@ angular.module('hopsWorksApp', [
                           function ($q, $location, AuthService, $cookies) {
                             return AuthService.session().then(
                                     function (success) {
-                                       console.log("airpal application started========");
+                                       
                                       $cookies.put("email", success.data.data.value);
                                     },
                                     function (err) {

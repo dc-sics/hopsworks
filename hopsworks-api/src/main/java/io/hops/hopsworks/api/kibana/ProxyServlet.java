@@ -369,6 +369,7 @@ public class ProxyServlet extends HttpServlet {
     log("End of Service method======= ");
   }
 
+  
   protected boolean doResponseRedirectOrNotModifiedLogic(
     HttpServletRequest servletRequest, HttpServletResponse servletResponse,
     HttpResponse proxyResponse, int statusCode)
