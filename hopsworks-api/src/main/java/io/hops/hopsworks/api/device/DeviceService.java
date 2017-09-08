@@ -181,10 +181,43 @@ public class DeviceService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response testDevice(
       @Context HttpServletRequest req, String jsonString) throws AppException {
-    
-    return successfullJsonResponse(Status.OK, null);
+    String objectToReturn = "{ projectId: 1, secret: 'suahf8357hf37' }";
+    JsonResponse jsonResponse = new JsonResponse();
+    jsonResponse.setData(objectToReturn);
+    return successfullJsonResponse(Status.OK, jsonResponse);
   }
-
+  
+  /**
+   * Test end-point
+   */
+  @GET
+  @Path("/test2")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response test2Device(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+    String objectToReturn = "{ projectId: 1, secret: 'suahf8357hf37' }";
+    JSONObject json = new JSONObject(objectToReturn);
+    JsonResponse jsonResponse = new JsonResponse();
+    jsonResponse.setData(json);
+    return successfullJsonResponse(Status.OK, jsonResponse);
+  }
+  
+  /**
+   * Test end-point
+   */
+  @GET
+  @Path("/test3")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response test3Device(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+    JSONObject json = new JSONObject(jsonString);
+    JsonResponse jsonResponse = new JsonResponse();
+    jsonResponse.setData(json);
+    return successfullJsonResponse(Status.OK, jsonResponse);
+  }
+  
   /**
    * Register end-point for project devices. COMPLETED.
    */
