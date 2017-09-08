@@ -45,20 +45,14 @@ public class ProjectDevice implements Serializable{
   @Size(min = 1, max = 11)
   @Column(name = "user_id")
   private Integer userId;
-
-  @Basic(optional = false)
-  @NotNull
+  
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "created_at")
   private Date createdAt;
-
-  @Basic(optional = false)
-  @NotNull
+  
   @Column(name = "enabled")
   private Integer enabled;
   
-  @Basic(optional = false)
-  @NotNull
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "last_produced")
   private Date lastProduced;

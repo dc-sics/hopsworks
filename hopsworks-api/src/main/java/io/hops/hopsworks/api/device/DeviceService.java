@@ -173,37 +173,12 @@ public class DeviceService {
    * Test end-point
    */
   @GET
-  @Path("/success")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response testDevice(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
-    return successfulJsonResponse(Status.OK);
-  }
-  
-  /**
-   * Test end-point
-   */
-  @GET
-  @Path("/jwt")
+  @Path("/test")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response test2Device(
       @Context HttpServletRequest req, String jsonString) throws AppException {
     return successfulJsonResponse(Status.OK, "jwtTokenValue");
-  }
-  
-  /**
-   * Test end-point
-   */
-  @GET
-  @Path("/fail")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response test3Device(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
-    return failedJsonResponse(
-        Status.METHOD_NOT_ALLOWED, "I hate it when this happens");
   }
   
   /**
@@ -238,9 +213,12 @@ public class DeviceService {
       String passUuid = json.getString(PASS_UUID);
       Integer userId = json.getInt(USER_ID);
       Integer projectId = json.getInt(PROJECT_ID);
+      
+      //TODO: Check if device registration for the given project is activated
+      
       try {
         deviceFacade.addProjectDevice(projectId, userId, deviceUuid, passUuid);
-        return successfulJsonResponse(Status.OK, null);
+        return successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return failedJsonResponse(
             Status.UNAUTHORIZED, MessageFormat.format(
@@ -393,7 +371,7 @@ public class DeviceService {
       secret = deviceFacade.getProjectSecret(projectId);
     }catch (Exception e) {
       return failedJsonResponse(Status.FORBIDDEN,
-          "Project devices feature is not active.") ;
+          "Project devices feature is not active.");
     }
     
     String jwtToken = req.getHeader(JWT_HEADER);
