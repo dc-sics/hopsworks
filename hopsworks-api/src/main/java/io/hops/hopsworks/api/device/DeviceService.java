@@ -209,7 +209,7 @@ public class DeviceService {
   /**
    * Test end-point
    */
-  @GET
+  @POST
   @Path("/access")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
