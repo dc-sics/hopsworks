@@ -307,6 +307,31 @@ public class JupyterConfigFactory {
 //
 //  }
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public int killHardJupyterWithPid(Long pid){
+    String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
+    int exitValue;
+    Integer id = 1;
+    String[] command = {"/usr/bin/sudo", prog, "killhard", pid.toString()};
+    ProcessBuilder pb = new ProcessBuilder(command);
+    try {
+      Process process = pb.start();
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+          process.getInputStream(), Charset.forName("UTF8")));
+      String line;
+      while ((line = br.readLine()) != null) {
+        logger.info(line);
+      }
+      process.waitFor(10l, TimeUnit.SECONDS);
+      exitValue = process.exitValue();
+    } catch (IOException | InterruptedException ex) {
+      logger.log(Level.SEVERE, "Problem starting a backup: {0}", ex.
+          toString());
+      exitValue = -2;
+    }
+    return exitValue;
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public void killServerJupyterUser(String projectPath, Long pid, Integer port)
       throws AppException {
     if (projectPath == null || pid == null || port == null) {
