@@ -1,5 +1,8 @@
 package io.hops.hopsworks.api.device;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class JsonResp {
   
   private String message;
