@@ -202,7 +202,24 @@ public class DeviceService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response test3Device(
       @Context HttpServletRequest req, String jsonString) throws AppException {
-    return failedJsonResponse(Status.OK, "I hate it when this happens");
+    return failedJsonResponse(
+        Status.METHOD_NOT_ALLOWED, "I hate it when this happens");
+  }
+  
+  /**
+   * Test end-point
+   */
+  @GET
+  @Path("/access")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response echoDevice(
+      @Context HttpServletRequest req, String jsonString) throws AppException {
+    JSONObject json = new JSONObject(jsonString);
+    Integer projectId = json.getInt(PROJECT_ID);
+    return failedJsonResponse(
+        Status.METHOD_NOT_ALLOWED, "Given Project Id:" +
+            String.valueOf(projectId));
   }
   
   /**
