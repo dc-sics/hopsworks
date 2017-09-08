@@ -6,7 +6,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
-import javax.ejb.Stateless;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -42,7 +41,6 @@ import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 
 @Path("/device")
-@Stateless
 @Api(value = "Device Service",
     description = "Device Service")
 public class DeviceService {
