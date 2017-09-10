@@ -18,7 +18,7 @@ public class DeviceFacade {
   public void addProjectDevice(Integer projectId, Integer userId,
       String deviceUuid, String passUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, userId);
+    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, userId, ProjectDevice.State.ENABLED);
     em.persist(pd);
   }
 

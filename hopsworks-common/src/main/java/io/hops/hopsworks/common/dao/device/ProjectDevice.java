@@ -56,23 +56,21 @@ public class ProjectDevice implements Serializable{
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "last_produced")
   private Date lastProduced;
+
+  public static enum State{
+    PENDING,
+    ENABLED,
+    DISABLED
+  }
   
   public ProjectDevice() {}
 
   public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid,
-      Integer userId) {
+      Integer userId, State deviceState) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
     this.userId = userId;
-  }
-
-  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid,
-      Integer userId, Date createdAt, Integer enabled) {
-    this.projectDevicePK = projectDevicePK;
-    this.passUuid = passUuid;
-    this.userId = userId;
-    this.createdAt = createdAt;
-    this.enabled = enabled;
+    this.enabled = deviceState.ordinal();
   }
 
   public ProjectDevicePK getProjectDevicePK() {
