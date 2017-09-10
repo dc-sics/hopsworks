@@ -210,8 +210,8 @@ public class DeviceService {
       }
     }catch(JSONException e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}, {2}]",
-              DEVICE_UUID, PASS_UUID, USER_ID));
+              "Json request is malformed! Required properties are [{0}, {1}, {2}, {3}]",
+              PROJECT_ID, DEVICE_UUID, PASS_UUID, USER_ID));
     }
   }
   

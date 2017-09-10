@@ -9,7 +9,7 @@ import javax.persistence.TypedQuery;
 @Stateless
 public class DeviceFacade {
 
-  private final static Logger LOGGER = Logger.getLogger(DeviceFacade.class.
+  private final static Logger logger = Logger.getLogger(DeviceFacade.class.
       getName());
 
   @PersistenceContext(unitName = "kthfsPU")
@@ -25,7 +25,7 @@ public class DeviceFacade {
   public ProjectDevice getProjectDevice(Integer projectId, String deviceUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
     TypedQuery<ProjectDevice> query = em.createNamedQuery(
-        "ProjectDevices.findByProjectDevicePK",
+        "ProjectDevice.findByProjectDevicePK",
         ProjectDevice.class);
     query.setParameter("projectDevicePK", pdKey);
     return query.getSingleResult();
@@ -39,7 +39,7 @@ public class DeviceFacade {
 
   public ProjectSecret getProjectSecret(Integer projectId) {
     TypedQuery<ProjectSecret> query = em.createNamedQuery(
-        "ProjectSecrets.findByProjectId",
+        "ProjectSecret.findByProjectId",
         ProjectSecret.class);
     query.setParameter("projectId", projectId);
     return query.getSingleResult();
