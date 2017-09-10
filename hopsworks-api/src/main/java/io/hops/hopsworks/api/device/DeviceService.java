@@ -244,7 +244,7 @@ public class DeviceService {
   /**
    * Login end-point for project devices. COMPLETED.
    */
-  @GET
+  @POST
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
