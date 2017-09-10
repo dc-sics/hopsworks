@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -46,8 +47,7 @@ import io.hops.hopsworks.common.exception.AppException;
 @Stateless
 public class DeviceService {
 
-  private final static Logger LOGGER = Logger.getLogger(
-      DeviceService.class.getName());
+  private final static Logger logger = Logger.getLogger(DeviceService.class.getName());
 
   private static final String DEVICE_UUID = "deviceUuid";
   private static final String PASS_UUID = "passUuid";
@@ -66,7 +66,6 @@ public class DeviceService {
   @EJB
   private UserManager userManager;
 
-
   @EJB
   private DeviceFacade deviceFacade;
   
@@ -75,13 +74,11 @@ public class DeviceService {
 
   public DeviceService() {
   }
-  
-  private static Response failedJsonResponse(
-      Status status, String errorMessage) {
+
+  private static Response failedJsonResponse(Status status, String errorMessage) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
-    JsonResp resp = new JsonResp(
-        status.getStatusCode(), status.getReasonPhrase(), errorMessage);
+    JsonResp resp = new JsonResp(status.getStatusCode(), status.getReasonPhrase(), errorMessage);
     rb.entity(resp);
     return rb.build();
   }
@@ -89,8 +86,7 @@ public class DeviceService {
   private static Response successfulJsonResponse(Status status) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
-    JsonResp resp = new JsonResp(
-        status.getStatusCode(), status.getReasonPhrase());
+    JsonResp resp = new JsonResp(status.getStatusCode(), status.getReasonPhrase());
     rb.entity(resp);
     return rb.build();
   }
@@ -98,18 +94,20 @@ public class DeviceService {
   private static Response successfulJsonResponse(Status status, String jwt) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
-    JsonResp resp = new JsonResp(
-        status.getStatusCode(), status.getReasonPhrase());
+    JsonResp resp = new JsonResp(status.getStatusCode(), status.getReasonPhrase());
     resp.setJwt(jwt);
     rb.entity(resp);
     return rb.build();
   }
 
-  /**
-   * This method uses this JWT implementation: https://github.com/auth0/java-jwt
+  /***
+   * This method generates a jwt token (RFC 7519) which is unencrypted but signed with the given projectSecret.
+   *
+   * @param projectSecret Contains the secret which is used to sign the jwt token.
+   * @param projectDevice Contains the device identification information for the project.
+   * @return Returns the jwt token.
    */
-  private static String generateJwt(
-      ProjectSecret projectSecret, ProjectDevice projectDevice) {
+  private static String generateJwt(ProjectSecret projectSecret, ProjectDevice projectDevice) {
 
     Calendar cal = Calendar.getInstance();
     cal.setTime(new Date());
@@ -119,31 +117,29 @@ public class DeviceService {
     try {
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
       String token = JWT.create()
-          .withExpiresAt(expirationDate)
-          .withClaim(
-              PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
-          .withClaim(USER_ID, projectDevice.getUserId())
-          .withClaim(
-              DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
-          .sign(algorithm);
+              .withExpiresAt(expirationDate)
+              .withClaim(PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
+              .withClaim(DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
+              .withClaim(USER_ID, projectDevice.getUserId())
+              .sign(algorithm);
       return token;
     } catch (Exception e) {
-      e.printStackTrace();
+      logger.log(Level.WARNING, "JWT token generation failed.", e);
       return null;
     }
   }
 
-  /**
-   *  Returns an automated failed JsonResp if there is something wrong
-   *  with the jwtToken.
-   *  If the jwtToken is successfully verified then null is returned.
+  /***
+   * This method verifies the validity of a jwt token (RFC 7519) by checking the signature of the token
+   * against the provided projectSecret.
+   *
+   * @param projectSecret Contains the secret which is used to verify the jwt token.
+   * @param jwtToken The jwt token
+   * @return Returns null if the token is verified or an Unauthorized Response with the reason for the failure.
    */
-  private static Response verifyJwt(
-      ProjectSecret projectSecret, String jwtToken) {
+  private static Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
     if (jwtToken == null) {
-      return failedJsonResponse(
-          Status.UNAUTHORIZED,
-          "No jwt token is present in the request.");
+      return failedJsonResponse(Status.UNAUTHORIZED, "No jwt token is present in the request.");
     }
     
     try {
@@ -152,51 +148,41 @@ public class DeviceService {
       verifier.verify(jwtToken);
       return null;
     }catch (TokenExpiredException exception){
-      return failedJsonResponse(
-          Status.UNAUTHORIZED,
-          "Jwt token has expired. Try to login again.");
+      return failedJsonResponse(Status.UNAUTHORIZED, "Jwt token has expired. Try to login again.");
     }catch (Exception exception){
-      return failedJsonResponse(
-          Status.UNAUTHORIZED,
-          "The Jwt token is invalid.");
+      return failedJsonResponse(Status.UNAUTHORIZED, "The Jwt token is invalid.");
+    }
+  }
+
+  /***
+   * This method decodes the jwt token (RFC 7519). Must be used only after the jwt token has been verified.
+   *
+   * @param projectSecret Contains the secret which is used to decode the jwt token.
+   * @param jwtToken The jwt token
+   * @return Returns a DecodedJWT object or null if the token could not be decoded.
+   */
+  private static DecodedJWT getDecodedJwt(ProjectSecret projectSecret, String jwtToken) throws Exception {
+    try {
+      Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
+      JWTVerifier verifier = JWT.require(algorithm).build();
+      return verifier.verify(jwtToken);
+    }catch (Exception e){
+      logger.log(Level.WARNING, "JWT token decoding failed", e);
+      return null;
     }
   }
   
-  private static DecodedJWT getDecodedJwt(
-      ProjectSecret projectSecret, String token) throws Exception {
-    Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
-    JWTVerifier verifier = JWT.require(algorithm).build();
-    return verifier.verify(token);
-  }
-  
   /**
-   * Test end-point
+   * Endpoint for testing purposes
    */
   @GET
   @Path("/test")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response test2Device(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response testEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     return successfulJsonResponse(Status.OK, "jwtTokenValue");
   }
-  
-  /**
-   * Test end-point
-   */
-  @POST
-  @Path("/access")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response echoDevice(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
-    JSONObject json = new JSONObject(jsonString);
-    Integer projectId = json.getInt(PROJECT_ID);
-    return failedJsonResponse(
-        Status.METHOD_NOT_ALLOWED, "Given Project Id:" +
-            String.valueOf(projectId));
-  }
-  
+
   /**
    * Register end-point for project devices. COMPLETED.
    */
@@ -204,8 +190,7 @@ public class DeviceService {
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response registerDevice(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response registerDeviceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     
     try {
       JSONObject json = new JSONObject(jsonString);
@@ -220,20 +205,16 @@ public class DeviceService {
         deviceFacade.addProjectDevice(projectId, userId, deviceUuid, passUuid);
         return successfulJsonResponse(Status.OK);
       }catch (Exception e) {
-        return failedJsonResponse(
-            Status.UNAUTHORIZED, MessageFormat.format(
-                "Device is already registered for this project " +
-                    "and/or {0} is invalid.", USER_ID));
+        return failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
+                "Device is already registered for this project and/or {0} is invalid.", USER_ID));
       }
     }catch(JSONException e) {
-      return failedJsonResponse(
-          Status.BAD_REQUEST, MessageFormat.format("Json request is " +
-              "malformed! Required properties are [{0}, {1}, {2}]",
+      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
+              "Json request is malformed! Required properties are [{0}, {1}, {2}]",
               DEVICE_UUID, PASS_UUID, USER_ID));
     }
   }
   
-
 
   /**
    * Login end-point for project devices. COMPLETED.
@@ -242,8 +223,7 @@ public class DeviceService {
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response loginDevice(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response loginDeviceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     
     try {
       JSONObject jsonRequest = new JSONObject(jsonString);
@@ -255,34 +235,25 @@ public class DeviceService {
       try {
         secret = deviceFacade.getProjectSecret(projectId);
       }catch (Exception e) {
-        return failedJsonResponse(
-            Status.FORBIDDEN,
-            "Project devices feature is not active.");
+        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
       }
 
       ProjectDevice device;
       try {
         device = deviceFacade.getProjectDevice(projectId, deviceUuid);
       }catch (Exception e) {
-        return failedJsonResponse(
-            Status.UNAUTHORIZED, MessageFormat.format(
-                "No device is registered with the given {0}.",
-                DEVICE_UUID));
+        return failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
+                "No device is registered with the given {0}.", DEVICE_UUID));
       }
 
       if (device.getPassUuid().equals(passUuid)) {
-        return successfulJsonResponse(
-            Status.OK, generateJwt(secret, device));
+        return successfulJsonResponse(Status.OK, generateJwt(secret, device));
       }else {
-        return failedJsonResponse(
-            Status.UNAUTHORIZED, MessageFormat.format(
-                "{0} is incorrect.", PASS_UUID));
+        return failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format("{0} is incorrect.", PASS_UUID));
       }
     }catch(JSONException e) {
-      return failedJsonResponse(
-          Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties " +
-                  "are [{0}, {1}]", DEVICE_UUID, PASS_UUID));
+      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
+              "Json request is malformed! Required properties are [{0}, {1}]", DEVICE_UUID, PASS_UUID));
     }
   }
 
@@ -290,8 +261,7 @@ public class DeviceService {
   @Path("/produce")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response produce(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response produceRecordsEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
   
     JSONObject json = new JSONObject(jsonString);
     Integer projectId = json.getInt(PROJECT_ID);
@@ -300,9 +270,7 @@ public class DeviceService {
     try {
       secret = deviceFacade.getProjectSecret(projectId);
     }catch (Exception e) {
-      return failedJsonResponse(
-          Status.FORBIDDEN,
-          "Project devices feature is not active.") ;
+      return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
     }
     
     String jwtToken = req.getHeader(JWT_HEADER);
@@ -318,9 +286,7 @@ public class DeviceService {
       decodedJwt = getDecodedJwt(secret, jwtToken);
       userId = decodedJwt.getClaim(USER_ID).asInt();
     }catch(Exception e) {
-      return failedJsonResponse(
-          Status.INTERNAL_SERVER_ERROR,
-          "I hate it when this happens.");
+      return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
     }
     // Device is correlated to a userId at this point.
 
@@ -340,15 +306,12 @@ public class DeviceService {
         kafkaFacade.produce(projectId, user, topicName, recordsStringified);
       } catch (Exception e) {
         return failedJsonResponse(
-            Status.INTERNAL_SERVER_ERROR,
-            "Something went wrong while producing to Kafka.");
+            Status.INTERNAL_SERVER_ERROR,"Something went wrong while producing to Kafka.");
       }
       return successfulJsonResponse(Status.OK, null);
     }catch(JSONException e) {
-      return failedJsonResponse(
-          Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties " +
-                  "are [{0}, {1}]", TOPIC, RECORDS));
+      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
+              "Json request is malformed! Required properties are [{0}, {1}]", TOPIC, RECORDS));
     }
 
   }
@@ -360,8 +323,7 @@ public class DeviceService {
   @Path("/validate-schema")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response validateSchema(
-      @Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response validateSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
   
     JSONObject json = new JSONObject(jsonString);
     Integer projectId = json.getInt(PROJECT_ID);
@@ -370,8 +332,7 @@ public class DeviceService {
     try {
       secret = deviceFacade.getProjectSecret(projectId);
     }catch (Exception e) {
-      return failedJsonResponse(Status.FORBIDDEN,
-          "Project devices feature is not active.");
+      return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
     }
     
     String jwtToken = req.getHeader(JWT_HEADER);
@@ -391,19 +352,15 @@ public class DeviceService {
         if (schemaDTO.getContents().trim().equals(schemaPayload)) {
           return successfulJsonResponse(Status.OK, null);
         }else {
-          return failedJsonResponse(
-              Status.BAD_REQUEST,
-              "Schema name is the same but the actual schema " +
-                  "for the topic is different.");
+          return failedJsonResponse(Status.BAD_REQUEST,
+                  "Schema name is the same but the actual schema for the topic is different.");
         }
       }else {
-        return failedJsonResponse(Status.BAD_REQUEST,
-            "Schema name for topic is different");
+        return failedJsonResponse(Status.BAD_REQUEST, "Schema name for topic is different");
       }
     }catch(JSONException e) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! " +
-              "Required properties are [topic, schema, version, payload].");
+          "Json request is malformed! Required properties are [topic, schema, version, payload].");
     }
   }
 
