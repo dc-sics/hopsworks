@@ -88,34 +88,7 @@ public class DeviceManagementService {
     }
   }
 
-  /**
-   * Needs to be activated only once per project.
-   */
-  @POST
-  @Path("/activate")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
-  public Response activate(
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req,
-      String jsonString) throws AppException {
 
-    checkForProjectId();
-
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      String projectSecret = UUID.randomUUID().toString();
-      Integer projectTokenDurationInHours = json.getInt(JWT_DURATION);
-      deviceFacade.addProjectSecret(
-          projectId, projectSecret, projectTokenDurationInHours);
-      return noCacheResponse.getNoCacheResponseBuilder(Status.OK).build();
-    }catch(JSONException e) {
-      throw new AppException(Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties " +
-              "are [deviceUuid, passUuid, userId].");
-    }
-  }
   
 }
 

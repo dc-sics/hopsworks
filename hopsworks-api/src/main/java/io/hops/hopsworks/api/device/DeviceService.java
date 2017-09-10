@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -19,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.SecurityContext;
 
 import io.swagger.annotations.Api;
 import org.json.JSONArray;
@@ -181,6 +183,30 @@ public class DeviceService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response testEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     return successfulJsonResponse(Status.OK, "jwtTokenValue");
+  }
+
+
+  /**
+   * Needs to be activated only once per project.
+   */
+  @POST
+  @Path("/activate")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response activate(@Context HttpServletRequest req, String jsonString) throws AppException {
+
+    try {
+      JSONObject json = new JSONObject(jsonString);
+      Integer projectId = json.getInt(PROJECT_ID);
+      Integer projectTokenDurationInHours = json.getInt("jwtTokenDurationInHours");
+      String projectSecret = UUID.randomUUID().toString();
+      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      return successfulJsonResponse(Status.OK);
+    }catch(JSONException e) {
+      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
+              "Json request is malformed! Required properties are [{0}, {1}]",
+              PROJECT_ID, "jwtTokenDurationInHours"));
+    }
   }
 
   /**
