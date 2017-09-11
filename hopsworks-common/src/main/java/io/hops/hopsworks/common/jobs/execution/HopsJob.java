@@ -3,19 +3,20 @@ package io.hops.hopsworks.common.jobs.execution;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
-import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.yarn.YarnClientWrapper;
 import org.apache.hadoop.security.UserGroupInformation;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
-import io.hops.hopsworks.common.dao.jobs.JobInputFile;
-import io.hops.hopsworks.common.dao.jobs.JobOutputFile;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
-import io.hops.hopsworks.common.jobs.jobhistory.JobFinalStatus;
 import io.hops.hopsworks.common.jobs.jobhistory.JobState;
 import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
+import org.apache.hadoop.yarn.client.api.YarnClient;
 
 /**
  * Contains the execution logic of a Hops job. This class takes care of the main
@@ -38,8 +39,9 @@ import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
  */
 public abstract class HopsJob {
 
+  protected YarnJobsMonitor jobsMonitor;
   private static final Logger logger = Logger.getLogger(HopsJob.class.getName());
-  private Execution execution;
+  protected Execution execution;
   private boolean initialized = false;
 
   //Service provider providing access to facades
@@ -48,7 +50,6 @@ public abstract class HopsJob {
   protected final JobDescription jobDescription;
   protected final Users user;
   protected final String hadoopDir;
-  protected final String nameNodeIpPort;
   protected final UserGroupInformation hdfsUser;
 
   /**
@@ -59,12 +60,12 @@ public abstract class HopsJob {
    * services.
    * @param user The user executing this job.
    * @param hadoopDir base Hadoop installation directory
-   * @param nameNodeIpPort
+   * @param jobsMonitor
    * @throws NullPointerException If either of the given arguments is null.
    */
   protected HopsJob(JobDescription jobDescription,
           AsynchronousJobExecutor services, Users user, String hadoopDir,
-          String nameNodeIpPort) throws
+          YarnJobsMonitor jobsMonitor) throws
           NullPointerException {
     //Check validity
     if (jobDescription == null) {
@@ -79,7 +80,7 @@ public abstract class HopsJob {
     this.services = services;
     this.user = user;
     this.hadoopDir = hadoopDir;
-    this.nameNodeIpPort = nameNodeIpPort;
+    this.jobsMonitor = jobsMonitor;
     try {
       //if HopsJob is created in a doAs UserGroupInformation.getCurrentUser()
       //will return the proxy user, if not it will return the superuser.  
@@ -93,15 +94,6 @@ public abstract class HopsJob {
     logger.log(Level.INFO, "Instantiating Hops job as user: {0}", hdfsUser);
   }
 
-  /**
-   * Returns a copy of the current execution object. The copy is not persisted
-   * and should not be used for updating the database.
-   * <p/>
-   * @return
-   */
-  public final Execution getExecution() {
-    return new Execution(execution);
-  }
 
   /**
    * Update the current state of the Execution entity to the given state.
@@ -111,57 +103,7 @@ public abstract class HopsJob {
   protected final void updateState(JobState newState) {
     execution = services.getExecutionFacade().updateState(execution, newState);
   }
-
-  /**
-   * Update the final status of the Execution entity to the given status.
-   * <p/>
-   * @param finalStatus
-   */
-  protected final void updateFinalStatus(JobFinalStatus finalStatus) {
-    execution = services.getExecutionFacade().updateFinalStatus(execution,
-            finalStatus);
-  }
-
-  protected final void updateProgress(float progress) {
-    execution = services.getExecutionFacade().
-            updateProgress(execution, progress);
-  }
-
-  /**
-   * Update the current Execution entity with the given values.
-   * <p/>
-   * @param state
-   * @param executionDuration
-   * @param stdoutPath
-   * @param stderrPath
-   * @param appId
-   * @param inputFiles
-   * @param outputFiles
-   * @param finalStatus
-   * @param progress
-   */
-  protected final void updateExecution(JobState state,
-          long executionDuration, String stdoutPath,
-          String stderrPath, String appId, Collection<JobInputFile> inputFiles,
-          Collection<JobOutputFile> outputFiles, JobFinalStatus finalStatus,
-          float progress) {
-    Execution upd = services.getExecutionFacade().updateAppId(execution, appId);
-    upd = services.getExecutionFacade().updateExecutionTime(upd,
-            executionDuration);
-    upd = services.getExecutionFacade().updateOutput(upd, outputFiles);
-    upd = services.getExecutionFacade().updateState(upd, state);
-    upd = services.getExecutionFacade().updateStdErrPath(upd, stderrPath);
-    upd = services.getExecutionFacade().updateStdOutPath(upd, stdoutPath);
-    upd = services.getExecutionFacade().updateFinalStatus(upd, finalStatus);
-    upd = services.getExecutionFacade().updateProgress(upd, progress);
-    this.execution = upd;
-  }
-
-  protected final void updateJobHistoryApp(long executiontime) {
-
-    services.getJobsHistoryFacade().updateJobHistory(execution, executiontime);
-  }
-
+  
   /**
    * Execute the job and keep track of its execution time. The execution flow is
    * outlined in the class documentation. Internally, this method calls
@@ -181,38 +123,37 @@ public abstract class HopsJob {
         public Void run() {
           DistributedFileSystemOps dfso = null;
           DistributedFileSystemOps udfso = null;
+          YarnClientWrapper yarnClientWrapper = null;
           try {
+            execution = services.getExecutionFacade().updateExecutionStart(execution, System.currentTimeMillis());
             dfso = services.getFsService().getDfsOps();
             udfso = services.getFileOperations(hdfsUser.getUserName());
-            long starttime = System.currentTimeMillis();
-            boolean proceed = setupJob(dfso);
+            yarnClientWrapper = services.getYarnClientService()
+                .getYarnClient(hdfsUser.getUserName());
+            boolean proceed = setupJob(dfso, yarnClientWrapper.getYarnClient());
             if (!proceed) {
-              long executiontime = System.currentTimeMillis() - starttime;
-              updateExecution(JobState.INITIALIZATION_FAILED, executiontime,
-                      null, null,
-                      null, null, null, null, 0);
+              execution = services.getExecutionFacade().updateExecutionStop(execution, System.currentTimeMillis());
+              services.getExecutionFacade().updateState(execution, JobState.INITIALIZATION_FAILED);
               cleanup();
               return null;
             } else {
               updateState(JobState.STARTING_APP_MASTER);
             }
             runJob(udfso, dfso);
-            long executiontime = System.currentTimeMillis() - starttime;
-            updateExecution(null, executiontime, null, null, null, null, null,
-                    null, 0);
-            updateJobHistoryApp(executiontime);
-            cleanup();
             return null;
           } catch (IOException e) {
-            logger.log(Level.SEVERE,
-                    "Exception while trying to get hdfsUser name for execution "
-                    + getExecution(), e);
+            logger.log(Level.SEVERE, "Exception while trying to get hdfsUser name for execution " + execution, e);
           } finally {
             if (dfso != null) {
               dfso.close();
             }
-            if (udfso != null) {
-              udfso.close();
+            String[] tokens = hdfsUser.getUserName().split(
+                HdfsUsersController.USER_NAME_DELIMITER);
+            if (null != udfso) {
+              services.getFsService().closeDfsClient(udfso);
+            }
+            if (yarnClientWrapper != null) {
+              services.getYarnClientService().closeYarnClient(yarnClientWrapper);
             }
           }
           return null;
@@ -235,7 +176,8 @@ public abstract class HopsJob {
    * @return False if execution should be aborted. Cleanup() is still executed
    * in that case.
    */
-  protected abstract boolean setupJob(DistributedFileSystemOps dfso);
+  protected abstract boolean setupJob(DistributedFileSystemOps dfso,
+      YarnClient yarnClient);
 
   /**
    * Takes care of the execution of the job. Called by execute() after
@@ -267,12 +209,12 @@ public abstract class HopsJob {
    * @return Unique Execution object associated with this job.
    */
   public final Execution requestExecutionId() {
-    execution = services.getExecutionFacade().create(jobDescription, user, null,
-            null, null, null, 0);
+    execution = services.getExecutionFacade().create(jobDescription, user, null, null, null, null, 0, hdfsUser.
+        getUserName());
     initialized = (execution.getId() != null);
     return execution;
   }
-
+  
   /**
    * Check whether the HopsJob was initialized correctly, {@literal i.e.} if an
    * Execution id has been acquired.

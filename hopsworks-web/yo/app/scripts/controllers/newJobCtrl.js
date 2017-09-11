@@ -32,6 +32,7 @@ angular.module('hopsWorksApp')
             //Kafka topics for this project
             self.topics = [];
             self.kafkaSelected = false;
+            self.settingsSelected = false;
             self.consumerGroups = [{id: 'group1', "name": "default"}];
             self.groupsSelected = false;
             self.showAdvanced = false;
@@ -83,6 +84,9 @@ angular.module('hopsWorksApp')
 
             self.toggleKafka = function () {
               self.kafkaSelected = !self.kafkaSelected;
+            };
+            self.toggleSettings = function () {
+              self.settingsSelected = !self.settingsSelected;
             };
 
             self.toggleAdvanced = function () {
@@ -376,9 +380,25 @@ angular.module('hopsWorksApp')
               }
               JobService.createNewJob(self.projectId, self.getJobType(), self.runConfig).then(
                       function (success) {
-                        $location.path('project/' + self.projectId + '/jobs');
-                        StorageService.remove(self.newJobName);
-                        self.removed = true;
+                        if (self.projectIsGuide && self.getJobType() === "TENSORFLOW" && !StorageService.contains(self.projectId+"-tftour-finished")) {
+                          var inferenceJob = self.runConfig;
+                          inferenceJob.args = '--base_path hdfs://default/Projects/' + self.projectName + '/TestJob --images tfr/test --format tfr --mode inference --model mnist_model --output mnist_predictions';
+                          inferenceJob.appName = "Mnist-inference-QueueRunners";
+                          JobService.createNewJob(self.projectId, self.getJobType(), inferenceJob).then(
+                                  function (success) {
+                                    $location.path('project/' + self.projectId + '/jobs');
+                                    StorageService.remove(self.newJobName);
+                                    self.removed = true;
+                                    //Remember that the initial jobs were created to avoid creating them the next time
+                                    StorageService.store(self.projectId+"-tftour-finished", "true");
+                                  }, function (error) {
+                            growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000});
+                          });
+                        } else {
+                          $location.path('project/' + self.projectId + '/jobs');
+                          StorageService.remove(self.newJobName);
+                          self.removed = true;
+                        }
                       }, function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000});
               });
@@ -396,8 +416,13 @@ angular.module('hopsWorksApp')
               }
               if (self.phase === 0) {
                 if (!self.jobname) {
-                  var date = new Date().getTime() / 1000;
-                  self.jobname = "Job-" + date;
+                  //If it's the tensorflow tour, set proper name
+                  if(self.projectName.startsWith("demo_tensorflow")){
+                    self.jobname = "Mnist-training-QueueRunners";
+                  } else {
+                    var date = new Date().getTime() / 1000;
+                    self.jobname = "Job-" + date;
+                  }
                 }
                 self.phase = 1;
                 self.accordion2.isOpen = true; //Open type selection
@@ -466,6 +491,8 @@ angular.module('hopsWorksApp')
                   self.accordion4.title = "Job details";
                   selectedType = "TensorFlow";
                   break;
+                default:
+                  break;
               }
               self.accordion1.isOpen = false; //Close job name panel
               self.accordion1.value = " - " + self.jobname; //Set job name panel title
@@ -510,19 +537,23 @@ angular.module('hopsWorksApp')
              * Used by tour.
              * @returns {undefined}
              */
-            self.jobTypeSpark = function () {
-              self.jobtype = 1;
+            self.setTourJobType = function (jobType) {
+              self.jobtype = jobType;
               self.jobTypeChosen();
             };
 
             self.chooseParameters = function () {
-              if (!self.runConfig.mainClass && !self.runConfig.args) {
+              if (self.jobtype === 1 && !self.runConfig.mainClass && !self.runConfig.args) {
                   self.runConfig.mainClass = 'org.apache.spark.examples.SparkPi';
                   self.runConfig.args = '10';
               }
               // For Kafka tour
               if (self.projectIsGuide) {
                 self.tourService.currentStep_TourSeven = 7;
+              }
+              if(self.jobtype === 6 && !self.runConfig.args){
+                self.runConfig.args = '--base_path hdfs://default/Projects/'+self.projectName+'/TestJob --images tfr/train --format tfr --mode train --model mnist_model';
+                self.runConfig.numOfPs = 1;
               }
 
               if (self.tourService.currentStep_TourFour > -1) {
@@ -560,7 +591,7 @@ angular.module('hopsWorksApp')
 
                   }
                 }, function(error) {
-                  console.log(">>> Something bad happened")
+                  console.log(">>> Something bad happened:"+error.data.errorMsg);
                 }
               );
             };
@@ -679,9 +710,14 @@ angular.module('hopsWorksApp')
                           function (success) {
                             self.runConfig = success.data;
                             self.mainFileSelected(filename);
+                            if (self.tourService.currentStep_TourFour > -1) {
+                              self.tourService.currentStep_TourFour = 6;
+                            }
                           }, function (error) {
                     growl.error(error.data.errorMsg, {title: 'Error', ttl: 15000});
                   });
+                  break;
+                default:
                   break;
               }
             };
@@ -793,6 +829,9 @@ angular.module('hopsWorksApp')
               if (stored) {
                 //Job information
                 self.jobtype = stored.jobtype;
+                if(self.getJobType() === "TFSPARK"){
+                  self.tfOnSpark = true;
+                }
                 self.jobname = stored.jobname;
                 self.localResources = stored.runConfig.localResources;
                 self.phase = stored.phase;

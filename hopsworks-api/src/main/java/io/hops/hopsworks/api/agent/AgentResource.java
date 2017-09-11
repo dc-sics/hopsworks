@@ -52,7 +52,8 @@ import javax.ws.rs.core.SecurityContext;
 @Path("/agentresource")
 @Stateless
 @RolesAllowed({"HOPS_ADMIN", "AGENT"})
-@Api(value = "Agent Service", description = "Agent Service")
+@Api(value = "Agent Service",
+        description = "Agent Service")
 public class AgentResource {
 
   @EJB
@@ -79,49 +80,6 @@ public class AgentResource {
     return "Kmon: Pong";
   }
 
-//    @GET
-//    @Path("load/{name}")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    public Response getLoadAvg(@PathParam("name") String name) {
-//        JSONObject json = new JSONObject();
-//        try {
-//            Host host = hostEJB.findByHostname(name);
-//            json.put("hostname", host.getHostname());
-//            json.put("cores", host.getCores());
-//            json.put("load1", host.getLoad1());
-//            json.put("load5", host.getLoad5());
-//            json.put("load15", host.getLoad15());
-//        } catch (Exception ex) {
-//            // TODO - Should log all exceptions          
-//            logger.log(Level.SEVERE, "Exception: {0}", ex);
-//            if (ex.getMessage().equals("NoResultException")) {
-//                return Response.status(Response.Status.NOT_FOUND).build();
-//            }
-//            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//        }
-//        return Response.ok(json).build();
-//    }
-//    @GET
-//    @Path("loads")
-//    @Produces(MediaType.APPLICATION_JSON)
-//    public Response getLoads() {
-//        JSONArray jsonArray = new JSONArray();
-//        List<Host> hosts = hostEJB.find();
-//        for (Host host : hosts) {
-//            try {
-//                JSONObject json = new JSONObject();
-//                json.put("hostname", host.getHostname());
-//                json.put("cores", host.getCores());
-//                json.put("load1", host.getLoad1());
-//                json.put("load5", host.getLoad5());
-//                json.put("load15", host.getLoad15());
-//                jsonArray.put(json);
-//            } catch (Exception ex) {
-//                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
-//            }
-//        }
-//        return Response.ok(jsonArray).build();
-//    }
   @POST
   @Path("/heartbeat")
   @Consumes(MediaType.APPLICATION_JSON)
@@ -173,14 +131,21 @@ public class AgentResource {
         String cluster = s.getString("cluster");
         String roleName = s.getString("role");
         String service = s.getString("service");
+        Role role = null;
+        try {
+          role = roleFacade.find(hostId, cluster, service, roleName);
+        } catch (Exception ex) {
+          logger.log(Level.FINE, "Could not find a role for the kagent heartbeat.");
+          continue;
+        }
 
-        Role role = roleFacade.find(hostId, cluster, service, roleName);
         if (role == null) {
           role = new Role();
           role.setHostId(hostId);
           role.setCluster(cluster);
           role.setService(service);
           role.setRole(roleName);
+          role.setStartTime(agentTime);
         }
 
         String webPort = s.containsKey("web-port") ? s.getString("web-port")
@@ -190,35 +155,32 @@ public class AgentResource {
           role.setWebPort(Integer.parseInt(webPort));
           role.setPid(Integer.parseInt(pid));
         } catch (NumberFormatException ex) {
-          logger.log(Level.WARNING,
-                  "Invalid webport or pid - not a number for: {0}", role);
+          logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", role);
           continue;
         }
         if (s.containsKey("status")) {
+          if ((role.getStatus() == null || !role.getStatus().equals(Status.Started)) && Status.valueOf(s.getString(
+                  "status")).equals(Status.Started)) {
+            role.setStartTime(agentTime);
+          }
           role.setStatus(Status.valueOf(s.getString("status")));
         } else {
           role.setStatus(Status.None);
         }
-        String startTime = null;
-        if (s.containsKey("start-time")) {
-          startTime = s.getString("start-time");
+
+        Long startTime = role.getStartTime();
+        Status status = Status.valueOf(s.getString("status"));
+        if (status.equals(Status.Started)) {
+          role.setStopTime(agentTime);
         }
-        String stopTime = null;
-        if (s.containsKey("stop-time")) {
-          stopTime = s.getString("stop-time");
+        Long stopTime = role.getStopTime();
+
+        if (startTime != null && stopTime != null) {
+          role.setUptime(stopTime - startTime);
+        } else {
+          role.setUptime(0);
         }
-        try {
-          if (stopTime != null) {
-            role.setUptime(Long.parseLong(stopTime) - Long.parseLong(startTime));
-          } else if (startTime != null) {
-            role.setUptime(agentTime - Long.parseLong(startTime));
-          }
-        } catch (NumberFormatException ex) {
-          logger.log(Level.WARNING,
-                  "Invalid startTime or stopTime - not a valid number for: {0}",
-                  role);
-          continue;
-        }
+
         roleFacade.store(role);
       }
 
@@ -326,7 +288,7 @@ public class AgentResource {
               BlockReport.Lib blockLib = br.getLib(lib.getDependency());
               if (blockLib == null || blockLib.compareTo(lib) != 0) {
                 CondaCommands cc = new CondaCommands(host, settings.
-                        getSparkUser(),
+                        getAnacondaUser(),
                         CondaOp.INSTALL, CondaStatus.ONGOING, project,
                         lib.getDependency(),
                         lib.getRepoUrl().getUrl(), lib.getVersion(),
@@ -343,7 +305,7 @@ public class AgentResource {
             // get removed from the conda env.
             for (BlockReport.Lib blockLib : br.getLibs()) {
               CondaCommands cc
-                      = new CondaCommands(host, settings.getSparkUser(),
+                      = new CondaCommands(host, settings.getAnacondaUser(),
                               CondaOp.UNINSTALL, CondaStatus.ONGOING, project,
                               blockLib.getLib(),
                               blockLib.getChannelUrl(), blockLib.getVersion(),
@@ -368,7 +330,7 @@ public class AgentResource {
           CondaCommands cc = new CondaCommands();
           cc.setId(-1);
           cc.setHostId(host);
-          cc.setUser(settings.getSparkUser());
+          cc.setUser(settings.getAnacondaUser());
           cc.setProj(br.getProject());
           cc.setOp(PythonDepsFacade.CondaOp.REMOVE);
           differenceList.add(cc);
@@ -393,11 +355,8 @@ public class AgentResource {
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
 
-
-
     GenericEntity<Collection<CondaCommands>> commandsForKagent
-            = new GenericEntity<Collection<CondaCommands>>(commands) {    };
-
+            = new GenericEntity<Collection<CondaCommands>>(commands) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             commandsForKagent).build();
   }

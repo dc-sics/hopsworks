@@ -11,6 +11,7 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.project.ProjectDTO;
 import java.io.BufferedReader;
@@ -30,6 +31,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.http.client.utils.URIUtils;
 
 public class TensorboardProxyServlet extends ProxyServlet {
@@ -92,13 +94,14 @@ public class TensorboardProxyServlet extends ProxyServlet {
             "You don't have the access right for this application");
         return;
       }
-      if (appState.getAppsmstate() != null && appState.getAppsmstate().equals("FINISHED")) {
+      if (appState.getAppsmstate() != null && (appState.getAppsmstate().equalsIgnoreCase(YarnApplicationState.FINISHED.
+          toString()) || appState.getAppsmstate().equalsIgnoreCase(YarnApplicationState.KILLED.toString()))) {
         sendErrorResponse(servletResponse, "This tensorboard has finished running");
         return;
       }
       //get tensorboard address from hdfs file
       String uri = null;
-      if (!Strings.isNullOrEmpty(jobType) && jobType.equals("TENSORFLOW")) {
+      if (!Strings.isNullOrEmpty(jobType) && jobType.equalsIgnoreCase(JobType.TENSORFLOW.toString())) {
         //Get amTrackingUri of distributed tensorflow
         try {
           uri = getHTML(trackingUrl + "/tensorboard");
@@ -107,11 +110,11 @@ public class TensorboardProxyServlet extends ProxyServlet {
         }
         //TensorFlow ApplicationMaster returns a list of tensorboards, so we must parse it
         //Currently it returns a single tensorboard
-        uri = "http://" + uri.replace("\"", "").replace("[", "").replace("]", "");
-        if (uri == null || uri.equals("null")) {
+        if (Strings.isNullOrEmpty(uri)) {
           sendErrorResponse(servletResponse, "This tensorboard is not running right now");
           return;
         }
+        uri = "http://" + uri.replace("\"", "").replace("[", "").replace("]", "");
       } else {
         uri = tensorflowFacade.getTensorboardURI(appId, projectName);
       }

@@ -200,3 +200,63 @@ div.story h3, div.task h3 {
 .expanded-job-monitor {
     margin-top: -5px;
 }
+
+
+.top-buffer { 
+  margin-top:20px; 
+}
+
+.jupyter-left { 
+  margin-left:10px; 
+  margin-top: -5px;
+}
+
+.shift-left { 
+  margin-left:-50px; 
+}
+
+.top-big-buffer { 
+  margin-top:100px; 
+}
+
+/*.blocks .btn-primary .active .focus
+{
+    background-color: #5cb85c;
+}*/
+.blocks .btn-primary
+{
+    margin: 0 50px 0 0;
+    border-radius: 10px;
+    border: 2px solid #ddd;
+/*    background-color: #2e353d;*/
+}
+
+.blocks .btn-group.btn-block {
+    display: table;
+}
+
+.clusterparams { 
+  margin-top:10px; 
+}
+
+.customHr {
+    font-size: 1px;
+    color: rgba(0, 0, 0, 0);
+    line-height: 1px;
+    background-color: grey;
+    margin-top: 3px;
+    margin-bottom: 5px;
+}
+
+
+.ui-select-bootstrap {
+  .ui-select-toggle > .caret {
+    display: none;
+  }
+  .ui-select-toggle::after {
+    font-family: FontAwesome;
+    content: "\f0d7";
+    position: absolute;
+    right: 1em;
+  }
+}

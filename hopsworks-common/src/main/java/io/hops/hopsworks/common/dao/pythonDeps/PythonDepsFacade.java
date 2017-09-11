@@ -145,7 +145,7 @@ public class PythonDepsFacade {
   public PythonDepsFacade() throws Exception {
   }
 
-  public PythonDep findPythonDeps(String lib, String version) {
+  public PythonDep findPythonDeps(String lib, String version, boolean pythonKernelEnable) {
     TypedQuery<PythonDep> query = em.createNamedQuery(
             "findByDependencyAndVersion",
             PythonDep.class);
@@ -155,62 +155,23 @@ public class PythonDepsFacade {
   }
 
   public Collection<PythonDep> createProjectInDb(Project project,
-          Map<String, String> libs, String pythonVersion) throws AppException {
+          Map<String, String> libs, String pythonVersion, boolean enablePythonKernel) throws AppException {
     if (pythonVersion.compareToIgnoreCase("2.7") != 0 && pythonVersion.
             compareToIgnoreCase("3.5") != 0 && pythonVersion.
-            compareToIgnoreCase("3.6") != 0) {
+            compareToIgnoreCase("3.6") != 0 && pythonVersion.contains("X") == false) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Invalid version of python " + pythonVersion
-              + " (valid: '2.7', and '3.5'");
+              + " (valid: '2.7', and '3.5', and '3.6'");
     }
-
-    condaEnvironmentOp(CondaOp.CREATE, project, pythonVersion, getHosts());
+    condaEnvironmentOp(CondaOp.CREATE, project, pythonVersion,  getHosts());
 
     List<PythonDep> all = new ArrayList<>();
-    //TODO(Theofilos): Comment out for now, until anaconda root environment is fixed
-
-//    AnacondaRepo repoUrl = getRepo(project, settings.getCondaChannelUrl(), true);
-//    for (String k : libs.keySet()) {
-//      PythonDep pd = getDep(repoUrl, k, libs.get(k), true, true);
-//      pd.setStatus(PythonDepsFacade.CondaStatus.INSTALLED);
-//      Collection<Project> projs = pd.getProjectCollection();
-//      projs.add(project);
-//      all.add(pd);
-//    }
-//    Collection<PythonDep> projDeps = project.getPythonDepCollection();
-//    projDeps.addAll(all);
-//    em.merge(project);
-//    for (PythonDep p : all) {
-//      em.persist(p);
-//    }
     projectFacade.enableConda(project);
     em.flush();
 
     return all;
   }
 
-//  @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
-//  public Collection<PythonDep> createProjectInDb(Project project,
-//          Map<String, String> libs) throws AppException {
-//    List<PythonDep> all = new ArrayList<>();
-//    AnacondaRepo repoUrl = getRepo(project, settings.getCondaChannelUrl(), true);
-//    for (String k : libs.keySet()) {
-//      PythonDep pd = getDep(repoUrl, k, libs.get(k), true);
-//      pd.setStatus(PythonDepsFacade.CondaStatus.INSTALLED);
-//      Collection<Project> projs = pd.getProjectCollection();
-//      projs.add(project);
-//      all.add(pd);
-//    }
-//    Collection<PythonDep> projDeps = project.getPythonDepCollection();
-//    projDeps.addAll(all);
-//    em.merge(project);
-//    for (PythonDep p : all) {
-//      em.persist(p);
-//    }
-//    em.flush();
-//
-//    return all;
-//  }
   /**
    * Get all the Python Deps for the given project and channel
    * <p/>
@@ -403,7 +364,7 @@ public class PythonDepsFacade {
   public void condaEnvironmentOp(CondaOp op, Project proj, String arg,
           List<Host> hosts) throws AppException {
     for (Host h : hosts) {
-      CondaCommands cc = new CondaCommands(h, settings.getSparkUser(),
+      CondaCommands cc = new CondaCommands(h, settings.getAnacondaUser(),
               op, CondaStatus.ONGOING, proj, "", "", "default",
               new Date(), arg);
       em.persist(cc);
@@ -549,7 +510,7 @@ public class PythonDepsFacade {
       // 4. Mark that the operation is executing at all hosts
       hosts = hostsFacade.find();
       for (Host h : hosts) {
-        CondaCommands cc = new CondaCommands(h, settings.getSparkUser(),
+        CondaCommands cc = new CondaCommands(h, settings.getAnacondaUser(),
                 op, CondaStatus.ONGOING, proj, lib,
                 version, channelUrl, new Date(), "");
         em.persist(cc);

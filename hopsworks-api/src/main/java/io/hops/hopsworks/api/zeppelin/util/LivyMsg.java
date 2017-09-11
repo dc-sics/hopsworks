@@ -41,6 +41,7 @@ public class LivyMsg {
   public static class Session {
 
     private int id;
+    private String appId;
     private String kind;
     private String owner;
     private String proxyUser;
@@ -60,6 +61,14 @@ public class LivyMsg {
 
     public void setId(int id) {
       this.id = id;
+    }
+
+    public String getAppId() {
+      return appId;
+    }
+
+    public void setAppId(String appId) {
+      this.appId = appId;
     }
 
     public String getKind() {
@@ -93,6 +102,7 @@ public class LivyMsg {
     public void setState(String state) {
       this.state = state;
     }
+    
 
   }
 }

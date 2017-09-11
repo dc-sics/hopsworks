@@ -1,6 +1,8 @@
 package io.hops.hopsworks.common.jobs.tensorflow;
 
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
+import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.jobs.yarn.LocalResourceDTO;
 import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
@@ -8,6 +10,8 @@ import io.hops.hopsworks.common.jobs.yarn.YarnRunner;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.tensorflow.Client;
 import io.hops.tensorflow.LocalResourceInfo;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,7 +52,9 @@ public class TensorFlowYarnRunnerBuilder {
   }
 
   public YarnRunner getYarnRunner(String project, String tfUser,
-      String jobUser, final String hadoopDir, final String nameNodeIpPort) throws IOException, Exception {
+      String jobUser, final String hadoopDir,
+      final DistributedFileSystemOps dfsClient, YarnClient yarnClient,
+      AsynchronousJobExecutor services) throws IOException, Exception {
 
 //    if (!serviceProps.isAnacondaEnabled()) {
 //      //Throw error in Hopswors UI to notify user to enable Anaconda
@@ -57,20 +63,24 @@ public class TensorFlowYarnRunnerBuilder {
     YarnRunner.Builder builder = new YarnRunner.Builder(Settings.SPARK_AM_MAIN);
     JobType jobType = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getType();
     builder.setJobType(jobType);
+    builder.setYarnClient(yarnClient);
+    builder.setDfsClient(dfsClient);
     Client client = new Client();
 
     //Add extra files to local resources, use filename as key
     for (LocalResourceDTO dto : extraFiles) {
       if (!dto.getName().equals(Settings.K_CERTIFICATE) && !dto.getName().equals(Settings.T_CERTIFICATE)) {
         String pathToResource = dto.getPath();
-        pathToResource = pathToResource.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
-        pathToResource = pathToResource.replaceFirst("hdfs:/*user", "hdfs://" + nameNodeIpPort + "/user");
+        pathToResource = pathToResource.replaceFirst("hdfs:/*Projects",
+            "hdfs:///Projects");
+        pathToResource = pathToResource.replaceFirst("hdfs:/*user",
+            "hdfs:///user");
         client.addFile(pathToResource);
         client.getFilesInfo().put(pathToResource, new LocalResourceInfo(dto.getName(), pathToResource, dto.
             getVisibility(), dto.getType(), dto.getPattern()));
       }
     }
-
+    
     client.setAmMemory(amMemory);
     client.setAmVCores(amVCores);
     client.setMemory(workerMemory);
@@ -84,10 +94,12 @@ public class TensorFlowYarnRunnerBuilder {
     client.addEnvironmentVariable(Settings.HADOOP_USER_NAME, jobUser);
     client.addEnvironmentVariable(Settings.LOGSTASH_JOB_INFO, project.toLowerCase() + "," + jobName + ","
         + jobDescription.getId() + "," + YarnRunner.APPID_PLACEHOLDER);
-    client.addEnvironmentVariable(Settings.YARNTF_HOME_DIR, "hdfs://" + nameNodeIpPort + "/Projects/" + project
+    client.addEnvironmentVariable(Settings.YARNTF_HOME_DIR,
+        "hdfs:///Projects/" + project
         + "/" + Settings.PROJECT_STAGING_DIR + "/" + Settings.YARNTF_STAGING_DIR);
     String appPath = ((TensorFlowJobConfiguration) jobDescription.getJobConfig()).getAppPath();
-    appPath = appPath.replaceFirst("hdfs:/*Projects", "hdfs://" + nameNodeIpPort + "/Projects");
+    appPath = appPath.replaceFirst("hdfs:/*Projects",
+        "hdfs:///Projects");
     client.setMain(appPath);
     client.setArguments(jobArgs.stream().toArray(String[]::new));
     client.setAmJar(Settings.getTensorFlowJarPath(tfUser));
@@ -95,7 +107,7 @@ public class TensorFlowYarnRunnerBuilder {
     client.setAllocationTimeout(15000);
     client.setProjectDir("hdfs://" + Settings.getHdfsRootPath(project));
     builder.setTfClient(client);
-    return builder.build(hadoopDir, null, nameNodeIpPort, JobType.TENSORFLOW);
+    return builder.build(null, JobType.TENSORFLOW, services);
   }
 
   public TensorFlowYarnRunnerBuilder addAllJobArgs(List<String> jobArgs) {

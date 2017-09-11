@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.jobs.administration;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,14 +14,14 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ejb.EJB;
+
+import io.hops.hopsworks.common.yarn.YarnClientService;
+import io.hops.hopsworks.common.yarn.YarnClientWrapper;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.YarnApplicationState;
-import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.exceptions.YarnException;
-import io.hops.hopsworks.common.jobs.yarn.YarnRunner;
 import io.hops.hopsworks.common.util.Settings;
 import javax.ejb.Stateless;
 
@@ -38,9 +37,11 @@ public class JobAdministration implements Serializable {
           getName());
   @EJB
   private Settings settings;
+  @EJB
+  private YarnClientService ycs;
 
   private Configuration conf;
-  private YarnClient client;
+  private YarnClientWrapper yarnClientWrapper;
   private List<YarnApplicationReport> jobs = new ArrayList<>();
 
   private List<YarnApplicationReport> filteredJobs = new ArrayList<>();
@@ -74,14 +75,13 @@ public class JobAdministration implements Serializable {
   }
 
   public String getNumberOfJobs() {
-    if (client == null) {
-      client = YarnClient.createYarnClient();
-      setConfiguration(settings.getHadoopDir());
-      client.init(conf);
-      client.start();
+    if (yarnClientWrapper == null) {
+      conf = settings.getConfiguration();
+      yarnClientWrapper = ycs.getYarnClientSuper(conf);
     }
     try {
-      return String.valueOf(client.getApplications().size());
+      return String.valueOf(yarnClientWrapper.getYarnClient().getApplications()
+          .size());
     } catch (YarnException | IOException ex) {
       Logger.getLogger(JobAdministration.class.getName()).
               log(Level.SEVERE, null, ex);
@@ -91,11 +91,9 @@ public class JobAdministration implements Serializable {
 
   public void killJob(final String appId) {
     error.put(appId, "Trying to kill job");
-    if (client == null) {
-      client = YarnClient.createYarnClient();
-      setConfiguration(settings.getHadoopDir());
-      client.init(conf);
-      client.start();
+    if (yarnClientWrapper == null) {
+      conf = settings.getConfiguration();
+      yarnClientWrapper = ycs.getYarnClientSuper(conf);
     }
     //Find applicationId and kill it
     error.put(appId, "Application was not found");
@@ -107,7 +105,8 @@ public class JobAdministration implements Serializable {
           appIdToKill = ApplicationId.newInstance(report.
                   getClusterTimestamp(), report.getId());
 
-          ApplicationReport appReport = client.getApplicationReport(appIdToKill);
+          ApplicationReport appReport = yarnClientWrapper.getYarnClient()
+              .getApplicationReport(appIdToKill);
           if (appReport.getYarnApplicationState()
                   == YarnApplicationState.FINISHED || appReport.
                   getYarnApplicationState() == YarnApplicationState.KILLED) {
@@ -115,7 +114,7 @@ public class JobAdministration implements Serializable {
                     getYarnApplicationState());
             break;
           } else {
-            client.killApplication(appIdToKill);
+            yarnClientWrapper.getYarnClient().killApplication(appIdToKill);
             error.put(appId, "Job killed successfully");
             break;
           }
@@ -125,7 +124,8 @@ public class JobAdministration implements Serializable {
       jobs.clear();
       try {
         //Create our custom YarnApplicationReport Pojo
-        for (ApplicationReport appReport : client.getApplications()) {
+        for (ApplicationReport appReport : yarnClientWrapper.getYarnClient()
+            .getApplications()) {
           jobs.add(new YarnApplicationReport(appReport.getApplicationId().
                   toString(),
                   appReport.getName(), appReport.getUser(), appReport.
@@ -144,8 +144,9 @@ public class JobAdministration implements Serializable {
           YarnApplicationReport next = iter.next();
           if (next.getAppId().equals(appId)) {
             //Updated AppReport
-            ApplicationReport appReport = client.getApplicationReport(
-                    appIdToKill);
+            ApplicationReport appReport =
+                yarnClientWrapper.getYarnClient()
+                    .getApplicationReport(appIdToKill);
 
             iter.set(new YarnApplicationReport(appReport.getApplicationId().
                     toString(),
@@ -166,15 +167,14 @@ public class JobAdministration implements Serializable {
   }
 
   private void fetchJobs(List<YarnApplicationReport> reports) {
-    if (client == null) {
-      client = YarnClient.createYarnClient();
-      setConfiguration(settings.getHadoopDir());
-      client.init(conf);
-      client.start();
+    if (yarnClientWrapper == null) {
+      conf = settings.getConfiguration();
+      yarnClientWrapper = ycs.getYarnClientSuper(conf);
     }
     try {
       //Create our custom YarnApplicationReport Pojo
-      for (ApplicationReport appReport : client.getApplications()) {
+      for (ApplicationReport appReport : yarnClientWrapper.getYarnClient()
+          .getApplications()) {
         reports.add(new YarnApplicationReport(appReport.getApplicationId().
                 toString(),
                 appReport.getName(), appReport.getUser(), appReport.
@@ -190,12 +190,8 @@ public class JobAdministration implements Serializable {
 
   @PreDestroy
   public void preDestroy() {
-    if (client != null) {
-      try {
-        client.close();
-      } catch (IOException ex) {
-        logger.log(Level.SEVERE, null, ex);
-      }
+    if (null != yarnClientWrapper) {
+      ycs.closeYarnClient(yarnClientWrapper);
     }
   }
 
@@ -208,73 +204,6 @@ public class JobAdministration implements Serializable {
 
   public void setError(Map<String, String> error) {
     this.error = error;
-  }
-
-  private void setConfiguration(String hadoopDir)
-          throws IllegalStateException {
-    //Get the path to the Yarn configuration file from environment variables
-    String yarnConfDir = System.getenv(Settings.ENV_KEY_YARN_CONF_DIR);
-//      If not found in environment variables: warn and use default,
-    if (yarnConfDir == null) {
-      logger.log(Level.WARNING,
-              "Environment variable "
-              + Settings.ENV_KEY_YARN_CONF_DIR
-              + " not found, using settings: {0}", Settings.getYarnConfDir(
-                      hadoopDir));
-      yarnConfDir = Settings.getYarnConfDir(hadoopDir);
-
-    }
-
-    Path confPath = new Path(yarnConfDir);
-    File confFile = new File(confPath + File.separator
-            + Settings.DEFAULT_YARN_CONFFILE_NAME);
-    if (!confFile.exists()) {
-      logger.log(Level.SEVERE,
-              "Unable to locate Yarn configuration file in {0}. Aborting exectution.",
-              confFile);
-      throw new IllegalStateException("No Yarn conf file");
-    }
-
-    //Also add the hadoop config
-    String hadoopConfDir = System.getenv(Settings.ENV_KEY_HADOOP_CONF_DIR);
-    //If not found in environment variables: warn and use default
-    if (hadoopConfDir == null) {
-      logger.log(Level.WARNING,
-              "Environment variable "
-              + Settings.ENV_KEY_HADOOP_CONF_DIR
-              + " not found, using default {0}",
-              (hadoopDir + "/" + Settings.HADOOP_CONF_RELATIVE_DIR));
-      hadoopConfDir = hadoopDir + "/" + Settings.HADOOP_CONF_RELATIVE_DIR;
-    }
-    confPath = new Path(hadoopConfDir);
-    File hadoopConf = new File(confPath + "/"
-            + Settings.DEFAULT_HADOOP_CONFFILE_NAME);
-    if (!hadoopConf.exists()) {
-      logger.log(Level.SEVERE,
-              "Unable to locate Hadoop configuration file in {0}. Aborting exectution.",
-              hadoopConf);
-      throw new IllegalStateException("No Hadoop conf file");
-    }
-
-    //And the hdfs config
-    File hdfsConf = new File(confPath + "/"
-            + Settings.DEFAULT_HDFS_CONFFILE_NAME);
-    if (!hdfsConf.exists()) {
-      logger.log(Level.SEVERE,
-              "Unable to locate HDFS configuration file in {0}. Aborting exectution.",
-              hdfsConf);
-      throw new IllegalStateException("No HDFS conf file");
-    }
-
-    //Set the Configuration object for the returned YarnClient
-    conf = new Configuration();
-    conf.addResource(new Path(confFile.getAbsolutePath()));
-    conf.addResource(new Path(hadoopConf.getAbsolutePath()));
-    conf.addResource(new Path(hdfsConf.getAbsolutePath()));
-
-    YarnRunner.Builder.addPathToConfig(conf, confFile);
-    YarnRunner.Builder.addPathToConfig(conf, hadoopConf);
-    YarnRunner.Builder.setDefaultConfValues(conf);
   }
 
   public class YarnApplicationReport {

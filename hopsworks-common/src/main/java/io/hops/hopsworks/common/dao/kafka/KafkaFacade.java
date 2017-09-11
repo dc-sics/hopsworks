@@ -6,8 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,6 +23,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.core.Response;
+
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.util.BaseHadoopClientsService;
 import io.hops.hopsworks.common.util.Settings;
 import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
@@ -71,6 +73,15 @@ public class KafkaFacade {
 
   @EJB
   private ProjectFacade projectsFacade;
+  
+  @EJB
+  private CertificateMaterializer certificateMaterializer;
+  
+  @EJB
+  private BaseHadoopClientsService baseHadoopService;
+  
+  @EJB
+  private HdfsUsersController hdfsUsersController;
 
   public static final String COLON_SEPARATOR = ":";
   public static final String SLASH_SEPARATOR = "//";
@@ -901,7 +912,7 @@ public class KafkaFacade {
     CLIENT_ID = "topic_detail";
 
     brokers = getBrokerEndpoints();
-
+    
     Map<Integer, List<String>> replicas = new HashMap<>();
     Map<Integer, List<String>> inSyncReplicas = new HashMap<>();
     Map<Integer, String> leaders = new HashMap<>();
@@ -918,8 +929,14 @@ public class KafkaFacade {
     }
     try {
       HopsUtils.copyUserKafkaCerts(userCerts, project, user.getUsername(),
-          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir());
-
+              settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(),
+          certificateMaterializer);
+  
+      String projectSpecificUser = hdfsUsersController.getHdfsUserName(project,
+          user);
+      String certPassword = baseHadoopService.getProjectSpecificUserCertPassword
+          (projectSpecificUser);
+      
       for (String brokerAddress : brokers) {
         brokerAddress = brokerAddress.split("://")[1];
         Properties props = new Properties();
@@ -936,15 +953,15 @@ public class KafkaFacade {
             getProjectTruststoreName(project.getName(), user.
                 getUsername()));
         props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-            settings.getHopsworksMasterPasswordSsl());
+            certPassword);
         props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
             settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
             getProjectKeystoreName(project.getName(), user.
                 getUsername()));
         props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-            settings.getHopsworksMasterPasswordSsl());
+            certPassword);
         props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-            settings.getHopsworksMasterPasswordSsl());
+            certPassword);
         KafkaConsumer<Integer, String> consumer = null;
         try {
           consumer = new KafkaConsumer<>(props);
@@ -984,15 +1001,7 @@ public class KafkaFacade {
         }
       }
     } finally {
-      //Remove certificates from local dir
-      Files.deleteIfExists(FileSystems.getDefault().getPath(
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectTruststoreName(project.getName(), user.
-              getUsername())));
-      Files.deleteIfExists(FileSystems.getDefault().getPath(
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectKeystoreName(project.getName(), user.
-              getUsername())));
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
     }
 
     return partitionDetailsDto;

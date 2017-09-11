@@ -11,7 +11,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.yarn.YarnJob;
+import io.hops.hopsworks.common.jobs.yarn.YarnJobsMonitor;
 import io.hops.hopsworks.common.util.Settings;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+import org.elasticsearch.common.Strings;
 
 /**
  * Orchestrates the execution of a Spark job: run job, update history object.
@@ -31,15 +34,17 @@ public class SparkJob extends YarnJob {
    * @param services
    * @param hadoopDir
    * @param sparkDir
-   * @param nameNodeIpPort
    * @param sparkUser
    * @param jobUser
+   * @param jobsMonitor
+   * @param settings
+   * @param sessionId
    */
   public SparkJob(JobDescription job, AsynchronousJobExecutor services,
       Users user, final String hadoopDir,
-      final String sparkDir, final String nameNodeIpPort, String sparkUser,
-      String jobUser) {
-    super(job, services, user, jobUser, hadoopDir, nameNodeIpPort);
+      final String sparkDir, String sparkUser,
+      String jobUser, YarnJobsMonitor jobsMonitor, Settings settings, String sessionId) {
+    super(job, services, user, jobUser, hadoopDir, jobsMonitor, settings, sessionId);
     if (!(job.getJobConfig() instanceof SparkJobConfiguration)) {
       throw new IllegalArgumentException(
           "JobDescription must contain a SparkJobConfiguration object. Received: "
@@ -50,8 +55,8 @@ public class SparkJob extends YarnJob {
   }
 
   @Override
-  protected boolean setupJob(DistributedFileSystemOps dfso) {
-    super.setupJob(dfso);
+  protected boolean setupJob(DistributedFileSystemOps dfso, YarnClient yarnClient) {
+    super.setupJob(dfso, yarnClient);
     SparkJobConfiguration jobconfig = (SparkJobConfiguration) jobDescription.getJobConfig();
     //Then: actually get to running.
     if (jobconfig.getAppName() == null || jobconfig.getAppName().isEmpty()) {
@@ -69,6 +74,9 @@ public class SparkJob extends YarnJob {
       }
     }
 
+    if(!Strings.isNullOrEmpty(jobconfig.getProperties())){
+      runnerbuilder.setProperties(jobconfig.getProperties());
+    }
     //Set spark runner options
     runnerbuilder.setExecutorCores(jobconfig.getExecutorCores());
     runnerbuilder.setExecutorMemory("" + jobconfig.getExecutorMemory() + "m");
@@ -85,11 +93,15 @@ public class SparkJob extends YarnJob {
     runnerbuilder.setDriverCores(jobconfig.getAmVCores());
     runnerbuilder.setDriverQueue(jobconfig.getAmQueue());
 
+    //Set TFSPARK params
+    runnerbuilder.setNumOfGPUs(jobconfig.getNumOfGPUs());
+    runnerbuilder.setNumOfPs(jobconfig.getNumOfPs());
     //Set Kafka params
     runnerbuilder.setServiceProps(serviceProps);
     runnerbuilder.addExtraFiles(Arrays.asList(jobconfig.getLocalResources()));
     //Set project specific resources, i.e. Kafka certificates
     runnerbuilder.addExtraFiles(projectLocalResources);
+    runnerbuilder.setSessionId(sessionId);
     if (jobSystemProperties != null && !jobSystemProperties.isEmpty()) {
       for (Entry<String, String> jobSystemProperty : jobSystemProperties.
           entrySet()) {
@@ -98,15 +110,9 @@ public class SparkJob extends YarnJob {
       }
     }
 
-    String stdOutFinalDestination = Utils.getHdfsRootPath(hadoopDir,
-        jobDescription.
-            getProject().
-            getName())
+    String stdOutFinalDestination = Utils.getHdfsRootPath(jobDescription.getProject().getName())
         + Settings.SPARK_DEFAULT_OUTPUT_PATH;
-    String stdErrFinalDestination = Utils.getHdfsRootPath(hadoopDir,
-        jobDescription.
-            getProject().
-            getName())
+    String stdErrFinalDestination = Utils.getHdfsRootPath(jobDescription.getProject().getName())
         + Settings.SPARK_DEFAULT_OUTPUT_PATH;
     setStdOutFinalDestination(stdOutFinalDestination);
     setStdErrFinalDestination(stdErrFinalDestination);
@@ -114,7 +120,9 @@ public class SparkJob extends YarnJob {
     try {
       runner = runnerbuilder.
           getYarnRunner(jobDescription.getProject().getName(),
-              sparkUser, jobUser, hadoopDir, sparkDir, nameNodeIpPort);
+              sparkUser, jobUser, sparkDir, services, services
+                  .getFileOperations(hdfsUser.getUserName()), yarnClient,
+              settings);
 
     } catch (IOException e) {
       LOG.log(Level.WARNING,

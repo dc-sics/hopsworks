@@ -30,6 +30,7 @@ import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
+import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
@@ -95,6 +96,9 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
           mappedBy = "projectId")
   private Collection<CondaCommands> condaCommandsCollection;
+  @OneToMany(cascade = CascadeType.ALL,
+          mappedBy = "project")
+  private Collection<JupyterSettings> jupyterSettingsCollection;
 
   private static final long serialVersionUID = 1L;
 
@@ -135,7 +139,11 @@ public class Project implements Serializable {
   @Column(name = "deleted")
   private Boolean deleted;
 
-  @Size(max = 3000)
+  @Column(name = "python_version")
+  private String pythonVersion;
+  
+  
+  @Size(max = 2000)
   @Column(name = "description")
   private String description;
 
@@ -233,6 +241,14 @@ public class Project implements Serializable {
     this.retentionPeriod = retentionPeriod;
   }
 
+  public String getPythonVersion() {
+    return pythonVersion;
+  }
+
+  public void setPythonVersion(String pythonVersion) {
+    this.pythonVersion = pythonVersion;
+  }
+  
   public String getDescription() {
     return description;
   }
@@ -394,6 +410,18 @@ public class Project implements Serializable {
           Collection<JupyterProject> jupyterProjectCollection) {
     this.jupyterProjectCollection = jupyterProjectCollection;
   }
+  
+  @XmlTransient
+  @JsonIgnore
+  public Collection<JupyterSettings> getJupyterSettingsCollection() {
+    return jupyterSettingsCollection;
+  }
+
+  public void setJupyterSettingsCollection(
+          Collection<JupyterSettings> jupyterSettingsCollection) {
+    this.jupyterSettingsCollection = jupyterSettingsCollection;
+  }
+  
   
   
   @Override

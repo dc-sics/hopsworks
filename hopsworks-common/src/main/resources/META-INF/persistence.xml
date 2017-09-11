@@ -15,6 +15,7 @@
     <class>io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstate</class>
     <class>io.hops.hopsworks.common.dao.jobs.JobInputFile</class>
     <class>io.hops.hopsworks.common.dao.jobs.JobOutputFile</class>
+    <class>io.hops.hopsworks.common.dao.jobs.FilesToRemove</class>
     <class>io.hops.hopsworks.common.dao.jobs.JobsHistory</class>
     <class>io.hops.hopsworks.common.dao.jobs.description.JobDescription</class>
     <class>io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator</class>
@@ -51,6 +52,7 @@
     <class>io.hops.hopsworks.common.dao.project.Project</class>
     <class>io.hops.hopsworks.common.dao.project.management.ProjectsManagement</class>
     <class>io.hops.hopsworks.common.dao.project.payment.ProjectPaymentsHistory</class>
+    <class>io.hops.hopsworks.common.dao.project.payment.LastPayment</class>
     <class>io.hops.hopsworks.common.dao.project.service.ProjectServices</class>
     <class>io.hops.hopsworks.common.dao.project.team.ProjectTeam</class>
     <class>io.hops.hopsworks.common.dao.role.Role</class>
@@ -93,8 +95,10 @@
     <class>io.hops.hopsworks.common.dao.pythonDeps.PythonDep</class>
     <class>io.hops.hopsworks.common.dao.pythonDeps.AnacondaRepo</class>
     <class>io.hops.hopsworks.common.dao.pythonDeps.CondaCommands</class>
-    <class>io.hops.hopsworks.common.dao.jupyter.JupyterProject</class>    
+    <class>io.hops.hopsworks.common.dao.jupyter.JupyterProject</class>
+    <class>io.hops.hopsworks.common.dao.jupyter.JupyterSettings</class>
     <class>io.hops.hopsworks.common.dao.ndb.NdbBackup</class>
+    <class>io.hops.hopsworks.common.dao.jupyter.config.JupyterInterpreter</class>
     <!-- Converters -->
     <class>io.hops.hopsworks.common.jobs.configuration.JsonReduceableConverter</class>
     <class>io.hops.hopsworks.common.dao.workflow.NodeDataConverter</class>
