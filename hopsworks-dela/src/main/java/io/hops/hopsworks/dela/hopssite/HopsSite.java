@@ -29,8 +29,12 @@ public class HopsSite {
       return "user/register/" + publicCId;
     }
 
-    public static String getUser(String publicCId) {
-      return "user/get/" + publicCId;
+    public static String getUser(String publicCId, String email) {
+      return "user/" + publicCId + "/" + email;
+    }
+    
+    public static String getUserId(String publicCId, String email) {
+      return "user/id/" + publicCId + "/" + email;
     }
   }
 

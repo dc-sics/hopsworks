@@ -146,8 +146,8 @@ public class PublicDatasetService {
   @GET
   @Path("userId")
   public Response getUserId(@Context SecurityContext sc) throws ThirdPartyException {
-    Integer id = 1;//hopsSite.getUserId(sc.getUserPrincipal().getName());
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(""+id).build();
+    String id = hopsSite.getUserId(sc.getUserPrincipal().getName());
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(id).build();
   }
 
   @GET

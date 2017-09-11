@@ -14,7 +14,6 @@ angular.module('hopsWorksApp')
                 content["leechers"] = success.data.dataset.datasetHealth.leechers;
                 content["seeders"] = success.data.dataset.datasetHealth.seeders;
                 content["bootstrap"] = success.data.bootstrap;
-                content["rating"] = success.data.dataset.rating;
               }, function (error) {
                 return [];
                 console.log("init", error);

@@ -69,16 +69,20 @@
                 <div id="commentdiv" class="publicdataset-comment-msg" 
                      contenteditable="{{publicDataset.myUserId === comment.user.userId && publicDataset.commentEditable}}" 
                      ng-bind-html="comment.content | highlight"></div>
-                <div class="publicdataset-issue text-muted pull-right">
-                  <span title="Edit your comment" ng-if="publicDataset.myUserId === comment.user.userId && !publicDataset.commentEditable" 
+                <div class="pull-right">
+                  <span title="Edit your comment" ng-if="publicDataset.myUserId === comment.user.userId && !publicDataset.commentEditable"
+                        class="publicdataset-issue text-muted"
                         ng-click="publicDataset.commentMakeEditable()"><i class="fa fa-edit"></i></span>
-                  <span title="Save comment" ng-if="publicDataset.myUserId === comment.user.userId && publicDataset.commentEditable" 
+                  <span title="Save comment" ng-if="publicDataset.myUserId === comment.user.userId && publicDataset.commentEditable"
+                        class="publicdataset-issue text-muted"
                         ng-click="publicDataset.saveComment(comment.id)"><i class="fa fa-floppy-o"></i></span>
-                  <span title="Delete comment" ng-if="publicDataset.myUserId === comment.user.userId " 
+                  <span title="Delete comment" ng-if="publicDataset.myUserId === comment.user.userId "
+                        class="publicdataset-issue text-muted"
                         ng-click="publicDataset.deleteComment(comment.id)"><i class="fa fa-trash-o"></i></span>
                   <span ng-if="publicDataset.myUserId !== comment.user.userId">
                     <a title="You can report content that violate the law or our Terms and Conditions."
-                     ng-click="publicDataset.reportAbuse(comment.id)">Report abuse</a>
+                       class="publicdataset-issue text-muted"
+                       ng-click="publicDataset.reportAbuse(comment.id)">Report abuse</a>
                   </span>
                 </div>
               </div> <br>

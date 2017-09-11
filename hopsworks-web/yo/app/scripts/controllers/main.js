@@ -83,26 +83,12 @@ angular.module('hopsWorksApp')
               });
             };
 
-            var getPopularPublicDatasets = function () {
-              DelaGService.getPopularDatasets().then(
-                      function (success) {
-                        self.popularDatasets = success.data;
-                      }, function (error) {
-                growl.warning(error, {title: 'Warning', ttl: 1000});
-              });
-            };
-
-            getPopularPublicDatasets();
             getUnreadCount();
             getMessages();
 
             var getUnreadCountInterval = $interval(function () {
               getUnreadCount();
             }, 10000);
-
-//            var getPopularPublicDatasetsInterval = $interval(function () {
-//              getPopularPublicDatasets();
-//            }, 6000);
 
             self.getMessages = function () {
               getMessages();

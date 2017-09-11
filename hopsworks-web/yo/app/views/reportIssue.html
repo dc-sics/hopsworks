@@ -3,7 +3,7 @@
   <h4 class="modal-title">{{modalCtrl.title}}</h4>
 </div>
 <div class="modal-body">
-<textarea placeholder="Add your issue here... " class="form-control" rows="6"></textarea>
+  <textarea placeholder="Add your issue here... " class="form-control" rows="6" ng-model="modalCtrl.content"></textarea>
 </div>
 <div class="modal-footer">
   <button class="btn btn-default" ng-click="modalCtrl.cancel()">Cancel</button>

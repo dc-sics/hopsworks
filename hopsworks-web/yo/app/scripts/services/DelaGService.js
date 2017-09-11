@@ -24,9 +24,6 @@ angular.module('hopsWorksApp')
               },
               getUserContents: function () {
                 return $http.get('/api/dela/user/contents');
-              },
-              getPopularDatasets: function () {
-                return $http.get('/api/dela/dataset/popular');
               }
             };
             return service;

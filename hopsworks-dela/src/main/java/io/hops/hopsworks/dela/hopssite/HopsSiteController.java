@@ -143,12 +143,12 @@ public class HopsSiteController {
   }
 
   //*****************************************************USER***********************************************************
-  public int registerUser(String publidCId, String firstname, String lastname, String userEmail)
+  public int registerUser(String publicCId, String firstname, String lastname, String userEmail)
     throws ThirdPartyException {
     checkDelaState();
     try {
       UserDTO.Publish user = new UserDTO.Publish(firstname, lastname, userEmail);
-      ClientWrapper client = getClient(HopsSite.UserService.registerUser(publidCId), String.class);
+      ClientWrapper client = getClient(HopsSite.UserService.registerUser(publicCId), String.class);
       client.setPayload(user);
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - {0}", client.getFullPath());
       Integer result = Integer.parseInt((String) client.doPost());
@@ -162,11 +162,11 @@ public class HopsSiteController {
 
   public UserDTO.Complete getUser(String email) throws ThirdPartyException {
     checkDelaState();
+    String publicCId = SettingsHelper.clusterId(settings);
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.USER_SERVICE, UserDTO.Complete.class);
-      client.setPayload(email);
+      ClientWrapper client = getClient(HopsSite.UserService.getUser(publicCId, email), UserDTO.Complete.class);
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - {0}", client.getFullPath());
-      UserDTO.Complete result = (UserDTO.Complete) client.doPost();
+      UserDTO.Complete result = (UserDTO.Complete) client.doGet();
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - done {0}", client.getFullPath());
       return result;
     } catch (IllegalStateException ise) {
@@ -175,13 +175,13 @@ public class HopsSiteController {
     }
   }
 
-  public Integer getUserId(String email) throws ThirdPartyException {
+  public String getUserId(String email) throws ThirdPartyException {
     checkDelaState();
+    String publicCId = SettingsHelper.clusterId(settings);
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.USER_SERVICE, Integer.class);
-      client.setPayload(email);
+      ClientWrapper client = getClient(HopsSite.UserService.getUserId(publicCId, email) , String.class);
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - {0}", client.getFullPath());
-      Integer result = (Integer) client.doPost();
+      String result = (String) client.doGet();
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - done {0}", client.getFullPath());
       return result;
     } catch (IllegalStateException ise) {

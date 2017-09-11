@@ -61,6 +61,9 @@ angular.module('hopsWorksApp')
                 return $http({
                   method: 'post',
                   url: '/api/hopssite/publicDataset/' + publicDSId + '/issue',
+                  headers: {
+                   'Content-Type': 'application/json'
+                  },
                   data: issue
                 });
               },
@@ -94,6 +97,9 @@ angular.module('hopsWorksApp')
                 return $http({
                   method: 'post',
                   url: '/api/hopssite/publicDataset/' + publicDSId + '/comments/report/' + commentId,
+                  headers: {
+                   'Content-Type': 'application/json'
+                  },
                   data: issue
                 });
               },

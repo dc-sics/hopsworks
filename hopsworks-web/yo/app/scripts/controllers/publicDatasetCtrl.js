@@ -122,11 +122,19 @@ angular.module('hopsWorksApp')
               $anchorScroll();
               $location.hash(old);
             };
+            
+            var getIssueObject = function (type, msg) {
+                var issue = {};
+                issue['type'] = type;
+                issue['msg'] = msg;
+                return issue;
+            };
 
             self.reportAbuse = function (commentId) {
               ModalService.reportIssueModal('md', 'Report issue', '').then(function (success) {
-                console.log(success);
-                postCommentIssue(commentId, success);
+                var issue = getIssueObject('CommentIssue', success);
+                console.log(issue);
+                postCommentIssue(commentId, issue);
               }, function (error) {
                 console.log(error);
               });
@@ -139,8 +147,9 @@ angular.module('hopsWorksApp')
             
             self.reportDataset = function () {
               ModalService.reportIssueModal('md', 'Report issue', '').then(function (success) {
-                console.log(success);
-                postDatasetIssue(self.selectedDataset.publicId, success);
+                var issue = getIssueObject('DatasetIssue', success);
+                console.log(issue);
+                postDatasetIssue(self.selectedDataset.publicId, issue);
               }, function (error) {
                 console.log(error);
               });
@@ -156,6 +165,7 @@ angular.module('hopsWorksApp')
             self.postComment = function () {
               PublicDatasetService.postComment(self.selectedDataset.publicId, self.newComment).then(function (success) {
                 console.log("saveComment", success);
+                self.newComment = '';
                 getComments(self.selectedDataset.publicId);
               }, function (error) {
                 console.log("saveComment", error);
