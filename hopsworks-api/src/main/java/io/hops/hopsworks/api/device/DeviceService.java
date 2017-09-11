@@ -230,14 +230,14 @@ public class DeviceService {
                 "The value of the Authorization header must start with 'Bearer ' " +
                         "followed by the jwt token.");
       }
-      String jwtToken = authHeader.substring("Bearer ".length()).trim();
+      String jwtToken = authHeader.substring("Bearer".length()).replaceAll("\\s","");
       ProjectSecret projectSecret = deviceFacade.getProjectSecret(projetId);
       Response verification = verifyJwt(projectSecret, jwtToken);
       if (verification != null){
         return verification;
       }
-      return successfulJsonResponse(Status.OK);
-    } catch (JSONException e) {
+      return successfulJsonResponse(Status.OK, jwtToken);
+    } catch (Exception e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
     }
