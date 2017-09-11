@@ -137,15 +137,22 @@ public class DeviceService {
    * against the provided projectSecret.
    *
    * @param projectSecret Contains the secret which is used to verify the jwt token.
-   * @param jwtToken The jwt token
+   * @param authorizationHeader The Authorization header that contains the jwt token
    * @return Returns null if the token is verified or an Unauthorized Response with the reason for the failure.
    */
-  private static Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
-    if (jwtToken == null) {
-      return failedJsonResponse(Status.UNAUTHORIZED, "No jwt token is present in the request.");
+  private static Response verifyJwt(ProjectSecret projectSecret, String authorizationHeader) {
+    if (authorizationHeader == null) {
+      return failedJsonResponse(Status.UNAUTHORIZED, "No Authorization header is present.");
+    }
+
+    if(!authorizationHeader.startsWith("Bearer")){
+      return failedJsonResponse(Status.BAD_REQUEST,
+              "The value of the Authorization header must start with 'Bearer ' " +
+                      "followed by the jwt token.");
     }
     
     try {
+      String jwtToken = authorizationHeader.substring("Bearer".length()).replaceAll("\\s","");
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
       JWTVerifier verifier = JWT.require(algorithm).build();
       verifier.verify(jwtToken);
@@ -171,6 +178,14 @@ public class DeviceService {
       return verifier.verify(jwtToken);
     }catch (Exception e){
       logger.log(Level.WARNING, "JWT token decoding failed", e);
+      return null;
+    }
+  }
+
+  private ProjectSecret getProjectSecret(Integer projectId){
+    try {
+      return deviceFacade.getProjectSecret(projectId);
+    }catch (Exception e) {
       return null;
     }
   }
@@ -221,22 +236,12 @@ public class DeviceService {
 
     try {
       Integer projetId = Integer.valueOf(req.getParameter(PROJECT_ID));
-      String authHeader = req.getHeader(AUTHORIZATION_HEADER);
-      if(authHeader == null){
-        return failedJsonResponse(Status.BAD_REQUEST, "Authorization header is not present.");
-      }
-      if(!authHeader.startsWith("Bearer")){
-        return failedJsonResponse(Status.BAD_REQUEST,
-                "The value of the Authorization header must start with 'Bearer ' " +
-                        "followed by the jwt token.");
-      }
-      String jwtToken = authHeader.substring("Bearer".length()).replaceAll("\\s","");
       ProjectSecret projectSecret = deviceFacade.getProjectSecret(projetId);
-      Response verification = verifyJwt(projectSecret, jwtToken);
+      Response verification = verifyJwt(projectSecret, req.getHeader(AUTHORIZATION_HEADER));
       if (verification != null){
         return verification;
       }
-      return successfulJsonResponse(Status.OK, jwtToken);
+      return successfulJsonResponse(Status.OK);
     } catch (Exception e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
@@ -380,36 +385,33 @@ public class DeviceService {
   }
 
   /**
-   * Validate the schema of a topic before producing to that topic. COMPLETED.
+   * Validate the schema of a topic before producing to that topic.
    */
-  @GET
+  @POST
   @Path("/validate-schema")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response validateSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-  
-    JSONObject json = new JSONObject(jsonString);
-    Integer projectId = json.getInt(PROJECT_ID);
-    
-    ProjectSecret secret;
-    try {
-      secret = deviceFacade.getProjectSecret(projectId);
-    }catch (Exception e) {
-      return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
-    }
-    
-    String jwtToken = req.getHeader(AUTHORIZATION_HEADER);
-    Response authFailedResponse = verifyJwt(secret, jwtToken);
-    if (authFailedResponse != null) {
-      return authFailedResponse;
-    }
-    //Device is authenticated at this point
 
     try {
+      JSONObject json = new JSONObject(jsonString);
+      Integer projectId = json.getInt(PROJECT_ID);
       String topicName = json.getString(TOPIC);
       String schemaName = json.getString(SCHEMA);
       String schemaPayload = json.getString(SCHEMA_PAYLOAD).trim();
-      
+
+      ProjectSecret secret = getProjectSecret(projectId);
+      if (secret == null){
+        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
+      }
+
+      String jwtToken = req.getHeader(AUTHORIZATION_HEADER);
+      Response authFailedResponse = verifyJwt(secret, jwtToken);
+      if (authFailedResponse != null) {
+        return authFailedResponse;
+      }
+      // Device is authenticated at this point
+
       SchemaDTO schemaDTO = kafkaFacade.getSchemaForTopic(topicName);
       if(schemaDTO.getName().equals(schemaName)){
         if (schemaDTO.getContents().trim().equals(schemaPayload)) {
@@ -422,8 +424,9 @@ public class DeviceService {
         return failedJsonResponse(Status.BAD_REQUEST, "Schema name for topic is different");
       }
     }catch(JSONException e) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Json request is malformed! Required properties are [topic, schema, version, payload].");
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), MessageFormat.format(
+          "Json request is malformed! Required properties are [{0}, {1}, {2}, {3}].",
+              PROJECT_ID, TOPIC, SCHEMA, SCHEMA_PAYLOAD));
     }
   }
 
