@@ -55,11 +55,13 @@ public class DeviceService {
   private static final String USER_ID = "userId";
   private static final String PROJECT_ID = "projectId";
   
-  private static final String JWT_HEADER = "jwt";
+  private static final String AUTHORIZATION_HEADER = "Authorization";
   private static final String TOPIC = "topic";
   private static final String RECORDS = "records";
   private static final String SCHEMA = "schema";
   private static final String SCHEMA_PAYLOAD = "schemaPayload";
+
+  private static final String JWT_DURATION_IN_HOURS = "jwtTokenDurationInHours";
 
   @EJB
   private NoCacheResponse noCacheResponse;
@@ -197,16 +199,51 @@ public class DeviceService {
     try {
       JSONObject json = new JSONObject(jsonString);
       Integer projectId = json.getInt(PROJECT_ID);
-      Integer projectTokenDurationInHours = json.getInt("jwtTokenDurationInHours");
+      Integer projectTokenDurationInHours = json.getInt(JWT_DURATION_IN_HOURS);
       String projectSecret = UUID.randomUUID().toString();
       deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return successfulJsonResponse(Status.OK);
-    }catch(JSONException e) {
+    } catch (JSONException e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "Json request is malformed! Required properties are [{0}, {1}]",
-              PROJECT_ID, "jwtTokenDurationInHours"));
+              PROJECT_ID, JWT_DURATION_IN_HOURS));
     }
   }
+
+
+  /**
+   * Endpoint to verify the Jwt token.
+   */
+  @GET
+  @Path("/verify-token")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response verifyTokenEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+
+    try {
+      Integer projetId = Integer.valueOf(req.getParameter(PROJECT_ID));
+      String authHeader = req.getHeader(AUTHORIZATION_HEADER);
+      if(authHeader == null){
+        return failedJsonResponse(Status.BAD_REQUEST, "Authorization header is not present.");
+      }
+      if(!authHeader.startsWith("Bearer")){
+        return failedJsonResponse(Status.BAD_REQUEST,
+                "The value of the Authorization header must start with 'Bearer ' " +
+                        "followed by the jwt token.");
+      }
+      String jwtToken = authHeader.substring("Bearer ".length()).trim();
+      ProjectSecret projectSecret = deviceFacade.getProjectSecret(projetId);
+      Response verification = verifyJwt(projectSecret, jwtToken);
+      if (verification != null){
+        return verification;
+      }
+      return successfulJsonResponse(Status.OK);
+    } catch (JSONException e) {
+      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
+              "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
+    }
+  }
+
+
 
   /**
    * Register end-point for project devices. COMPLETED.
@@ -278,7 +315,8 @@ public class DeviceService {
       }
     }catch(JSONException e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}]", DEVICE_UUID, PASS_UUID));
+              "Json request is malformed! Required properties are [{0}, {1}, {2}]",
+              PROJECT_ID, DEVICE_UUID, PASS_UUID));
     }
   }
 
@@ -298,7 +336,7 @@ public class DeviceService {
       return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
     }
     
-    String jwtToken = req.getHeader(JWT_HEADER);
+    String jwtToken = req.getHeader(AUTHORIZATION_HEADER);
     Response authFailedResponse = verifyJwt(secret, jwtToken);
     if (authFailedResponse != null) {
       return authFailedResponse;
@@ -360,7 +398,7 @@ public class DeviceService {
       return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
     }
     
-    String jwtToken = req.getHeader(JWT_HEADER);
+    String jwtToken = req.getHeader(AUTHORIZATION_HEADER);
     Response authFailedResponse = verifyJwt(secret, jwtToken);
     if (authFailedResponse != null) {
       return authFailedResponse;
