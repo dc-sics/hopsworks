@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.util.ClientWrapper;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.dela.dto.common.ClusterAddressDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.old_dto.ElementSummaryJSON;
 import io.hops.hopsworks.dela.old_dto.ExtendedDetails;
@@ -19,7 +20,6 @@ import io.hops.hopsworks.dela.old_dto.KafkaEndpoint;
 import io.hops.hopsworks.dela.old_dto.SuccessJSON;
 import io.hops.hopsworks.dela.old_dto.TorrentExtendedStatusJSON;
 import io.hops.hopsworks.dela.old_dto.TorrentId;
-import io.hops.hopsworks.dela.dto.common.ClusterAddressDTO;
 import io.hops.hopsworks.util.SettingsHelper;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,10 +46,10 @@ public class TransferDelaController {
       ClientWrapper<AddressJSON> rc = ClientWrapper
         .httpInstance(AddressJSON.class)
         .setTarget(delaTransferHttpEndpoint)
-        .setPath(TransferDelaPaths.CONTACT);
-//        .setPayload(delaVersion);
+        .setPath(TransferDelaPaths.CONTACT)
+        .setPayload(delaVersion);
       logger.log(Settings.DELA_DEBUG, "dela:contact {0}", rc.getFullPath());
-      AddressJSON result = rc.doGet();
+      AddressJSON result = rc.doPost();
       logger.log(Settings.DELA_DEBUG, "dela:contact - done {0} {1}", new Object[]{rc.getFullPath(), result.getIp()});
       return result;
     } catch (IllegalStateException ise) {
@@ -160,7 +160,7 @@ public class TransferDelaController {
       ClientWrapper<TorrentExtendedStatusJSON> rc = ClientWrapper
         .httpInstance(TorrentExtendedStatusJSON.class)
         .setTarget(settings.getDELA_TRANSFER_HTTP_ENDPOINT())
-        .setPath("/ibrary/extended")
+        .setPath("/library/extended")
         .setPayload(torrentId);
       TorrentExtendedStatusJSON result = rc.doPost();
       return result;
