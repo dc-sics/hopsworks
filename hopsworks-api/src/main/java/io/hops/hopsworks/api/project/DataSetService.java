@@ -1021,7 +1021,7 @@ public class DataSetService {
   @GET
   @Path("checkFileForDownload/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response checkFileForDownload(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
@@ -1185,10 +1185,10 @@ public class DataSetService {
   }
 
   @Path("fileDownload/{path: .+}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public DownloadService downloadDS(@PathParam("path") String path,
-          @Context SecurityContext sc) throws
-          AppException {
+      @Context SecurityContext sc) throws
+      AppException {
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
 
@@ -1199,9 +1199,11 @@ public class DataSetService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.DOWNLOAD_ERROR);
     }
-
+    
     this.downloader.setPath(fullPath);
     this.downloader.setUsername(username);
+    this.downloader.setUser(user);
+    this.downloader.setProject(project);
     return downloader;
   }
 

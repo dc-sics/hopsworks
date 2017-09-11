@@ -27,13 +27,16 @@ import io.hops.hopsworks.common.util.Settings;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.validation.ValidationException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.StreamingOutput;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
@@ -493,5 +496,29 @@ public class DatasetController {
       default:
         return null;
     }
+  }
+  
+  /**
+   * Build the stream to allow downloading files from Datasets.
+   *
+   * @param stream
+   * @param projectSpecificUsername
+   * @return
+   */
+  public StreamingOutput buildOutputStream(final FSDataInputStream stream, final String projectSpecificUsername) {
+    StreamingOutput output = new StreamingOutput() {
+      @Override
+      public void write(OutputStream out) throws IOException,
+          WebApplicationException {
+        int length;
+        byte[] buffer = new byte[1024];
+        while ((length = stream.read(buffer)) != -1) {
+          out.write(buffer, 0, length);
+        }
+        out.flush();
+        stream.close();
+      }
+    };
+    return output;
   }
 }

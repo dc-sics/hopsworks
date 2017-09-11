@@ -19,9 +19,14 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.common.constants.message.ResponseMessages;
+import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -31,9 +36,15 @@ public class DownloadService {
 
   @EJB
   private DistributedFsService dfs;
+  @EJB
+  private ProjectTeamFacade projectTeamFacade;
+  @EJB
+  private HdfsUsersController hdfsUsersBean;
 
   private String path;
   private String username;
+  private Project project;
+  private Users user;
 
   public DownloadService() {
   }
@@ -46,42 +57,62 @@ public class DownloadService {
     this.username = username;
   }
 
+  public void setProject(Project project) {
+    this.project = project;
+  }
+
+  public void setUser(Users user) {
+    this.user = user;
+  }
+
   @GET
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response downloadFromHDFS() throws AppException, AccessControlException {
     FSDataInputStream stream;
-    DistributedFileSystemOps udfso = null;
+    DistributedFileSystemOps udfso;
     try {
       if (username != null) {
         udfso = dfs.getDfsOps(username);
-        stream = udfso.open(new Path(this.path));
-      } else {
-        udfso = dfs.getDfsOps();
-        stream = udfso.open(new Path(this.path));
-      }
-      Response.ResponseBuilder response = Response.ok(buildOutputStream(stream,
-              udfso, username));
-      response.header("Content-disposition", "attachment;");
+        stream = udfso.open(new Path(path));
 
-      return response.build();
+        //Data Scientists are allowed to download their own data
+        if (projectTeamFacade.findCurrentRole(project, user).equals(AllowedRoles.DATA_SCIENTIST)) {
+          String owner = udfso.getFileStatus(new org.apache.hadoop.fs.Path(path)).getOwner();
+          //Find hdfs user for this project
+          String projectUser = hdfsUsersBean.getHdfsUserName(project, user);
+          //If user requesting the download is not the owner, reject the request
+          if (!owner.equals(projectUser)) {
+            dfs.closeDfsClient(udfso);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                ResponseMessages.DOWNLOAD_PERMISSION_ERROR);
+          }
+        }
+
+        Response.ResponseBuilder response = Response.ok(buildOutputStream(stream, udfso, username));
+        response.header("Content-disposition", "attachment;");
+        return response.build();
+      } else {
+        throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+            ResponseMessages.DOWNLOAD_ERROR);
+      }
+
     } catch (AccessControlException ex) {
       throw new AccessControlException(
-              "Permission denied: You can not download the file ");
+          "Permission denied: You can not download the file ");
     } catch (IOException ex) {
       LOG.log(Level.SEVERE, null, ex);
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "File does not exist: " + this.path);
+          "File does not exist: " + this.path);
     }
   }
 
   private StreamingOutput buildOutputStream(final FSDataInputStream stream,
-          final DistributedFileSystemOps udfso, final String
-      projectSpecificUsername) {
+      final DistributedFileSystemOps udfso, final String projectSpecificUsername) {
     StreamingOutput output = new StreamingOutput() {
       @Override
       public void write(OutputStream out) throws IOException,
-              WebApplicationException {
+          WebApplicationException {
         try {
           int length;
           byte[] buffer = new byte[1024];
