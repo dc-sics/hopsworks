@@ -5,7 +5,6 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.util.ClientWrapper;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.dto.common.UserDTO;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
 import io.hops.hopsworks.dela.dto.hopssite.CommentDTO;
@@ -15,9 +14,10 @@ import io.hops.hopsworks.dela.dto.hopssite.HopsSiteDatasetDTO;
 import io.hops.hopsworks.dela.dto.hopssite.RateDTO;
 import io.hops.hopsworks.dela.dto.hopssite.RatingDTO;
 import io.hops.hopsworks.dela.dto.hopssite.SearchServiceDTO;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
+import io.hops.hopsworks.dela.hopssite.util.HopsSiteEndpoints;
 import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.hops.hopsworks.dela.old_hopssite_dto.PopularDatasetJSON;
-import io.hops.hopsworks.dela.hopssite.util.HopsSiteEndpoints;
 import io.hops.hopsworks.util.CertificateHelper;
 import io.hops.hopsworks.util.SettingsHelper;
 import java.security.KeyStore;
@@ -202,6 +202,13 @@ public class HopsSiteController {
         result = func.perform();
       } else {
         throw tpe;
+      }
+    } catch(IllegalStateException ise) {
+      if(ThirdPartyException.Error.USER_NOT_REGISTERED.is(ise.getMessage())) {
+        registerUser(publicCId, user.getFname(), user.getLname(), user.getEmail());
+        result = func.perform();
+      } else {
+        throw ise;
       }
     }
     return result;
