@@ -392,7 +392,7 @@ public class DeviceService {
   @GET
   @Path("/topic-schema")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response validateSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response getTopicSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
       Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
