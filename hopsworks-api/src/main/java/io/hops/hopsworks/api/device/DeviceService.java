@@ -405,17 +405,27 @@ public class DeviceService {
         return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
       }
 
-      String jwtToken = req.getHeader(AUTHORIZATION_HEADER);
-      Response authFailedResponse = verifyJwt(secret, jwtToken);
+      String authHeader = req.getHeader(AUTHORIZATION_HEADER);
+      Response authFailedResponse = verifyJwt(secret, authHeader);
       if (authFailedResponse != null) {
         return authFailedResponse;
       }
       // Device is authenticated at this point
 
       SchemaDTO schemaDTO = kafkaFacade.getSchemaForTopic(topicName);
-      if(schemaDTO.getName().equals(schemaName)){
+      if (schemaDTO == null){
+        return failedJsonResponse(Status.NO_CONTENT, MessageFormat.format(
+                "No topic named {0} has been found.", TOPIC));
+      }
+
+      if (schemaDTO.getName() == null){
+        return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, MessageFormat.format(
+                "The name of the saved schema for the topic {0} does not exist.", TOPIC));
+      }
+
+      if(schemaDTO.getName().equals(schemaName)){ //NULL POINTER
         if (schemaDTO.getContents().trim().equals(schemaPayload)) {
-          return successfulJsonResponse(Status.OK, null);
+          return successfulJsonResponse(Status.OK);
         }else {
           return failedJsonResponse(Status.BAD_REQUEST,
                   "Schema name is the same but the actual schema for the topic is different.");
