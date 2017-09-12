@@ -1,5 +1,7 @@
 package io.hops.hopsworks.common.dao.device;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -24,11 +26,26 @@ public class DeviceFacade {
 
   public ProjectDevice getProjectDevice(Integer projectId, String deviceUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    TypedQuery<ProjectDevice> query = em.createNamedQuery(
-        "ProjectDevice.findByProjectDevicePK",
-        ProjectDevice.class);
+    TypedQuery<ProjectDevice> query = em.createNamedQuery("ProjectDevice.findByProjectDevicePK", ProjectDevice.class);
     query.setParameter("projectDevicePK", pdKey);
     return query.getSingleResult();
+  }
+
+  public List<ProjectDeviceDTO> getProjectDevices(Integer projectId) {
+    TypedQuery<ProjectDevice> query = em.createNamedQuery("ProjectDevice.findByProjectId", ProjectDevice.class);
+    query.setParameter("projectId", projectId);
+    List<ProjectDevice> devices =  query.getResultList();
+    List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
+    for(ProjectDevice device: devices){
+      devicesDTO.add(new ProjectDeviceDTO(
+              device.getProjectDevicePK().getProjectId(),
+              device.getProjectDevicePK().getDeviceUuid(),
+              device.getUserId(),
+              device.getCreatedAt(),
+              device.getEnabled(),
+              device.getLastProduced()));
+    }
+    return devicesDTO;
   }
 
   public void addProjectSecret(Integer projectId, String projectSecret,

@@ -1,10 +1,7 @@
 package io.hops.hopsworks.api.device;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -16,11 +13,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.swagger.annotations.Api;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -189,7 +188,11 @@ public class DeviceService {
       return null;
     }
   }
-  
+
+  //===============================================================================================================
+  // DEVICE MANAGEMENT ENDPOINTS
+  //===============================================================================================================
+
   /**
    * Endpoint for testing purposes
    */
@@ -197,19 +200,20 @@ public class DeviceService {
   @Path("/test")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response testEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response getTestEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     return successfulJsonResponse(Status.OK, "jwtTokenValue");
   }
 
 
   /**
-   * Needs to be activated only once per project.
+   * Endpoint that creates a project secret. When the project secret record is stored in the database then the
+   * devices feature is enabled and devices can start registering.
    */
   @POST
   @Path("/activate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response activate(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postActivateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
       JSONObject json = new JSONObject(jsonString);
@@ -225,18 +229,41 @@ public class DeviceService {
     }
   }
 
-
   /**
-   * Endpoint to verify the Jwt token.
+   * Needs to be activated only once per project.
    */
   @GET
-  @Path("/verify-token")
+  @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response verifyTokenEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response getDevicesEndpoint(@Context HttpServletRequest req) throws AppException {
+
+    Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
+    //Integer state = Integer.valueOf(req.getParameter("state"));
+
+    List<ProjectDeviceDTO> listDevices = deviceFacade.getProjectDevices(projectId);
+
+    GenericEntity<List<ProjectDeviceDTO>> projectDevices = new GenericEntity<List<ProjectDeviceDTO>>(listDevices){};
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(projectDevices).build();
+
+  }
+
+  //===============================================================================================================
+  // DEVICE ENDPOINTS
+  //===============================================================================================================
+
+  /**
+   * Endpoint to verify the jwt token provided in the Authorization Header.
+   */
+  @POST
+  @Path("/verify-token")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response postVerifyTokenEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
-      Integer projetId = Integer.valueOf(req.getParameter(PROJECT_ID));
-      ProjectSecret projectSecret = deviceFacade.getProjectSecret(projetId);
+      JSONObject json = new JSONObject(jsonString);
+      Integer projectId = json.getInt(PROJECT_ID);
+      ProjectSecret projectSecret = deviceFacade.getProjectSecret(projectId);
       Response verification = verifyJwt(projectSecret, req.getHeader(AUTHORIZATION_HEADER));
       if (verification != null){
         return verification;
@@ -248,16 +275,14 @@ public class DeviceService {
     }
   }
 
-
-
   /**
-   * Register end-point for project devices. COMPLETED.
+   * Endpoint for registering a new device into a project.
    */
   @POST
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response registerDeviceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postRegisterEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     
     try {
       JSONObject json = new JSONObject(jsonString);
@@ -290,7 +315,7 @@ public class DeviceService {
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response loginDeviceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postLoginEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     
     try {
       JSONObject jsonRequest = new JSONObject(jsonString);
@@ -329,7 +354,7 @@ public class DeviceService {
   @Path("/produce")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response produceRecordsEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postProduceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
   
     JSONObject json = new JSONObject(jsonString);
     Integer projectId = json.getInt(PROJECT_ID);
@@ -341,8 +366,8 @@ public class DeviceService {
       return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
     }
     
-    String jwtToken = req.getHeader(AUTHORIZATION_HEADER);
-    Response authFailedResponse = verifyJwt(secret, jwtToken);
+    String authorizationHeader = req.getHeader(AUTHORIZATION_HEADER);
+    Response authFailedResponse = verifyJwt(secret, authorizationHeader);
     if (authFailedResponse != null) {
       return authFailedResponse;
     }
@@ -384,15 +409,13 @@ public class DeviceService {
 
   }
 
-
-
   /**
    * Get the schema of a topic before producing to that topic
    */
   @GET
   @Path("/topic-schema")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getTopicSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response getTopicSchemaEndpoint(@Context HttpServletRequest req) throws AppException {
 
     try {
       Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
@@ -415,55 +438,7 @@ public class DeviceService {
 
     }catch(JSONException e) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}, {2}, {3}].",
-              PROJECT_ID, TOPIC, SCHEMA, SCHEMA_PAYLOAD));
-    }
-  }
-
-  /**
-   * Validate the schema of a topic before producing to that topic.
-   */
-  @POST
-  @Path("/validate-schema")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response validateSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      Integer projectId = json.getInt(PROJECT_ID);
-      String topicName = json.getString(TOPIC);
-      String schemaName = json.getString(SCHEMA);
-      String schemaPayload = json.getString(SCHEMA_PAYLOAD).trim();
-
-      ProjectSecret secret = getProjectSecret(projectId);
-      if (secret == null){
-        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
-      }
-
-      String authHeader = req.getHeader(AUTHORIZATION_HEADER);
-      Response authFailedResponse = verifyJwt(secret, authHeader);
-      if (authFailedResponse != null) {
-        return authFailedResponse;
-      }
-      // Device is authenticated at this point
-
-      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
-
-      if(schemaDTO.getName().equals(schemaName)){
-        if (schemaDTO.getContents().trim().equals(schemaPayload)) {
-          return successfulJsonResponse(Status.OK);
-        }else {
-          return failedJsonResponse(Status.BAD_REQUEST,
-                  "Schema name is the same but the actual schema for the topic is different.");
-        }
-      }else {
-        return failedJsonResponse(Status.BAD_REQUEST, "Schema name for topic is different");
-      }
-    }catch(JSONException e) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), MessageFormat.format(
-          "Json request is malformed! Required properties are [{0}, {1}, {2}, {3}].",
-              PROJECT_ID, TOPIC, SCHEMA, SCHEMA_PAYLOAD));
+              "Json request is malformed! Required properties are [{0}, {1}].", PROJECT_ID, TOPIC));
     }
   }
 

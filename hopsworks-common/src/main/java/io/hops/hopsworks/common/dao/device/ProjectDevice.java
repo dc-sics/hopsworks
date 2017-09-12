@@ -24,9 +24,11 @@ import javax.xml.bind.annotation.XmlRootElement;
       name = "ProjectDevice.findAll",
       query = "SELECT pd FROM ProjectDevice pd"),
   @NamedQuery(
+      name = "ProjectDevice.findByProjectId",
+      query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId"),
+  @NamedQuery(
       name = "ProjectDevice.findByProjectDevicePK",
-      query= "SELECT pd FROM ProjectDevice pd " +
-          "WHERE pd.projectDevicePK = :projectDevicePK")})
+      query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
 public class ProjectDevice implements Serializable{
 
   private static final long serialVersionUID = 1L;
