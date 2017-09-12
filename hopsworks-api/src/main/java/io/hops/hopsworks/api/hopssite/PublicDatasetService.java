@@ -3,6 +3,7 @@ package io.hops.hopsworks.api.hopssite;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.hopssite.dto.CategoryDTO;
 import io.hops.hopsworks.api.hopssite.dto.DatasetIssueReqDTO;
+import io.hops.hopsworks.api.hopssite.dto.HopsSiteServiceInfoDTO;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.dto.common.UserDTO;
@@ -48,11 +49,28 @@ public class PublicDatasetService {
   private NoCacheResponse noCacheResponse;
   @EJB
   private HopsSiteController hopsSite;
+  @EJB
+  private Settings settings;
   @Inject
   private CommentService commentService;
   @Inject
   private RatingService ratingService;
 
+  @GET
+  @Path("serviceInfo/{service}")
+  public Response getServiceInfo(@PathParam("service") String service) {
+    boolean delaEnabled = settings.isDelaEnabled();
+    HopsSiteServiceInfoDTO serviceInfo;
+    if (delaEnabled) {
+      serviceInfo = new HopsSiteServiceInfoDTO("Dela", 1, "Dela enabled.");
+    } else {
+      serviceInfo = new HopsSiteServiceInfoDTO("Dela", 0, "Dela disabled.");
+    }
+
+    LOGGER.log(Settings.DELA_DEBUG, "Get service info for service: {0}, {1}", new Object[]{service, serviceInfo});
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(serviceInfo).build();
+  }
+  
   @GET
   @Path("all")
   public Response getAllPublicDatasets() {

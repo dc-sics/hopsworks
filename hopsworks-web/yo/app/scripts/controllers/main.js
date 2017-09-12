@@ -7,16 +7,17 @@ angular.module('hopsWorksApp')
         .controller('MainCtrl', ['$interval', '$cookies', '$location', '$scope',
           'AuthService', 'UtilsService', 'ElasticService', 'DelaService',
           'DelaGService', 'md5', 'ModalService', 'ProjectService', 'growl',
-          'MessageService', '$routeParams', '$window',
+          'MessageService', '$routeParams', '$window', 'PublicDatasetService',
           function ($interval, $cookies, $location, $scope, AuthService, UtilsService,
                   ElasticService, DelaService, DelaGService, md5, ModalService,
                   ProjectService, growl,
-                  MessageService, $routeParams, $window) {
+                  MessageService, $routeParams, $window, PublicDatasetService) {
 
             var self = this;
             self.email = $cookies.get('email');
             self.emailHash = md5.createHash(self.email || '');
             var elasticService = ElasticService();
+            self.isDelaEnabled = false;
 
             if (!angular.isUndefined($routeParams.datasetName)) {
               self.searchType = "datasetCentric";
@@ -50,6 +51,22 @@ angular.module('hopsWorksApp')
                 self.errorMessage = error.data.msg;
               });
             };
+            
+            var checkDelaEnabled = function () {
+              PublicDatasetService.getServiceInfo("dela").then(function (success) {
+                console.log("isDelaEnabled", success);
+                self.delaServiceInfo = success.data;
+                if (self.delaServiceInfo.status === 1 ) {
+                  self.isDelaEnabled = true;
+                } else {
+                  self.isDelaEnabled = false;
+                }
+              }, function (error) {
+                self.isDelaEnabled = false;
+                console.log("isDelaEnabled", error);
+              });
+            };
+            checkDelaEnabled(); // check 
 
             self.profileModal = function () {
               ModalService.profile('md');

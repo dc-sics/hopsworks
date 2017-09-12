@@ -3,6 +3,12 @@
 angular.module('hopsWorksApp')
         .factory('PublicDatasetService', ['$http', function ($http) {
             var service = {
+              getServiceInfo: function (serviceName) {
+                return $http({
+                  method: 'get',
+                  url: '/api/hopssite/publicDataset/serviceInfo/' + serviceName
+                });
+              },
               getAll: function () {
                 return $http({
                   method: 'get',
