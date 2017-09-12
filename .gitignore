@@ -31,6 +31,7 @@ nb-configuration.xml
 nbactions.xml
 
 ### Eclipse ###
+.DS_Store
 .project
 .settings/
 hopsworks-admin/.classpath
