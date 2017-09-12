@@ -460,7 +460,7 @@ public class HopsSiteController {
   public DatasetDTO.Complete getDataset(String publicDSId) {
     checkDelaState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET_BY_PUBLIC_ID + "/" + publicDSId,
-      DatasetDTO.Proto.class);
+      DatasetDTO.Complete.class);
     return (DatasetDTO.Complete) client.doGet();
   }
 

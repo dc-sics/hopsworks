@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('CardCtrl', ['$scope', 'ProjectService', 'DelaGService', '$routeParams',
-          function ($scope, ProjectService, DelaGService, $routeParams) {
+        .controller('CardCtrl', ['$scope', 'ProjectService', 'DelaGService', '$routeParams', '$rootScope', '$location',
+          function ($scope, ProjectService, DelaGService, $routeParams, $rootScope, $location) {
             var self = this;
             self.detail = [];
             var init = function (content) {
@@ -86,6 +86,15 @@ angular.module('hopsWorksApp')
               }
               return convertSize(fileSizeInBytes);
             };
+            
+            self.gotoPublicDataset = function (content) {
+              if (content.publicId === undefined) {
+                return;
+              }
+              $rootScope['publicDSId'] = content.publicId;
+              $location.path('/publicDataset');
+            };
+            
           }]);
 
 

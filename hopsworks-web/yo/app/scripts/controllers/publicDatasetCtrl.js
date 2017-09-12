@@ -1,9 +1,9 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('PublicDatasetCtrl', ['$location', '$anchorScroll', '$scope',
+        .controller('PublicDatasetCtrl', ['$location', '$anchorScroll', '$scope', '$rootScope',
           '$showdown', 'md5', 'ModalService', 'PublicDatasetService', 'DelaGService',
-          function ($location, $anchorScroll, $scope, $showdown, md5, ModalService,
+          function ($location, $anchorScroll, $scope, $rootScope, $showdown, md5, ModalService,
                   PublicDatasetService, DelaGService) {
             var self = this;
             self.comments;
@@ -17,6 +17,8 @@ angular.module('hopsWorksApp')
             self.commentEditable = false;
             self.newComment;
             self.updateComment;
+            self.publicDSId = $rootScope.publicDSId;
+            $rootScope.publicDSId = undefined; //reset
 
             var getUser = function () {
               PublicDatasetService.getUserId().then(function (success) {
@@ -37,10 +39,26 @@ angular.module('hopsWorksApp')
                 console.log("getDisplayCategories", error);
               });
             };
+            
+            var getDataset = function (publicId) {
+              PublicDatasetService.getDataset(publicId).then(function (success) {
+                console.log("getDataset", success);
+                self.selectedDataset = success.data;
+                self.selectedSubCategory = undefined;
+                getBasicReadme(publicId);
+                getComments(publicId);
+                getUserRating(publicId);
+              }, function (error) {
+                console.log("getDataset", error);
+              });
+            };
 
             var initCtrl = function () {
               getUser();
               getDisplayCategories();
+              if (self.publicDSId !== undefined) {
+                getDataset(self.publicDSId);
+              }
             };
 
             initCtrl();
@@ -110,7 +128,7 @@ angular.module('hopsWorksApp')
                 self.userRating = 1;
                 console.log("getUserRating", error);
               });
-            };
+            };           
 
             self.getEmailHash = function (email) {
               return md5.createHash(email || '');
