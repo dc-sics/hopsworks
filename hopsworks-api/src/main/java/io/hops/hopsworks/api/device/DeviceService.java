@@ -412,16 +412,7 @@ public class DeviceService {
       }
       // Device is authenticated at this point
 
-      SchemaDTO schemaDTO = kafkaFacade.getSchemaForTopic(topicName);
-      if (schemaDTO == null){
-        return failedJsonResponse(Status.NO_CONTENT, MessageFormat.format(
-                "No topic named {0} has been found.", TOPIC));
-      }
-
-      if (schemaDTO.getName() == null){
-        return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, MessageFormat.format(
-                "The name of the saved schema for the topic {0} does not exist.", TOPIC));
-      }
+      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
 
       if(schemaDTO.getName().equals(schemaName)){ //NULL POINTER
         if (schemaDTO.getContents().trim().equals(schemaPayload)) {

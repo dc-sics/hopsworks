@@ -797,6 +797,30 @@ public class KafkaFacade {
     return schemaDto;
   }
 
+  public SchemaDTO getSchemaForProjectTopic(Integer projectId, String topicName) throws AppException {
+
+    ProjectTopics topic = em.find(ProjectTopics.class, new ProjectTopicsPK(topicName, projectId));
+
+    if (topic == null) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), "Topic not found");
+    }
+
+    SchemaTopics schema = em.find(SchemaTopics.class,
+            new SchemaTopicsPK(
+                    topic.getSchemaTopics().getSchemaTopicsPK().getName(),
+                    topic.getSchemaTopics().getSchemaTopicsPK().getVersion()));
+
+    if (schema == null) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), "topic has not schema");
+    }
+    return new SchemaDTO(
+            schema.getSchemaTopicsPK().getName(),
+            schema.getContents(),
+            schema.getSchemaTopicsPK().getVersion());
+  }
+
+
+
   public List<SchemaDTO> listSchemasForTopics() {
     //get all schemas, and return the DTO
     Map<String, List<Integer>> schemas = new HashMap<>();
