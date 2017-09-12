@@ -384,6 +384,42 @@ public class DeviceService {
 
   }
 
+
+
+  /**
+   * Get the schema of a topic before producing to that topic
+   */
+  @GET
+  @Path("/topic-schema")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response validateSchemaEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+
+    try {
+      Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
+      String topicName = req.getParameter(TOPIC);
+
+      ProjectSecret secret = getProjectSecret(projectId);
+      if (secret == null){
+        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
+      }
+
+      String authHeader = req.getHeader(AUTHORIZATION_HEADER);
+      Response authFailedResponse = verifyJwt(secret, authHeader);
+      if (authFailedResponse != null) {
+        return authFailedResponse;
+      }
+      // Device is authenticated at this point
+
+      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
+
+    }catch(JSONException e) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), MessageFormat.format(
+              "Json request is malformed! Required properties are [{0}, {1}, {2}, {3}].",
+              PROJECT_ID, TOPIC, SCHEMA, SCHEMA_PAYLOAD));
+    }
+  }
+
   /**
    * Validate the schema of a topic before producing to that topic.
    */
@@ -414,7 +450,7 @@ public class DeviceService {
 
       SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
 
-      if(schemaDTO.getName().equals(schemaName)){ //NULL POINTER
+      if(schemaDTO.getName().equals(schemaName)){
         if (schemaDTO.getContents().trim().equals(schemaPayload)) {
           return successfulJsonResponse(Status.OK);
         }else {
