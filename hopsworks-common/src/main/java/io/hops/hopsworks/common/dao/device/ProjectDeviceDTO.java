@@ -7,75 +7,75 @@ import java.util.Date;
 @XmlRootElement
 public class ProjectDeviceDTO implements Serializable{
 
-    private Integer projectId;
+  private Integer projectId;
 
-    private String deviceUuid;
+  private String deviceUuid;
 
-    private Integer userId;
+  private Integer userId;
 
-    private Date createdAt;
+  private Date createdAt;
 
-    private Integer state;
+  private Integer state;
 
-    public ProjectDeviceDTO(){}
+  public ProjectDeviceDTO(){}
 
-    public ProjectDeviceDTO(Integer projectId, String deviceUuid, Integer userId, Date createdAt,
-                            Integer state, Date lastProduced) {
-        this.projectId = projectId;
-        this.deviceUuid = deviceUuid;
-        this.userId = userId;
-        this.createdAt = createdAt;
-        this.state = state;
-        this.lastProduced = lastProduced;
-    }
+  public ProjectDeviceDTO(
+    Integer projectId, String deviceUuid, Integer userId, Date createdAt, Integer state, Date lastProduced) {
+    this.projectId = projectId;
+    this.deviceUuid = deviceUuid;
+    this.userId = userId;
+    this.createdAt = createdAt;
+    this.state = state;
+    this.lastProduced = lastProduced;
+  }
 
-    private Date lastProduced;
+  private Date lastProduced;
 
-    public Integer getProjectId() {
-        return projectId;
-    }
+  public Integer getProjectId() {
+    return projectId;
+  }
 
-    public void setProjectId(Integer projectId) {
-        this.projectId = projectId;
-    }
+  public void setProjectId(Integer projectId) {
+    this.projectId = projectId;
+  }
 
-    public String getDeviceUuid() {
-        return deviceUuid;
-    }
+  public String getDeviceUuid() {
+    return deviceUuid;
+  }
 
-    public void setDeviceUuid(String deviceUuid) {
-        this.deviceUuid = deviceUuid;
-    }
+  public void setDeviceUuid(String deviceUuid) {
+    this.deviceUuid = deviceUuid;
+  }
 
-    public Integer getUserId() {
-        return userId;
-    }
+  public Integer getUserId() {
+    return userId;
+  }
 
-    public void setUserId(Integer userId) {
-        this.userId = userId;
-    }
+  public void setUserId(Integer userId) {
+    this.userId = userId;
+  }
 
-    public Date getCreatedAt() {
-        return createdAt;
-    }
+  public Date getCreatedAt() {
+    return createdAt;
+  }
 
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
+  public void setCreatedAt(Date createdAt) {
+    this.createdAt = createdAt;
+  }
 
-    public Integer getState() {
-        return state;
-    }
+  public Integer getState() {
+    return state;
+  }
 
-    public void setState(Integer state) {
-        this.state = state;
-    }
+  public void setState(Integer state) {
+    this.state = state;
+  }
 
-    public Date getLastProduced() {
-        return lastProduced;
-    }
+  public Date getLastProduced() {
+    return lastProduced;
+  }
 
-    public void setLastProduced(Date lastProduced) {
-        this.lastProduced = lastProduced;
-    }
+  public void setLastProduced(Date lastProduced) {
+    this.lastProduced = lastProduced;
+  }
 }
