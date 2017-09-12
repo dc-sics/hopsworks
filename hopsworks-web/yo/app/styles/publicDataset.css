@@ -45,6 +45,10 @@
   cursor: pointer;
 }
 
+.publicdataset-nav-selectedItem {
+  font-weight: bold;
+}
+
 .publicdataset-nav .dropdown-menu > form > li {
   padding-left: 15px !important;
 }

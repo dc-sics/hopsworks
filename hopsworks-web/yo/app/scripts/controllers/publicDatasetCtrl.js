@@ -8,9 +8,9 @@ angular.module('hopsWorksApp')
             var self = this;
             self.comments;
             self.readme;
-            self.selectedList;
             self.displayCategories;
             self.selectedCategory;
+            self.selectedCategoryMap = {};
             self.selectedDataset;
             self.userRating = 0;
             self.myUserId;
@@ -67,7 +67,8 @@ angular.module('hopsWorksApp')
               console.log("selectDisplayCategory", category);
               self.selectedDataset = undefined;
               self.selectedCategory = category;
-              doGet(category.categoryName);
+              self.selectedCategoryMap[category.categoryName] = category;
+              doGet(self.selectedCategoryMap[category.categoryName]);
             };
 
             self.selectItem = function (selectItem) {
@@ -78,14 +79,14 @@ angular.module('hopsWorksApp')
               getUserRating(self.selectedDataset.publicId);
             };
 
-            var doGet = function (type) {
-              PublicDatasetService.doGet(type).then(function (success) {
+            var doGet = function (category) {
+              PublicDatasetService.doGet(category.categoryName).then(function (success) {
                 console.log("doGet", success);
-                self.selectedList = success.data;
-                self.selectedSubCategoryList = success.data;
+                category['selectedList'] = success.data;
+                category['selectedSubCategoryList'] = success.data;
               }, function (error) {
-                self.selectedList = [];
-                self.selectedSubCategoryList = [];
+                category['selectedList'] = [];
+                category['selectedSubCategoryList'] = [];
                 console.log("doGet", error);
               });
             };
@@ -238,21 +239,22 @@ angular.module('hopsWorksApp')
             };
 
             var init = function () {
-              $('.keep-open').on({
-                'shown.bs.dropdown': function () {
-                  $(this).attr('closable', false);
-                },
-                'click': function () { },
-                'hide.bs.dropdown': function () {
-                  return $(this).attr('closable') === 'true';
-                }
+              $('.keep-open').on('shown.bs.dropdown', '.dropdown', function () {
+                $(this).attr('closable', false);
               });
 
-              $('.keep-open #dLabel').on({
-                'click': function () {
-                  $(this).parent().attr('closable', true);
-                }
+              $('.keep-open').on('click', '.dropdown', function () {
+                console.log('.keep-open: click');
               });
+
+              $('.keep-open').on('hide.bs.dropdown', '.dropdown', function () {
+                return $(this).attr('closable') === 'true';
+              });
+
+              $('.keep-open').on('click', '#dLabel', function() {
+                $(this).parent().attr('closable', true );
+              });
+              
               $(window).scroll(function () {
                 if ($(this).scrollLeft() > 0) {
                   $('#publicdataset').css({'left': 45 - $(this).scrollLeft()});
@@ -284,6 +286,13 @@ angular.module('hopsWorksApp')
             $scope.$on("$destroy", function () {
               overflowY('auto');
             });
+            
+            $scope.isSelected = function (name) {
+              if (self.selectedCategory === undefined) {
+                return false;
+              }
+              return self.selectedCategory.displayName === name;
+            };
 
           }]);
 

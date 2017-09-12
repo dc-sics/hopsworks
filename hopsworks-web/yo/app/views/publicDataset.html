@@ -8,15 +8,16 @@
 
   <div ng-if="mainCtrl.searchTerm.length <= 3" class="row" ng-init="publicDataset.setupStyle()">
     <nav class="publicdataset-nav" id="publicdataset">
-      <ul>
+      <ul class=" keep-open">
         <li class="publicdataset-heading">Public Datasets</li>
-        <li class="dropdown keep-open" ng-repeat="displayCategory in publicDataset.displayCategories">
+        <li class="dropdown" ng-repeat="displayCategory in publicDataset.displayCategories track by $index">
           <a id="dLabel" class="publicdataset-nav-item dropdown-toggle"
              ng-click="publicDataset.selectDisplayCategory(displayCategory)"
+             ng-class="{'publicdataset-nav-selectedItem': isSelected(displayCategory.displayName)}"
              data-toggle="dropdown"> {{displayCategory.displayName}}</a>
           <ul class="dropdown-menu" role="menu">
             <form>
-              <li ng-repeat="selectedItem in publicDataset.selectedList">
+              <li ng-repeat="selectedItem in publicDataset.selectedCategoryMap[publicDataset.selectedCategory.categoryName].selectedList">
                 <span class="publicdataset-nav-text">
                   <a ng-click="publicDataset.selectItem(selectedItem)">{{selectedItem.name}}</a>
                 </span>
@@ -42,7 +43,7 @@
       </div>
       <br>
       <div ng-if="publicDataset.selectedDataset === undefined" class="publicdataset-view-content">
-        <div ng-repeat="ds in publicDataset.selectedList">
+        <div ng-repeat="ds in publicDataset.selectedCategoryMap[publicDataset.selectedCategory.categoryName].selectedList">
           <hw-panel id="{{$index}}" 
                     content="ds" 
                     details-fn="publicDataset.selectItem(ds)" 
