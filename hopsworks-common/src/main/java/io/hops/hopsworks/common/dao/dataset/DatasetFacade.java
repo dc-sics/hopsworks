@@ -158,6 +158,12 @@ public class DatasetFacade extends AbstractFacade<Dataset> {
     }
     return ds;
   }
+  
+  public List<Dataset> findAllPublicDatasets() {
+    TypedQuery<Dataset> query = em.createNamedQuery("Dataset.findAllPublic",
+      Dataset.class);
+    return query.getResultList();   
+  }
 
   /**
    * Finds all data sets shared with a project.

@@ -3,5 +3,7 @@
     "form": {},
     "hw-panel": {}
   },
-  "attributes": {}
+  "attributes": {
+    "growl": {}
+  }
 }

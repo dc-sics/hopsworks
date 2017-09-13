@@ -2,9 +2,9 @@
 
 angular.module('hopsWorksApp')
         .controller('PublicDatasetCtrl', ['$location', '$anchorScroll', '$scope', '$rootScope',
-          '$showdown', 'md5', 'ModalService', 'PublicDatasetService', 'DelaGService',
+          '$showdown', 'md5', 'ModalService', 'PublicDatasetService', 'DelaGService', 'ProjectService', 'growl',
           function ($location, $anchorScroll, $scope, $rootScope, $showdown, md5, ModalService,
-                  PublicDatasetService, DelaGService) {
+                  PublicDatasetService, DelaGService, ProjectService, growl) {
             var self = this;
             self.comments;
             self.readme;
@@ -14,11 +14,16 @@ angular.module('hopsWorksApp')
             self.selectedDataset;
             self.userRating = 0;
             self.myUserId;
+            self.myClusterId;
             self.commentEditable = false;
             self.newComment;
             self.updateComment;
             self.publicDSId = $rootScope.publicDSId;
             $rootScope.publicDSId = undefined; //reset
+            self.loadingDisplayCategories = false;
+            self.loadingSelectedCategory = false;
+            self.loadingReadme = false;
+            self.loadingComments = false;
 
             var getUser = function () {
               PublicDatasetService.getUserId().then(function (success) {
@@ -29,13 +34,26 @@ angular.module('hopsWorksApp')
                 console.log("getUser", error);
               });
             };
+            
+            var getClusterId = function () {
+              PublicDatasetService.getClusterId().then(function (success) {
+                console.log("getClusterId", success);
+                self.myClusterId = success.data;
+              }, function (error) {
+                self.myClusterId = undefined;
+                console.log("getClusterId", error);
+              });
+            };
 
             var getDisplayCategories = function () {
+              self.loadingDisplayCategories = true;
               PublicDatasetService.getDisplayCategories().then(function (success) {
                 console.log("getDisplayCategories", success);
                 self.displayCategories = success.data;
+                self.loadingDisplayCategories = false;
               }, function (error) {
                 self.displayCategories = [];
+                self.loadingDisplayCategories = false;
                 console.log("getDisplayCategories", error);
               });
             };
@@ -55,6 +73,7 @@ angular.module('hopsWorksApp')
 
             var initCtrl = function () {
               getUser();
+              getClusterId();
               getDisplayCategories();
               if (self.publicDSId !== undefined) {
                 getDataset(self.publicDSId);
@@ -62,6 +81,10 @@ angular.module('hopsWorksApp')
             };
 
             initCtrl();
+            
+            self.isInCluster = function () {
+              
+            };
 
             self.selectDisplayCategory = function (category) {
               console.log("selectDisplayCategory", category);
@@ -80,13 +103,19 @@ angular.module('hopsWorksApp')
             };
 
             var doGet = function (category) {
+              if (category['selectedList'] === undefined || category['selectedList'].lenght === 0) {
+                self.loadingSelectedCategory = true;
+              }
+
               PublicDatasetService.doGet(category.categoryName).then(function (success) {
                 console.log("doGet", success);
                 category['selectedList'] = success.data;
                 category['selectedSubCategoryList'] = success.data;
+                self.loadingSelectedCategory = false;
               }, function (error) {
                 category['selectedList'] = [];
                 category['selectedSubCategoryList'] = [];
+                self.loadingSelectedCategory = false;
                 console.log("doGet", error);
               });
             };
@@ -102,21 +131,29 @@ angular.module('hopsWorksApp')
             
             var getreadme = function (publicId, bootstrap) {
               // DelaGService.getReadme(publicDSId, peers)
+              self.readme = '';
+              self.loadingReadme = true;
               DelaGService.getReadme(publicId, bootstrap).then(function (success) {
                 console.log("getreadme", success);
                 self.readme = $showdown.makeHtml(success.data.content);
+                self.loadingReadme = false;
               }, function (error) {
                 self.readme = "No readme found.";
+                self.loadingReadme = false;
                 console.log("getreadme", error);
               });
             };
 
             var getComments = function (publicId) {
+              self.loadingComments = true;
+              self.comments = [];
               PublicDatasetService.getComments(publicId).then(function (success) {
                 console.log("getComments", success);
                 self.comments = success.data;
+                self.loadingComments = false;
               }, function (error) {
                 self.comments = [];
+                self.loadingComments = false;
                 console.log("getComments", error);
               });
             };
@@ -237,6 +274,31 @@ angular.module('hopsWorksApp')
                 console.log("postRating", error);
               });
             };
+            
+            self.addPublicDatasetModal = function (dataset) {
+              PublicDatasetService.getLocalDatasetByPublicId(dataset.publicId).then(function (response) {
+                var datasetDto = response.data;
+                console.log('datasetDto: ', datasetDto);
+                var projects;
+                //fetch the projects to pass them in the modal.
+                ProjectService.query().$promise.then(function (success) {
+                  projects = success;
+                  console.log('projects: ', projects);
+                  //show dataset
+                  ModalService.viewPublicDataset('md', projects, datasetDto).then(function (success) {
+                      growl.success(success.data.successMessage, {title: 'Success', ttl: 1000, referenceId: 13});
+                    }, function (error) {
+
+                    });
+                }, function (error) {
+                  console.log('Error: ' + error);
+                });
+
+              }, function (error) {
+                growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000, referenceId: 13});
+              });
+            };
+
 
             var init = function () {
               $('.keep-open').on('shown.bs.dropdown', '.dropdown', function () {

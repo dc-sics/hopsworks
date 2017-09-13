@@ -4,6 +4,11 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.hopssite.dto.CategoryDTO;
 import io.hops.hopsworks.api.hopssite.dto.DatasetIssueReqDTO;
 import io.hops.hopsworks.api.hopssite.dto.HopsSiteServiceInfoDTO;
+import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
+import io.hops.hopsworks.common.dao.dataset.Dataset;
+import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
+import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
+import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.dto.common.UserDTO;
@@ -14,6 +19,7 @@ import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.swagger.annotations.Api;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.security.RolesAllowed;
@@ -51,6 +57,10 @@ public class PublicDatasetService {
   private HopsSiteController hopsSite;
   @EJB
   private Settings settings;
+  @EJB
+  private DatasetFacade datasetFacade;
+  @EJB
+  private InodeFacade inodes;
   @Inject
   private CommentService commentService;
   @Inject
@@ -70,11 +80,12 @@ public class PublicDatasetService {
     LOGGER.log(Settings.DELA_DEBUG, "Get service info for service: {0}, {1}", new Object[]{service, serviceInfo});
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(serviceInfo).build();
   }
-  
+
   @GET
   @Path("all")
   public Response getAllPublicDatasets() {
     List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
+    markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
     };
     LOGGER.log(Settings.DELA_DEBUG, "Get all datasets");
@@ -90,9 +101,25 @@ public class PublicDatasetService {
   }
 
   @GET
+  @Path("localByPublicId/{publicDSId}")
+  public Response getLocalDataset(@PathParam("publicDSId") String publicDSId) {
+    Optional<Dataset> datasets = datasetFacade.findByPublicDsId(publicDSId);
+    if (!datasets.isPresent()) {
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.BAD_REQUEST).build();
+    }
+    Dataset ds = datasets.get();
+    Inode parent = inodes.findParent(ds.getInode()); // to get the real parent project
+    LocalDatasetDTO datasetDTO = new LocalDatasetDTO(ds.getInodeId(), ds.getName(), ds.getDescription(), parent.
+            getInodePK().getName());
+    LOGGER.log(Settings.DELA_DEBUG, "Get a local dataset by public id.");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasetDTO).build();
+  }
+
+  @GET
   @Path("topRated")
   public Response getTopTenPublicDatasets() {
     List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
+    markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
     };
     LOGGER.log(Settings.DELA_DEBUG, "Get all top rated datasets");
@@ -103,6 +130,7 @@ public class PublicDatasetService {
   @Path("new")
   public Response getNewPublicDatasets() {
     List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
+    markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
     };
     LOGGER.log(Settings.DELA_DEBUG, "Get all top rated datasets");
@@ -162,6 +190,15 @@ public class PublicDatasetService {
   }
 
   @GET
+  @Path("clusterId")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getClusterId() throws ThirdPartyException {
+    String clusterId = settings.getDELA_CLUSTER_ID();
+    LOGGER.log(Level.INFO, "Cluster id on hops-site: {0}", clusterId);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(clusterId).build();
+  }
+
+  @GET
   @Path("userId")
   public Response getUserId(@Context SecurityContext sc) throws ThirdPartyException {
     String id = hopsSite.getUserId(sc.getUserPrincipal().getName());
@@ -185,6 +222,18 @@ public class PublicDatasetService {
   public RatingService getRating(@PathParam("publicDSId") String publicDSId) {
     this.ratingService.setPublicDSId(publicDSId);
     return this.ratingService;
+  }
+
+  private void markLocalDatasets(List<HopsSiteDatasetDTO> datasets) {
+    List<Dataset> publicDatasets = datasetFacade.findAllPublicDatasets();
+    for (HopsSiteDatasetDTO publicDs : datasets) {
+      for (Dataset localDs : publicDatasets) {
+        if (publicDs.getPublicId().equals(localDs.getPublicDsId())) {
+          publicDs.setLocalDataset(true);
+          break;
+        }
+      }
+    }
   }
 
 }

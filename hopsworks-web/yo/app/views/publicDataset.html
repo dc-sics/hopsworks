@@ -5,11 +5,12 @@
       <div ng-include="'views/search.html'"></div>
     </div>
   </div>
-
+  <div growl reference="13" class="pull-right"></div>
   <div ng-if="mainCtrl.searchTerm.length <= 3" class="row" ng-init="publicDataset.setupStyle()">
     <nav class="publicdataset-nav" id="publicdataset">
       <ul class=" keep-open">
         <li class="publicdataset-heading">Public Datasets</li>
+        <div ng-if="publicDataset.loadingDisplayCategories" class="text-muted loading-dots"></div>
         <li class="dropdown" ng-repeat="displayCategory in publicDataset.displayCategories track by $index">
           <a id="dLabel" class="publicdataset-nav-item dropdown-toggle"
              ng-click="publicDataset.selectDisplayCategory(displayCategory)"
@@ -17,7 +18,7 @@
              data-toggle="dropdown"> {{displayCategory.displayName}}</a>
           <ul class="dropdown-menu" role="menu">
             <form>
-              <li ng-repeat="selectedItem in publicDataset.selectedCategoryMap[publicDataset.selectedCategory.categoryName].selectedList">
+              <li ng-repeat="selectedItem in publicDataset.selectedCategoryMap[displayCategory.categoryName].selectedList">
                 <span class="publicdataset-nav-text">
                   <a ng-click="publicDataset.selectItem(selectedItem)">{{selectedItem.name}}</a>
                 </span>
@@ -43,10 +44,12 @@
       </div>
       <br>
       <div ng-if="publicDataset.selectedDataset === undefined" class="publicdataset-view-content">
+        <div ng-if="publicDataset.loadingSelectedCategory" class="text-muted loading-dots">Loading</div>
         <div ng-repeat="ds in publicDataset.selectedCategoryMap[publicDataset.selectedCategory.categoryName].selectedList">
           <hw-panel id="{{$index}}" 
                     content="ds" 
                     details-fn="publicDataset.selectItem(ds)" 
+                    add-fn="publicDataset.addPublicDatasetModal(ds)"
                     download-fn="mainCtrl.downloadPublicDataset(ds)"
                     card-index="$index"> 
           </hw-panel>
@@ -54,15 +57,34 @@
       </div>
       <div ng-if="publicDataset.selectedDataset !== undefined" class="publicdataset-view-content">
         <div class="panel panel-default">
-          <div class="panel-heading">README.md <a class="publicdataset-issue pull-right text-muted"
-                                                  title="Report issues with licence, content of the dataset, or the documentation."
-                                                  ng-click="publicDataset.reportDataset()">Report issue</a></div>
-          <div ng-if="publicDataset.readme === undefined " class="panel-body">No readme file.</div>
-          <div ng-if="publicDataset.readme !== undefined " class="panel-body" ng-bind-html="publicDataset.readme"></div>
+          <div class="panel-heading">README.md 
+            <div class="pull-right text-muted">
+              <span ng-if="publicDataset.selectedDataset.localDataset" data-placement="bottom" data-toggle="tooltip" title="Add to project" style="padding: 10px;"
+                    ng-click="publicDataset.addPublicDatasetModal(publicDataset.selectedDataset)">
+                <i class="fa fa-plus-circle fa-lg" aria-hidden="true"></i>
+              </span>
+              <span ng-if="!publicDataset.selectedDataset.localDataset" data-placement="bottom" data-toggle="tooltip" title="Download" style="padding: 10px;"
+                    ng-click="mainCtrl.downloadPublicDataset(publicDataset.selectedDataset)">
+                <i class="fa fa-cloud-download fa-lg" aria-hidden="true"></i>
+              </span>
+              <a class="publicdataset-issue text-muted"
+                 title="Report issues with licence, content of the dataset, or the documentation."
+                 ng-click="publicDataset.reportDataset()">Report issue</a>
+            </div>            
+          </div>
+          <div ng-if="publicDataset.readme === undefined && !publicDataset.loadingReadme" class="panel-body text-muted">No readme file.</div>
+          <div ng-if="publicDataset.readme !== undefined && !publicDataset.loadingReadme" class="panel-body" ng-bind-html="publicDataset.readme"></div>
+          <div ng-if="publicDataset.loadingReadme" class="panel-body text-muted" style="text-align: center;">
+            <span class="loading-dots">Loading</span>
+          </div>
         </div>
         <div class="panel panel-default">
           <div class="panel-heading">COMMENTS</div>
-          <div class="panel-body">
+          <div class="panel-body">            
+            <div ng-if="publicDataset.loadingComments" class="text-muted" style="text-align: center;">              
+              <span class="loading-dots"></span>
+            </div>
+            <div ng-if="!publicDataset.loadingComments && publicDataset.comments === undefined" class="text-muted" style="text-align: center;">No comments found.</div>
             <div ng-repeat="comment in publicDataset.comments">
               <img alt="" class="publicdataset-comment-img pull-left" src="https://gravatar.com/avatar/{{publicDataset.getEmailHash(comment.user.email)}}?d=retro&s=30">
               <div class="publicdataset-comment">

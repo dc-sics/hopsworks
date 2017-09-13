@@ -15,7 +15,11 @@
             <span title="Seeders"><i class="fa fa-upload" aria-hidden="true"></i> {{content.seeders}}</span>
           </div>
           <div class="col-sm-2 col-md-2">
-            <span data-placement="bottom" data-toggle="tooltip" title="Download" ng-click="downloadFn(content)">
+            <span ng-if="content.localDataset" data-placement="bottom" data-toggle="tooltip" title="Add to project" ng-click="addFn(content)">
+              <i class="card-footer-icon fa fa-plus-circle fa-lg pull-right" style="margin-top: 7px;"
+              aria-hidden="true" data-toggle="collapse" data-target="#carddropdown-{{cardIndex}}"></i>
+            </span>
+            <span ng-if="!content.localDataset" data-placement="bottom" data-toggle="tooltip" title="Download" ng-click="downloadFn(content)">
               <i class="card-footer-icon fa fa-cloud-download fa-lg pull-right" style="margin-top: 7px;"
               aria-hidden="true" data-toggle="collapse" data-target="#carddropdown-{{cardIndex}}"></i>
             </span>

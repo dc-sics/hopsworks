@@ -342,7 +342,7 @@ angular.module('hopsWorksApp')
                     }
                   }
                 });
-                return modalInstance.projects;
+                return modalInstance.result;
               },
               /**
                * Open a dialog to allow creating a new folder at the given path (excluding the new folder's name).

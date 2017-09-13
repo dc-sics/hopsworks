@@ -8,6 +8,7 @@ angular.module('hopsWorksApp').directive('hwPanel', function() {
       cardIndex: '=',
       pageNo: '=',
       detailsFn: '&',
+      addFn: '&',
       downloadFn: '&'
     },
     templateUrl:'views/publicDSPanel.html',

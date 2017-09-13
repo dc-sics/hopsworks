@@ -12,6 +12,7 @@ public class HopsSiteDatasetDTO {
   private Date madePublicOn;
   private long dsSize;
   private Integer rating;
+  private boolean localDataset;
 
   public HopsSiteDatasetDTO() {
   }
@@ -72,6 +73,14 @@ public class HopsSiteDatasetDTO {
 
   public void setRating(Integer rating) {
     this.rating = rating;
+  }
+
+  public boolean isLocalDataset() {
+    return localDataset;
+  }
+
+  public void setLocalDataset(boolean localDataset) {
+    this.localDataset = localDataset;
   }
 
   @Override

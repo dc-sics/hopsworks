@@ -9,6 +9,12 @@ angular.module('hopsWorksApp')
                   url: '/api/hopssite/publicDataset/serviceInfo/' + serviceName
                 });
               },
+              getClusterId: function () {
+                return $http({
+                  method: 'get',
+                  url: '/api/hopssite/publicDataset/clusterId'
+                });
+              },
               getAll: function () {
                 return $http({
                   method: 'get',
@@ -19,6 +25,12 @@ angular.module('hopsWorksApp')
                 return $http({
                   method: 'get',
                   url: '/api/hopssite/publicDataset/' + publicDSId
+                });
+              },
+              getLocalDatasetByPublicId: function (publicDSId) {
+                return $http({
+                  method: 'get',
+                  url: '/api/hopssite/publicDataset/localByPublicId/' + publicDSId
                 });
               },
               getUserId: function () {
