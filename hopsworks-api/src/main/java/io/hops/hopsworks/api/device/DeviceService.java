@@ -32,7 +32,7 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.device.DeviceFacade;
+import io.hops.hopsworks.common.dao.device.DeviceFacade2;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
@@ -57,8 +57,6 @@ public class DeviceService {
   private static final String AUTHORIZATION_HEADER = "Authorization";
   private static final String TOPIC = "topic";
   private static final String RECORDS = "records";
-  private static final String SCHEMA = "schema";
-  private static final String SCHEMA_PAYLOAD = "schemaPayload";
 
   private static final String JWT_DURATION_IN_HOURS = "jwtTokenDurationInHours";
 
@@ -69,7 +67,7 @@ public class DeviceService {
   private UserManager userManager;
 
   @EJB
-  private DeviceFacade deviceFacade;
+  private DeviceFacade2 deviceFacade2;
   
   @EJB
   private KafkaFacade kafkaFacade;
@@ -77,7 +75,7 @@ public class DeviceService {
   public DeviceService() {
   }
 
-  private static Response failedJsonResponse(Status status, String errorMessage) {
+  private Response failedJsonResponse(Status status, String errorMessage) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
     JsonResp resp = new JsonResp(status.getStatusCode(), status.getReasonPhrase(), errorMessage);
@@ -85,7 +83,7 @@ public class DeviceService {
     return rb.build();
   }
 
-  private static Response successfulJsonResponse(Status status) {
+  private Response successfulJsonResponse(Status status) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
     JsonResp resp = new JsonResp(status.getStatusCode(), status.getReasonPhrase());
@@ -93,13 +91,25 @@ public class DeviceService {
     return rb.build();
   }
   
-  private static Response successfulJsonResponse(Status status, String jwt) {
+  private Response successfulJsonResponse(Status status, String jwt) {
     ResponseBuilder rb = Response.status(status);
     rb.type(MediaType.APPLICATION_JSON);
     JsonResp resp = new JsonResp(status.getStatusCode(), status.getReasonPhrase());
     resp.setJwt(jwt);
     rb.entity(resp);
     return rb.build();
+  }
+
+  private String getJwtFromAuthorizationHeader(String authorizationHeader){
+    if (authorizationHeader == null) {
+      return null;
+    }
+
+    if(!authorizationHeader.startsWith("Bearer")){
+      return null;
+    }
+
+    return authorizationHeader.substring("Bearer".length()).replaceAll("\\s","");
   }
 
   /***
@@ -109,7 +119,7 @@ public class DeviceService {
    * @param projectDevice Contains the device identification information for the project.
    * @return Returns the jwt token.
    */
-  private static String generateJwt(ProjectSecret projectSecret, ProjectDevice projectDevice) {
+  private String generateJwt(ProjectSecret projectSecret, ProjectDevice projectDevice) {
 
     Calendar cal = Calendar.getInstance();
     cal.setTime(new Date());
@@ -118,13 +128,12 @@ public class DeviceService {
 
     try {
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
-      String token = JWT.create()
-              .withExpiresAt(expirationDate)
-              .withClaim(PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
-              .withClaim(DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
-              .withClaim(USER_ID, projectDevice.getUserId())
-              .sign(algorithm);
-      return token;
+      return JWT.create()
+        .withExpiresAt(expirationDate)
+        .withClaim(PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
+        .withClaim(DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
+        .withClaim(USER_ID, projectDevice.getUserId())
+        .sign(algorithm);
     } catch (Exception e) {
       logger.log(Level.WARNING, "JWT token generation failed.", e);
       return null;
@@ -136,22 +145,11 @@ public class DeviceService {
    * against the provided projectSecret.
    *
    * @param projectSecret Contains the secret which is used to verify the jwt token.
-   * @param authorizationHeader The Authorization header that contains the jwt token
+   * @param jwtToken The jwt token
    * @return Returns null if the token is verified or an Unauthorized Response with the reason for the failure.
    */
-  private static Response verifyJwt(ProjectSecret projectSecret, String authorizationHeader) {
-    if (authorizationHeader == null) {
-      return failedJsonResponse(Status.UNAUTHORIZED, "No Authorization header is present.");
-    }
-
-    if(!authorizationHeader.startsWith("Bearer")){
-      return failedJsonResponse(Status.BAD_REQUEST,
-              "The value of the Authorization header must start with 'Bearer ' " +
-                      "followed by the jwt token.");
-    }
-    
+  private Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
     try {
-      String jwtToken = authorizationHeader.substring("Bearer".length()).replaceAll("\\s","");
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
       JWTVerifier verifier = JWT.require(algorithm).build();
       verifier.verify(jwtToken);
@@ -170,7 +168,7 @@ public class DeviceService {
    * @param jwtToken The jwt token
    * @return Returns a DecodedJWT object or null if the token could not be decoded.
    */
-  private static DecodedJWT getDecodedJwt(ProjectSecret projectSecret, String jwtToken) throws Exception {
+  private DecodedJWT getDecodedJwt(ProjectSecret projectSecret, String jwtToken) throws Exception {
     try {
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
       JWTVerifier verifier = JWT.require(algorithm).build();
@@ -183,7 +181,7 @@ public class DeviceService {
 
   private ProjectSecret getProjectSecret(Integer projectId){
     try {
-      return deviceFacade.getProjectSecret(projectId);
+      return deviceFacade2.getProjectSecret(projectId);
     }catch (Exception e) {
       return null;
     }
@@ -220,7 +218,7 @@ public class DeviceService {
       Integer projectId = json.getInt(PROJECT_ID);
       Integer projectTokenDurationInHours = json.getInt(JWT_DURATION_IN_HOURS);
       String projectSecret = UUID.randomUUID().toString();
-      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade2.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
@@ -240,7 +238,7 @@ public class DeviceService {
     Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
     //Integer state = Integer.valueOf(req.getParameter("state"));
 
-    List<ProjectDeviceDTO> listDevices = deviceFacade.getProjectDevices(projectId);
+    List<ProjectDeviceDTO> listDevices = deviceFacade2.getProjectDevices(projectId);
 
     GenericEntity<List<ProjectDeviceDTO>> projectDevices = new GenericEntity<List<ProjectDeviceDTO>>(listDevices){};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(projectDevices).build();
@@ -263,8 +261,9 @@ public class DeviceService {
     try {
       JSONObject json = new JSONObject(jsonString);
       Integer projectId = json.getInt(PROJECT_ID);
-      ProjectSecret projectSecret = deviceFacade.getProjectSecret(projectId);
-      Response verification = verifyJwt(projectSecret, req.getHeader(AUTHORIZATION_HEADER));
+      ProjectSecret projectSecret = deviceFacade2.getProjectSecret(projectId);
+      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
+      Response verification = verifyJwt(projectSecret, jwtToken);
       if (verification != null){
         return verification;
       }
@@ -290,11 +289,9 @@ public class DeviceService {
       String passUuid = json.getString(PASS_UUID);
       Integer userId = json.getInt(USER_ID);
       Integer projectId = json.getInt(PROJECT_ID);
-      
-      //TODO: Check if device registration for the given project is activated
-      
+
       try {
-        deviceFacade.addProjectDevice(projectId, userId, deviceUuid, passUuid);
+        deviceFacade2.addProjectDevice(projectId, userId, deviceUuid, passUuid);
         return successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
@@ -325,14 +322,14 @@ public class DeviceService {
 
       ProjectSecret secret;
       try {
-        secret = deviceFacade.getProjectSecret(projectId);
+        secret = deviceFacade2.getProjectSecret(projectId);
       }catch (Exception e) {
         return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
       }
 
       ProjectDevice device;
       try {
-        device = deviceFacade.getProjectDevice(projectId, deviceUuid);
+        device = deviceFacade2.getProjectDevice(projectId, deviceUuid);
       }catch (Exception e) {
         return failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
                 "No device is registered with the given {0}.", DEVICE_UUID));
@@ -361,13 +358,12 @@ public class DeviceService {
     
     ProjectSecret secret;
     try {
-      secret = deviceFacade.getProjectSecret(projectId);
+      secret = deviceFacade2.getProjectSecret(projectId);
     }catch (Exception e) {
       return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
     }
-    
-    String authorizationHeader = req.getHeader(AUTHORIZATION_HEADER);
-    Response authFailedResponse = verifyJwt(secret, authorizationHeader);
+    String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
+    Response authFailedResponse = verifyJwt(secret, jwtToken);
     if (authFailedResponse != null) {
       return authFailedResponse;
     }
@@ -426,8 +422,8 @@ public class DeviceService {
         return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
       }
 
-      String authHeader = req.getHeader(AUTHORIZATION_HEADER);
-      Response authFailedResponse = verifyJwt(secret, authHeader);
+      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
+      Response authFailedResponse = verifyJwt(secret, jwtToken);
       if (authFailedResponse != null) {
         return authFailedResponse;
       }
