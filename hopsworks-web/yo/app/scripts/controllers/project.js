@@ -29,7 +29,8 @@ angular.module('hopsWorksApp')
             self.endpoint = '...';
 
             // We could instead implement a service to get all the available types but this will do it for now
-            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
+            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER','DELA'];
+
             $scope.activeService = "home";
 
             self.alreadyChoosenServices = [];
@@ -180,6 +181,25 @@ angular.module('hopsWorksApp')
             self.allServicesSelected = function () {
               return self.projectTypes.length > 0;
             };
+
+            self.projectSettingModal = function () {
+              ModalService.projectSettings('md', self.pId).then(
+                      function (success) {
+                        getAllActivities();
+                        getCurrentProject();
+
+                      });
+            };
+
+//        self.projectSettingModal = function () {
+//          ModalService.projectSettings('md').then(
+//              function (success) {
+//                getAllActivities();
+//                getCurrentProject();
+//              }, function (error) {
+//            growl.info("You closed without saving.", {title: 'Info', ttl: 5000});
+//          });
+//        };
 
             self.membersModal = function () {
               ModalService.projectMembers('lg', self.projectId).then(
@@ -337,6 +357,7 @@ angular.module('hopsWorksApp')
 
               if (dataset.status === true) {
                 UtilsService.setDatasetName(dataset.name);
+                $rootScope.parentDS = dataset;
                 $location.path($location.path() + '/' + dataset.name + '/');
               } else {
                 ModalService.confirmShare('sm', 'Accept Shared Dataset?', 'Do you want to accept this dataset and add it to this project?')
@@ -395,6 +416,10 @@ angular.module('hopsWorksApp')
               return showService("Kafka");
             };
 
+            self.showDela = function(){
+              return showService("Dela");
+            };
+              
             self.showTensorflow = function () {
               return showService("Tensorflow");
             };

@@ -1,5 +1,6 @@
 package io.hops.hopsworks.api.project;
 
+import io.hops.hopsworks.api.dela.DelaProjectService;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.jobs.BiobankingService;
@@ -39,7 +40,6 @@ import io.hops.hopsworks.common.project.TourProjectType;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,6 +119,9 @@ public class ProjectService {
   private UserManager userManager;
   @EJB
   private DistributedFsService dfs;
+  
+  @Inject
+  private DelaProjectService delaService;
 
   private final static Logger logger = Logger.getLogger(ProjectService.class.
       getName());
@@ -848,4 +851,17 @@ public class ProjectService {
     return pysparkService;
   }
 
+  @Path("{id}/dela")
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public DelaProjectService dela(
+    @PathParam("id") Integer id) throws AppException {
+    Project project = projectController.findProjectById(id);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+        ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    this.delaService.setProjectId(id);
+
+    return this.delaService;
+  }
 }
