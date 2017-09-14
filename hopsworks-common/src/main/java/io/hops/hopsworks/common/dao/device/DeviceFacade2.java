@@ -70,9 +70,8 @@ public class DeviceFacade2 {
   public void updateDeviceState(ProjectDeviceDTO projectDeviceDTO) {
     ProjectDevice projectDevice = em.find(ProjectDevice.class,
       new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
-    em.getTransaction().begin();
     projectDevice.setEnabled(projectDeviceDTO.getState());
-    em.getTransaction().commit();
+    em.persist(projectDevice);
   }
 
 
