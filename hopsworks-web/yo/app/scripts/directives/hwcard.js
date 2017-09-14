@@ -8,6 +8,7 @@ angular.module('hopsWorksApp').directive('hwCard', function() {
       limit: '=',
       cardIndex: '=',
       pageNo: '=',
+      delaEnabled: '=',
       detailsFn: '&',
       downloadFn: '&'
     },
