@@ -231,19 +231,20 @@ public class DeviceService {
     }
   }
 
-  /**
-   * Needs to be activated only once per project.
-   */
   @GET
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getDevicesEndpoint(@Context HttpServletRequest req) throws AppException {
 
     Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
-    //Integer state = Integer.valueOf(req.getParameter("state"));
+    String state = req.getParameter("state");
 
-    List<ProjectDeviceDTO> listDevices = deviceFacade2.getProjectDevices(projectId);
-
+    List<ProjectDeviceDTO> listDevices;
+    if (state != null){
+      listDevices = deviceFacade2.getProjectDevices(projectId, Integer.valueOf(state));
+    }else{
+      listDevices = deviceFacade2.getProjectDevices(projectId);
+    }
     GenericEntity<List<ProjectDeviceDTO>> projectDevices = new GenericEntity<List<ProjectDeviceDTO>>(listDevices){};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(projectDevices).build();
 

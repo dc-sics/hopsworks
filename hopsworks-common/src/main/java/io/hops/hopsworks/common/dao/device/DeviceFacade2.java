@@ -48,6 +48,25 @@ public class DeviceFacade2 {
     return devicesDTO;
   }
 
+  public List<ProjectDeviceDTO> getProjectDevices(Integer projectId, Integer state) {
+    TypedQuery<ProjectDevice> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectIdAndState", ProjectDevice.class);
+    query.setParameter("projectId", projectId);
+    query.setParameter("state", state);
+    List<ProjectDevice> devices =  query.getResultList();
+    List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
+    for(ProjectDevice device: devices){
+      devicesDTO.add(new ProjectDeviceDTO(
+        device.getProjectDevicePK().getProjectId(),
+        device.getProjectDevicePK().getDeviceUuid(),
+        device.getUserId(),
+        device.getCreatedAt(),
+        device.getEnabled(),
+        device.getLastProduced()));
+    }
+    return devicesDTO;
+  }
+
   public void addProjectSecret(Integer projectId, String projectSecret,
       Integer projectTokenDurationInHours) {
     em.persist(new ProjectSecret(projectId, projectSecret,
