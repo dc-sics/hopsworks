@@ -279,7 +279,7 @@ public class DeviceService {
   public Response postDevicesStateEndpoint(
     @Context HttpServletRequest req, List<ProjectDeviceDTO> listDevices) throws AppException {
     try {
-      deviceFacade2.updateDeviceState(listDevices.get(0));
+      deviceFacade2.updateDevicesState(listDevices);
       return successfulJsonResponse(Status.OK);
     } catch (Exception e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
