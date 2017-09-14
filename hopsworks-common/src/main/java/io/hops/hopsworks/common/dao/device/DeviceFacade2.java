@@ -67,6 +67,15 @@ public class DeviceFacade2 {
     return devicesDTO;
   }
 
+  public void updateDeviceState(ProjectDeviceDTO projectDeviceDTO) {
+    ProjectDevice projectDevice = em.find(ProjectDevice.class,
+      new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
+    em.getTransaction().begin();
+    projectDevice.setEnabled(projectDeviceDTO.getState());
+    em.getTransaction().commit();
+  }
+
+
   public void addProjectSecret(Integer projectId, String projectSecret,
       Integer projectTokenDurationInHours) {
     em.persist(new ProjectSecret(projectId, projectSecret,

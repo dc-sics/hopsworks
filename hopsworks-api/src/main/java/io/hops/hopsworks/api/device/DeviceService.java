@@ -250,6 +250,28 @@ public class DeviceService {
 
   }
 
+  @POST
+  @Path("/devices")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response postDevicesStateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+    try {
+      JSONObject json = new JSONObject(jsonString);
+      Integer projectId = json.getInt(PROJECT_ID);
+      String deviceUuid = json.getString(DEVICE_UUID);
+      Integer state = json.getInt("state");
+      ProjectDeviceDTO p = new ProjectDeviceDTO();
+      p.setProjectId(projectId);
+      p.setDeviceUuid(deviceUuid);
+      p.setState(state);
+      deviceFacade2.updateDeviceState(p);
+      return successfulJsonResponse(Status.OK);
+    } catch (Exception e) {
+      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
+        "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
+    }
+  }
+
   //===============================================================================================================
   // DEVICE ENDPOINTS
   //===============================================================================================================
