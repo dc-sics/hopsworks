@@ -20,7 +20,6 @@ angular.module('hopsWorksApp')
 
             // Details of the currently selecte file/dir
             self.selected = null; //The index of the selected file in the files array.
-//            self.fileDetail = null; //The details about the currently selected file.
             self.sharedPath = null; //The details about the currently selected file.
             self.routeParamArray = [];
             $scope.readme = null;

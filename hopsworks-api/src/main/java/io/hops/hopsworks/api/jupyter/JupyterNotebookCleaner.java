@@ -75,16 +75,16 @@ public class JupyterNotebookCleaner {
         // If notebook hasn't been used in the last 2 hours, kill it.
         if (jp.getLastAccessed().before(
                 new Date(System.currentTimeMillis() - (2 * 60 * 60 * 1000)))) {
-          int hdfsUserId = jp.getHdfsUserId();
-          HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
-          if (hdfsUser != null) {
+//          int hdfsUserId = jp.getHdfsUserId();
+//          HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
+//          if (hdfsUser != null) {
 //            try {
 //              jupyterConfigFactory.stopServerJupyterUser(hdfsUser.getUsername());
 //            } catch (AppException ex) {
 //              Logger.getLogger(JupyterNotebookCleaner.class.getName()).
 //                      log(Level.SEVERE, null, ex);
 //            }
-          }
+//          }
 
         }
 
