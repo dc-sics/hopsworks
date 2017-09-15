@@ -17,7 +17,7 @@
             <div growl reference="3" class="pull-right" ></div>
             <h3>               
               <div flex="65">
-                Filter: 
+                Filter: &nbsp;
                 <a ng-click="datasetsCtrl.shared = undefined; datasetsCtrl.status = undefined; datasetsCtrl.isPublic = undefined;" class="file-control active">All</a>
                 <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = true; datasetsCtrl.isPublic = false;" class="file-control">Shared</a>
                 <a ng-click="datasetsCtrl.shared = false; datasetsCtrl.status = true; datasetsCtrl.isPublic = false;" class="file-control">Exclusive</a>
@@ -25,8 +25,8 @@
                 <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = false; datasetsCtrl.isPublic = false;" class="file-control">Pending</a>
                 <!--<a ng-click="datasetsCtrl.shared = false; datasetsCtrl.status = false; datasetsCtrl.isPublic = true;" class="file-control">Public</a>-->
               </div>
-              <div class="col-md-2">
-                <div class="input-group">
+              <div style="margin-left: 450px" flex="20">
+                <div class="input-group" style="margin-top:-25px;">
                   <input type="text" class="form-control" 
                          ng-model="search" placeholder="Filter...">
                   <span class="input-group-btn">
@@ -35,7 +35,7 @@
                 </div>
               </div>
 
-              <div class="pull-right" style="margin-right:30px;  margin-top:-25px;">
+              <div class="pull-right" style="margin-right:30px; margin-top:-25px;">
                 <hamburger-toggle state="datasetsCtrl.tgState" class="hamburger-toggle" ng-click="datasetsCtrl.deselect()">
                 </hamburger-toggle>
               </div>
@@ -58,7 +58,7 @@
                       </div>
                     </div> 
                     <div class="loader loader-sm" ng-show="datasetsCtrl.working"></div>
-                    <div ng-repeat="dataset in datasetsCtrl.files| filter:{shared: datasetsCtrl.shared, status: datasetsCtrl.status, publicDs: datasetsCtrl.isPublic} | orderBy: 'name'">
+                    <div ng-repeat="dataset in datasetsCtrl.files| filter:{shared: datasetsCtrl.shared, status: datasetsCtrl.status, publicDs: datasetsCtrl.isPublic} | filter:search  |  orderBy: 'name'">
                       <div ng-init="(iscollapsed$index) = true"
                            class="file-box"
                            context-menu
