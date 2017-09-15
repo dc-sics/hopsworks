@@ -2,7 +2,6 @@ package io.hops.hopsworks.api.jupyter;
 
 import io.hops.hopsworks.api.util.LivyService;
 import io.hops.hopsworks.api.zeppelin.util.LivyMsg.Session;
-import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;

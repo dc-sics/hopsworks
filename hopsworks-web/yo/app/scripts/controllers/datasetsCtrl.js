@@ -1,10 +1,11 @@
 'use strict';
+$sc
 
 angular.module('hopsWorksApp')
         .controller('DatasetsCtrl', ['$scope', '$q', '$mdSidenav', '$mdUtil', '$log',
-          'DataSetService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
+          'DataSetService', 'JupyterService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
           'MetadataHelperService', '$showdown', '$rootScope',
-          function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, $routeParams,
+          function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, JupyterService, $routeParams,
                   $route, ModalService, growl, $location, MetadataHelperService,
                   $showdown, $rootScope) {
 
@@ -373,15 +374,15 @@ This will make all its files unavailable to other projects unless you share it e
               pathArray.push(self.selected);
               var filePath = getPath(pathArray);
 
-                growl.info("Started unzipping...", 
-                {title: 'Unzipping Started', ttl: 2000, referenceId: 4});
-                dataSetService.unzip(filePath).then(
+              growl.info("Started unzipping...",
+                      {title: 'Unzipping Started', ttl: 2000, referenceId: 4});
+              dataSetService.unzip(filePath).then(
                       function (success) {
-                growl.success("Refresh your browser when finished", 
-                {title: 'Unzipping in Background', ttl: 5000, referenceId: 4});
+                        growl.success("Refresh your browser when finished",
+                                {title: 'Unzipping in Background', ttl: 5000, referenceId: 4});
                       }, function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error unzipping file', ttl: 5000, referenceId: 4});
-              }); 
+              });
             };
 
             self.isZippedfile = function () {
@@ -391,7 +392,7 @@ This will make all its files unavailable to other projects unless you share it e
               var ext = re.exec(self.selected)[1];
               switch (ext) {
                 case "zip":
-                  return true; 
+                  return true;
                 case "rar":
                   return true;
                 case "tar":
@@ -409,6 +410,31 @@ This will make all its files unavailable to other projects unless you share it e
               return false;
             };
 
+            self.convertIPythonNotebook = function () {
+              var pathArray = self.pathArray.slice(0);
+              pathArray.push(self.selected);
+              var filePath = getPath(pathArray);
+
+              growl.info("Converting...",
+                      {title: 'Conversion Started', ttl: 2000, referenceId: 4});
+              JupyterService.convertIPythonNotebook(filePath).then(
+                      function (success) {
+                        getDirContents();
+                        growl.success("Finished - refresh your browser",
+                                {title: 'Converting in Background', ttl: 3000, referenceId: 4});
+                      }, function (error) {
+                growl.error(error.data.errorMsg, {title: 'Error unzipping file', ttl: 5000, referenceId: 4});
+              });
+            };
+
+            self.isIPythonNotebook = function () {
+              var ext =  self.selected.split('.').pop();
+              switch (ext) {
+                case "ipynb":
+                  return true;
+              }
+              return false;
+            };
 
             /**
              * Preview the requested file in a Modal. If the file is README.md
@@ -948,8 +974,9 @@ This will make all its files unavailable to other projects unless you share it e
                         });
               }, 300);
               return debounceFn;
-            };
-            
+            }
+            ;
+
             self.getSelectedPath = function (selectedFile) {
               if (self.isSelectedFiles() !== 1) {
                 return "";

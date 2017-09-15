@@ -27,8 +27,6 @@ import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
-import io.hops.hopsworks.common.dao.pythonDeps.LibVersions;
-import io.hops.hopsworks.common.dao.pythonDeps.Version;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -54,7 +52,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.HttpHeaders;
 import org.apache.commons.codec.digest.DigestUtils;
 
 @RequestScoped
@@ -140,8 +137,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-        = new GenericEntity<List<JupyterProject>>(listServers) {
-    };
+        = new GenericEntity<List<JupyterProject>>(listServers) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         notebookServers).build();
   }
@@ -156,8 +152,7 @@ public class JupyterService {
     Users user = userFacade.findByEmail(loggedinemail);
     List<LivyMsg.Session> sessions = livyService.getJupyterLivySessionsForProjectUser(this.project, user);
     GenericEntity<List<LivyMsg.Session>> livyActive
-        = new GenericEntity<List<LivyMsg.Session>>(sessions) {
-    };
+        = new GenericEntity<List<LivyMsg.Session>>(sessions) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(livyActive).build();
   }
 
@@ -386,18 +381,18 @@ public class JupyterService {
   }
 
   @GET
-  @Path("/convert/Notebook/Python")
-  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("/convertIPythonNotebook/{path: .+}")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response convertNotebookToPython(@Context SecurityContext sc,
-      @Context HttpServletRequest req,
-      @Context HttpHeaders httpHeaders,
-      ConvertNotebookDto dto) throws AppException {
+  public Response convertIPythonNotebook(@PathParam("path") String path,
+      @Context SecurityContext sc) throws AppException {
     String hdfsUsername = getHdfsUser(sc);
-    String filename = dto.getSrcPath();
+    String hdfsFilename = path;
 
+    if (hdfsFilename.contains("hdfs://")) {
+      hdfsFilename = hdfsFilename.substring(hdfsFilename.indexOf("hdfs://"));
+    }
     String prog = settings.getHopsworksDomainDir() + "/bin/convert-ipython-notebook.sh";
-    ProcessBuilder pb = new ProcessBuilder(prog, dto.getSrcPath(), hdfsUsername);
+    ProcessBuilder pb = new ProcessBuilder(prog, hdfsFilename, hdfsUsername);
     try {
       Process process = pb.start();
       StringBuilder sb = new StringBuilder();
@@ -409,9 +404,8 @@ public class JupyterService {
       }
       int errCode = process.waitFor();
       if (errCode != 0) {
-              throw new AppException(Response.Status.EXPECTATION_FAILED.
-          getStatusCode(),
-          "Problem converting ipython notebook to python program. " + line);
+        throw new AppException(Response.Status.EXPECTATION_FAILED.getStatusCode(),
+            "Problem converting ipython notebook to python program. " + line);
       }
     } catch (IOException | InterruptedException ex) {
       Logger.getLogger(HopsUtils.class
@@ -424,24 +418,6 @@ public class JupyterService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
-//  @GET
-//  @Path("/convert/Python/Notebook")
-//  @Consumes(MediaType.APPLICATION_JSON)
-//  @Produces(MediaType.APPLICATION_JSON)
-//  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-//  public Response convertPythonToNotebook(@Context SecurityContext sc,
-//          @Context HttpServletRequest req,
-//          @Context HttpHeaders httpHeaders,
-//          ConvertNotebookDto dto) throws AppException {
-//    if (dto.isFromNotebook()) {
-//        throw new AppException(
-//                Response.Status.BAD_REQUEST.getStatusCode(),
-//                "Your JSON set the convert flag incorrectly (toPython should be false).");
-//    }
-//    String loggedinemail = sc.getUserPrincipal().getName();
-//    Users user = userFacade.findByEmail(loggedinemail);
-//    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity().build();
-//  }
   private String getHdfsUser(SecurityContext sc) throws AppException {
     if (projectId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
