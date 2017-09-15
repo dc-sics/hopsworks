@@ -386,11 +386,8 @@ public class JupyterService {
   public Response convertIPythonNotebook(@PathParam("path") String path,
       @Context SecurityContext sc) throws AppException {
     String hdfsUsername = getHdfsUser(sc);
-    String hdfsFilename = path;
+    String hdfsFilename = "/Projects/" + this.project.getName() + "/" + path;
 
-    if (hdfsFilename.contains("hdfs://")) {
-      hdfsFilename = hdfsFilename.substring(hdfsFilename.indexOf("hdfs://"));
-    }
     String prog = settings.getHopsworksDomainDir() + "/bin/convert-ipython-notebook.sh";
     String[] command = {prog, hdfsFilename, hdfsUsername};
     LOGGER.log(Level.INFO, Arrays.toString(command));

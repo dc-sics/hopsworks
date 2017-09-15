@@ -418,11 +418,11 @@ This will make all its files unavailable to other projects unless you share it e
                       {title: 'Conversion Started', ttl: 2000, referenceId: 4});
               JupyterService.convertIPythonNotebook(self.projectId, filePath).then(
                       function (success) {
-                        getDirContents();
                         growl.success("Finished - refresh your browser",
                                 {title: 'Converting in Background', ttl: 3000, referenceId: 4});
+                        getDirContents();
                       }, function (error) {
-                growl.error(error.data.errorMsg, {title: 'Error unzipping file', ttl: 5000, referenceId: 4});
+                growl.error(error.data.errorMsg, {title: 'Error converting notebook', ttl: 5000, referenceId: 4});
               });
             };
 
