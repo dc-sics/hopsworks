@@ -427,7 +427,7 @@ This will make all its files unavailable to other projects unless you share it e
             };
 
             self.isIPythonNotebook = function () {
-              if (self.selected === null || self.selected.name === null || self.select.name === undefined) {
+              if (self.selected === null || self.selected.name === null) {
                 return false;
               }
               
