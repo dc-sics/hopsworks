@@ -53,12 +53,12 @@ import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeView;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
-import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.metadata.Template;
 import io.hops.hopsworks.common.dao.metadata.db.TemplateFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
@@ -127,11 +127,11 @@ public class DataSetService {
   @EJB
   private YarnJobsMonitor jobsMonitor;
   @EJB
-  private JupyterFacade jupyterFacade;
-  @EJB
   private PathValidator pathValidator;
   @EJB
   private DsDTOValidator dtoValidator;
+  @EJB
+  private ProjectTeamFacade projectTeamFacade;
 
   private Integer projectId;
   private Project project;
@@ -690,11 +690,17 @@ public class DataSetService {
   /**
    * This function is used only for deletion of dataset directories
    * as it does not accept a path
+   * @param fileName
+   * @param sc
+   * @param req
+   * @return 
+   * @throws io.hops.hopsworks.common.exception.AppException 
+   * @throws org.apache.hadoop.security.AccessControlException
    */
   @DELETE
   @Path("/{fileName}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response removedataSetdir(
           @PathParam("fileName") String fileName,
           @Context SecurityContext sc,
@@ -719,7 +725,15 @@ public class DataSetService {
 
     DistributedFileSystemOps dfso = null;
     try {
-      dfso = dfs.getDfsOps();// do it as super user
+      //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
+      Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+      String userRole = projectTeamFacade.findCurrentRole(project, user);
+      if(userRole.equals(AllowedRoles.DATA_SCIENTIST)){
+        String username = hdfsUsersBean.getHdfsUserName(project, user);
+        dfso = dfs.getDfsOps(username);// do it as project user
+      } else if (userRole.equals(AllowedRoles.DATA_OWNER)){
+        dfso = dfs.getDfsOps();// do it as super user
+      }
       success = datasetController.
               deleteDatasetDir(ds, fullPath, dfso);
     } catch (AccessControlException ex) {
@@ -730,7 +744,7 @@ public class DataSetService {
               "Could not delete the file at " + fullPath.toString());
     } finally {
       if (dfso != null) {
-        dfso.close();
+        dfs.closeDfsClient(dfso);
       }
     }
 
@@ -756,6 +770,12 @@ public class DataSetService {
    * Differently from the previous function, this accepts a path.
    * If it is used to delete a dataset directory it will throw an exception
    * (line 779)
+   * @param fileName
+   * @param req
+   * @param sc
+   * @return 
+   * @throws io.hops.hopsworks.common.exception.AppException
+   * @throws org.apache.hadoop.security.AccessControlException
    */
   @DELETE
   @Path("file/{fileName: .+}")
@@ -772,6 +792,7 @@ public class DataSetService {
 
     DsPath dsPath = pathValidator.validatePath(this.project, fileName);
     Dataset ds = dsPath.getDs();
+    
     org.apache.hadoop.fs.Path fullPath = dsPath.getFullPath();
     org.apache.hadoop.fs.Path dsRelativePath = dsPath.getDsRelativePath();
 
@@ -782,11 +803,19 @@ public class DataSetService {
           ResponseMessages.INTERNAL_SERVER_ERROR);
     }
 
-    DistributedFileSystemOps udfso = null;
+    DistributedFileSystemOps dfso = null;
     try {
       String username = hdfsUsersBean.getHdfsUserName(project, user);
-      udfso = dfs.getDfsOps(username);
-      success = datasetController.deleteDatasetDir(ds, fullPath, udfso);
+      //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
+      //Find project of dataset as it might be shared
+      Project owning = datasetController.getOwningProject(ds);
+      String userRole = projectTeamFacade.findCurrentRole(owning, user);
+      if(userRole.equals(AllowedRoles.DATA_SCIENTIST)){
+        dfso = dfs.getDfsOps(username);// do it as project user
+      } else if (userRole.equals(AllowedRoles.DATA_OWNER)){
+        dfso = dfs.getDfsOps();// do it as super user
+      }
+      success = datasetController.deleteDatasetDir(ds, fullPath, dfso);
     } catch (AccessControlException ex) {
       throw new AccessControlException(
               "Permission denied: You can not delete the file " + fullPath);
@@ -794,8 +823,8 @@ public class DataSetService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Could not delete the file at " + fullPath);
     } finally {
-      if (udfso != null) {
-        dfs.closeDfsClient(udfso);
+      if (dfso != null) {
+        dfs.closeDfsClient(dfso);
       }
     }
     if (!success) {
@@ -908,7 +937,7 @@ public class DataSetService {
   @Path("copy")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response copyFile(
           @Context SecurityContext sc, @Context HttpServletRequest req,
           MoveDTO dto) throws
@@ -1025,7 +1054,13 @@ public class DataSetService {
   public Response checkFileForDownload(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
-    return checkFileExists(path, sc);
+    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    if(datasetController.isDownloadAllowed(project, user, AllowedRoles.DATA_SCIENTIST, path)){
+      return checkFileExists(path, sc);
+    }
+    JsonResponse response = new JsonResponse();
+    response.setErrorMsg(ResponseMessages.DOWNLOAD_PERMISSION_ERROR);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.FORBIDDEN).entity(response).build();
   }
 
   @GET
@@ -1202,8 +1237,6 @@ public class DataSetService {
     
     this.downloader.setPath(fullPath);
     this.downloader.setUsername(username);
-    this.downloader.setUser(user);
-    this.downloader.setProject(project);
     return downloader;
   }
 
