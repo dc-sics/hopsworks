@@ -42,6 +42,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -392,7 +393,9 @@ public class JupyterService {
       hdfsFilename = hdfsFilename.substring(hdfsFilename.indexOf("hdfs://"));
     }
     String prog = settings.getHopsworksDomainDir() + "/bin/convert-ipython-notebook.sh";
-    ProcessBuilder pb = new ProcessBuilder(prog, hdfsFilename, hdfsUsername);
+    String[] command = {prog, hdfsFilename, hdfsUsername};
+    LOGGER.log(Level.INFO, Arrays.toString(command));
+    ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();
       StringBuilder sb = new StringBuilder();
