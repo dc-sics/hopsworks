@@ -38,8 +38,8 @@ angular.module('hopsWorksApp')
               stop: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/jupyter/stop');
               },
-              convertIPythonNotebook: function (fileName) {
-                return $http.get('/api/project/' + id + '/jupyter/convertIPythonNotebook/' + fileName);
+              convertIPythonNotebook: function (projectId, fileName) {
+                return $http.get('/api/project/' + projectId + '/jupyter/convertIPythonNotebook/' + fileName);
               }
 
             };

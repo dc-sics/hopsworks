@@ -59,8 +59,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class JupyterService {
 
-  private final static Logger LOGGER = Logger.getLogger(JupyterService.class.
-      getName());
+  private final static Logger LOGGER = Logger.getLogger(JupyterService.class.getName());
 
   @EJB
   private ProjectFacade projectFacade;

@@ -416,7 +416,7 @@ This will make all its files unavailable to other projects unless you share it e
 
               growl.info("Converting...",
                       {title: 'Conversion Started', ttl: 2000, referenceId: 4});
-              JupyterService.convertIPythonNotebook(filePath).then(
+              JupyterService.convertIPythonNotebook(self.projectId, filePath).then(
                       function (success) {
                         getDirContents();
                         growl.success("Finished - refresh your browser",
