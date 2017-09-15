@@ -427,7 +427,14 @@ This will make all its files unavailable to other projects unless you share it e
             };
 
             self.isIPythonNotebook = function () {
-              var ext =  self.selected.split('.').pop();
+              if (self.selected === null || self.selected.name === null || self.select.name === undefined) {
+                return false;
+              }
+              
+              var ext =  self.selected.name.split('.').pop();
+              if (ext === null || ext === undefined) {
+                return false;
+              }
               switch (ext) {
                 case "ipynb":
                   return true;
