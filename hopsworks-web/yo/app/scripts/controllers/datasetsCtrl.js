@@ -427,11 +427,14 @@ This will make all its files unavailable to other projects unless you share it e
             };
 
             self.isIPythonNotebook = function () {
-              if (self.selected === null || self.selected.name === null) {
+              if (self.selected === null || self.selected === undefined) {
+                return false;
+              }
+              if (self.selected.indexOf('.') == -1) {
                 return false;
               }
               
-              var ext =  self.selected.name.split('.').pop();
+              var ext =  self.selected.split('.').pop();
               if (ext === null || ext === undefined) {
                 return false;
               }
