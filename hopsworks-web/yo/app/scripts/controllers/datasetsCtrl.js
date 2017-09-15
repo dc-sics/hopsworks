@@ -168,7 +168,6 @@ angular.module('hopsWorksApp')
                         //Clear any selections
                         self.all_selected = false;
                         self.selectedFiles = {};
-                        self.selected = null;
                         //Reset the selected file
                         self.selected = null;
                         self.working = false;
