@@ -11,28 +11,28 @@ import javax.persistence.TypedQuery;
 @Stateless
 public class DeviceFacade2 {
 
-  private final static Logger logger = Logger.getLogger(DeviceFacade2.class.
-      getName());
+  private final static Logger logger = Logger.getLogger(DeviceFacade2.class.getName());
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
-  public void addProjectDevice(Integer projectId, Integer userId,
-      String deviceUuid, String passUuid) {
+  public void addProjectDevice(Integer projectId, String deviceUuid, String passUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, userId, ProjectDevice.State.ENABLED);
+    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, ProjectDevice.State.ENABLED);
     em.persist(pd);
   }
 
   public ProjectDevice getProjectDevice(Integer projectId, String deviceUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    TypedQuery<ProjectDevice> query = em.createNamedQuery("ProjectDevice.findByProjectDevicePK", ProjectDevice.class);
+    TypedQuery<ProjectDevice> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectDevicePK", ProjectDevice.class);
     query.setParameter("projectDevicePK", pdKey);
     return query.getSingleResult();
   }
 
   public List<ProjectDeviceDTO> getProjectDevices(Integer projectId) {
-    TypedQuery<ProjectDevice> query = em.createNamedQuery("ProjectDevice.findByProjectId", ProjectDevice.class);
+    TypedQuery<ProjectDevice> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectId", ProjectDevice.class);
     query.setParameter("projectId", projectId);
     List<ProjectDevice> devices =  query.getResultList();
     List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
@@ -40,7 +40,6 @@ public class DeviceFacade2 {
       devicesDTO.add(new ProjectDeviceDTO(
               device.getProjectDevicePK().getProjectId(),
               device.getProjectDevicePK().getDeviceUuid(),
-              device.getUserId(),
               device.getCreatedAt(),
               device.getEnabled(),
               device.getLastProduced()));
@@ -59,7 +58,6 @@ public class DeviceFacade2 {
       devicesDTO.add(new ProjectDeviceDTO(
         device.getProjectDevicePK().getProjectId(),
         device.getProjectDevicePK().getDeviceUuid(),
-        device.getUserId(),
         device.getCreatedAt(),
         device.getEnabled(),
         device.getLastProduced()));
@@ -84,8 +82,7 @@ public class DeviceFacade2 {
   }
 
 
-  public void addProjectSecret(Integer projectId, String projectSecret,
-      Integer projectTokenDurationInHours) {
+  public void addProjectSecret(Integer projectId, String projectSecret, Integer projectTokenDurationInHours) {
     em.persist(new ProjectSecret(projectId, projectSecret,
         projectTokenDurationInHours));
   }

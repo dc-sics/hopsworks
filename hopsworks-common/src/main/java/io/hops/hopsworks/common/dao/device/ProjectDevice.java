@@ -45,12 +45,6 @@ public class ProjectDevice implements Serializable{
   @Column(name = "pass_uuid")
   private String passUuid;
 
-  @Basic(optional = false)
-  @NotNull
-  @Size(min = 1, max = 11)
-  @Column(name = "user_id")
-  private Integer userId;
-  
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "created_at")
   private Date createdAt;
@@ -70,11 +64,9 @@ public class ProjectDevice implements Serializable{
   
   public ProjectDevice() {}
 
-  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid,
-      Integer userId, State deviceState) {
+  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid, State deviceState) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
-    this.userId = userId;
     this.enabled = deviceState.ordinal();
   }
 
@@ -92,14 +84,6 @@ public class ProjectDevice implements Serializable{
 
   public void setPassUuid(String passUuid) {
     this.passUuid = passUuid;
-  }
-
-  public Integer getUserId() {
-    return userId;
-  }
-
-  public void setUserId(Integer userId) {
-    this.userId = userId;
   }
 
   public Date getCreatedAt() {

@@ -11,8 +11,6 @@ public class ProjectDeviceDTO implements Serializable{
 
   private String deviceUuid;
 
-  private Integer userId;
-
   private Date createdAt;
 
   private Integer state;
@@ -20,10 +18,9 @@ public class ProjectDeviceDTO implements Serializable{
   public ProjectDeviceDTO(){}
 
   public ProjectDeviceDTO(
-    Integer projectId, String deviceUuid, Integer userId, Date createdAt, Integer state, Date lastProduced) {
+    Integer projectId, String deviceUuid, Date createdAt, Integer state, Date lastProduced) {
     this.projectId = projectId;
     this.deviceUuid = deviceUuid;
-    this.userId = userId;
     this.createdAt = createdAt;
     this.state = state;
     this.lastProduced = lastProduced;
@@ -45,14 +42,6 @@ public class ProjectDeviceDTO implements Serializable{
 
   public void setDeviceUuid(String deviceUuid) {
     this.deviceUuid = deviceUuid;
-  }
-
-  public Integer getUserId() {
-    return userId;
-  }
-
-  public void setUserId(Integer userId) {
-    this.userId = userId;
   }
 
   public Date getCreatedAt() {

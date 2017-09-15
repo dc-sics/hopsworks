@@ -24,6 +24,9 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.swagger.annotations.Api;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,8 +58,8 @@ public class DeviceService {
 
   private static final String DEVICE_UUID = "deviceUuid";
   private static final String PASS_UUID = "passUuid";
-  private static final String USER_ID = "userId";
   private static final String PROJECT_ID = "projectId";
+  private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
   
   private static final String AUTHORIZATION_HEADER = "Authorization";
   private static final String TOPIC = "topic";
@@ -69,6 +72,9 @@ public class DeviceService {
 
   @EJB
   private UserManager userManager;
+
+  @EJB
+  private ProjectTeamFacade projectTeamFacade;
 
   @EJB
   private DeviceFacade2 deviceFacade2;
@@ -136,7 +142,6 @@ public class DeviceService {
         .withExpiresAt(expirationDate)
         .withClaim(PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
         .withClaim(DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
-        .withClaim(USER_ID, projectDevice.getUserId())
         .sign(algorithm);
     } catch (Exception e) {
       logger.log(Level.WARNING, "JWT token generation failed.", e);
@@ -222,6 +227,9 @@ public class DeviceService {
       Integer projectId = json.getInt(PROJECT_ID);
       Integer projectTokenDurationInHours = json.getInt(JWT_DURATION_IN_HOURS);
       String projectSecret = UUID.randomUUID().toString();
+
+      projectTeamFacade.update(new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL)));
+
       deviceFacade2.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
@@ -329,20 +337,18 @@ public class DeviceService {
       JSONObject json = new JSONObject(jsonString);
       String deviceUuid = json.getString(DEVICE_UUID);
       String passUuid = json.getString(PASS_UUID);
-      Integer userId = json.getInt(USER_ID);
       Integer projectId = json.getInt(PROJECT_ID);
 
       try {
-        deviceFacade2.addProjectDevice(projectId, userId, deviceUuid, passUuid);
+        deviceFacade2.addProjectDevice(projectId, deviceUuid, passUuid);
         return successfulJsonResponse(Status.OK);
       }catch (Exception e) {
-        return failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
-                "Device is already registered for this project and/or {0} is invalid.", USER_ID));
+        return failedJsonResponse(Status.UNAUTHORIZED, "Device is already registered for this project.");
       }
     }catch(JSONException e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}, {2}, {3}]",
-              PROJECT_ID, DEVICE_UUID, PASS_UUID, USER_ID));
+              "Json request is malformed! Required properties are [{0}, {1}, {2}]",
+              PROJECT_ID, DEVICE_UUID, PASS_UUID));
     }
   }
   
@@ -412,10 +418,8 @@ public class DeviceService {
     // Device is authenticated at this point.
     
     DecodedJWT decodedJwt;
-    Integer userId;
     try {
       decodedJwt = getDecodedJwt(secret, jwtToken);
-      userId = decodedJwt.getClaim(USER_ID).asInt();
     }catch(Exception e) {
       return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
     }
@@ -431,7 +435,9 @@ public class DeviceService {
         recordsStringified.add(records.getString(i));
       }
 
-      Users user = userManager.getUserByUid(userId);
+      // The Devices User is added to the project (and thus has permissions on the topics of the project) during
+      // the activation face.
+      Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
 
       try {
         kafkaFacade.produce(projectId, user, topicName, recordsStringified);
