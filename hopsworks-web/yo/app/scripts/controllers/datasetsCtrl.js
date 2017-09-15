@@ -368,9 +368,10 @@ This will make all its files unavailable to other projects unless you share it e
               return clippedPath;
             };
 
-            self.unzip = function () {
+            self.unzip = function (filename) {
               var pathArray = self.pathArray.slice(0);
-              pathArray.push(self.selected);
+//              pathArray.push(self.selected);
+              pathArray.push(filename);
               var filePath = getPath(pathArray);
 
               growl.info("Started unzipping...",
@@ -409,9 +410,9 @@ This will make all its files unavailable to other projects unless you share it e
               return false;
             };
 
-            self.convertIPythonNotebook = function () {
+            self.convertIPythonNotebook = function (filename) {
               var pathArray = self.pathArray.slice(0);
-              pathArray.push(self.selected);
+              pathArray.push(filename); //self.selected
               var filePath = getPath(pathArray);
 
               growl.info("Converting...",
