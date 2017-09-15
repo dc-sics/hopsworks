@@ -61,21 +61,23 @@
             <div class="pull-right text-muted">
               <span ng-if="publicDataset.selectedDataset.localDataset" data-placement="bottom" data-toggle="tooltip" title="Add to project" style="padding: 10px;"
                     ng-click="publicDataset.addPublicDatasetModal(publicDataset.selectedDataset)">
-                <i class="fa fa-plus-circle fa-lg" aria-hidden="true"></i>
+                <i class="fa fa-download fa-lg text-primary" aria-hidden="true"></i>
               </span>
               <span ng-if="!publicDataset.selectedDataset.localDataset" data-placement="bottom" data-toggle="tooltip" title="Download" style="padding: 10px;"
                     ng-click="mainCtrl.downloadPublicDataset(publicDataset.selectedDataset)">
-                <i class="fa fa-cloud-download fa-lg" aria-hidden="true"></i>
-              </span>
-              <a class="publicdataset-issue text-muted"
-                 title="Report issues with licence, content of the dataset, or the documentation."
-                 ng-click="publicDataset.reportDataset()">Report issue</a>
+                <i class="fa fa-cloud-download fa-lg text-primary" aria-hidden="true"></i>
+              </span>             
             </div>            
           </div>
           <div ng-if="publicDataset.readme === undefined && !publicDataset.loadingReadme" class="panel-body text-muted">No readme file.</div>
           <div ng-if="publicDataset.readme !== undefined && !publicDataset.loadingReadme" class="panel-body" ng-bind-html="publicDataset.readme"></div>
           <div ng-if="publicDataset.loadingReadme" class="panel-body text-muted" style="text-align: center;">
             <span class="loading-dots">Loading</span>
+          </div>
+          <div class="panel-footer text-muted" >
+            <a class="publicdataset-issue text-muted"
+                 title="Report issues with licence, content of the dataset, or the documentation."
+                 ng-click="publicDataset.reportDataset()">Report issue</a> 
           </div>
         </div>
         <div class="panel panel-default">
