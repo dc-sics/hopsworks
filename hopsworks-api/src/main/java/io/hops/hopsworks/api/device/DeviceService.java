@@ -60,6 +60,7 @@ public class DeviceService {
   private static final String PASS_UUID = "passUuid";
   private static final String PROJECT_ID = "projectId";
   private static final String ALIAS = "alias";
+  private static final String STATE = "state";
   private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
   
   private static final String AUTHORIZATION_HEADER = "Authorization";
@@ -246,7 +247,7 @@ public class DeviceService {
   public Response getDevicesEndpoint(@Context HttpServletRequest req) throws AppException {
 
     Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
-    String state = req.getParameter("state");
+    String state = req.getParameter(STATE);
 
     List<ProjectDeviceDTO> listDevices;
     if (state != null){
@@ -268,7 +269,7 @@ public class DeviceService {
       JSONObject json = new JSONObject(jsonString);
       Integer projectId = json.getInt(PROJECT_ID);
       String deviceUuid = json.getString(DEVICE_UUID);
-      Integer state = json.getInt("state");
+      Integer state = json.getInt(STATE);
       ProjectDeviceDTO p = new ProjectDeviceDTO();
       p.setProjectId(projectId);
       p.setDeviceUuid(deviceUuid);

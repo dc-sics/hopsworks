@@ -5,7 +5,7 @@ CREATE TABLE `project_devices`(
 	`pass_uuid` VARCHAR(36) NOT NULL,
 	`alias` VARCHAR(80) NOT NULL,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	`enabled` TINYINT(1) NOT NULL DEFAULT '1',
+	`state` TINYINT(1) NOT NULL DEFAULT '1',
 	`last_produced` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`project_id`, `device_uuid`),
 	FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,

@@ -28,7 +28,7 @@ import javax.xml.bind.annotation.XmlRootElement;
       query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId"),
   @NamedQuery(
     name = "ProjectDevice.findByProjectIdAndState",
-    query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.enabled = :state"),
+    query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.state = :state"),
   @NamedQuery(
       name = "ProjectDevice.findByProjectDevicePK",
       query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
@@ -53,8 +53,8 @@ public class ProjectDevice implements Serializable{
   @Column(name = "created_at")
   private Date createdAt;
   
-  @Column(name = "enabled")
-  private Integer enabled;
+  @Column(name = "state")
+  private Integer state;
   
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "last_produced")
@@ -71,7 +71,7 @@ public class ProjectDevice implements Serializable{
   public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid, State deviceState, String alias) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
-    this.enabled = deviceState.ordinal();
+    this.state = deviceState.ordinal();
     this.alias = alias;
   }
 
@@ -107,12 +107,12 @@ public class ProjectDevice implements Serializable{
     this.createdAt = createdAt;
   }
 
-  public Integer getEnabled() {
-    return enabled;
+  public Integer getState() {
+    return state;
   }
 
-  public void setEnabled(Integer enabled) {
-    this.enabled = enabled;
+  public void setState(Integer state) {
+    this.state = state;
   }
 
   public Date getLastProduced() {

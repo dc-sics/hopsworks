@@ -18,7 +18,7 @@ public class DeviceFacade2 {
 
   public void addProjectDevice(Integer projectId, String deviceUuid, String passUuid, String alias) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, ProjectDevice.State.ENABLED, alias);
+    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, ProjectDevice.State.PENDING, alias);
     em.persist(pd);
   }
 
@@ -42,7 +42,7 @@ public class DeviceFacade2 {
               device.getProjectDevicePK().getDeviceUuid(),
               device.getAlias(),
               device.getCreatedAt(),
-              device.getEnabled(),
+              device.getState(),
               device.getLastProduced()));
     }
     return devicesDTO;
@@ -61,7 +61,7 @@ public class DeviceFacade2 {
         device.getProjectDevicePK().getDeviceUuid(),
         device.getAlias(),
         device.getCreatedAt(),
-        device.getEnabled(),
+        device.getState(),
         device.getLastProduced()));
     }
     return devicesDTO;
@@ -70,7 +70,7 @@ public class DeviceFacade2 {
   public void updateDeviceState(ProjectDeviceDTO projectDeviceDTO) {
     ProjectDevice projectDevice = em.find(ProjectDevice.class,
       new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
-    projectDevice.setEnabled(projectDeviceDTO.getState());
+    projectDevice.setState(projectDeviceDTO.getState());
     em.persist(projectDevice);
   }
 
@@ -78,7 +78,7 @@ public class DeviceFacade2 {
     for (ProjectDeviceDTO projectDeviceDTO: projectDevicesDTO){
       ProjectDevice projectDevice = em.find(ProjectDevice.class,
         new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
-      projectDevice.setEnabled(projectDeviceDTO.getState());
+      projectDevice.setState(projectDeviceDTO.getState());
       em.persist(projectDevice);
     }
   }
