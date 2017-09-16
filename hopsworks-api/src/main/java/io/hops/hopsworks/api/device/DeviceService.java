@@ -23,6 +23,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
@@ -203,20 +204,10 @@ public class DeviceService {
   //===============================================================================================================
 
   /**
-   * Endpoint for testing purposes
-   */
-  @GET
-  @Path("/test")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getTestEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-    return successfulJsonResponse(Status.OK, "jwtTokenValue");
-  }
-
-
-  /**
-   * Endpoint that creates a project secret. When the project secret record is stored in the database then the
-   * devices feature is enabled and devices can start registering.
+   * This endpoint activates the "devices" feature for the project associated with the project_id.
+   * This endpoint adds the default device-user to the project as a Data Owner so that approved devices can produce to
+   * the project's kafka topics.
+   * This endpoint creates the project secret that is necessary for signing jwt tokens and for authenticating them.
    */
   @POST
   @Path("/activate")
@@ -228,9 +219,14 @@ public class DeviceService {
       JSONObject json = new JSONObject(jsonString);
       Integer projectId = json.getInt(PROJECT_ID);
       Integer projectTokenDurationInHours = json.getInt(JWT_DURATION_IN_HOURS);
+
+      // Generates a random UUID to serve as the project secret.
       String projectSecret = UUID.randomUUID().toString();
 
-      projectTeamFacade.update(new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL)));
+      // Adds the device-user to the project as a Data Owner
+      ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
+      pt.setTeamRole(AllowedRoles.DATA_OWNER);
+      projectTeamFacade.update(pt);
 
       deviceFacade2.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return successfulJsonResponse(Status.OK);
@@ -357,7 +353,7 @@ public class DeviceService {
   
 
   /**
-   * Login end-point for project devices. COMPLETED.
+   * Login end-point for project devices
    */
   @POST
   @Path("/login")
@@ -395,6 +391,39 @@ public class DeviceService {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "Json request is malformed! Required properties are [{0}, {1}, {2}]",
               PROJECT_ID, DEVICE_UUID, PASS_UUID));
+    }
+  }
+
+  /**
+   * Get the schema of a topic before producing to that topic
+   */
+  @GET
+  @Path("/topic-schema")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getTopicSchemaEndpoint(@Context HttpServletRequest req) throws AppException {
+
+    try {
+      Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
+      String topicName = req.getParameter(TOPIC);
+
+      ProjectSecret secret = getProjectSecret(projectId);
+      if (secret == null){
+        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
+      }
+
+      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
+      Response authFailedResponse = verifyJwt(secret, jwtToken);
+      if (authFailedResponse != null) {
+        return authFailedResponse;
+      }
+      // Device is authenticated at this point
+
+      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
+
+    }catch(JSONException e) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), MessageFormat.format(
+        "Json request is malformed! Required properties are [{0}, {1}].", PROJECT_ID, TOPIC));
     }
   }
 
@@ -454,39 +483,6 @@ public class DeviceService {
               "Json request is malformed! Required properties are [{0}, {1}]", TOPIC, RECORDS));
     }
 
-  }
-
-  /**
-   * Get the schema of a topic before producing to that topic
-   */
-  @GET
-  @Path("/topic-schema")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getTopicSchemaEndpoint(@Context HttpServletRequest req) throws AppException {
-
-    try {
-      Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
-      String topicName = req.getParameter(TOPIC);
-
-      ProjectSecret secret = getProjectSecret(projectId);
-      if (secret == null){
-        return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.");
-      }
-
-      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      Response authFailedResponse = verifyJwt(secret, jwtToken);
-      if (authFailedResponse != null) {
-        return authFailedResponse;
-      }
-      // Device is authenticated at this point
-
-      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
-
-    }catch(JSONException e) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}].", PROJECT_ID, TOPIC));
-    }
   }
 
 }
