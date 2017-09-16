@@ -52,7 +52,8 @@ public class ProjectDevice implements Serializable{
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "created_at")
   private Date createdAt;
-  
+
+  @Basic(optional = false)
   @Column(name = "state")
   private Integer state;
   
