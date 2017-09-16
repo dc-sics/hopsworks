@@ -29,6 +29,7 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.swagger.annotations.Api;
+import org.apache.hadoop.fs.Stat;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -237,6 +238,8 @@ public class DeviceService {
     }
   }
 
+  //TODO: Add deactivation endpoint that deletes the project secret.
+
   @GET
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
@@ -257,40 +260,23 @@ public class DeviceService {
   }
 
   @POST
-  @Path("/device")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response postDeviceStateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      Integer projectId = json.getInt(PROJECT_ID);
-      String deviceUuid = json.getString(DEVICE_UUID);
-      Integer state = json.getInt(STATE);
-      ProjectDeviceDTO p = new ProjectDeviceDTO();
-      p.setProjectId(projectId);
-      p.setDeviceUuid(deviceUuid);
-      p.setState(state);
-      deviceFacade2.updateDeviceState(p);
-      return successfulJsonResponse(Status.OK);
-    } catch (Exception e) {
-      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-        "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
-    }
-  }
-
-  @POST
   @Path("/devices")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response postDevicesStateEndpoint(
     @Context HttpServletRequest req, List<ProjectDeviceDTO> listDevices) throws AppException {
-    try {
-      deviceFacade2.updateDevicesState(listDevices);
-      return successfulJsonResponse(Status.OK);
-    } catch (Exception e) {
-      return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-        "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
-    }
+    deviceFacade2.updateDevicesState(listDevices);
+    return successfulJsonResponse(Status.OK);
+  }
+
+  @GET
+  @Path("/instructions")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getInstructionsEndpoint(@Context HttpServletRequest req) throws AppException {
+    //TODO: Change instructions text and provide the correct endpoints and parameters.
+    String instructions = "Instructions for how to connect the devices to hopsworks will go here";
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(instructions).build();
+
   }
 
   //===============================================================================================================
@@ -432,34 +418,39 @@ public class DeviceService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response postProduceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-  
-    JSONObject json = new JSONObject(jsonString);
-    Integer projectId = json.getInt(PROJECT_ID);
-    
-    ProjectSecret secret;
-    try {
-      secret = deviceFacade2.getProjectSecret(projectId);
-    }catch (Exception e) {
-      return failedJsonResponse(Status.FORBIDDEN, "Project devices feature is not active.") ;
-    }
-    String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-    Response authFailedResponse = verifyJwt(secret, jwtToken);
-    if (authFailedResponse != null) {
-      return authFailedResponse;
-    }
-    // Device is authenticated at this point.
-    
-    DecodedJWT decodedJwt;
-    try {
-      decodedJwt = getDecodedJwt(secret, jwtToken);
-    }catch(Exception e) {
-      return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
-    }
-    // Device is correlated to a userId at this point.
 
     try {
+      JSONObject json = new JSONObject(jsonString);
+      Integer projectId = json.getInt(PROJECT_ID);
       String topicName = json.getString(TOPIC);
       JSONArray records = json.getJSONArray(RECORDS);
+
+      // Retrieves project secret
+      ProjectSecret secret;
+      try {
+        secret = deviceFacade2.getProjectSecret(projectId);
+      }catch (Exception e) {
+        return failedJsonResponse(Status.FORBIDDEN,
+          "The devices feature for this project is not activated.");
+      }
+
+      // Verifies jwtToken
+      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
+      Response authFailedResponse = verifyJwt(secret, jwtToken);
+      if (authFailedResponse != null) {
+        return authFailedResponse;
+      }
+
+      // The device is authenticated at this point.
+
+      // Extracts deviceUuid from jwtToken
+      String deviceUuid = null;
+      try {
+        DecodedJWT decodedJwt = getDecodedJwt(secret, jwtToken);
+        deviceUuid = decodedJwt.getClaim(DEVICE_UUID).asString();
+      }catch(Exception e) {
+        return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
+      }
 
       //TODO: Check if ArrayList of String works.
       ArrayList<String> recordsStringified = new ArrayList<>();
@@ -467,20 +458,21 @@ public class DeviceService {
         recordsStringified.add(records.getString(i));
       }
 
-      // The Devices User is added to the project (and thus has permissions on the topics of the project) during
-      // the activation face.
+      // Extracts the default device-user.
       Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
 
       try {
         kafkaFacade.produce(projectId, user, topicName, recordsStringified);
+        return successfulJsonResponse(Status.OK, MessageFormat.format(
+          "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3} records:{4}, ",
+          projectId, deviceUuid, user.getEmail(), topicName, recordsStringified));
       } catch (Exception e) {
         return failedJsonResponse(
             Status.INTERNAL_SERVER_ERROR,"Something went wrong while producing to Kafka.");
       }
-      return successfulJsonResponse(Status.OK, null);
     }catch(JSONException e) {
       return failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}]", TOPIC, RECORDS));
+              "Json request is malformed! Required properties are [{0}, {1}, {2}]", PROJECT_ID, TOPIC, RECORDS));
     }
 
   }

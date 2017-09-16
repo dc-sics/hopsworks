@@ -58,6 +58,13 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.HopsUtils;
 
+
+import com.twitter.bijection.Injection;
+import com.twitter.bijection.avro.GenericAvroCodecs;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericData;
+
+
 @Stateless
 public class KafkaFacade {
 
@@ -1091,7 +1098,6 @@ public class KafkaFacade {
           settings.getHopsworksMasterPasswordSsl());
       props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
           settings.getHopsworksMasterPasswordSsl());
-
       producer = new KafkaProducer<>(props);
       for (String record: records) {
         // Asynchronous production
@@ -1112,6 +1118,31 @@ public class KafkaFacade {
     }
     return true;
   }
+
+
+
+
+  public void produce2(String topic, String schemaContents, Map<String, String> messageFields) {
+
+    Schema.Parser parser = new Schema.Parser();
+    Schema schema = parser.parse(schemaContents);
+    Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
+
+    //create the avro message
+    GenericData.Record avroRecord = new GenericData.Record(schema);
+    for (Map.Entry<String, String> message : messageFields.entrySet()) {
+      //TODO: Check that messageFields are in avro record
+      avroRecord.put(message.getKey(), message.getValue());
+    }
+    byte[] bytes = recordInjection.apply(avroRecord);
+    ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, bytes);
+
+    Properties props = new Properties();
+    KafkaProducer<String, byte[]> producer = new KafkaProducer<>(props);
+    producer.send(record);
+
+  }
+
 
 
   public class ZookeeperWatcher implements Watcher {
