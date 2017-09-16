@@ -16,9 +16,9 @@ public class DeviceFacade2 {
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
-  public void addProjectDevice(Integer projectId, String deviceUuid, String passUuid) {
+  public void addProjectDevice(Integer projectId, String deviceUuid, String passUuid, String alias) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, ProjectDevice.State.ENABLED);
+    ProjectDevice pd = new ProjectDevice(pdKey, passUuid, ProjectDevice.State.ENABLED, alias);
     em.persist(pd);
   }
 
@@ -40,6 +40,7 @@ public class DeviceFacade2 {
       devicesDTO.add(new ProjectDeviceDTO(
               device.getProjectDevicePK().getProjectId(),
               device.getProjectDevicePK().getDeviceUuid(),
+              device.getAlias(),
               device.getCreatedAt(),
               device.getEnabled(),
               device.getLastProduced()));
@@ -58,6 +59,7 @@ public class DeviceFacade2 {
       devicesDTO.add(new ProjectDeviceDTO(
         device.getProjectDevicePK().getProjectId(),
         device.getProjectDevicePK().getDeviceUuid(),
+        device.getAlias(),
         device.getCreatedAt(),
         device.getEnabled(),
         device.getLastProduced()));

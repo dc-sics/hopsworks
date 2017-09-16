@@ -59,6 +59,7 @@ public class DeviceService {
   private static final String DEVICE_UUID = "deviceUuid";
   private static final String PASS_UUID = "passUuid";
   private static final String PROJECT_ID = "projectId";
+  private static final String ALIAS = "alias";
   private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
   
   private static final String AUTHORIZATION_HEADER = "Authorization";
@@ -338,9 +339,10 @@ public class DeviceService {
       String deviceUuid = json.getString(DEVICE_UUID);
       String passUuid = json.getString(PASS_UUID);
       Integer projectId = json.getInt(PROJECT_ID);
+      String alias = json.getString(ALIAS);
 
       try {
-        deviceFacade2.addProjectDevice(projectId, deviceUuid, passUuid);
+        deviceFacade2.addProjectDevice(projectId, deviceUuid, passUuid, alias);
         return successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return failedJsonResponse(Status.UNAUTHORIZED, "Device is already registered for this project.");
