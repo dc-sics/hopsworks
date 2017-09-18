@@ -282,6 +282,10 @@ public class DataSetService {
     List<InodeView> kids = new ArrayList<>();
     for (Inode i : cwdChildren) {
       InodeView inodeView = new InodeView(i, fullPath + "/" + i.getInodePK().getName());
+      if (dsPath.getDs().isShared()) {
+        //Get project of project__user the inode is owned by
+        inodeView.setOwningProjectName(hdfsUsersBean.getProjectName(i.getHdfsUser().getName()));
+      }
       inodeView.setUnzippingState(settings.getUnzippingState(
               fullPath + "/" + i.getInodePK().getName()));
       Users user = userFacade.findByUsername(inodeView.getOwner());
