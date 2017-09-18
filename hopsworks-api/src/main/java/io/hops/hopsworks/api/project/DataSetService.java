@@ -1,6 +1,5 @@
 package io.hops.hopsworks.api.project;
 
-import com.google.api.client.repackaged.com.google.common.base.Strings;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import java.io.DataInputStream;
 import java.io.File;
@@ -736,8 +735,9 @@ public class DataSetService {
       //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(ds);
-      String userRole = projectTeamFacade.findCurrentRole(owning, user);
-      if (!Strings.isNullOrEmpty(userRole) && userRole.equals(AllowedRoles.DATA_OWNER) && owning.equals(project)){
+      boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
+      if (isMember && projectTeamFacade.findCurrentRole(owning, user).equals(AllowedRoles.DATA_OWNER) && owning.equals(
+          project)) {
         dfso = dfs.getDfsOps();// do it as super user
       } else {
         dfso = dfs.getDfsOps(username);// do it as project user
@@ -817,8 +817,9 @@ public class DataSetService {
       //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(ds);
-      String userRole = projectTeamFacade.findCurrentRole(owning, user);
-      if (!Strings.isNullOrEmpty(userRole) && userRole.equals(AllowedRoles.DATA_OWNER) && owning.equals(project)){
+      boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
+      if (isMember && projectTeamFacade.findCurrentRole(owning, user).equals(AllowedRoles.DATA_OWNER) && owning.equals(
+          project)) {
         dfso = dfs.getDfsOps();// do it as super user
       } else {
         dfso = dfs.getDfsOps(username);// do it as project user
@@ -895,8 +896,9 @@ public class DataSetService {
       //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(sourceDataset);
-      String userRole = projectTeamFacade.findCurrentRole(owning, user);
-      if (!Strings.isNullOrEmpty(userRole) && userRole.equals(AllowedRoles.DATA_OWNER) && owning.equals(project)){
+      boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
+      if (isMember && projectTeamFacade.findCurrentRole(owning, user).equals(AllowedRoles.DATA_OWNER) && owning.equals(
+          project)) {
         udfso = dfs.getDfsOps();// do it as super user
       } else {
         udfso = dfs.getDfsOps(username);// do it as project user
@@ -1320,8 +1322,16 @@ public class DataSetService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.DATASET_NOT_EDITABLE);
     }
-
-    this.uploader.confFileUpload(dsPath, username, templateId);
+    
+    Project owning = datasetController.getOwningProject(dsPath.getDs());
+    //Is user a member of this project? If so get their role
+    boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
+    String role = null;
+    if(isMember){
+      role = projectTeamFacade.findCurrentRole(owning, user);
+    }
+     
+    this.uploader.confFileUpload(dsPath, username, templateId, role);
     return this.uploader;
   }
 
