@@ -35,6 +35,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.validation.ValidationException;
 import javax.ws.rs.core.Response;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -98,6 +100,7 @@ public class DatasetController {
    * @throws IOException if the creation of the dataset failed.
    * @see FolderNameValidator.java
    */
+  @TransactionAttribute(TransactionAttributeType.NEVER)
   public void createDataset(Users user, Project project, String dataSetName,
       String datasetDescription, int templateId, boolean searchable,
       boolean defaultDataset, DistributedFileSystemOps dfso)
@@ -141,12 +144,7 @@ public class DatasetController {
         group, global, defaultDataset);
     success = createFolder(dsPath, templateId, fsPermission, dfso);
     if (success) {
-      //set the dataset meta enabled. Support 3 level indexing
-      if (searchable) {
-        dfso.setMetaEnabled(dsPath);
-      }
       try {
-
         ds = inodes.findByInodePK(parent, dataSetName,
             HopsUtils.dataSetPartitionId(parent, dataSetName));
         Dataset newDS = new Dataset(ds, project);
@@ -161,6 +159,12 @@ public class DatasetController {
         // creates a dataset and adds user as owner.
         hdfsUsersBean.addDatasetUsersGroups(user, project, newDS, dfso);
 
+        //set the dataset meta enabled. Support 3 level indexing
+        if (searchable) {
+          dfso.setMetaEnabled(dsPath);
+          Dataset logDs = datasetFacade.findByNameAndProjectId(project, dataSetName);
+          logDataset(logDs, OperationType.Add);
+        }
       } catch (Exception e) {
         IOException failed = new IOException("Failed to create dataset at path "
             + dsPath + ".", e);
