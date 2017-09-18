@@ -1238,6 +1238,7 @@ public class ProjectController {
             try {
               createCertificates(project, newMember, false);
             } catch (Exception ex) {
+              LOGGER.log(Level.SEVERE, "Adding  team member "+projectTeam.getProjectTeamPK()+" to members failed", ex);
               projectTeamFacade.removeProjectTeam(project, newMember);
               try {
                 hdfsUsersBean.

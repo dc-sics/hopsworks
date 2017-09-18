@@ -776,7 +776,7 @@ This will make all its files unavailable to other projects unless you share it e
                                   function (success) {
                                     dataSetService.fileDownload(filePath);
                                   }, function (error) {
-                                    growl.error(error., {title: 'Error', ttl: 5000});
+                                    growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                           });
                         }
                 );

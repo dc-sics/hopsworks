@@ -1,5 +1,6 @@
 package io.hops.hopsworks.api.project;
 
+import com.google.api.client.repackaged.com.google.common.base.Strings;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import java.io.DataInputStream;
 import java.io.File;
@@ -727,12 +728,15 @@ public class DataSetService {
     try {
       //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
       Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
-      String userRole = projectTeamFacade.findCurrentRole(project, user);
-      if(userRole.equals(AllowedRoles.DATA_SCIENTIST)){
-        String username = hdfsUsersBean.getHdfsUserName(project, user);
-        dfso = dfs.getDfsOps(username);// do it as project user
-      } else if (userRole.equals(AllowedRoles.DATA_OWNER)){
+      String username = hdfsUsersBean.getHdfsUserName(project, user);
+      //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
+      //Find project of dataset as it might be shared
+      Project owning = datasetController.getOwningProject(ds);
+      String userRole = projectTeamFacade.findCurrentRole(owning, user);
+      if (!Strings.isNullOrEmpty(userRole) && userRole.equals(AllowedRoles.DATA_OWNER) && owning.equals(project)){
         dfso = dfs.getDfsOps();// do it as super user
+      } else {
+        dfso = dfs.getDfsOps(username);// do it as project user
       }
       success = datasetController.
               deleteDatasetDir(ds, fullPath, dfso);
@@ -810,10 +814,10 @@ public class DataSetService {
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(ds);
       String userRole = projectTeamFacade.findCurrentRole(owning, user);
-      if(userRole.equals(AllowedRoles.DATA_SCIENTIST)){
-        dfso = dfs.getDfsOps(username);// do it as project user
-      } else if (userRole.equals(AllowedRoles.DATA_OWNER)){
+      if (!Strings.isNullOrEmpty(userRole) && userRole.equals(AllowedRoles.DATA_OWNER) && owning.equals(project)){
         dfso = dfs.getDfsOps();// do it as super user
+      } else {
+        dfso = dfs.getDfsOps(username);// do it as project user
       }
       success = datasetController.deleteDatasetDir(ds, fullPath, dfso);
     } catch (AccessControlException ex) {
@@ -881,10 +885,18 @@ public class DataSetService {
     org.apache.hadoop.fs.Path destPath = destDsPath.getFullPath();
 
     DistributedFileSystemOps udfso = null;
-    //We need super-user(glassfish) to change owner 
+    //We need super-user to change owner 
     DistributedFileSystemOps dfso = null;
     try {
-      udfso = dfs.getDfsOps(username);
+      //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
+      //Find project of dataset as it might be shared
+      Project owning = datasetController.getOwningProject(sourceDataset);
+      String userRole = projectTeamFacade.findCurrentRole(owning, user);
+      if (!Strings.isNullOrEmpty(userRole) && userRole.equals(AllowedRoles.DATA_OWNER) && owning.equals(project)){
+        udfso = dfs.getDfsOps();// do it as super user
+      } else {
+        udfso = dfs.getDfsOps(username);// do it as project user
+      }
       dfso = dfs.getDfsOps();
       if (udfso.exists(destPath.toString())) {
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -937,7 +949,7 @@ public class DataSetService {
   @Path("copy")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response copyFile(
           @Context SecurityContext sc, @Context HttpServletRequest req,
           MoveDTO dto) throws
@@ -1055,7 +1067,12 @@ public class DataSetService {
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
-    if(datasetController.isDownloadAllowed(project, user, AllowedRoles.DATA_SCIENTIST, path)){
+    DsPath dsPath = pathValidator.validatePath(this.project, path);
+    Project owningProject = datasetController.getOwningProject(dsPath.getDs());
+    //User must be accessing a dataset directly, not by being shared with another project.
+    //For example, DS1 of project1 is shared with project2. User must be a member of project1 to download files
+    if (owningProject.equals(project) && datasetController.isDownloadAllowed(project, user, dsPath.getFullPath().
+        toString())) {
       return checkFileExists(path, sc);
     }
     JsonResponse response = new JsonResponse();

@@ -1,6 +1,7 @@
 package io.hops.hopsworks.common.dataset;
 
 import io.hops.common.Pair;
+import io.hops.hopsworks.common.constants.auth.AllowedRoles;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
@@ -505,13 +506,15 @@ public class DatasetController {
    * 
    * @param project
    * @param user
-   * @param role
    * @param path
    * @return 
    */
-  public boolean isDownloadAllowed(Project project, Users user, String role, String path) {
+  public boolean isDownloadAllowed(Project project, Users user, String path) {
     //Data Scientists are allowed to download their own data
-    if (projectTeamFacade.findCurrentRole(project, user).equals(role)) {
+    String role = projectTeamFacade.findCurrentRole(project, user);
+    if (role.equals(AllowedRoles.DATA_OWNER)) {
+      return true;
+    } else if (role.equals(AllowedRoles.DATA_SCIENTIST)) {
       DistributedFileSystemOps udfso = null;
       try {
         String username = hdfsUsersBean.getHdfsUserName(project, user);
