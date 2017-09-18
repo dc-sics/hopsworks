@@ -360,6 +360,7 @@ public class ProjectController {
       try {
         addElasticsearch(project.getName());
       } catch (IOException ex) {
+        LOGGER.log(Level.SEVERE, "Error while adding elasticsearch service for project:"+projectName, ex);
         cleanup(project, sessionId);
       }
       return project;
