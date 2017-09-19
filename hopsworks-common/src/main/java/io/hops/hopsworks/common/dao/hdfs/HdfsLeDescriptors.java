@@ -49,10 +49,10 @@ public class HdfsLeDescriptors implements Serializable {
   @NotNull
   @Size(min = 1,
           max = 25)
-  @Column(name = "hostname")
-  private String hostname;
+  @Column(name = "rpc_addresses")
+  private String rpcAddresses;
   @Size(max = 100)
-  @Column(name = "httpAddress")
+  @Column(name = "http_address")
   private String httpAddress;
 
   public HdfsLeDescriptors() {
@@ -66,7 +66,7 @@ public class HdfsLeDescriptors implements Serializable {
           String hostname) {
     this.hdfsLeDescriptorsPK = hdfsLeDescriptorsPK;
     this.counter = counter;
-    this.hostname = hostname;
+    this.rpcAddresses = hostname;
   }
 
   public HdfsLeDescriptors(long id, int partitionVal) {
@@ -90,11 +90,22 @@ public class HdfsLeDescriptors implements Serializable {
   }
 
   public String getHostname() {
-    return hostname;
+    if (rpcAddresses == null) {
+      return "";
+    }
+    int pos = rpcAddresses.indexOf(",");
+    if (pos == -1) {
+      return "";
+    }
+    return rpcAddresses.substring(0, pos);
+  }
+  
+  public String getRpcAddresses() {
+    return rpcAddresses;
   }
 
-  public void setHostname(String hostname) {
-    this.hostname = hostname;
+  public void setRpcAddresses(String rpcAddresses) {
+    this.rpcAddresses = rpcAddresses;
   }
 
   public String getHttpAddress() {
