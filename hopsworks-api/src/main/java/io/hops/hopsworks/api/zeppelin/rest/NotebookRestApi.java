@@ -22,6 +22,7 @@ import javax.enterprise.context.RequestScoped;
 
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.user.CertificateMaterializer;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
@@ -75,6 +76,8 @@ public class NotebookRestApi {
   private Settings settings;
   @EJB
   private ZeppelinResource zeppelinResource;
+  @EJB
+  private HdfsUsersController hdfsUsersController;
   
   private static final Logger LOG = LoggerFactory.getLogger(
           NotebookRestApi.class);
@@ -610,17 +613,18 @@ public class NotebookRestApi {
               .split(":")[0];
           if (certificateMaterializer.openedInterpreter(project.getId(),
               interpreterGroup)) {
+            String username = hdfsUsersController.getUserName(hdfsUserName);
             try {
               HopsUtils.materializeCertificatesForUser(project.getName(),
-                  project.getOwner().getUsername(), settings
+                  username, settings
                       .getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(),
                   dfso, certificateMaterializer, settings, true);
             } catch (IOException ex) {
               LOG.warn("Could not materialize certificates for user: " +
-                  project.getName() + "__" + project.getOwner().getUsername());
-              HopsUtils.cleanupCertificatesForUser(project.getOwner()
-                  .getUsername(), project.getName(), settings
-                  .getHdfsTmpCertDir(), dfso, certificateMaterializer, true);
+                  project.getName() + "__" + username);
+              HopsUtils.cleanupCertificatesForUser(username,
+                  project.getName(), settings.getHdfsTmpCertDir(),
+                  dfso, certificateMaterializer, true);
               throw ex;
             }
           }

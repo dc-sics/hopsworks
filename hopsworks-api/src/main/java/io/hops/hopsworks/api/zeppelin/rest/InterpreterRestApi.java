@@ -239,6 +239,7 @@ public class InterpreterRestApi {
       } else {
         interpreterSettingManager.restart(settingId, noteId, SecurityUtils.getPrincipal());
       }
+      
       cleanUserCertificates(project, settingId);
       
       zeppelinConf.getNotebookServer().clearParagraphRuntimeInfo(setting);
@@ -272,7 +273,7 @@ public class InterpreterRestApi {
       dfso = dfsService.getDfsOps();
       try {
         HopsUtils
-            .cleanupCertificatesForUser(project.getOwner().getUsername(),
+            .cleanupCertificatesForUser(user.getUsername(),
                 project.getName(), settings.getHdfsTmpCertDir(), dfso,
                 certificateMaterializer, true);
       } catch (IOException ex) {

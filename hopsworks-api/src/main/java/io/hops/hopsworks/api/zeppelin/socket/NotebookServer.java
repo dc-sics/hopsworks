@@ -1867,16 +1867,17 @@ public class NotebookServer implements
     if (certificateMaterializer.openedInterpreter(project.getId(),
         interpreterGroup)) {
       DistributedFileSystemOps dfso = dfsService.getDfsOps();
+      String username = userBean.findByEmail(sender).getUsername();
       try {
         HopsUtils.materializeCertificatesForUser(project.getName(),
-            project.getOwner().getUsername(),
+            username,
             settings.getHopsworksTmpCertDir(),
             settings.getHdfsTmpCertDir(), dfso, certificateMaterializer,
             settings, true);
       } catch (IOException ex) {
         // Cleanup certificates here
         HopsUtils
-            .cleanupCertificatesForUser(project.getOwner().getUsername(),
+            .cleanupCertificatesForUser(username,
                 project.getName(), settings.getHdfsTmpCertDir(), dfso,
                 certificateMaterializer, true);
         LOG.log(Level.WARNING, "User certificates could not be materialized",

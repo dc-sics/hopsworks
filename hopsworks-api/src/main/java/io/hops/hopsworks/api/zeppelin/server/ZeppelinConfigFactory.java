@@ -86,10 +86,10 @@ public class ZeppelinConfigFactory {
     }
     String hdfsUser = hdfsUsername.getHdfsUserName(project, user);
     ZeppelinConfig userConfig = projectUserConfCache.get(hdfsUser);
-    if (userConfig != null) {
+    /*if (userConfig != null) {
       return userConfig;
-    }
-    ZeppelinConfig config = getprojectConf(projectName);
+    }*/
+    ZeppelinConfig config = getprojectConf(projectName, user);
     userConfig = new ZeppelinConfig(config, nbs, hdfsUser);
     projectUserConfCache.put(hdfsUser, userConfig);
     return userConfig;
@@ -114,6 +114,10 @@ public class ZeppelinConfigFactory {
     return userConfig;
   }
 
+  public ZeppelinConfig getprojectConf(String projectName) {
+    return getprojectConf(projectName, null);
+  }
+  
   /**
    * Returns conf for the project. This can not be used to call
    * notebook server, replFactory or notebook b/c a user specific notebook
@@ -123,24 +127,29 @@ public class ZeppelinConfigFactory {
    * @param projectName
    * @return
    */
-  public ZeppelinConfig getprojectConf(String projectName) {
-    ZeppelinConfig config = projectConfCache.get(projectName);
-    if (config != null) {
-      return config;
+  public ZeppelinConfig getprojectConf(String projectName, Users user) {
+    // User is null when Hopsworks checks for running interpreters
+    if (user == null) {
+      ZeppelinConfig config = projectConfCache.get(projectName);
+      if (config != null) {
+        return config;
+      }
     }
     Project project = projectBean.findByName(projectName);
     if (project == null) {
       return null;
     }
-    String hdfsUser = hdfsUsername.getHdfsUserName(project, project.getOwner());
+    String hdfsUser = user != null ? hdfsUsername.getHdfsUserName(project, user)
+        : hdfsUsername.getHdfsUserName(project, project.getOwner());
     ZeppelinInterpreterConfs interpreterConf = zeppelinInterpreterConfFacade.findByName(projectName);
     String conf = null;
     if (interpreterConf != null) {
       conf = interpreterConf.getIntrepeterConf();
     }
-    config = new ZeppelinConfig(projectName, project.getId(), hdfsUser, settings, conf);
+    ZeppelinConfig config = new ZeppelinConfig(projectName, project.getId(),
+        hdfsUser, settings, conf);
     projectConfCache.put(projectName, config);
-    return projectConfCache.get(projectName);
+    return config;
   }
 
   /**

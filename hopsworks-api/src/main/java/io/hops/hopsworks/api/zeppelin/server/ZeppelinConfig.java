@@ -17,6 +17,9 @@ import java.nio.file.StandardCopyOption;
 import java.security.PrivilegedExceptionAction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.zeppelin.conf.ZeppelinConfiguration;
@@ -490,17 +493,24 @@ public class ZeppelinConfig {
         .append(this.projectName).append("__tstore.jks#")
         .append(Settings.T_CERTIFICATE);
 
+    StringBuilder keyStoreSB = new StringBuilder();
+    keyStoreSB
+        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+        .append(owner).append(File.separator).append(owner)
+        .append("__kstore.jks#").append(Settings.K_CERTIFICATE);
+    StringBuilder trustStoreSB = new StringBuilder();
+    trustStoreSB
+        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+        .append(owner).append(File.separator).append(owner)
+        .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
+        
     // Comma-separated files to be added as local resources to Livy interpreter
     StringBuilder livySparkDistFiles = new StringBuilder();
     livySparkDistFiles
         // KeyStore
-        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(owner).append(File.separator).append(owner)
-        .append("__kstore.jks#").append(Settings.K_CERTIFICATE).append(",")
+        .append(keyStoreSB).append(",")
         // TrustStore
-        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(owner).append(File.separator).append(owner)
-        .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
+        .append(trustStoreSB);
 
     if (interpreterConf == null) {
       StringBuilder interpreter_json = ConfigFileGenerator.
@@ -522,12 +532,38 @@ public class ZeppelinConfig {
               "spark.yarn.dist.files", sparkDistFiles.toString()
           );
       interpreterConf = interpreter_json.toString();
+    } else {
+      interpreterConf = updateProjectSpecificUserCertificates(interpreterConf,
+          keyStoreSB.toString(), trustStoreSB.toString());
     }
     createdXml = ConfigFileGenerator.createConfigFile(interpreter_file, interpreterConf);
 
     return createdSh || createdXml || createdLog4j;
   }
-
+  
+  private static final Pattern HDFS_USER_PATTERN = Pattern.compile(
+      "hdfs:\\/\\/\\/[\\w\\/]+\\/([\\w]+)__kstore.jks#k_certificate");
+  private static final Pattern K_STORE_PATTERN = Pattern.compile(
+      "hdfs:\\/\\/\\/[\\w\\/]+.jks#k_certificate");
+  private static final Pattern T_STORE_PATTERN = Pattern.compile(
+      "hdfs:\\/\\/\\/[\\w\\/]+.jks#t_certificate");
+  
+  private String updateProjectSpecificUserCertificates(String conf, String
+      kstore, String tstore) throws IOException {
+    /*Matcher hdfsUserMatcher = HDFS_USER_PATTERN.matcher(conf);
+    if (hdfsUserMatcher.find()) {
+      String previousUser = hdfsUserMatcher.group(1);
+      conf = conf.replaceAll(previousUser, owner);
+    } else {
+      throw new IOException("Could not parse HDFS user from interpreter.conf");
+    }*/
+    Matcher keyStoreMatcher = K_STORE_PATTERN.matcher(conf);
+    conf = keyStoreMatcher.replaceAll(kstore);
+    Matcher trustStoreMatcher = T_STORE_PATTERN.matcher(conf);
+    conf = trustStoreMatcher.replaceAll(tstore);
+    return conf;
+  }
+  
   // loads configeration from project specific zeppelin-site.xml
   private ZeppelinConfiguration loadConfig() {
     URL url = null;
