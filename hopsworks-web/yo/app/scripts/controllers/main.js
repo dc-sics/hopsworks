@@ -4,11 +4,11 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('MainCtrl', ['$interval', '$cookies', '$location', '$scope',
+        .controller('MainCtrl', ['$interval', '$cookies', '$location', '$scope', '$rootScope',
           'AuthService', 'UtilsService', 'ElasticService', 'DelaService',
           'DelaGService', 'md5', 'ModalService', 'ProjectService', 'growl',
           'MessageService', '$routeParams', '$window', 'PublicDatasetService',
-          function ($interval, $cookies, $location, $scope, AuthService, UtilsService,
+          function ($interval, $cookies, $location, $scope, $rootScope, AuthService, UtilsService,
                   ElasticService, DelaService, DelaGService, md5, ModalService,
                   ProjectService, growl,
                   MessageService, $routeParams, $window, PublicDatasetService) {
@@ -17,7 +17,6 @@ angular.module('hopsWorksApp')
             self.email = $cookies.get('email');
             self.emailHash = md5.createHash(self.email || '');
             var elasticService = ElasticService();
-            self.isDelaEnabled = false;
 
             if (!angular.isUndefined($routeParams.datasetName)) {
               self.searchType = "datasetCentric";
@@ -57,12 +56,12 @@ angular.module('hopsWorksApp')
                 console.log("isDelaEnabled", success);
                 self.delaServiceInfo = success.data;
                 if (self.delaServiceInfo.status === 1 ) {
-                  self.isDelaEnabled = true;
+                  $rootScope['isDelaEnabled'] = true;
                 } else {
-                  self.isDelaEnabled = false;
+                  $rootScope['isDelaEnabled'] = false;
                 }
               }, function (error) {
-                self.isDelaEnabled = false;
+                $rootScope['isDelaEnabled'] = false;
                 console.log("isDelaEnabled", error);
               });
             };
@@ -178,7 +177,7 @@ angular.module('hopsWorksApp')
                 return;
               }
               self.searching = true;
-              if (self.searchType === "global") {
+              if (self.searchType === "global" && $rootScope.isDelaEnabled) {
                 var global_data;
                 var searchHits;
                 //triggering a global search
@@ -204,6 +203,25 @@ angular.module('hopsWorksApp')
                             self.resultPages = Math.ceil(self.searchResult.length / self.pageSize);
                             self.resultItems = self.searchResult.length;
                           });
+                        }, function (error) {
+                          self.searching = false;
+                          growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
+                        });
+              } else if (self.searchType === "global" && !$rootScope.isDelaEnabled) {
+                var searchHits;
+                //triggering a global search
+                self.searchResult = [];
+                elasticService.globalSearch(self.searchTerm)
+                        .then(function (response) {
+                          searchHits = response.data;
+                          if (searchHits.length > 0) {
+                            self.searchResult = searchHits;
+                          } else {
+                            self.searchResult = [];
+                          }
+                          self.searching = false;
+                          self.resultPages = Math.ceil(self.searchResult.length / self.pageSize);
+                          self.resultItems = self.searchResult.length;                          
                         }, function (error) {
                           self.searching = false;
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});

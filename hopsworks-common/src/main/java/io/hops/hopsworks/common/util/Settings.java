@@ -1692,7 +1692,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_DELA_TRANSFER_ENDPOINT = "dela_transfer_endpoint";
   //
   public static final Level DELA_DEBUG = Level.INFO;
-  private static Boolean DELA_ENABLED = true;
+  private static Boolean DELA_ENABLED = false; // set to false if not found in variables table
   private static String DELA_HOPS_SITE_HOST = "hops.site";
   private static String DELA_HOPS_SITE = "http://hops.site:5081/hops-site/api";
 

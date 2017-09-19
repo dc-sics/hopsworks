@@ -64,27 +64,27 @@ public class DelaWorkerController {
       throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(),
         "dataset shared - can only publish owned datasets", ThirdPartyException.Source.LOCAL, "bad request");
     }
-
     String publicDSId = createPublicDSId(project.getName(), dataset.getName());
-    delaHdfsCtrl.writeManifest(project, dataset, user);
-    delaCtrlUpload(project, dataset, user, publicDSId);
-    long datasetSize = delaHdfsCtrl.datasetSize(project, dataset, user);
-    try {
-      hopsSiteCtrl.performAsUser(user, new HopsSite.UserFunc<String>() {
-        @Override
-        public String perform() throws ThirdPartyException {
-          return hopsSiteCtrl.publish(publicDSId, dataset.getName(), dataset.getDescription(), getCategories(),
-            datasetSize, user.getEmail());
+    if (settings.isDelaEnabled()) {
+      delaHdfsCtrl.writeManifest(project, dataset, user);
+      delaCtrlUpload(project, dataset, user, publicDSId);
+      long datasetSize = delaHdfsCtrl.datasetSize(project, dataset, user);
+      try {
+        hopsSiteCtrl.performAsUser(user, new HopsSite.UserFunc<String>() {
+          @Override
+          public String perform() throws ThirdPartyException {
+            return hopsSiteCtrl.publish(publicDSId, dataset.getName(), dataset.getDescription(), getCategories(),
+                    datasetSize, user.getEmail());
+          }
+        });
+      } catch (ThirdPartyException tpe) {
+        if (ThirdPartyException.Source.HOPS_SITE.equals(tpe.getSource())
+                && ThirdPartyException.Error.DATASET_EXISTS.is(tpe.getMessage())) {
+          //TODO ask dela to checksum it;
         }
-      });
-    } catch (ThirdPartyException tpe) {
-      if (ThirdPartyException.Source.HOPS_SITE.equals(tpe.getSource())
-        && ThirdPartyException.Error.DATASET_EXISTS.is(tpe.getMessage())) {
-        //TODO ask dela to checksum it;
+        throw tpe;
       }
-      throw tpe;
     }
-
     delaDatasetCtrl.upload(dataset, publicDSId);
     LOG.log(Level.INFO, "{0} published", publicDSId);
     return publicDSId;
@@ -104,9 +104,11 @@ public class DelaWorkerController {
     if (!dataset.isPublicDs()) {
       return;
     }
-    delaCtrl.cancel(dataset.getPublicDsId());
-    delaHdfsCtrl.deleteManifest(project, dataset, user);
-    hopsSiteCtrl.cancel(dataset.getPublicDsId());
+    if (settings.isDelaEnabled()) {
+      delaCtrl.cancel(dataset.getPublicDsId());
+      delaHdfsCtrl.deleteManifest(project, dataset, user);
+      hopsSiteCtrl.cancel(dataset.getPublicDsId());
+    }
     delaDatasetCtrl.cancel(dataset);
   }
   

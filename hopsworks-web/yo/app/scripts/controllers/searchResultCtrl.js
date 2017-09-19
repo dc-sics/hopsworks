@@ -1,7 +1,7 @@
 'use strict';
 angular.module('hopsWorksApp')
-        .controller('SearchResultCtrl', ['DelaGService', '$routeParams', '$scope', '$interval',
-          function (DelaGService, $routeParams, $scope, $interval) {
+        .controller('SearchResultCtrl', ['DelaGService', '$routeParams', '$scope', '$rootScope', '$interval',
+          function (DelaGService, $routeParams, $scope, $rootScope, $interval) {
             var self = this;
             self.userContents = [];
             self.projectId = parseInt($routeParams.projectID, 10);
@@ -20,6 +20,9 @@ angular.module('hopsWorksApp')
             };
             
             var getUserContents = function () {
+              if (!$rootScope.isDelaEnabled) {
+                return;
+              }
               var elementSummaries = [];
               if (dataset) {
                 DelaGService.getUserContents().then(function (success) {
@@ -49,9 +52,12 @@ angular.module('hopsWorksApp')
 
             };
 
-            var getUserContentsInterval = $interval(function () {
-              getUserContents();
-            }, 10000);
+            var getUserContentsInterval;
+            if ($rootScope.isDelaEnabled) {
+              getUserContentsInterval = $interval(function () {
+                getUserContents();
+              }, 10000);
+            }
 
             var getElementSummary = function () {
               var elementSummaries = [];

@@ -417,6 +417,9 @@ angular.module('hopsWorksApp')
             };
 
             self.showDela = function(){
+              if (!$rootScope.isDelaEnabled) {
+                return false;
+              }
               return showService("Dela");
             };
               

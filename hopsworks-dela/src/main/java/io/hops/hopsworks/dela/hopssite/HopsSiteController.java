@@ -58,7 +58,7 @@ public class HopsSiteController {
     hopsSiteHost = settings.getDELA_HOPS_SITE_HOST();
     Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
     this.delaEnabled = settings.isDelaEnabled() && certSetup.isPresent();
-    if (certSetup.isPresent()) {
+    if (this.delaEnabled) {
       keystore = certSetup.get().getValue0();
       truststore = certSetup.get().getValue1();
       keystorePassword = certSetup.get().getValue2();
