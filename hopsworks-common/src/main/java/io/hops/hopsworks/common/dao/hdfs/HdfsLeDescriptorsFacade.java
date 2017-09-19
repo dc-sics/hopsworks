@@ -65,7 +65,7 @@ public class HdfsLeDescriptorsFacade extends AbstractFacade<HdfsLeDescriptors> {
     if (hdfs == null) {
       return "";
     }
-    return hdfs.getRpcAddresses();
+    return hdfs.getHostname();
   }
 
   /**
