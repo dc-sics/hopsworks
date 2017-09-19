@@ -29,7 +29,7 @@ import javax.xml.bind.annotation.XmlRootElement;
   @NamedQuery(name
           = "HdfsLeDescriptors.findByHost.jpql.parser.IdentificationVariablname",
           query
-          = "SELECT h FROM HdfsLeDescriptors h WHERE h.hostname = :hostname"),
+          = "SELECT h FROM HdfsLeDescriptors h WHERE h.rpcAddresses = :rpcAddresses"),
   @NamedQuery(name = "HdfsLeDescriptors.findByHttpAddress",
           query
           = "SELECT h FROM HdfsLeDescriptors h WHERE h.httpAddress = :httpAddress"),
@@ -63,10 +63,10 @@ public class HdfsLeDescriptors implements Serializable {
   }
 
   public HdfsLeDescriptors(HdfsLeDescriptorsPK hdfsLeDescriptorsPK, long counter,
-          String hostname) {
+          String rpcAddresses) {
     this.hdfsLeDescriptorsPK = hdfsLeDescriptorsPK;
     this.counter = counter;
-    this.rpcAddresses = hostname;
+    this.rpcAddresses = rpcAddresses;
   }
 
   public HdfsLeDescriptors(long id, int partitionVal) {
