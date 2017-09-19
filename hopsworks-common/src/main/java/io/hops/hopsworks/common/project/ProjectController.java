@@ -1542,15 +1542,11 @@ public class ProjectController {
     } finally {
       ycs.closeYarnClient(yarnClientWrapper);
     }
-    //remove the user name from HDFS
-    hdfsUsersBean.removeProjectMember(projectTeam.getUser(), project);
+
     logActivity(ActivityFacade.REMOVED_MEMBER + toRemoveEmail,
         ActivityFacade.FLAG_PROJECT, user, project);
 
-    String projectSpecificUsername = hdfsUsersBean.getHdfsUserName(project,
-        userToBeRemoved);
-    LocalhostServices.deleteUserCertificates(settings.getIntermediateCaDir(),
-        projectSpecificUsername);
+    LocalhostServices.deleteUserCertificates(settings.getIntermediateCaDir(), hdfsUser);
     userCertsFacade.removeUserProjectCerts(project.getName(), userToBeRemoved.getUsername());
 
   }
