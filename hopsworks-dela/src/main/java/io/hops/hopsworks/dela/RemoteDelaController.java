@@ -1,10 +1,10 @@
 package io.hops.hopsworks.dela;
 
 import io.hops.hopsworks.common.dataset.FilePreviewDTO;
-import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.common.util.ClientWrapper;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.dto.common.ClusterAddressDTO;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSiteController;
 import io.hops.hopsworks.util.CertificateHelper;
 import java.security.KeyStore;
@@ -23,24 +23,28 @@ public class RemoteDelaController {
 
   @EJB
   private Settings settings;
+  @EJB
+  private DelaStateController delaStateController;
 
-  private boolean delaEnabled = false;
   private KeyStore keystore;
   private KeyStore truststore;
   private String keystorePassword;
 
   @PostConstruct
   public void init() {
-    Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
-    this.delaEnabled = settings.isDelaEnabled() && certSetup.isPresent();
-    if (certSetup.isPresent()) {
-      keystore = certSetup.get().getValue0();
-      truststore = certSetup.get().getValue1();
-      keystorePassword = certSetup.get().getValue2();
+    if (delaStateController.delaEnabled()) {
+      Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
+      if (certSetup.isPresent()) {
+        delaStateController.delaCertsAvailable();
+        keystore = certSetup.get().getValue0();
+        truststore = certSetup.get().getValue1();
+        keystorePassword = certSetup.get().getValue2();
+      }
     }
   }
-
+  
   public FilePreviewDTO readme(String publicDSId, ClusterAddressDTO source) throws ThirdPartyException {
+    delaStateController.checkRemoteDelaAvaileble();
     try {
       ClientWrapper client = getClient(source.getDelaClusterAddress(), Path.readme(publicDSId), FilePreviewDTO.class);
       LOG.log(Settings.DELA_DEBUG, "dela:cross:readme {0}", client.getFullPath());

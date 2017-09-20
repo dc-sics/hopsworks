@@ -3,8 +3,8 @@ package io.hops.hopsworks.dela;
 import com.google.gson.Gson;
 import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSiteController;
 import io.hops.hopsworks.util.SettingsHelper;
 import java.net.MalformedURLException;
@@ -29,9 +29,9 @@ import org.javatuples.Pair;
 
 @Startup
 @Singleton
-public class HeartbeatWorker {
+public class DelaHeartbeatWorker {
 
-  private final static Logger LOG = Logger.getLogger(HeartbeatWorker.class.getName());
+  private final static Logger LOG = Logger.getLogger(DelaHeartbeatWorker.class.getName());
 
   @Resource
   TimerService timerService;
@@ -42,6 +42,8 @@ public class HeartbeatWorker {
   @EJB
   private Settings settings;
   @EJB
+  private DelaStateController delaStateCtrl;
+  @EJB
   private HopsSiteController hopsSiteProxy;
   @EJB
   private TransferDelaController delaCtrl;
@@ -50,7 +52,7 @@ public class HeartbeatWorker {
 
   @PostConstruct
   private void init() {
-    if (settings.isDelaEnabled()) {
+    if (delaStateCtrl.delaEnabled()) {
       state = state.DELA_VERSION;
       timerService.createTimer(0, settings.DELA_HEARTBEAT_STATE_RETRY, "Timer for version retrieve.");
 
@@ -95,6 +97,7 @@ public class HeartbeatWorker {
     LOG.log(Level.INFO, "retrieving hops-site dela_version");
     try {
       delaVersion = hopsSiteProxy.delaVersion();
+      delaStateCtrl.hopssiteContacted();
       delaContact(resetToDelaContact(timer));
     } catch (ThirdPartyException tpe) {
       LOG.log(Level.WARNING, "source:<{0}:{1}>:{2}",
@@ -111,6 +114,7 @@ public class HeartbeatWorker {
     } catch (ThirdPartyException tpe) {
       try {
         delaTransferEndpoint = getDelaTransferEndpoint(delaVersion);
+        delaStateCtrl.transferDelaContacted();
         settings.setDELA_PUBLIC_ENDPOINT(delaTransferEndpoint);
         hopsSiteRegister(resetToRegister(timer), delaTransferEndpoint);
       } catch (ThirdPartyException tpe2) {

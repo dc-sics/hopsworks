@@ -4,11 +4,11 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.dela.dto.hopssite.RateDTO;
+import io.hops.hopsworks.dela.dto.hopssite.RatingDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSite;
 import io.hops.hopsworks.dela.hopssite.HopsSiteController;
-import io.hops.hopsworks.dela.dto.hopssite.RateDTO;
-import io.hops.hopsworks.dela.dto.hopssite.RatingDTO;
 import io.hops.hopsworks.util.SettingsHelper;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -47,7 +47,7 @@ public class RatingService {
   }
 
   @GET
-  public Response getDatasetAllRating() {
+  public Response getDatasetAllRating() throws ThirdPartyException {
     LOG.log(Settings.DELA_DEBUG, "hops-site:rating:get:all {0}", publicDSId);
     RatingDTO rating = hopsSite.getDatasetAllRating(publicDSId);
     LOG.log(Settings.DELA_DEBUG, "hops-site:rating:get:all - done {0}", publicDSId);

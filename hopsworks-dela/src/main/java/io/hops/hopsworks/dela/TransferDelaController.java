@@ -38,7 +38,9 @@ public class TransferDelaController {
 
   private Logger logger = Logger.getLogger(TransferDelaController.class.getName());
   @EJB
-  Settings settings;
+  private Settings settings;
+  @EJB
+  private DelaStateController delaStateController;
 
   public AddressJSON getDelaPublicEndpoint(String delaVersion) throws ThirdPartyException {
     String delaTransferHttpEndpoint = SettingsHelper.delaTransferHttpEndpoint(settings);
@@ -61,6 +63,10 @@ public class TransferDelaController {
 
   public void upload(String publicDSId, HopsDatasetDetailsDTO datasetDetails, HDFSResource resource,
     HDFSEndpoint endpoint) throws ThirdPartyException {
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
     logger.log(Settings.DELA_DEBUG, "{0} upload - transfer");
     HopsTorrentUpload reqContent = new HopsTorrentUpload(new TorrentId(publicDSId), datasetDetails.getDatasetName(),
       datasetDetails.getProjectId(), datasetDetails.getDatasetId(), resource, endpoint);
@@ -82,6 +88,10 @@ public class TransferDelaController {
     HDFSEndpoint endpoint, List<ClusterAddressDTO> bootstrap)
     throws ThirdPartyException {
 
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
     List<AddressJSON> bootstrapAdr = new LinkedList<>();
     Gson gson = new Gson();
     for(ClusterAddressDTO b : bootstrap) {
@@ -107,6 +117,11 @@ public class TransferDelaController {
     ExtendedDetails details)
     throws ThirdPartyException {
 
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
+    
     HopsTorrentAdvanceDownload reqContent = new HopsTorrentAdvanceDownload(new TorrentId(publicDSId),
       kafkaEndpoint, hdfsEndpoint, details);
     try {
@@ -124,6 +139,11 @@ public class TransferDelaController {
   }
 
   public void cancel(String publicDSId) throws ThirdPartyException {
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
+    
     try {
       ClientWrapper<SuccessJSON> rc = ClientWrapper
         .httpInstance(SuccessJSON.class)
@@ -139,6 +159,10 @@ public class TransferDelaController {
   }
 
   public HopsContentsSummaryJSON.Contents getContents(List<Integer> projectIds) throws ThirdPartyException {
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
     HopsContentsReqJSON reqContent = new HopsContentsReqJSON(projectIds);
     try {
       ClientWrapper<HopsContentsSummaryJSON.JsonWrapper> rc = ClientWrapper
@@ -156,6 +180,10 @@ public class TransferDelaController {
   }
 
   public TorrentExtendedStatusJSON details(TorrentId torrentId) throws ThirdPartyException {
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
     try {
       ClientWrapper<TorrentExtendedStatusJSON> rc = ClientWrapper
         .httpInstance(TorrentExtendedStatusJSON.class)
@@ -175,6 +203,10 @@ public class TransferDelaController {
    * @return <upldDS, dwnlDS>
    */
   public Pair<List<String>, List<String>> getContents() throws ThirdPartyException {
+    if(!delaStateController.transferDelaAvailable()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dela transfer not available",
+          ThirdPartyException.Source.LOCAL, "bad request");
+    }
     HopsContentsSummaryJSON.Contents contents = TransferDelaController.this.getContents(new LinkedList<>());
     List<String> upldDSIds = new LinkedList<>();
     List<String> dwnlDSIds = new LinkedList<>();
@@ -189,5 +221,4 @@ public class TransferDelaController {
     }
     return Pair.with(upldDSIds, dwnlDSIds);
   }
-
 }

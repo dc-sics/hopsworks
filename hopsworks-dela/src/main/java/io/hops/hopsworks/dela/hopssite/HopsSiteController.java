@@ -5,6 +5,7 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.util.ClientWrapper;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.dela.DelaStateController;
 import io.hops.hopsworks.dela.dto.common.UserDTO;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
 import io.hops.hopsworks.dela.dto.hopssite.CommentDTO;
@@ -51,17 +52,21 @@ public class HopsSiteController {
   @EJB
   private Settings settings;
   @EJB
+  private DelaStateController delaStateCtrl;
+  @EJB
   private UserFacade userFacade;
 
   @PostConstruct
   public void init() {
     hopsSiteHost = settings.getDELA_HOPS_SITE_HOST();
-    Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
-    this.delaEnabled = settings.isDelaEnabled() && certSetup.isPresent();
-    if (this.delaEnabled) {
-      keystore = certSetup.get().getValue0();
-      truststore = certSetup.get().getValue1();
-      keystorePassword = certSetup.get().getValue2();
+    if (delaStateCtrl.delaEnabled()) {
+      Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
+      if(certSetup.isPresent()) {
+        delaStateCtrl.delaCertsAvailable();
+        keystore = certSetup.get().getValue0();
+        truststore = certSetup.get().getValue1();
+        keystorePassword = certSetup.get().getValue2();
+      }
     }
   }
 
@@ -73,7 +78,7 @@ public class HopsSiteController {
 
   // cluster services
   public String getRole() throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.CLUSTER_SERVICE_ROLE, String.class);
     return (String) client.doGet();
   }
@@ -94,7 +99,7 @@ public class HopsSiteController {
 
   public String registerCluster(String delaClusterAddress, String delaTransferAddress, String email)
     throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     try {
       ClusterServiceDTO.Register req = new ClusterServiceDTO.Register(delaTransferAddress, delaClusterAddress, email);
       ClientWrapper client = getClient(HopsSite.ClusterService.registerCluster(), String.class);
@@ -110,7 +115,7 @@ public class HopsSiteController {
   }
 
   public void heavyPing(List<String> upldDSIds, List<String> dwnlDSIds) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
     try {
       ClientWrapper client = getClient(HopsSite.ClusterService.heavyPing(publicCId), String.class);
@@ -127,7 +132,7 @@ public class HopsSiteController {
   }
 
   public void ping(ClusterServiceDTO.Ping ping) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
     try {
       ClientWrapper client = getClient(HopsSite.ClusterService.ping(publicCId), String.class);
@@ -145,7 +150,7 @@ public class HopsSiteController {
   //*****************************************************USER***********************************************************
   public int registerUser(String publicCId, String firstname, String lastname, String userEmail)
     throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     try {
       UserDTO.Publish user = new UserDTO.Publish(firstname, lastname, userEmail);
       ClientWrapper client = getClient(HopsSite.UserService.registerUser(publicCId), String.class);
@@ -161,7 +166,7 @@ public class HopsSiteController {
   }
 
   public UserDTO.Complete getUser(String email) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
     try {
       ClientWrapper client = getClient(HopsSite.UserService.getUser(publicCId, email), UserDTO.Complete.class);
@@ -176,10 +181,10 @@ public class HopsSiteController {
   }
 
   public String getUserId(String email) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
     try {
-      ClientWrapper client = getClient(HopsSite.UserService.getUserId(publicCId, email) , String.class);
+      ClientWrapper client = getClient(HopsSite.UserService.getUserId(publicCId, email), String.class);
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - {0}", client.getFullPath());
       String result = (String) client.doGet();
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - done {0}", client.getFullPath());
@@ -203,8 +208,8 @@ public class HopsSiteController {
       } else {
         throw tpe;
       }
-    } catch(IllegalStateException ise) {
-      if(ThirdPartyException.Error.USER_NOT_REGISTERED.is(ise.getMessage())) {
+    } catch (IllegalStateException ise) {
+      if (ThirdPartyException.Error.USER_NOT_REGISTERED.is(ise.getMessage())) {
         registerUser(publicCId, user.getFname(), user.getLname(), user.getEmail());
         result = func.perform();
       } else {
@@ -217,7 +222,7 @@ public class HopsSiteController {
   //****************************************************TRACKER********************************************************
   public String publish(String publicDSId, String name, String description, Collection<String> categories, long size,
     String userEmail) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
     try {
       DatasetDTO.Proto msg = new DatasetDTO.Proto(name, description, categories, size, userEmail);
@@ -234,7 +239,7 @@ public class HopsSiteController {
   }
 
   public void download(String publicDSId) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
 
     try {
@@ -249,7 +254,7 @@ public class HopsSiteController {
   }
 
   public void complete(String publicDSId) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
 
     String publicCId = SettingsHelper.clusterId(settings);
 
@@ -265,7 +270,7 @@ public class HopsSiteController {
   }
 
   public void cancel(String publicDSId) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
 
     String publicCId = SettingsHelper.clusterId(settings);
 
@@ -282,7 +287,7 @@ public class HopsSiteController {
 
   //*****************************************************SEARCH*********************************************************
   public SearchServiceDTO.SearchResult search(String searchTerm) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     try {
       SearchServiceDTO.Params req = new SearchServiceDTO.Params(searchTerm);
       ClientWrapper client = getClient(HopsSite.DatasetService.search(), SearchServiceDTO.SearchResult.class);
@@ -298,7 +303,7 @@ public class HopsSiteController {
   }
 
   public SearchServiceDTO.Item[] page(String sessionId, int startItem, int nrItems) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     try {
       ClientWrapper client = getClient(HopsSite.DatasetService.searchPage(sessionId, startItem, nrItems),
         String.class);
@@ -314,7 +319,7 @@ public class HopsSiteController {
   }
 
   public SearchServiceDTO.ItemDetails details(String publicDSId) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     try {
       ClientWrapper client = getClient(HopsSite.DatasetService.details(publicDSId), String.class);
       LOG.log(Settings.DELA_DEBUG, "hops-site:dataset - {0}", client.getFullPath());
@@ -329,33 +334,36 @@ public class HopsSiteController {
   }
 
   //*************************************************SETTINGS CHECK*****************************************************
-  public boolean updateUser(UserDTO.Publish userDTO) {
-    checkDelaState();
+  public boolean updateUser(UserDTO.Publish userDTO) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.USER_SERVICE, String.class);
     client.setPayload(userDTO);
     String res = (String) client.doPut();
     return "OK".equals(res);
   }
 
-  public boolean deleteUser(Integer uId) {
-    checkDelaState();
+  public boolean deleteUser(Integer uId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.USER_SERVICE + "/" + uId, String.class);
     String res = (String) client.doDelete();
     return "OK".equals(res);
   }
+
   //***********************************************COMMENT PUBLIC*******************************************************
-  public List<CommentDTO.RetrieveComment> getDatasetAllComments(String publicDSId) {
-    checkDelaState();
+
+  public List<CommentDTO.RetrieveComment> getDatasetAllComments(String publicDSId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSite.CommentService.getDatasetAllComments(publicDSId), String.class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:get:all {0}", client.getFullPath());
-    String aux = (String)client.doGet();
+    String aux = (String) client.doGet();
     CommentDTO.RetrieveComment[] result = new Gson().fromJson(aux, CommentDTO.RetrieveComment[].class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:get:all - done {0}", client.getFullPath());
     return Arrays.asList(result);
   }
 
-  public void addComment(String publicCId, String publicDSId, CommentDTO.Publish comment) {
-    checkDelaState();
+  public void addComment(String publicCId, String publicDSId, CommentDTO.Publish comment) 
+    throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSite.CommentService.addComment(publicCId, publicDSId), String.class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:add {0}", client.getFullPath());
     client.setPayload(comment);
@@ -363,8 +371,9 @@ public class HopsSiteController {
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:add - done {0}", client.getFullPath());
   }
 
-  public void updateComment(String publicCId, String publicDSId, Integer commentId, CommentDTO.Publish comment) {
-    checkDelaState();
+  public void updateComment(String publicCId, String publicDSId, Integer commentId, CommentDTO.Publish comment) 
+    throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSite.CommentService.updateComment(publicCId, publicDSId, commentId),
       String.class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:udpate {0}", client.getFullPath());
@@ -373,18 +382,20 @@ public class HopsSiteController {
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:udpate - done {0}", client.getFullPath());
   }
 
-  public void removeComment(String publicCId, String publicDSId, Integer commentId, String userEmail) {
-    checkDelaState();
-    ClientWrapper client = 
-      getClient(HopsSite.CommentService.removeComment(publicCId, publicDSId, commentId), String.class)
+  public void removeComment(String publicCId, String publicDSId, Integer commentId, String userEmail) 
+    throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
+    ClientWrapper client = getClient(HopsSite.CommentService.removeComment(publicCId, publicDSId, commentId),
+      String.class)
       .setPayload(userEmail);
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:remove {0}", client.getFullPath());
     String result = (String) client.doPost();
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:remove - done {0}", client.getFullPath());
   }
 
-  public void reportComment(String publicCId, String publicDSId, Integer commentId, CommentIssueDTO commentIssue) {
-    checkDelaState();
+  public void reportComment(String publicCId, String publicDSId, Integer commentId, CommentIssueDTO commentIssue) 
+    throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSite.CommentService.reportComment(publicCId, publicDSId, commentId),
       String.class);
     client.setPayload(commentIssue);
@@ -394,8 +405,8 @@ public class HopsSiteController {
   }
 
   //**************************************************RATING PUBLIC*****************************************************
-  public RatingDTO getDatasetAllRating(String publicDSId) {
-    checkDelaState();
+  public RatingDTO getDatasetAllRating(String publicDSId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSite.RatingService.getDatasetAllRating(publicDSId), RatingDTO.class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:rating:get:all - {0}", client.getFullPath());
     RatingDTO result = (RatingDTO) client.doGet();
@@ -405,10 +416,10 @@ public class HopsSiteController {
 
   //**************************************************RATING CLUSTER****************************************************
   public RatingDTO getDatasetUserRating(String publicCId, String publicDSId, String email) throws ThirdPartyException {
-    checkDelaState();
-    ClientWrapper client 
+    delaStateCtrl.checkHopssiteState();
+    ClientWrapper client
       = getClient(HopsSite.RatingService.getDatasetUserRating(publicCId, publicDSId), RatingDTO.class)
-        .setPayload(email);
+      .setPayload(email);
     LOG.log(Settings.DELA_DEBUG, "hops-site:rating:get:user - {0}", client.getFullPath());
     RatingDTO result = (RatingDTO) client.doPost();
     LOG.log(Settings.DELA_DEBUG, "hops-site:rating:get:user - done {0}", client.getFullPath());
@@ -416,7 +427,7 @@ public class HopsSiteController {
   }
 
   public boolean addRating(String publicCId, String publicDSId, RateDTO datasetRating) throws ThirdPartyException {
-    checkDelaState();
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSite.RatingService.addRating(publicCId, publicDSId), String.class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:rating:add - {0}", client.getFullPath());
     client.setPayload(datasetRating);
@@ -426,30 +437,30 @@ public class HopsSiteController {
   }
 
   //************************************************RATING FUTURE*******************************************************
-  public List<RateDTO> getAllRatingsByPublicId(String publicId) {
-    checkDelaState();
+  public List<RateDTO> getAllRatingsByPublicId(String publicId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.RATING_SERVICE_ALL_BY_PUBLICID + "/" + publicId, RateDTO.class);
     return (List<RateDTO>) client.doGetGenericType();
   }
 
-  public boolean updateRating(RateDTO datasetRating) {
-    checkDelaState();
+  public boolean updateRating(RateDTO datasetRating) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.RATING_SERVICE, String.class);
     client.setPayload(datasetRating);
     String res = (String) client.doPut();
     return "OK".equals(res);
   }
 
-  public boolean deleteRating(Integer ratingId) {
-    checkDelaState();
+  public boolean deleteRating(Integer ratingId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.RATING_SERVICE + "/" + ratingId, String.class);
     String res = (String) client.doDelete();
     return "OK".equals(res);
   }
 
   // dataset services
-  public List<HopsSiteDatasetDTO> getAll() {
-    checkDelaState();
+  public List<HopsSiteDatasetDTO> getAll() throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET, HopsSiteDatasetDTO.class);
     LOG.log(Settings.DELA_DEBUG, "hops-site:dataset - {0}", client.getFullPath());
     List<HopsSiteDatasetDTO> result = (List<HopsSiteDatasetDTO>) client.doGetGenericType();
@@ -457,54 +468,48 @@ public class HopsSiteController {
     return result;
   }
 
-  public DatasetDTO.Complete getDataset(String publicDSId) {
-    checkDelaState();
+  public DatasetDTO.Complete getDataset(String publicDSId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET_BY_PUBLIC_ID + "/" + publicDSId,
       DatasetDTO.Complete.class);
     return (DatasetDTO.Complete) client.doGet();
   }
 
-  public SearchServiceDTO.ItemDetails getDatasetDetails(String publicDSId) {
-    checkDelaState();
+  public SearchServiceDTO.ItemDetails getDatasetDetails(String publicDSId) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET + "/" + publicDSId + "/details",
       SearchServiceDTO.ItemDetails.class);
     return (SearchServiceDTO.ItemDetails) client.doGet();
   }
 
-  public boolean addDatasetIssue(DatasetIssueDTO datasetIssue) {
-    checkDelaState();
+  public boolean addDatasetIssue(DatasetIssueDTO datasetIssue) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_ISSUE, String.class);
     client.setPayload(datasetIssue);
     String res = (String) client.doPost();
     return "OK".equals(res);
   }
 
-  public boolean addCategory(DatasetDTO dataset) {
-    checkDelaState();
+  public boolean addCategory(DatasetDTO dataset) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_ADD_CATEGORY, String.class);
     client.setPayload(dataset);
     String res = (String) client.doPost();
     return "OK".equals(res);
   }
 
-  public List<PopularDatasetJSON> getPopularDatasets() {
-    checkDelaState();
+  public List<PopularDatasetJSON> getPopularDatasets() throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_POPULAR, PopularDatasetJSON.class);
     return (List<PopularDatasetJSON>) client.doGetGenericType();
   }
 
-  public boolean addPopularDatasets(PopularDatasetJSON popularDatasetsJson) {
-    checkDelaState();
+  public boolean addPopularDatasets(PopularDatasetJSON popularDatasetsJson) throws ThirdPartyException {
+    delaStateCtrl.checkHopssiteState();
     ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_POPULAR, String.class);
     client.setPayload(popularDatasetsJson);
     String res = (String) client.doPost();
     return "OK".equals(res);
-  }
-
-  private void checkDelaState() {
-    if (!delaEnabled) {
-      throw new IllegalStateException("Dela not enabled, or certs not in order.");
-    }
   }
 
   public String hopsSite() throws ThirdPartyException {

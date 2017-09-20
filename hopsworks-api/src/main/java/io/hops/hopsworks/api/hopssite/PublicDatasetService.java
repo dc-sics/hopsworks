@@ -10,10 +10,10 @@ import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.dto.common.UserDTO;
 import io.hops.hopsworks.dela.dto.hopssite.DatasetDTO;
 import io.hops.hopsworks.dela.dto.hopssite.HopsSiteDatasetDTO;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSiteController;
 import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.swagger.annotations.Api;
@@ -83,7 +83,7 @@ public class PublicDatasetService {
 
   @GET
   @Path("all")
-  public Response getAllPublicDatasets() {
+  public Response getAllPublicDatasets() throws ThirdPartyException {
     List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
     markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
@@ -94,7 +94,7 @@ public class PublicDatasetService {
 
   @GET
   @Path("{publicDSId}")
-  public Response getPublicDataset(@PathParam("publicDSId") String publicDSId) {
+  public Response getPublicDataset(@PathParam("publicDSId") String publicDSId) throws ThirdPartyException {
     DatasetDTO.Complete datasets = hopsSite.getDataset(publicDSId);
     LOGGER.log(Settings.DELA_DEBUG, "Get a dataset");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasets).build();
@@ -117,7 +117,7 @@ public class PublicDatasetService {
 
   @GET
   @Path("topRated")
-  public Response getTopTenPublicDatasets() {
+  public Response getTopTenPublicDatasets() throws ThirdPartyException {
     List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
     markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
@@ -128,7 +128,7 @@ public class PublicDatasetService {
 
   @GET
   @Path("new")
-  public Response getNewPublicDatasets() {
+  public Response getNewPublicDatasets() throws ThirdPartyException {
     List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
     markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {

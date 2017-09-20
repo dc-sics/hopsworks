@@ -5,9 +5,9 @@ import io.hops.hopsworks.api.hopssite.dto.CommentIssueReqDTO;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.dto.hopssite.CommentDTO;
 import io.hops.hopsworks.dela.dto.hopssite.CommentIssueDTO;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSite;
 import io.hops.hopsworks.dela.hopssite.HopsSiteController;
 import io.hops.hopsworks.util.SettingsHelper;
@@ -53,7 +53,7 @@ public class CommentService {
   }
 
   @GET
-  public Response getAllComments() {
+  public Response getAllComments() throws ThirdPartyException {
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:get:all {0}", publicDSId);
     List<CommentDTO.RetrieveComment> comments = hopsSite.getDatasetAllComments(publicDSId);
     GenericEntity<List<CommentDTO.RetrieveComment>> commentsJson
