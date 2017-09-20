@@ -611,9 +611,9 @@ public class NotebookRestApi {
         if (null != interpreter) {
           String interpreterGroup = interpreter.getInterpreterGroup().getId()
               .split(":")[0];
+          String username = hdfsUsersController.getUserName(hdfsUserName);
           if (certificateMaterializer.openedInterpreter(project.getId(),
-              interpreterGroup)) {
-            String username = hdfsUsersController.getUserName(hdfsUserName);
+              username, interpreterGroup)) {
             try {
               HopsUtils.materializeCertificatesForUser(project.getName(),
                   username, settings

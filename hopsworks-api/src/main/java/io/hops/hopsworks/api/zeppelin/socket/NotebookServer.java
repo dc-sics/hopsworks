@@ -1863,11 +1863,11 @@ public class NotebookServer implements
     } else {
       interpreterGroup = p.getCurrentRepl().getInterpreterGroup().getId();
     }
-    
+  
+    String username = userBean.findByEmail(sender).getUsername();
     if (certificateMaterializer.openedInterpreter(project.getId(),
-        interpreterGroup)) {
+        username, interpreterGroup)) {
       DistributedFileSystemOps dfso = dfsService.getDfsOps();
-      String username = userBean.findByEmail(sender).getUsername();
       try {
         HopsUtils.materializeCertificatesForUser(project.getName(),
             username,

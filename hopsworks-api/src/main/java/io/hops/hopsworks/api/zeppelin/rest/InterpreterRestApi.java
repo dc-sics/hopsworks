@@ -268,7 +268,8 @@ public class InterpreterRestApi {
   }
 
   private void cleanUserCertificates(Project project, String interpreterGroup) {
-    if (certificateMaterializer.closedInterpreter(project.getId(), interpreterGroup)) {
+    if (certificateMaterializer.closedInterpreter(project.getId(),
+        user.getUsername(), interpreterGroup)) {
       DistributedFileSystemOps dfso = null;
       dfso = dfsService.getDfsOps();
       try {

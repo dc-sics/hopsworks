@@ -544,9 +544,9 @@ public class ZeppelinConfig {
   private static final Pattern HDFS_USER_PATTERN = Pattern.compile(
       "hdfs:\\/\\/\\/[\\w\\/]+\\/([\\w]+)__kstore.jks#k_certificate");
   private static final Pattern K_STORE_PATTERN = Pattern.compile(
-      "hdfs:\\/\\/\\/[\\w\\/]+.jks#k_certificate");
+      "hdfs:\\/\\/\\/[\\w\\/]+.jks#" + Settings.K_CERTIFICATE);
   private static final Pattern T_STORE_PATTERN = Pattern.compile(
-      "hdfs:\\/\\/\\/[\\w\\/]+.jks#t_certificate");
+      "hdfs:\\/\\/\\/[\\w\\/]+.jks#" + Settings.T_CERTIFICATE);
   
   private String updateProjectSpecificUserCertificates(String conf, String
       kstore, String tstore) throws IOException {

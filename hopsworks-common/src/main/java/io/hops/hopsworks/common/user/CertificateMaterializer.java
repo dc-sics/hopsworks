@@ -84,7 +84,7 @@ public class CertificateMaterializer {
   
   private final Map<MaterialKey, CryptoMaterial> materialMap =
       new ConcurrentHashMap<>();
-  private final Map<Integer, Set<String>> openInterpreterGroupsPerProject =
+  private final Map<InterpreterKey, Set<String>> openInterpreterGroupsPerProject =
       new ConcurrentHashMap<>();
   private final Map<MaterialKey, FileRemover> scheduledFileRemovers =
       new HashMap<>();
@@ -351,14 +351,16 @@ public class CertificateMaterializer {
    * should be materialized. False when the project has already opened
    * interpreter(s) and it should not materialize the certificates
    */
-  public boolean openedInterpreter(Integer projectId, String interpreterGrp) {
-    Set<String> openedGrps = openInterpreterGroupsPerProject.get(projectId);
+  public boolean openedInterpreter(Integer projectId, String username,
+      String interpreterGrp) {
+    InterpreterKey key = new InterpreterKey(username, projectId);
+    Set<String> openedGrps = openInterpreterGroupsPerProject.get(key);
     
     if (openedGrps == null) {
       // Most probably we will run either Spark or Livy interpreter group
       openedGrps = new HashSet<>(2);
       openedGrps.add(interpreterGrp);
-      openInterpreterGroupsPerProject.put(projectId, openedGrps);
+      openInterpreterGroupsPerProject.put(key, openedGrps);
       return true;
     }
     
@@ -378,14 +380,16 @@ public class CertificateMaterializer {
    * and it is safe to remove the material. False when there still open
    * interpreters for either this interpreter group or other.
    */
-  public boolean closedInterpreter(Integer projectId, String interpreterGrp) {
-    Set<String> openedGrps = openInterpreterGroupsPerProject.get(projectId);
+  public boolean closedInterpreter(Integer projectId, String username,
+      String interpreterGrp) {
+    InterpreterKey key = new InterpreterKey(username, projectId);
+    Set<String> openedGrps = openInterpreterGroupsPerProject.get(key);
     if (openedGrps == null) {
       return true;
     }
     openedGrps.remove(interpreterGrp);
     if (openedGrps.isEmpty()) {
-      openInterpreterGroupsPerProject.remove(projectId);
+      openInterpreterGroupsPerProject.remove(key);
       return true;
     }
     
@@ -425,6 +429,39 @@ public class CertificateMaterializer {
       deleteMaterialFromLocalFs(key.getProjectSpecificUsername());
       scheduledFileRemovers.remove(key);
       LOG.log(Level.FINEST, "Wiped out material for " + key.getProjectSpecificUsername());
+    }
+  }
+  
+  private class InterpreterKey {
+    private final String username;
+    private final Integer projectId;
+    
+    private InterpreterKey(String username, Integer projectId) {
+      this.username = username;
+      this.projectId = projectId;
+    }
+    
+    @Override
+    public boolean equals(Object other) {
+      if (this == other) {
+        return true;
+      }
+      
+      if (other instanceof InterpreterKey) {
+        if (this.username != null & this.projectId != null) {
+          return this.username.equals(((InterpreterKey) other).username)
+              && this.projectId.equals(((InterpreterKey) other).projectId);
+        }
+      }
+      return false;
+    }
+    
+    @Override
+    public int hashCode() {
+      int result = 17;
+      result = 31 * result + username.hashCode();
+      result = 31 * result + projectId.hashCode();
+      return result;
     }
   }
   
