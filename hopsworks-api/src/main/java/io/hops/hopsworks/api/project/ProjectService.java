@@ -711,14 +711,15 @@ public class ProjectService {
     Date date;
     long size;
     for (Dataset d : publicDatasets) {
-      date = new Date(d.getInode().getModificationTime().longValue());
-      size = inodes.getSize(d.getInode());
-      localDS.add(new LocalDatasetDTO(d.getInodeId(), d.getName(), d.getDescription(), d.getProject().getName(), date,
-              date, size));
+      if (!d.isShared()) {
+        date = new Date(d.getInode().getModificationTime().longValue());
+        size = inodes.getSize(d.getInode());
+        localDS.add(new LocalDatasetDTO(d.getInodeId(), d.getName(), d.getDescription(), d.getProject().getName(), date,
+                date, size));
+      }
     }
     GenericEntity<List<LocalDatasetDTO>> datasets = new GenericEntity<List<LocalDatasetDTO>>(localDS) {};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        datasets).build();
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasets).build();
   }
 
   @GET
