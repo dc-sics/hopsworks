@@ -57,7 +57,7 @@
           <i class="card-footer-icon fa fa-heart" aria-hidden="true"
              data-toggle="collapse" data-target="#carddropdown"></i>
         </span>-->    
-        <span ng-if="delaEnabled && content.type === 'ds' && content.public_ds"
+        <span ng-if="content.type === 'ds' && content.public_ds"
               data-placement="bottom" data-toggle="tooltip" title="GoTo public dataset view"  
               ng-click="cardCtrl.gotoPublicDataset(content)">
           <i class="card-footer-icon fa fa-arrow-right" aria-hidden="true"></i>

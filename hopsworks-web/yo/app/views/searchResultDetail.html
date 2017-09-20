@@ -1,16 +1,16 @@
 <div class="card-modal">
   <div growl reference="21" class="pull-right"></div>
   <div class="card-item-content 
-       {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds === 'false'? 'green': ''}} 
-       {{viewSearchResultCtrl.content.type === 'proj'? 'blue': ''}}
-       {{viewSearchResultCtrl.content.type === 'nb'? 'cyan': ''}}
-       {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds === 'true'? 'red': ''}}">
+       {{viewSearchResultCtrl.content.type === 'proj'? 'red': ''}}
+       {{viewSearchResultCtrl.content.type === 'ds' && !viewSearchResultCtrl.content.public_ds ? 'green': ''}} 
+       {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds && viewSearchResultCtrl.content.localDataset ? 'blue': ''}}
+       {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds && !viewSearchResultCtrl.content.localDataset ? 'darkblue': ''}}">
     <div class="header">
-      <label>
-        {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds === 'false'? 'dataset': ''}} 
+      <label>        
         {{viewSearchResultCtrl.content.type === 'proj'? 'project': ''}}
-        {{viewSearchResultCtrl.content.type === 'nb'? 'notebook': ''}}
-        {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds === 'true'? 'public dataset': ''}}
+        {{viewSearchResultCtrl.content.type === 'ds' && !viewSearchResultCtrl.content.public_ds ? 'dataset': ''}} 
+        {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds && viewSearchResultCtrl.content.localDataset ? 'public dataset in cluster': ''}}
+        {{viewSearchResultCtrl.content.type === 'ds' && viewSearchResultCtrl.content.public_ds && !viewSearchResultCtrl.content.localDataset ? 'public dataset': ''}}
       </label>
 
       <button class="close" ng-click="viewSearchResultCtrl.close()" data-dismiss="modal" aria-hidden="true"

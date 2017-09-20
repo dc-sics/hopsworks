@@ -1,12 +1,10 @@
 angular.module('hopsWorksApp')
         .controller('ViewSearchResultCtrl', ['$scope', '$uibModalInstance',
           'RequestService', 'DataSetService', 'growl', 'response',
-          'result', 'projects', '$showdown', 'DelaService',
-          'DelaGService'
-                  , 'ProjectService', 'ModalService', '$routeParams', '$location', '$rootScope',
+          'result', 'projects', '$showdown', 'DelaService', 'DelaGService', 'PublicDatasetService',
+          'ProjectService', 'ModalService', '$routeParams', '$location', '$rootScope',
           function ($scope, $uibModalInstance, RequestService, DataSetService,
-                  growl, response, result, projects, $showdown,
-                  DelaService, DelaGService,
+                  growl, response, result, projects, $showdown, DelaService, DelaGService, PublicDatasetService,
                   ProjectService, ModalService, $routeParams, $location, $rootScope) {
             var self = this;
             self.request = {'inodeId': "", 'projectId': "", 'message': ""};
@@ -89,7 +87,7 @@ angular.module('hopsWorksApp')
                     growl.error(error.data.details, {title: 'Error', ttl: 1000});
                   }
                   self.delaService = new DelaService(self.request.projectId);
-                  delaService.cancelByPublicDSId(result.publicId).then(function (success) {
+                  self.delaService.cancelByPublicDSId(result.publicId).then(function (success) {
                     growl.info("Download cancelled.", {title: 'Info', ttl: 1000});
                   }, function (error) {
                     growl.warning(error, {title: 'Warning', ttl: 1000});
@@ -106,25 +104,23 @@ angular.module('hopsWorksApp')
               if ($scope.readme !== null) {
                 return;
               }
-              var filePath = self.content.details.path;
-              if (filePath === undefined || filePath === '') {
+              if (self.content.id === undefined) {
                 $scope.readme = null;
                 return;
               }
-              filePath = filePath + '/README.md';
               if (self.content.localDataset) {
                 self.spinner = true;
-                dataSetService.getReadme(filePath).then(
-                        function (success) {
-                          var content = success.data.content;
-                          self.spinner = false;
-                          $scope.readme = $showdown.makeHtml(content);
-                        }, function (error) {
-                  //To hide README from UI
-                  self.spinner = false;
-                  growl.error(error.data.errorMsg, {title:
-                            'Error retrieving README file', ttl: 5000, referenceId: 3});
-                  $scope.readme = null;
+                console.log("getReadme view search result: ", self.content);
+                PublicDatasetService.getReadmeByInode(self.content.id).then(
+                  function (success) {
+                    var content = success.data.content;
+                    self.spinner = false;
+                    $scope.readme = $showdown.makeHtml(content);
+                  }, function (error) {
+                    //To hide README from UI
+                    self.spinner = false;
+                    growl.error(error.data.errorMsg, {title: 'Error retrieving README file', ttl: 5000, referenceId: 3});
+                    $scope.readme = null;
                 });
               } else {
                 self.spinner = true;

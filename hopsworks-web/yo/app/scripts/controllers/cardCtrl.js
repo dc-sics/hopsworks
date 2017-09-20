@@ -88,10 +88,17 @@ angular.module('hopsWorksApp')
             };
             
             self.gotoPublicDataset = function (content) {
-              if (content.publicId === undefined) {
-                return;
+              if ($rootScope.isDelaEnabled) {
+                if (content.publicId === undefined) {
+                  return;
+                }
+                $rootScope['publicDSId'] = content.publicId;
+              } else {
+                if (content.id === undefined) {
+                  return;
+                }
+                $rootScope['publicDSId'] = content.id;
               }
-              $rootScope['publicDSId'] = content.publicId;
               $location.path('/publicDataset');
             };
             

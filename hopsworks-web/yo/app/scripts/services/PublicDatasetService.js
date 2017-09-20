@@ -138,6 +138,9 @@ angular.module('hopsWorksApp')
                   method: 'post',
                   url: '/api/hopssite/publicDataset/' + publicDSId + '/rating/' + rating
                 });
+              },
+              getReadmeByInode: function (inodeId) {
+                return $http.get('/api/project/readme/byInodeId/' + inodeId);
               }
             };
             return service;

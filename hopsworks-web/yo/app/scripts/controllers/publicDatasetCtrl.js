@@ -70,8 +70,19 @@ angular.module('hopsWorksApp')
                 console.log("getDataset", error);
               });
             };
+            
+            var getDatasetFromLocal = function (inodeId) {
+              ProjectService.getDatasetInfo({inodeId: inodeId}).$promise.then(
+                function (response) {
+                  console.log('getDatasetFromLocal: ', response);
+                  self.selectedDataset = response;
+                  getReadMeLocal(self.selectedDataset.inodeId);
+                }, function (error) {
+                  console.log('getDatasetFromLocal Error: ', error);
+              });
+            };
 
-            var initCtrl = function () {
+            var initCtrlDela = function () {
               getUser();
               getClusterId();
               getDisplayCategories();
@@ -79,27 +90,78 @@ angular.module('hopsWorksApp')
                 getDataset(self.publicDSId);
               }
             };
-
-            initCtrl();
             
-            self.isInCluster = function () {
-              
+            var initCtrl = function () {
+              self.displayCategories = [{'categoryName': 'all', 'displayName': 'All'}];
+              if (self.publicDSId !== undefined) {
+                getDatasetFromLocal(self.publicDSId);
+              }
             };
-
+            
+            if ($rootScope.isDelaEnabled) {
+              initCtrlDela();
+            } else {
+              initCtrl();
+            }
+            
+            self.selectCategory = function (category) {
+              console.log("selectDisplayCategory", category);
+              self.selectedDataset = undefined;
+              self.selectedCategory = category;
+              self.selectedCategoryMap[category.categoryName] = category;
+              doGetLocalCluster(self.selectedCategoryMap[category.categoryName]);
+            };
+            
             self.selectDisplayCategory = function (category) {
               console.log("selectDisplayCategory", category);
               self.selectedDataset = undefined;
               self.selectedCategory = category;
               self.selectedCategoryMap[category.categoryName] = category;
-              doGet(self.selectedCategoryMap[category.categoryName]);
+              if ($rootScope.isDelaEnabled) {
+                doGet(self.selectedCategoryMap[category.categoryName]);
+              } else {
+                doGetLocalCluster(self.selectedCategoryMap[category.categoryName]);
+              }
             };
 
             self.selectItem = function (selectItem) {
               self.selectedDataset = selectItem;
               self.selectedSubCategory = undefined;
-              getBasicReadme(self.selectedDataset.publicId);
-              getComments(self.selectedDataset.publicId);
-              getUserRating(self.selectedDataset.publicId);
+              if ($rootScope.isDelaEnabled) {
+                getBasicReadme(self.selectedDataset.publicId);
+                getComments(self.selectedDataset.publicId);
+                getUserRating(self.selectedDataset.publicId);
+              } else {
+                getReadMeLocal(selectItem.inodeId);
+              }
+            };
+            
+            self.selectDataset = function (selectItem) {
+              self.selectedDataset = selectItem;
+              self.selectedSubCategory = undefined;
+              getReadMeLocal(selectItem.inodeId);
+            };
+            
+            var doGetLocalCluster = function (category) {
+              if (category['selectedList'] === undefined || category['selectedList'].lenght === 0) {
+                self.loadingSelectedCategory = true;
+              }
+              
+              ProjectService.getPublicDatasets().$promise.then(
+                      function (success) {
+                        category['selectedList'] = success;
+                        category['selectedSubCategoryList'] = success.data;
+                        self.loadingSelectedCategory = false;
+                        console.log("doGetLocalCluster", success);
+                      },
+                      function (error) {
+                        category['selectedList'] = [];
+                        category['selectedSubCategoryList'] = [];
+                        self.loadingSelectedCategory = false;
+                        console.log("doGetLocalCluster", error);
+                        growl.info("Could not load Public Datasets", {title: 'Info', ttl: 5000});
+                      }
+              );
             };
 
             var doGet = function (category) {
@@ -126,6 +188,20 @@ angular.module('hopsWorksApp')
               }, function (error) {
                 self.readme = "No details found.";
                 console.log("getBasicReadme", error);
+              });
+            };
+            
+            var getReadMeLocal = function (inodeId) {
+              self.readme = '';
+              self.loadingReadme = true;
+              PublicDatasetService.getReadmeByInode(inodeId).then(function (success) {
+                console.log("getReadMeLocal", success);
+                self.readme = $showdown.makeHtml(success.data.content);
+                self.loadingReadme = false;
+              }, function (error) {
+                self.readme = "No readme found.";
+                self.loadingReadme = false;
+                console.log("getReadMeLocal", error);
               });
             };
             
@@ -276,27 +352,43 @@ angular.module('hopsWorksApp')
             };
             
             self.addPublicDatasetModal = function (dataset) {
-              PublicDatasetService.getLocalDatasetByPublicId(dataset.publicId).then(function (response) {
-                var datasetDto = response.data;
-                console.log('datasetDto: ', datasetDto);
-                var projects;
-                //fetch the projects to pass them in the modal.
-                ProjectService.query().$promise.then(function (success) {
-                  projects = success;
-                  console.log('projects: ', projects);
-                  //show dataset
-                  ModalService.viewPublicDataset('md', projects, datasetDto).then(function (success) {
+              var datasetDto = dataset;
+              var projects;
+              if ($rootScope.isDelaEnabled) {
+                PublicDatasetService.getLocalDatasetByPublicId(dataset.publicId).then(function (response) {
+                  datasetDto = response.data;
+                  console.log('datasetDto: ', datasetDto);
+                  //fetch the projects to pass them in the modal.
+                  ProjectService.query().$promise.then(function (success) {
+                    projects = success;
+                    console.log('projects: ', projects);
+                    //show dataset
+                    ModalService.viewPublicDataset('md', projects, datasetDto).then(function (success) {
                       growl.success(success.data.successMessage, {title: 'Success', ttl: 1000, referenceId: 13});
                     }, function (error) {
 
                     });
+                  }, function (error) {
+                    console.log('Error: ' + error);
+                  });
+
+                }, function (error) {
+                  growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000, referenceId: 13});
+                });
+              } else {
+                ProjectService.query().$promise.then(function (success) {
+                  projects = success;
+                  //show dataset
+                  ModalService.viewPublicDataset('md', projects, datasetDto).then(function (success) {
+                    growl.success(success.data.successMessage, {title: 'Success', ttl: 1000, referenceId: 13});
+                  }, function (error) {
+
+                  });
                 }, function (error) {
                   console.log('Error: ' + error);
                 });
-
-              }, function (error) {
-                growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000, referenceId: 13});
-              });
+              }
+              
             };
 
 
@@ -354,6 +446,13 @@ angular.module('hopsWorksApp')
                 return false;
               }
               return self.selectedCategory.displayName === name;
+            };
+            
+            self.sizeOnDisk = function (fileSizeInBytes) {
+              if (fileSizeInBytes === undefined) {
+                return '--';
+              }
+              return convertSize(fileSizeInBytes);
             };
 
           }]);
