@@ -21,7 +21,6 @@ import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsGroupsFacade;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
-import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -30,7 +29,6 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dataset.DatasetController;
-import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.Settings;
 
 @Stateless
@@ -121,7 +119,6 @@ public class HdfsUsersController {
         memberHdfsUser.getHdfsGroupsCollection().add(hdfsGroup);
       }
     }
-    byte[] dsGroupId;
     String dsGroups;
     HdfsGroups hdfsDsGroup;
     // add the member to all dataset groups in the project.
@@ -260,15 +257,6 @@ public class HdfsUsersController {
     HdfsUsers hdfsUser = hdfsUsersFacade.findByName(userName);
     dfsService.removeDfsOps(userName);
     removeHdfsUser(hdfsUser);
-    JupyterProject jp = jupyterFacade.findByUser(userName);
-
-    try {
-      // stop any jupyter notebooks running for this user, if any
-      jupyterConfigFactory.killServerJupyterUser(userName, jp.getPid(), jp.getPort());
-    } catch (AppException ex) {
-      Logger.getLogger(HdfsUsersController.class.getName()).
-          log(Level.SEVERE, null, ex);
-    }
   }
 
   /**
@@ -454,8 +442,7 @@ public class HdfsUsersController {
   /**
    * Deletes the project group and all associated groups from HDFS
    * <p>
-   * @param project
-   * @param dsInProject
+   * @param hdfsDsGroups
    * @throws java.io.IOException
    */
   public void deleteGroups(List<HdfsGroups> hdfsDsGroups) throws
@@ -492,8 +479,7 @@ public class HdfsUsersController {
   /**
    * Deletes all users associated with this project from HDFS
    * <p>
-   * @param project
-   * @param projectTeam
+   * @param users
    * @throws java.io.IOException
    */
   public void deleteUsers(Collection<HdfsUsers> users) throws IOException {
