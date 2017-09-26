@@ -73,6 +73,10 @@ angular.module('hopsWorksApp')
                       .substr(0, self.tourService.tensorflowProjectPrefix.length),
                       self.tourService.tensorflowProjectPrefix)) {
                 self.tourService.setActiveTour('tensorflow');
+              } else if (angular.equals(self.currentProject.projectName
+                      .substr(0, self.tourService.distributedtensorflowProjectPrefix.length),
+                      self.tourService.distributedtensorflowProjectPrefix)) {
+                self.tourService.setActiveTour('distributed tensorflow');
               }
 
               // Angular adds '#' symbol to the url when click on the home logo
@@ -80,7 +84,7 @@ angular.module('hopsWorksApp')
               self.loc = $location.url().split('#')[0];
               if (self.loc === "/project/" + self.projectId) {
                 self.tourService.currentStep_TourTwo = 0;
-              } else if (self.loc === "/project/" + self.projectId + "/" + "jobs") {
+              } else if (self.loc === "/project/" + self.projectId + "/" + "jobs" || self.loc === "/project/" + self.projectId + "/" + "jupyter") {
                 if (self.tourService.currentStep_TourThree === -1) {
                   self.tourService.currentStep_TourThree = 0;
                 }
@@ -266,17 +270,22 @@ angular.module('hopsWorksApp')
 
 //              http://localhost:8080/hopsworks/#!/project/1/settings
 
-              self.enabling = true;
-              PythonDepsService.enabled(self.projectId).then(function (success) {
-                self.goToUrl('jupyter');
-              }, function (error) {
+              
+//              if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+//                self.goToUrl('jupyter');
+//              } else {
+                self.enabling = true;
+                PythonDepsService.enabled(self.projectId).then(function (success) {
+                  self.goToUrl('jupyter');
+                }, function (error) {
                   ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
-                    .then(function (success) {
-                      self.goToUrl('settings');
-                    }, function (error) {
-                      self.goToUrl('jupyter');
-                    });
-              });
+                          .then(function (success) {
+                            self.goToUrl('settings');
+                          }, function (error) {
+                            self.goToUrl('jupyter');
+                          });
+                });
+//              }
             };
             
             self.goToZeppelin = function () {
@@ -311,6 +320,9 @@ angular.module('hopsWorksApp')
 
             self.goToSettings = function () {
               self.goToUrl('settings');
+              if (self.tourService.currentStep_TourTwo > -1) {
+                self.tourService.resetTours();
+              }
             };
 
             self.goToService = function (service) {
