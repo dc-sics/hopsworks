@@ -49,7 +49,6 @@ import io.hops.hopsworks.common.dao.project.team.ProjectRoleTypes;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
-import io.hops.hopsworks.common.dao.pythonDeps.PythonDepJson;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
@@ -101,7 +100,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.xml.rpc.ServiceException;
 import io.hops.hopsworks.common.yarn.YarnClientService;
 import io.hops.hopsworks.common.yarn.YarnClientWrapper;
-import javax.ws.rs.client.Entity;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -1829,51 +1827,6 @@ public class ProjectController {
     pythonDepsFacade.cloneProject(srcProj, destProj.getName());
   }
   
-  public void initAnacondaForTFDemo(Project project, String sessionId) {
-    Response resp = ClientBuilder.newClient()
-        .target(settings.getRestEndpoint()
-            + "/hopsworks-api/api/project/" + project.getId()
-            + "/pythonDeps/enable/2.7/true")
-        .request()
-        .cookie("SESSION", sessionId)
-        .method("GET");
-    //Wait for env to be enabled
-    int counter = 0;
-    do {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException ex) {
-        LOGGER.log(Level.SEVERE, "Error enabled anaconda for demo project", ex);
-      }
-      resp = ClientBuilder.newClient()
-          .target(settings.getRestEndpoint()
-              + "/hopsworks-api/api/project/" + project.getId()
-              + "/pythonDeps/enabled")
-          .request()
-          .cookie("SESSION", sessionId)
-          .method("GET");
-      counter++;
-    } while (resp.getStatus() != 200 && counter < 5);
-    //Install numpy
-    counter = 0;
-    do {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException ex) {
-        LOGGER.log(Level.SEVERE, "Error enabling anaconda for demo project", ex);
-      }
-      PythonDepJson numpyLib = new PythonDepJson("default", "numpy", "1.13.1", "false");
-      resp = ClientBuilder.newClient()
-          .target(settings.getRestEndpoint()
-              + "/hopsworks-api/api/project/" + project.getId()
-              + "/pythonDeps/install")
-          .request()
-          .cookie("SESSION", sessionId)
-          .post(Entity.json(numpyLib));
-    } while (resp.getStatus() != 200 && counter < 10);
-    LOGGER.log(Level.INFO, "Numpy installed");
-  }
-
   /**
    * Handles Kibana related indices and templates for projects.
    *

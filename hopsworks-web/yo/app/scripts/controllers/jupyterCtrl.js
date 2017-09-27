@@ -219,7 +219,17 @@ angular.module('hopsWorksApp')
             };
 
 
-
+            var installTourLibs = function(){
+              //Install numpy
+              var data = {"channelUrl": "default", "lib": "numpy", "version": "1.13.1"};
+              PythonDepsService.install(self.projectId, data).then(
+                      function (success) {
+                        console.log("success numpy");
+                        growl.info("Preparing Python Anaconda environment, please wait...", {ttl: 10000});
+                      }, function (error) {
+                        console.log("failure numpy");
+              });
+            };
             var init = function () {
               JupyterService.running(self.projectId).then(
                       function (success) {
@@ -245,29 +255,18 @@ angular.module('hopsWorksApp')
                           self.val.mode = "tensorflow";
                           self.advanced = true;
                           //Activate anaconda
-//                          if (self.tourService.anacondaEnabled === false) {
-//                            PythonDepsService.enabled(self.projectId).then(
-//                                    function (success) {
-//                                      self.tourService.anacondaEnabled = true;
-//                                    }, function (error) {
-//                              PythonDepsService.enable(self.projectId, "2.7", true).then(
-//                                      function (success) {
-//                                        self.tourService.anacondaEnabled = true;
-//                                        //Install numpy
-//                                        var data = {"channelUrl": "default", "lib": "numpy", "version": "1.13.1"};
-//                                        PythonDepsService.install(self.projectId, data).then(
-//                                                function (success) {
-//                                                  console.log("success numpy");
-//                                                  growl.info("Preparing Python Anaconda environment, please wait...", {ttl: 10000});
-//                                                }, function (error) {
-//                                                  console.log("failure numpy");
-//                                        });
-//                                        growl.info("Preparing Python Anaconda environment, please wait...", {ttl: 10000});
-//                                      }, function (error) {
-//                                growl.error("Could not enable Anaconda", {title: 'Error', ttl: 5000});
-//                              });
-//                            });
-//                          }
+                          PythonDepsService.enabled(self.projectId).then(
+                                  function (success) {
+                                  }, function (error) {
+                                    growl.info("Preparing Python Anaconda environment, please wait...", {ttl: 20000});
+                                    PythonDepsService.enable(self.projectId, "2.7", "true").then(
+                                      function (success) {
+                                      setTimeout(installTourLibs,20000);
+                                      
+                                      }, function (error) {
+                                    growl.error("Could not enable Anaconda", {title: 'Error', ttl: 5000});
+                            });
+                          });
                           
                         } else {
                           self.val.mode = "sparkDynamic";

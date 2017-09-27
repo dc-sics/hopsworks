@@ -516,9 +516,9 @@ public class ProjectService {
       //TestJob dataset
       datasetController.generateReadme(udfso, "TestJob", readMeMessage, project.getName());
       //Activate Anaconda and install numppy
-      if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)){
-        projectController.initAnacondaForTFDemo(project, req.getSession().getId());
-      }
+//      if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)){
+//        projectController.initAnacondaForTFDemo(project, req.getSession().getId());
+//      }
     } catch (Exception ex) {
       projectController.cleanup(project, req.getSession().getId());
       throw ex;

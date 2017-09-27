@@ -278,14 +278,17 @@ angular.module('hopsWorksApp')
                 PythonDepsService.enabled(self.projectId).then(function (success) {
                   self.goToUrl('jupyter');
                 }, function (error) {
-                  ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
-                          .then(function (success) {
-                            self.goToUrl('settings');
-                          }, function (error) {
-                            self.goToUrl('jupyter');
-                          });
-                });
-//              }
+                  if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+                    self.goToUrl('jupyter');
+                  } else {
+                      ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
+                              .then(function (success) {
+                                self.goToUrl('settings');
+                              }, function (error) {
+                                self.goToUrl('jupyter');
+                              });
+                            }
+                    });
             };
             
             self.goToZeppelin = function () {
@@ -293,12 +296,16 @@ angular.module('hopsWorksApp')
               PythonDepsService.enabled(self.projectId).then( function (success) {
                   self.goToUrl('zeppelin');
                 }, function (error) {
+                  if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+                    self.goToUrl('zeppelin');
+                  } else {
                    ModalService.confirm('sm', 'Enable anaconda', 'You need to enable anaconda to use pyspark!')
                       .then(function (success) {
                         self.goToUrl('settings');
                       }, function (error) {
                         self.goToUrl('zeppelin');
                    });
+                 }
               });
             };
 
