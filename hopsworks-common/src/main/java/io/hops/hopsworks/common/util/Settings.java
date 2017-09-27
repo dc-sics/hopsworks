@@ -1680,59 +1680,51 @@ public class Settings implements Serializable {
   }
 
   //Dela START
-  private static final String VARIABLE_DELA_ENABLED = "dela_enabled";
+  private static final String VARIABLE_BASE_URI_HOPS_SITE = "hops_site_endpoint";
   private static final String VARIABLE_BASE_URI_HOPS_SITE_HOST = "hops_site_host";
+  private static final String VARIABLE_CLUSTER_CERT = "hopsworks_certificate";
+  private static final String VARIABLE_DELA_ENABLED = "dela_enabled";
+  private static final String VARIABLE_DELA_HEARTBEAT_RETRY = "dela_heartbeat_retry";
+  private static final String VARIABLE_DELA_HEARTBEAT_INTERVAL = "dela_heartbeat_interval";
+  
   public static final String VARIABLE_DELA_CLUSTER_ID = "cluster_id";
-
   private static final String VARIABLE_DELA_CLUSTER_IP = "dela_cluster_ip";
   private static final String VARIABLE_DELA_CLUSTER_HTTP_PORT = "dela_cluster_http_port";
   private static final String VARIABLE_DELA_PUBLIC_HOPSWORKS_PORT = "dela_hopsworks_public_port";
-  //   
   private static final String VARIABLE_DELA_SEARCH_ENDPOINT = "dela_search_endpoint";
   private static final String VARIABLE_DELA_TRANSFER_ENDPOINT = "dela_transfer_endpoint";
-  //
+
   public static final Level DELA_DEBUG = Level.INFO;
-  private static Boolean DELA_ENABLED = false; // set to false if not found in variables table
-  private static String DELA_HOPS_SITE_HOST = "hops.site";
-  private static String DELA_HOPS_SITE = "http://hops.site:5081/hops-site/api";
+  private String DELA_HOPS_SITE_HOST = "hops.site";
+  private String DELA_HOPS_SITE = "http://hops.site:5081/hops-site/api";
+  private Boolean DELA_ENABLED = false; // set to false if not found in variables table
 
-  public final static long DELA_HEARTBEAT_STATE_RETRY = 10000l;
-  public final static long DELA_HEARTBEAT_INTERVAL = 60000l;
+  private long DELA_HEARTBEAT_RETRY = 10*1000l; //10s
+  private long DELA_HEARTBEAT_INTERVAL = 10*60*1000l;//10min
 
-  private static String DELA_TRANSFER_IP = "localhost";
-  private static String DELA_TRANSFER_HTTP_PORT = "8080";
-  private static String DELA_PUBLIC_HOPSWORK_PORT = "5081";
+  private String DELA_TRANSFER_IP = "localhost";
+  private String DELA_TRANSFER_HTTP_PORT = "8080";
+  private String DELA_PUBLIC_HOPSWORK_PORT = "5081";
 
   //set on registration after Dela is contacted to detect public port
-  private static String DELA_SEARCH_ENDPOINT = "";
-  private static String DELA_TRANSFER_ENDPOINT = "";
+  private String DELA_SEARCH_ENDPOINT = "";
+  private String DELA_TRANSFER_ENDPOINT = "";
   //set on cluster registration
   private String DELA_CLUSTER_ID = null;
   //
-  private static AddressJSON DELA_PUBLIC_ENDPOINT = null;
+  private AddressJSON DELA_PUBLIC_ENDPOINT = null;
   //
   public static final String MANIFEST_FILE = "manifest.json";
   public static final String README_FILE = "README.md";
-  // temp
-  //---------Dela------
-
-  private static final String VARIABLE_BASE_URI_HOPS_SITE = "hops_site_endpoint";
-//  private static final String VARIABLE_ELASTIC_PUBLIC_RESTENDPOINT
-//          = "public_search_endpoint";
-  private static final String VARIABLE_CLUSTER_CERT = "hopsworks_certificate";
-//  private static final String VARIABLE_DOMAIN = "hopsworks_domain";
-//  private static final String VARIABLE_PUBLIC_SEARCH_ENDPOINT
-//          = "public_search_endpoint";
-  //
-//  private static String DOMAIN = "bbc1.sics.se";
-//  private String ELASTIC_PUBLIC_RESTENDPOINT
-//          = "http://bbc1.sics.se:14003/hopsworks-api/api/elastic/publicdatasets/";
+  
 
   private void populateDelaCache() {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
     DELA_HOPS_SITE_HOST = setVar(VARIABLE_BASE_URI_HOPS_SITE_HOST, DELA_HOPS_SITE_HOST);
     DELA_HOPS_SITE = setVar(VARIABLE_BASE_URI_HOPS_SITE, DELA_HOPS_SITE);
-
+    DELA_HEARTBEAT_RETRY = setLongVar(VARIABLE_DELA_HEARTBEAT_RETRY, DELA_HEARTBEAT_RETRY);
+    DELA_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_DELA_HEARTBEAT_INTERVAL, DELA_HEARTBEAT_INTERVAL);
+    
     DELA_TRANSFER_IP = setStrVar(VARIABLE_DELA_CLUSTER_IP, DELA_TRANSFER_IP);
     DELA_TRANSFER_HTTP_PORT = setStrVar(VARIABLE_DELA_CLUSTER_HTTP_PORT, DELA_TRANSFER_HTTP_PORT);
     DELA_SEARCH_ENDPOINT = setStrVar(VARIABLE_DELA_SEARCH_ENDPOINT, DELA_SEARCH_ENDPOINT);
@@ -1754,6 +1746,16 @@ public class Settings implements Serializable {
   public synchronized String getDELA_HOPS_SITE() {
     checkCache();
     return DELA_HOPS_SITE;
+  }
+  
+  public synchronized long getDELA_HEARTBEAT_RETRY() {
+    checkCache();
+    return DELA_HEARTBEAT_RETRY;
+  }
+   
+  public synchronized long getDELA_HEARTBEAT_INTERVAL() {
+    checkCache();
+    return DELA_HEARTBEAT_INTERVAL;
   }
 
   public synchronized String getDELA_TRANSFER_IP() {
@@ -1855,65 +1857,10 @@ public class Settings implements Serializable {
     return null;
   }
 
-  //temp
-//  public synchronized String getELASTIC_PUBLIC_RESTENDPOINT() {
-//    checkCache();
-//    return ELASTIC_PUBLIC_RESTENDPOINT;
-//  }
-//  private String GVOD_REST_ENDPOINT = "http://10.0.2.15:42000";
-//
-//  public synchronized String getGVodRestEndpoint() {
-//    checkCache();
-//    return GVOD_REST_ENDPOINT;
-//  }
-//
-//  private String PUBLIC_SEARCH_ENDPOINT
-//          = "http://10.0.2.15:8080/hopsworks-api/api/elastic/publicdatasets/";
-//
-//  public synchronized String getPublicSearchEndpoint() {
-//    checkCache();
-//    return PUBLIC_SEARCH_ENDPOINT;
-//  }
-//  public synchronized String getGVOD_REST_ENDPOINT() {
-//    checkCache();
-//    return GVOD_REST_ENDPOINT;
-//  }
-//  private AddressJSON GVOD_UDP_ENDPOINT = null;
-//
-//  public synchronized AddressJSON getGVOD_UDP_ENDPOINT() {
-//    checkCache();
-//    return this.getGVoDUDPEndpoint();
-//  }
-//
-//  private AddressJSON getGVoDUDPEndpoint() {
-//    if (GVOD_UDP_ENDPOINT != null) {
-//      return GVOD_UDP_ENDPOINT;
-//    } else {
-//      if (restClient == null || target == null) {
-//        restClient = ClientBuilder.newClient();
-//        target = restClient.target(GVOD_REST_ENDPOINT).path("/vod/endpoint");
-//      }
-//      try {
-//        Response r = target.request().accept(MediaType.APPLICATION_JSON).get();
-//        if (r != null && r.getStatus() == 200) {
-//          return r.readEntity(AddressJSON.class);
-//        } else {
-//          return null;
-//        }
-//      } catch (Exception e) {
-//        return null;
-//      }
-//    }
-//  }
   public static String getPublicDatasetId(String clusterId, String projectName,
     String datasetName) {
     return clusterId + "_" + projectName + "_" + datasetName;
   }
-
-//  public synchronized String getDOMAIN() {
-//    checkCache();
-//    return DOMAIN;
-//  }
   //************************************************CERTIFICATES********************************************************
   private static final String HOPS_SITE_CA_DIR = CA_DIR + "/hops-site-certs";
   public final static String HOPS_SITE_CERTFILE = "/pub.pem";

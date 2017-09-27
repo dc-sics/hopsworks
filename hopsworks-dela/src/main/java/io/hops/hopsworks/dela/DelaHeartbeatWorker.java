@@ -54,7 +54,7 @@ public class DelaHeartbeatWorker {
   private void init() {
     if (delaStateCtrl.delaEnabled()) {
       state = state.DELA_VERSION;
-      timerService.createTimer(0, settings.DELA_HEARTBEAT_STATE_RETRY, "Timer for version retrieve.");
+      timerService.createTimer(0, settings.getDELA_HEARTBEAT_RETRY(), "Timer for version retrieve.");
 
       LOG.log(Level.INFO, "state:{0}", state);
     }
@@ -224,28 +224,28 @@ public class DelaHeartbeatWorker {
   private Timer resetToDelaContact(Timer timer) {
     timer.cancel();
     state = State.DELA_CONTACT;
-    return timerService.createTimer(0, settings.DELA_HEARTBEAT_STATE_RETRY, "Timer for dela contact.");
+    return timerService.createTimer(0, settings.getDELA_HEARTBEAT_RETRY(), "Timer for dela contact.");
   }
 
   private Timer resetToRegister(Timer timer) {
     LOG.log(Level.WARNING, "reset from:{0} to REGISTER", state);
     timer.cancel();
     state = State.REGISTER;
-    return timerService.createTimer(0, settings.DELA_HEARTBEAT_STATE_RETRY, "Timer for hops site register.");
+    return timerService.createTimer(0, settings.getDELA_HEARTBEAT_RETRY(), "Timer for hops site register.");
   }
 
   private Timer resetToHeavyPing(Timer timer) {
     LOG.log(Level.WARNING, "reset from:{0} to HEAVY_PING", state);
     timer.cancel();
     state = State.HEAVY_PING;
-    return timerService.createTimer(0, settings.DELA_HEARTBEAT_STATE_RETRY, "Timer for heavy ping");
+    return timerService.createTimer(0, settings.getDELA_HEARTBEAT_RETRY(), "Timer for heavy ping");
   }
 
   private Timer resetToPing(Timer timer) {
     LOG.log(Level.WARNING, "reset from:{0} to PING", state);
     timer.cancel();
     state = State.PING;
-    return timerService.createTimer(0, settings.DELA_HEARTBEAT_INTERVAL, "Timer for ping");
+    return timerService.createTimer(0, settings.getDELA_HEARTBEAT_INTERVAL(), "Timer for ping");
   }
 
   private String getDelaTransferHttpEndpoint() throws HeartbeatException {
