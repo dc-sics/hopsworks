@@ -46,7 +46,7 @@ public class SettingsHelper {
   }
 
   public static String hopsSite(Settings settings) throws ThirdPartyException {
-    String hopsSite = settings.getDELA_HOPS_SITE();
+    String hopsSite = settings.getHOPSSITE();
     if (hopsSite == null) {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "DELA_HOPS_SITE",
         ThirdPartyException.Source.SETTINGS, "misconfigured");
@@ -55,7 +55,7 @@ public class SettingsHelper {
   }
 
   public static String hopsSiteHost(Settings settings) throws ThirdPartyException {
-    String hopsSiteHost = settings.getDELA_HOPS_SITE_HOST();
+    String hopsSiteHost = settings.getHOPSSITE_HOST();
     if (hopsSiteHost == null) {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "DELA_HOPS_SITE_HOST",
         ThirdPartyException.Source.SETTINGS, "misconfigured");

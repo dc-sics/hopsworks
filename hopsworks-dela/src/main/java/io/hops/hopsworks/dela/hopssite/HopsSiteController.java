@@ -58,7 +58,7 @@ public class HopsSiteController {
 
   @PostConstruct
   public void init() {
-    hopsSiteHost = settings.getDELA_HOPS_SITE_HOST();
+    hopsSiteHost = settings.getHOPSSITE_HOST();
     if (delaStateCtrl.delaEnabled()) {
       Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
       if(certSetup.isPresent()) {
@@ -71,7 +71,7 @@ public class HopsSiteController {
   }
 
   private ClientWrapper getClient(String path, Class resultClass) {
-    String hopsSite = settings.getDELA_HOPS_SITE();
+    String hopsSite = settings.getHOPSSITE();
     return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword, HopsSiteHostnameVerifier.INSTANCE,
       resultClass).setTarget(hopsSite).setPath(path);
   }

@@ -1680,12 +1680,11 @@ public class Settings implements Serializable {
   }
 
   //Dela START
-  private static final String VARIABLE_BASE_URI_HOPS_SITE = "hops_site_endpoint";
-  private static final String VARIABLE_BASE_URI_HOPS_SITE_HOST = "hops_site_host";
+  private static final String VARIABLE_HOPSSITE_BASE_URI = "hops_site_endpoint";
+  private static final String VARIABLE_HOPSSITE_BASE_URI_HOST = "hops_site_host";
   private static final String VARIABLE_CLUSTER_CERT = "hopsworks_certificate";
   private static final String VARIABLE_DELA_ENABLED = "dela_enabled";
-  private static final String VARIABLE_DELA_HEARTBEAT_RETRY = "dela_heartbeat_retry";
-  private static final String VARIABLE_DELA_HEARTBEAT_INTERVAL = "dela_heartbeat_interval";
+  private static final String VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL = "hopssite_heartbeat_interval";
   
   public static final String VARIABLE_DELA_CLUSTER_ID = "cluster_id";
   private static final String VARIABLE_DELA_CLUSTER_IP = "dela_cluster_ip";
@@ -1695,12 +1694,12 @@ public class Settings implements Serializable {
   private static final String VARIABLE_DELA_TRANSFER_ENDPOINT = "dela_transfer_endpoint";
 
   public static final Level DELA_DEBUG = Level.INFO;
-  private String DELA_HOPS_SITE_HOST = "hops.site";
-  private String DELA_HOPS_SITE = "http://hops.site:5081/hops-site/api";
+  private String HOPSSITE_HOST = "hops.site";
+  private String HOPSSITE = "http://hops.site:5081/hops-site/api";
   private Boolean DELA_ENABLED = false; // set to false if not found in variables table
 
-  private long DELA_HEARTBEAT_RETRY = 10*1000l; //10s
-  private long DELA_HEARTBEAT_INTERVAL = 10*60*1000l;//10min
+  private long HOPSSITE_HEARTBEAT_RETRY = 10*1000l; //10s
+  private long HOPSSITE_HEARTBEAT_INTERVAL = 10*60*1000l;//10min
 
   private String DELA_TRANSFER_IP = "localhost";
   private String DELA_TRANSFER_HTTP_PORT = "8080";
@@ -1720,10 +1719,9 @@ public class Settings implements Serializable {
 
   private void populateDelaCache() {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
-    DELA_HOPS_SITE_HOST = setVar(VARIABLE_BASE_URI_HOPS_SITE_HOST, DELA_HOPS_SITE_HOST);
-    DELA_HOPS_SITE = setVar(VARIABLE_BASE_URI_HOPS_SITE, DELA_HOPS_SITE);
-    DELA_HEARTBEAT_RETRY = setLongVar(VARIABLE_DELA_HEARTBEAT_RETRY, DELA_HEARTBEAT_RETRY);
-    DELA_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_DELA_HEARTBEAT_INTERVAL, DELA_HEARTBEAT_INTERVAL);
+    HOPSSITE_HOST = setVar(VARIABLE_HOPSSITE_BASE_URI_HOST, HOPSSITE_HOST);
+    HOPSSITE = setVar(VARIABLE_HOPSSITE_BASE_URI, HOPSSITE);
+    HOPSSITE_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL, HOPSSITE_HEARTBEAT_INTERVAL);
     
     DELA_TRANSFER_IP = setStrVar(VARIABLE_DELA_CLUSTER_IP, DELA_TRANSFER_IP);
     DELA_TRANSFER_HTTP_PORT = setStrVar(VARIABLE_DELA_CLUSTER_HTTP_PORT, DELA_TRANSFER_HTTP_PORT);
@@ -1738,24 +1736,24 @@ public class Settings implements Serializable {
     return DELA_ENABLED;
   }
 
-  public synchronized String getDELA_HOPS_SITE_HOST() {
+  public synchronized String getHOPSSITE_HOST() {
     checkCache();
-    return DELA_HOPS_SITE_HOST;
+    return HOPSSITE_HOST;
   }
 
-  public synchronized String getDELA_HOPS_SITE() {
+  public synchronized String getHOPSSITE() {
     checkCache();
-    return DELA_HOPS_SITE;
+    return HOPSSITE;
   }
   
-  public synchronized long getDELA_HEARTBEAT_RETRY() {
+  public synchronized long getHOPSSITE_HEARTBEAT_RETRY() {
     checkCache();
-    return DELA_HEARTBEAT_RETRY;
+    return HOPSSITE_HEARTBEAT_RETRY;
   }
    
-  public synchronized long getDELA_HEARTBEAT_INTERVAL() {
+  public synchronized long getHOPSSITE_HEARTBEAT_INTERVAL() {
     checkCache();
-    return DELA_HEARTBEAT_INTERVAL;
+    return HOPSSITE_HEARTBEAT_INTERVAL;
   }
 
   public synchronized String getDELA_TRANSFER_IP() {
