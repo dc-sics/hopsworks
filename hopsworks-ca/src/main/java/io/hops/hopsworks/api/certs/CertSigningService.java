@@ -29,7 +29,7 @@ import org.json.JSONObject;
 
 @Path("/agentservice")
 @Stateless
-@RolesAllowed({"AGENT"})
+@RolesAllowed({"AGENT", "CLUSTER_AGENT"})
 @Api(value = "/agentservice", description = "Agent service")
 public class CertSigningService {
 
