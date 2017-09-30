@@ -1139,13 +1139,11 @@ public class KafkaFacade2 {
       // Loop through records
       for (GenericData.Record avroRecord: avroRecords) {
         byte[] record = recordInjection.apply(avroRecord);
-        if (synchronous){
-          producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record)).get();
-        }else{
-          producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record));
-        }
+        producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record));
       }
-
+      if (synchronous){
+        producer.flush();
+      }
     }catch (Exception ex){
       ex.printStackTrace();
       return false;
