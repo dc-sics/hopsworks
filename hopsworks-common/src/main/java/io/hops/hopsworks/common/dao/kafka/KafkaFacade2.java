@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.dao.kafka;
 
+import com.google.gson.Gson;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.Project;
 import java.io.File;
@@ -63,12 +64,14 @@ import com.twitter.bijection.Injection;
 import com.twitter.bijection.avro.GenericAvroCodecs;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericData;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 
 @Stateless
-public class KafkaFacade {
+public class KafkaFacade2 {
 
-  private final static Logger LOG = Logger.getLogger(KafkaFacade.class.
+  private final static Logger LOG = Logger.getLogger(KafkaFacade2.class.
       getName());
 
   @PersistenceContext(unitName = "kthfsPU")
@@ -109,7 +112,7 @@ public class KafkaFacade {
     return em;
   }
 
-  public KafkaFacade() throws Exception {
+  public KafkaFacade2() throws Exception {
   }
 
   /**
@@ -348,7 +351,7 @@ public class KafkaFacade {
         zkConnection.close();
       } catch (InterruptedException ex) {
         Logger.getLogger(
-            KafkaFacade.class.getName()).log(Level.SEVERE, null, ex);
+            KafkaFacade2.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
   }
@@ -1010,13 +1013,13 @@ public class KafkaFacade {
             leaders.put(id, partition.leader().host());
 
             //list the replicas of the partition
-            replicas.put(id, new ArrayList<>());
+            replicas.put(id, new ArrayList<String>());
             for (Node node : partition.replicas()) {
               replicas.get(id).add(node.host());
             }
 
             //list the insync replicas of the parition
-            inSyncReplicas.put(id, new ArrayList<>());
+            inSyncReplicas.put(id, new ArrayList<String>());
             for (Node node : partition.inSyncReplicas()) {
               inSyncReplicas.get(id).add(node.host());
             }
@@ -1065,48 +1068,84 @@ public class KafkaFacade {
     return brokerAddress;
   }
 
-  public boolean produce(Integer projectId, Users user, String topicName,
-      ArrayList<String> records) throws Exception{
+  private KafkaProducer<String, byte[]> getKafkaProducer(
+    String projectName, String userName, String bootstrapServers){
+    //TODO: Change Trustore and Keystore Location for the certificates (if need be)
+    Properties props = new Properties();
+    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
 
-    Project project = projectsFacade.find(projectId);
-    String projectName = project.getName();
-    String userName = user.getUsername();
+    //TODO:
+    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
 
-    KafkaProducer<Integer, String> producer = null;
-    try {
-      String bootstrapServers = getAllBootstrapServers();
-      HopsUtils.copyUserKafkaCerts(userCerts, project, userName,
-          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
-      Properties props = new Properties();
-      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.IntegerSerializer");
-      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.StringSerializer");
+    //configure the ssl parameters
+    props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+    props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
+      settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.getProjectTruststoreName(projectName, userName));
+    props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
+      settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.getProjectKeystoreName(projectName, userName));
+    props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, settings.getHopsworksMasterPasswordSsl());
+    props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, settings.getHopsworksMasterPasswordSsl());
+    props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, settings.getHopsworksMasterPasswordSsl());
+    return new KafkaProducer<>(props);
+  }
 
-      //configure the ssl parameters
-      props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectTruststoreName(projectName, userName)); //TODO:Add File.separator "device"
-      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectKeystoreName(projectName, userName));
-      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      producer = new KafkaProducer<>(props);
-      for (String record: records) {
-        // Asynchronous production
-        producer.send(new ProducerRecord<Integer, String>(topicName, record));
-        //TODO:Get Callback & delete certs there
+  private List<GenericData.Record> convertJSONArrayToAvroRecords(String avroSchemaContents, JSONArray records)
+    throws Exception{
 
-        // Synchronous production
-        //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();
+    ArrayList<GenericData.Record> list = new ArrayList<>();
+    Schema.Parser parser = new Schema.Parser();
+    Schema schema = parser.parse(avroSchemaContents);
+
+    // Loop through records
+    for (int i = 0; i < records.length(); i++) {
+      JSONObject object = records.getJSONObject(i);
+      Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
+      Map<String, Object> map = new HashMap<String, Object>();
+      map = (Map<String, Object>) new Gson().fromJson(object.toString(), map.getClass());
+
+      //create the avro message
+      GenericData.Record avroRecord = new GenericData.Record(schema);
+      for (Map.Entry<String, Object> message : map.entrySet()) {
+        avroRecord.put(message.getKey(), message.getValue());
       }
+      list.add(avroRecord);
+    }
+    return list;
+  }
+
+  public boolean produce (boolean synchronous, Integer projectId, String username,  String deviceUuid, String topic,
+    String schemaContents, JSONArray records) throws Exception{
+
+      return produce(synchronous, projectId, username, deviceUuid, topic, schemaContents,
+        convertJSONArrayToAvroRecords(schemaContents, records));
+  }
+
+  public boolean produce(boolean synchronous, Integer projectId, String username, String deviceUuid, String topic,
+    String schemaContents, List<GenericData.Record> avroRecords) throws Exception{
+
+    KafkaProducer<String, byte[]> producer = null;
+    Project project = projectsFacade.find(projectId);
+
+    try {
+      HopsUtils.copyUserKafkaCerts(userCerts, project,  username,
+        settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
+      producer = getKafkaProducer( project.getName(), username, getAllBootstrapServers());
+
+      Schema.Parser parser = new Schema.Parser();
+      Schema schema = parser.parse(schemaContents);
+      Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
+
+      // Loop through records
+      for (GenericData.Record avroRecord: avroRecords) {
+        byte[] record = recordInjection.apply(avroRecord);
+        if (synchronous){
+          producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record)).get();
+        }else{
+          producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record));
+        }
+      }
+
     }catch (Exception ex){
       ex.printStackTrace();
       return false;
@@ -1114,36 +1153,10 @@ public class KafkaFacade {
       if (producer != null) {
         producer.close();
       }
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      certificateMaterializer.removeCertificate(username, project.getName());
     }
     return true;
   }
-
-
-
-
-  public void produce2(String topic, String schemaContents, Map<String, String> messageFields) {
-
-    Schema.Parser parser = new Schema.Parser();
-    Schema schema = parser.parse(schemaContents);
-    Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
-
-    //create the avro message
-    GenericData.Record avroRecord = new GenericData.Record(schema);
-    for (Map.Entry<String, String> message : messageFields.entrySet()) {
-      //TODO: Check that messageFields are in avro record
-      avroRecord.put(message.getKey(), message.getValue());
-    }
-    byte[] bytes = recordInjection.apply(avroRecord);
-    ProducerRecord<String, byte[]> record = new ProducerRecord<>(topic, bytes);
-
-    Properties props = new Properties();
-    KafkaProducer<String, byte[]> producer = new KafkaProducer<>(props);
-    producer.send(record);
-
-  }
-
-
 
   public class ZookeeperWatcher implements Watcher {
 

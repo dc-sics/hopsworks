@@ -32,7 +32,7 @@ import io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLog;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLogFacade;
@@ -162,7 +162,7 @@ public class ProjectController {
   @EJB
   private JobDescriptionFacade jobFacade;
   @EJB
-  private KafkaFacade kafkaFacade;
+  private KafkaFacade2 kafkaFacade;
   @EJB
   private ElasticController elasticController;
   @EJB

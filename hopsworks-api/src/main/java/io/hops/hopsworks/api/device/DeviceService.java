@@ -1,11 +1,7 @@
 package io.hops.hopsworks.api.device;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -23,13 +19,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.gson.Gson;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.swagger.annotations.Api;
-import org.apache.hadoop.fs.Stat;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -44,7 +40,7 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.device.DeviceFacade2;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -84,7 +80,7 @@ public class DeviceService {
   private DeviceFacade2 deviceFacade2;
   
   @EJB
-  private KafkaFacade kafkaFacade;
+  private KafkaFacade2 kafkaFacade2;
 
   public DeviceService() {
   }
@@ -404,7 +400,7 @@ public class DeviceService {
       }
       // Device is authenticated at this point
 
-      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
+      SchemaDTO schemaDTO = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
 
     }catch(JSONException e) {
@@ -452,20 +448,18 @@ public class DeviceService {
         return failedJsonResponse(Status.INTERNAL_SERVER_ERROR, "I hate it when this happens.");
       }
 
-      //TODO: Check if ArrayList of String works.
-      ArrayList<String> recordsStringified = new ArrayList<>();
-      for(int i=0;i<records.length(); i++) {
-        recordsStringified.add(records.getString(i));
-      }
-
-      // Extracts the default device-user.
+      // Extracts the default device-user from the database
       Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
 
+      // Extracts the Avro Schema contents from the database
+      SchemaDTO schema = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
+
       try {
-        kafkaFacade.produce(projectId, user, topicName, recordsStringified);
+        kafkaFacade2.produce(true, projectId, user.getUsername(), topicName, schema.getContents(), records);
+
         return successfulJsonResponse(Status.OK, MessageFormat.format(
-          "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3} records:{4}, ",
-          projectId, deviceUuid, user.getEmail(), topicName, recordsStringified));
+          "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3}",
+          projectId, deviceUuid, user.getEmail(), topicName));
       } catch (Exception e) {
         return failedJsonResponse(
             Status.INTERNAL_SERVER_ERROR,"Something went wrong while producing to Kafka.");

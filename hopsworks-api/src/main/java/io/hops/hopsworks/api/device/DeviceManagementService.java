@@ -3,7 +3,7 @@ package io.hops.hopsworks.api.device;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.device.DeviceFacade2;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import org.json.JSONException;
@@ -48,7 +48,7 @@ public class DeviceManagementService {
   private DeviceFacade2 deviceFacade2;
   
   @EJB
-  private KafkaFacade kafkaFacade;
+  private KafkaFacade2 kafkaFacade;
   
   private Integer projectId;
 
