@@ -12,6 +12,7 @@ import io.hops.hopsworks.common.dao.jobs.description.AppIdDTO;
 import io.hops.hopsworks.common.dao.jobs.description.AppInfoDTO;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
+import io.hops.hopsworks.common.dao.jobs.description.TfUrlsDTO;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -92,6 +93,9 @@ import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.ConverterUtils;
@@ -153,6 +157,8 @@ public class JobService {
   private UserFacade userFacade;
   @EJB
   private ExecutionController executionController;
+  @EJB
+  private HdfsUsersController hdfsUsersController;
 
   private Project project;
   private static final String PROXY_USER_COOKIE_NAME = "proxy-user";
@@ -178,7 +184,7 @@ public class JobService {
       throws AppException {
     List<Jobs> jobs = jobFacade.findForProject(project);
     GenericEntity<List<Jobs>> jobList
-        = new GenericEntity<List<Jobs>>(jobs) {};
+        = new GenericEntity<List<Jobs>>(jobs) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         jobList).build();
   }
@@ -216,12 +222,12 @@ public class JobService {
 
   /**
    * Get the JobConfiguration object for the specified job. The sole reason of
- existence of this method is the dodginess
- of polymorphism in JAXB/JAXRS. As such, the jobConfig field is always empty
- when a Jobs object is
- returned. This method must therefore be called explicitly to get the job
- configuration.
- <p>
+   * existence of this method is the dodginess
+   * of polymorphism in JAXB/JAXRS. As such, the jobConfig field is always empty
+   * when a Jobs object is
+   * returned. This method must therefore be called explicitly to get the job
+   * configuration.
+   * <p>
    * @param jobId
    * @param sc
    * @param req
@@ -342,7 +348,7 @@ public class JobService {
         }
 
         GenericEntity<List<AppIdDTO>> appIds
-            = new GenericEntity<List<AppIdDTO>>(appIdStrings) {};
+            = new GenericEntity<List<AppIdDTO>>(appIdStrings) { };
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
             entity(appIds).build();
 
@@ -353,6 +359,74 @@ public class JobService {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
     }
+  }
+
+  @GET
+  @Path("/{appId}/tensorboard")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response getTensorboardUrls(@PathParam("appId") String appId,
+      @Context SecurityContext sc,
+      @Context HttpServletRequest req) throws AppException {
+    LOGGER.info("Calling tensorboard");
+    Response response = checkAccessRight(appId);
+    if (response != null) {
+      return response;
+    }
+    List<TfUrlsDTO> urls = new ArrayList<>();
+    GenericEntity<List<TfUrlsDTO>> listUrls = null;
+    try {
+      // READ all URLs from the files in the appId directory
+
+      String hdfsUser = getHdfsUser(sc);
+
+      DistributedFileSystemOps client = dfs.getDfsOps(hdfsUser);
+      FileStatus[] statuses = client.getFilesystem().globStatus(new org.apache.hadoop.fs.Path("/Projects/" + project.
+          getName() + "/Logs/Tensorboard/" + appId + "/tensorboard.exec*"));
+      DistributedFileSystem fs = client.getFilesystem();
+      for (FileStatus status : statuses) {
+        LOGGER.log(Level.INFO, "Reading tensorboard for: {0}", status.getPath());
+        FSDataInputStream in = null;
+        try {
+          in = fs.open(new org.apache.hadoop.fs.Path(status.getPath().toString()));
+          String url = IOUtils.toString(in, "UTF-8");
+          String name = status.getPath().getName();
+          urls.add(new TfUrlsDTO(name, url));
+        } catch (Exception e) {
+          LOGGER.log(Level.WARNING, "Problem reading file with tensorboard address from HDFS: " + e.getMessage());
+        } finally {
+          org.apache.hadoop.io.IOUtils.closeStream(in);
+        }
+
+      }
+      listUrls = new GenericEntity<List<TfUrlsDTO>>(urls) {
+      };
+      dfs.closeDfsClient(client);
+
+    } catch (Exception e) {
+      LOGGER.log(Level.SEVERE, "exception while geting job ui " + e.
+          getLocalizedMessage(), e);
+      throw new AppException(Response.Status.NO_CONTENT.getStatusCode(),
+          "Error getting the Tensorboard(s) for this application.");
+    }
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(listUrls).build();
+  }
+
+  private String getHdfsUser(SecurityContext sc) throws AppException {
+    if (project.getId() == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Incomplete request!");
+    }
+    String loggedinemail = sc.getUserPrincipal().getName();
+    Users user = userFacade.findByEmail(loggedinemail);
+    if (user == null) {
+      throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
+          "You are not authorized for this invocation.");
+    }
+    String hdfsUsername = hdfsUsersController.getHdfsUserName(project, user);
+
+    return hdfsUsername;
   }
 
   /**
@@ -1032,13 +1106,13 @@ public class JobService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         arrayObjectBuilder.build()).build();
   }
-  
+
   @GET
   @Path("/getLogByJobId/{jobId}/{submissionTime}/{type}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getLogByJobId(@PathParam("jobId") Integer jobId, @PathParam("submissionTime") String submissionTime,
-          @PathParam("type") String type) throws AppException {
+      @PathParam("type") String type) throws AppException {
     if (jobId == null || jobId <= 0) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Can not get log. No JobId.");
     }
@@ -1113,7 +1187,7 @@ public class JobService {
     DistributedFileSystemOps udfso = null;
     Users user = execution.getUser();
     String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
-    String aggregatedLogPath = settings.getAggregatedLogPath(hdfsUser, appId);   
+    String aggregatedLogPath = settings.getAggregatedLogPath(hdfsUser, appId);
     if (aggregatedLogPath == null) {
       throw new AppException(Response.Status.NOT_FOUND.
           getStatusCode(),
@@ -1140,7 +1214,7 @@ public class JobService {
             String[] desiredLogTypes = {"out"};
             YarnClientWrapper yarnClientWrapper = ycs
                 .getYarnClientSuper(settings.getConfiguration());
-            
+
             ApplicationId applicationId = ConverterUtils.toApplicationId(appId);
             YarnMonitor monitor = new YarnMonitor(applicationId,
                 yarnClientWrapper, ycs);

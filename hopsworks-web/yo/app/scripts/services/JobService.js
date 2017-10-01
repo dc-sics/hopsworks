@@ -145,6 +145,16 @@ angular.module('hopsWorksApp')
               getExecutionUI: function (projectId, appId) {
                 return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/ui');
               },
+              
+              /* Get the tensorboard URLs for the appid.
+               * @param {type} projectId
+               * @param {type} appId
+               * @returns {unresolved} The addresses of the tensorboard uis.
+               */
+              getTensorboardUIs: function (projectId, appId) {
+                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/tensorboard');
+              },              
+              
               /**
                * Get the yarn ui of the given job.
                * @param {type} projectId

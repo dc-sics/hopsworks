@@ -63,12 +63,21 @@
                   </button>
                 </span>
                 <span class="field-info" uib-tooltip="Show tensorboard" style="padding-top: 5px;padding-left:3px">
-                  <button style=""
-                          ng-click="jobUICtrl.tfUI();
-                                    $event.stopPropagation();"
-                          class="btn btn-primary btn-md fa fa-cubes"
-                          ng-if="jobUICtrl.job.jobType === 'TFSPARK' || jobUICtrl.job.jobType === 'TENSORFLOW'"> Tensorboard
-                  </button>
+                  <!--                  <button style=""
+                                            ng-click="jobUICtrl.tfUI();
+                                                      $event.stopPropagation();"
+                                            class="btn btn-primary btn-md fa fa-cubes"
+                                            ng-if="jobUICtrl.job.jobType === 'TFSPARK' || jobUICtrl.job.jobType === 'TENSORFLOW'"> Tensorboard
+                                    </button>-->
+                  <div ng-repeat="tf in tfSessions" >
+                    <span class="field-info" uib-tooltip="Show tensorboard" style="padding-top: 5px;padding-left:3px">
+                      <button style="" ng-click="jobUICtrl.tfUI(tf);  $event.stopPropagation();"  
+                              class="btn btn-primary btn-md fa fa-cubes"
+                              ng-if="jobUICtrl.job.jobType === 'TFSPARK' || jobUICtrl.job.jobType === 'TENSORFLOW'"> 
+                        {{tf}}
+                      </button>
+                    </span>
+                  </div>
                 </span>
                 <span class="field-info" uib-tooltip="Refresh" style="padding-top: 5px;padding-left:3px">
                   <button style=""
