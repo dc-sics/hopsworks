@@ -62,6 +62,7 @@ public class ExecutionController {
 
   private final static Logger LOGGER = Logger.getLogger(ExecutionController.class.getName());
 
+  @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
   public Execution start(Jobs job, Users user, String sessionId) throws IOException {
     Execution exec = null;
 
