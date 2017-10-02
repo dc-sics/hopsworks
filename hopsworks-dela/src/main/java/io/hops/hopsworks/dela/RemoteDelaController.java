@@ -5,7 +5,7 @@ import io.hops.hopsworks.common.util.ClientWrapper;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.dto.common.ClusterAddressDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
-import io.hops.hopsworks.dela.hopssite.HopsSiteController;
+import io.hops.hopsworks.dela.hopssite.HopssiteController;
 import io.hops.hopsworks.util.CertificateHelper;
 import java.security.KeyStore;
 import java.util.Optional;
@@ -59,13 +59,13 @@ public class RemoteDelaController {
 
   private ClientWrapper getClient(String delaClusterAddress, String path, Class resultClass) {
     return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword,
-      HopsSiteController.HopsSiteHostnameVerifier.INSTANCE, resultClass).setTarget(delaClusterAddress).setPath(path);
+      HopssiteController.HopsSiteHostnameVerifier.INSTANCE, resultClass).setTarget(delaClusterAddress).setPath(path);
   }
 
   public static class Path {
 
     public static String readme(String publicDSId) {
-      return "/remote/dela/dataset/" + publicDSId + "/readme";
+      return "/remote/dela/datasets/" + publicDSId + "/readme";
     }
   }
 }

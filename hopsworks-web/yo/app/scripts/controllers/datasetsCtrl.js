@@ -3,10 +3,10 @@
 angular.module('hopsWorksApp')
         .controller('DatasetsCtrl', ['$scope', '$q', '$mdSidenav', '$mdUtil', '$log',
           'DataSetService', 'JupyterService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
-          'MetadataHelperService', '$showdown', '$rootScope', 'DelaService',
+          'MetadataHelperService', '$showdown', '$rootScope', 'DelaProjectService',
           function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, JupyterService, $routeParams,
                   $route, ModalService, growl, $location, MetadataHelperService,
-                  $showdown, $rootScope, DelaService) {
+                  $showdown, $rootScope, DelaProjectService) {
 
             var self = this;
             self.itemsPerPage = 14;
@@ -26,7 +26,7 @@ angular.module('hopsWorksApp')
             self.routeParamArray = [];
             $scope.readme = null;
             var dataSetService = DataSetService(self.projectId); //The datasetservice for the current project.
-            var delaService = DelaService(self.projectId);
+            var delaService = DelaProjectService(self.projectId);
             
             $scope.all_selected = false;
             self.selectedFiles = {}; //Selected files
@@ -360,8 +360,8 @@ This will make all its files available for any registered user to download and p
               );
             };
             
-            self.showManifest = function(id){
-                delaService.showManifest(id).then(function(success){
+            self.showManifest = function(publicDSId){
+                delaService.getManifest(publicDSId).then(function(success){
                     var manifest = success.data;
                     ModalService.json('md','Manifest', manifest).then(function(){
                         
@@ -369,14 +369,13 @@ This will make all its files available for any registered user to download and p
                 });
             };
 
-            self.removePublic = function (id) {
+            self.removePublic = function (publicDSId) {
 
-              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? \n\
-This will make all its files unavailable to other projects unless you share it explicitly.').then(
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet internet_private? ').then(
                       function (success) {
-                        delaService.cancelByInodeId(id).then(
+                        delaService.cancel(publicDSId, false).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is not shared anymore.', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});

@@ -8,7 +8,7 @@ import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.dto.hopsworks.HopsworksTransferDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSite;
-import io.hops.hopsworks.dela.hopssite.HopsSiteController;
+import io.hops.hopsworks.dela.hopssite.HopssiteController;
 import io.hops.hopsworks.dela.old_dto.ExtendedDetails;
 import io.hops.hopsworks.dela.old_dto.HDFSEndpoint;
 import io.hops.hopsworks.dela.old_dto.HDFSResource;
@@ -48,7 +48,7 @@ public class DelaWorkerController {
   @EJB
   private TransferDelaController delaCtrl;
   @EJB
-  private HopsSiteController hopsSiteCtrl;
+  private HopssiteController hopsSiteCtrl;
   @EJB
   private DelaDatasetController delaDatasetCtrl;
   @EJB

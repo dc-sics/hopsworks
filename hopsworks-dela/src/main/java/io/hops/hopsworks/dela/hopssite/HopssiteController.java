@@ -39,9 +39,9 @@ import org.javatuples.Triplet;
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
-public class HopsSiteController {
+public class HopssiteController {
 
-  private final static Logger LOG = Logger.getLogger(HopsSiteController.class.getName());
+  private final static Logger LOG = Logger.getLogger(HopssiteController.class.getName());
 
   private static String hopsSiteHost;
   private boolean delaEnabled = false;
@@ -180,15 +180,15 @@ public class HopsSiteController {
     }
   }
 
-  public String getUserId(String email) throws ThirdPartyException {
+  public Integer getUserId(String email) throws ThirdPartyException {
     delaStateCtrl.checkHopssiteState();
     String publicCId = SettingsHelper.clusterId(settings);
     try {
-      ClientWrapper client = getClient(HopsSite.UserService.getUserId(publicCId, email), String.class);
+      ClientWrapper client = getClient(HopsSite.UserService.getUser(publicCId, email), UserDTO.Complete.class);
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - {0}", client.getFullPath());
-      String result = (String) client.doGet();
+      UserDTO.Complete result = (UserDTO.Complete) client.doGet();
       LOG.log(Settings.DELA_DEBUG, "hops-site:user - done {0}", client.getFullPath());
-      return result;
+      return result.getUserId();
     } catch (IllegalStateException ise) {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), ise.getMessage(),
         ThirdPartyException.Source.HOPS_SITE, "communication failure");

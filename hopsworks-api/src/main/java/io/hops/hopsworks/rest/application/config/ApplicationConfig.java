@@ -64,7 +64,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.dela.DelaService.class);
     register(io.hops.hopsworks.api.dela.DelaProjectService.class);
     register(io.hops.hopsworks.api.dela.RemoteDelaService.class);
-    register(io.hops.hopsworks.api.hopssite.PublicDatasetService.class);
+    register(io.hops.hopsworks.api.hopssite.HopssiteService.class);
     register(io.hops.hopsworks.api.hopssite.CommentService.class);
     register(io.hops.hopsworks.api.hopssite.RatingService.class);
     //

@@ -1,5 +1,6 @@
 package io.hops.hopsworks.api.dela;
 
+import io.hops.hopsworks.api.dela.dto.InodeIdDTO;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.util.JsonResponse;
@@ -16,8 +17,8 @@ import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.DelaHdfsController;
 import io.hops.hopsworks.dela.DelaWorkerController;
 import io.hops.hopsworks.dela.TransferDelaController;
+import io.hops.hopsworks.dela.dto.hopsworks.HopsworksTransferDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
-import io.hops.hopsworks.dela.old_dto.DetailsRequestDTO;
 import io.hops.hopsworks.dela.old_dto.ElementSummaryJSON;
 import io.hops.hopsworks.dela.old_dto.HopsContentsSummaryJSON;
 import io.hops.hopsworks.dela.old_dto.KafkaEndpoint;
@@ -25,7 +26,8 @@ import io.hops.hopsworks.dela.old_dto.ManifestJSON;
 import io.hops.hopsworks.dela.old_dto.SuccessJSON;
 import io.hops.hopsworks.dela.old_dto.TorrentExtendedStatusJSON;
 import io.hops.hopsworks.dela.old_dto.TorrentId;
-import io.hops.hopsworks.dela.dto.hopsworks.HopsworksTransferDTO;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiParam;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -39,10 +41,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -53,6 +55,8 @@ import javax.ws.rs.core.SecurityContext;
 @Consumes(MediaType.APPLICATION_JSON)
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
+@Api(value = "Dela Project Service",
+  description = "Dela Project Service")
 public class DelaProjectService {
 
   private final static Logger logger = Logger.getLogger(DelaProjectService.class.getName());
@@ -63,8 +67,8 @@ public class DelaProjectService {
   @EJB
   private DelaWorkerController delaWorkerCtrl;
   @EJB
-  private TransferDelaController delaCtrl;
-  @EJB 
+  private TransferDelaController delaTransferCtrl;
+  @EJB
   private DelaHdfsController delaHdfsCtrl;
   @EJB
   private KafkaController kafkaController;
@@ -88,18 +92,35 @@ public class DelaProjectService {
   public Integer getProjectId() {
     return projectId;
   }
-  
+
   private Response successResponse(Object content) {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(content).build();
   }
 
+  @GET
+  @Path("/transfers")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public Response getProjectContents(@Context SecurityContext sc) throws ThirdPartyException {
+
+    List<Integer> projectIds = new LinkedList<>();
+    projectIds.add(projectId);
+
+    HopsContentsSummaryJSON.Contents resp = delaTransferCtrl.getContents(projectIds);
+    ElementSummaryJSON[] projectContents = resp.getContents().get(projectId);
+    if (projectContents == null) {
+      projectContents = new ElementSummaryJSON[0];
+    }
+    return successResponse(projectContents);
+  }
+  
   @POST
-  @Path("/dataset/publish/inodeId/{inodeId}")
+  @Path("/uploads")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response publish(@PathParam("inodeId") Integer inodeId, @Context SecurityContext sc)
+  public Response publish(@Context SecurityContext sc, InodeIdDTO inodeId)
     throws ThirdPartyException {
-    Inode inode = getInode(inodeId);
+    Inode inode = getInode(inodeId.getId());
     Dataset dataset = getDatasetByInode(inode);
     Users user = getUser(sc.getUserPrincipal().getName());
     delaWorkerCtrl.publishDataset(project, dataset, user);
@@ -107,76 +128,45 @@ public class DelaProjectService {
     json.setSuccessMessage("Dataset transfer is started - published");
     return successResponse(json);
   }
-
-  @POST
-  @Path("/dataset/cancel/inodeId/{inodeId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response removeByInodeId(@PathParam("inodeId") Integer inodeId, @Context SecurityContext sc)
-    throws ThirdPartyException {
-    Inode inode = getInode(inodeId);
-    Dataset dataset = getDatasetByInode(inode);
-    Users user = getUser(sc.getUserPrincipal().getName());
-    delaWorkerCtrl.cancel(project, dataset, user);
-    JsonResponse json = new JsonResponse();
-    json.setSuccessMessage("Dataset transfer is now stopped - cancelled");
-    return successResponse(json);
-  }
-
-  @POST
-  @Path("/dataset/cancel/publicDSId/{publicDSId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response removePublic(@PathParam("publicDSId") String publicId, @Context SecurityContext sc)
-    throws ThirdPartyException {
-    Dataset dataset = getDatasetByPublicId(publicId);
-    Users user = getUser(sc.getUserPrincipal().getName());
-    delaWorkerCtrl.cancel(project, dataset, user);
-    JsonResponse json = new JsonResponse();
-    json.setSuccessMessage("Dataset transfer is now stopped - cancelled");
-    return successResponse(json);
-  }
   
-  @POST
-  @Path("/dataset/cancelclean/publicDSId/{publicDSId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response removeCancel(@PathParam("publicDSId") String publicId, @Context SecurityContext sc)
-    throws ThirdPartyException {
-    Dataset dataset = getDatasetByPublicId(publicId);
-    Users user = getUser(sc.getUserPrincipal().getName());
-    delaWorkerCtrl.cancelAndClean(project, dataset, user);
-    JsonResponse json = new JsonResponse();
-    json.setSuccessMessage("Dataset transfer is now stopped - cancelled");
-    return successResponse(json);
-  }
-
   @GET
-  @Path("/dataset/manifest/inodeId/{inodeId}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response showManifest(@PathParam("inodeId") Integer inodeId, @Context SecurityContext sc)
-    throws ThirdPartyException {
-    JsonResponse json = new JsonResponse();
-    Inode inode = getInode(inodeId);
-    Dataset dataset = getDatasetByInode(inode);
-    Users user = getUser(sc.getUserPrincipal().getName());
-    if (!dataset.isPublicDs()) {
-      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dataset not public - no manifest",
-        ThirdPartyException.Source.LOCAL, "bad request");
-    }
-
-    ManifestJSON manifestJSON = delaHdfsCtrl.readManifest(project, dataset, user);
-    return successResponse(manifestJSON);
-  }
-
-  @PUT
-  @Path("/dataset/download/start")
+  @Path("/transfers/{publicDSId}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-  public Response startDownload(@Context SecurityContext sc, HopsworksTransferDTO.Download downloadDTO)
+  public Response getExtendedDetails(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId)
     throws ThirdPartyException {
+
+    TorrentId torrentId = new TorrentId(publicDSId);
+    TorrentExtendedStatusJSON resp = delaTransferCtrl.details(torrentId);
+    return successResponse(resp);
+  }
+
+  @POST
+  @Path("/transfers/{publicDSId}/cancel")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response removePublic(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId,
+    @ApiParam(value="delete dataset", required = true) @QueryParam("clean") boolean clean) throws ThirdPartyException {
+    Dataset dataset = getDatasetByPublicId(publicDSId);
+    Users user = getUser(sc.getUserPrincipal().getName());
+    if (clean) {
+      delaWorkerCtrl.cancelAndClean(project, dataset, user);
+    } else {
+      delaWorkerCtrl.cancel(project, dataset, user);
+    }
+    JsonResponse json = new JsonResponse();
+    json.setSuccessMessage("Dataset transfer is now stopped - cancelled");
+    return successResponse(json);
+  }
+
+  @POST
+  @Path("/downloads/{publicDSId}/manifest")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public Response startDownload(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId,
+    HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
     Users user = getUser(sc.getUserPrincipal().getName());
     //dataset not createed yet
 
@@ -184,13 +174,13 @@ public class DelaProjectService {
     return successResponse(manifest);
   }
 
-  @PUT
-  @Path("/dataset/download/hdfs")
+  @POST
+  @Path("/downloads/{publicDSId}/hdfs")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-  public Response downloadDatasetHdfs(@Context SecurityContext sc, HopsworksTransferDTO.Download downloadDTO) 
-    throws ThirdPartyException {
+  public Response downloadDatasetHdfs(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId,
+    HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
     Users user = getUser(sc.getUserPrincipal().getName());
     Dataset dataset = getDatasetByPublicId(downloadDTO.getPublicDSId());
 
@@ -198,15 +188,15 @@ public class DelaProjectService {
     return successResponse(new SuccessJSON(""));
   }
 
-  @PUT
-  @Path("/dataset/download/kafka")
+  @POST
+  @Path("/downloads/{publicDSId}/kafka")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response downloadDatasetKafka(@Context SecurityContext sc, @Context HttpServletRequest req,
-    HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
+    @PathParam("publicDSId") String publicDSId, HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
     Users user = getUser(sc.getUserPrincipal().getName());
-    Dataset dataset = getDatasetByPublicId(downloadDTO.getPublicDSId());
+    Dataset dataset = getDatasetByPublicId(publicDSId);
 
     String certPath = kafkaController.getKafkaCertPaths(project);
     String brokerEndpoint = settings.getKafkaConnectStr();
@@ -222,33 +212,21 @@ public class DelaProjectService {
   }
 
   @GET
-  @Path("contents")
+  @Path("/transfers/{publicDSId}/manifest/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-  public Response getProjectContents(@Context SecurityContext sc) throws ThirdPartyException {
-
-    List<Integer> projectIds = new LinkedList<>();
-    projectIds.add(projectId);
-
-    HopsContentsSummaryJSON.Contents resp = delaCtrl.getContents(projectIds);
-    ElementSummaryJSON[] projectContents = resp.getContents().get(projectId);
-    if (projectContents == null) {
-      projectContents = new ElementSummaryJSON[0];
-    }
-    return successResponse(projectContents);
-  }
-
-  @PUT
-  @Path("details")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
-  public Response getExtendedDetails(@Context SecurityContext sc, DetailsRequestDTO detailsRequestDTO) 
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response showManifest(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId)
     throws ThirdPartyException {
+    JsonResponse json = new JsonResponse();
+    Dataset dataset = getDatasetByPublicId(publicDSId);
+    Users user = getUser(sc.getUserPrincipal().getName());
+    if (!dataset.isPublicDs()) {
+      throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "dataset not public - no manifest",
+        ThirdPartyException.Source.LOCAL, "bad request");
+    }
 
-    TorrentId torrentId = new TorrentId(detailsRequestDTO.getTorrentId());
-    TorrentExtendedStatusJSON resp = delaCtrl.details(torrentId);
-    return successResponse(resp);
+    ManifestJSON manifestJSON = delaHdfsCtrl.readManifest(project, dataset, user);
+    return successResponse(manifestJSON);
   }
 
   private Users getUser(String email) throws ThirdPartyException {

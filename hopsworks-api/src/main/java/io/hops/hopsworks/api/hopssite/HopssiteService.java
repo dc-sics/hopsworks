@@ -14,9 +14,10 @@ import io.hops.hopsworks.dela.dto.common.UserDTO;
 import io.hops.hopsworks.dela.dto.hopssite.DatasetDTO;
 import io.hops.hopsworks.dela.dto.hopssite.HopsSiteDatasetDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
-import io.hops.hopsworks.dela.hopssite.HopsSiteController;
+import io.hops.hopsworks.dela.hopssite.HopssiteController;
 import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiParam;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -34,27 +35,28 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 
-@Path("/hopssite/publicDataset")
+@Path("/hopssite/")
 @Stateless
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @TransactionAttribute(TransactionAttributeType.NEVER)
-@Api(value = "Dela Service",
-        description = "PublicDataset Service")
-public class PublicDatasetService {
+@Api(value = "Hopssite Service",
+  description = "Hopssite Service")
+public class HopssiteService {
 
-  private final static Logger LOGGER = Logger.getLogger(PublicDatasetService.class.getName());
+  private final static Logger LOGGER = Logger.getLogger(HopssiteService.class.getName());
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
-  private HopsSiteController hopsSite;
+  private HopssiteController hopsSite;
   @EJB
   private Settings settings;
   @EJB
@@ -67,7 +69,7 @@ public class PublicDatasetService {
   private RatingService ratingService;
 
   @GET
-  @Path("serviceInfo/{service}")
+  @Path("services/{service}")
   public Response getServiceInfo(@PathParam("service") String service) {
     boolean delaEnabled = settings.isDelaEnabled();
     HopsSiteServiceInfoDTO serviceInfo;
@@ -82,9 +84,39 @@ public class PublicDatasetService {
   }
 
   @GET
-  @Path("all")
-  public Response getAllPublicDatasets() throws ThirdPartyException {
-    List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
+  @Path("clusterId")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getClusterId() throws ThirdPartyException {
+    String clusterId = settings.getDELA_CLUSTER_ID();
+    LOGGER.log(Level.INFO, "Cluster id on hops-site: {0}", clusterId);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(clusterId).build();
+  }
+
+  @GET
+  @Path("userId")
+  public Response getUserId(@Context SecurityContext sc) throws ThirdPartyException {
+    String id = String.valueOf(hopsSite.getUserId(sc.getUserPrincipal().getName()));
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(id).build();
+  }
+  
+  public static enum CategoriesFilter {
+    ALL,
+    TOP_RATED,
+    NEW
+  }
+  @GET
+  @Path("datasets")
+  public Response getAllDatasets(
+    @ApiParam(required = true) @QueryParam("filter") CategoriesFilter filter) 
+    throws ThirdPartyException {
+    List<HopsSiteDatasetDTO> datasets;
+    switch(filter) {
+      case ALL : datasets = hopsSite.getAll(); break;
+      case TOP_RATED : datasets = hopsSite.getAll(); break;
+      case NEW : datasets = hopsSite.getAll(); break;
+      default: throw new IllegalArgumentException("unknown filter:" + filter);
+    }
+    
     markLocalDatasets(datasets);
     GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
     };
@@ -93,15 +125,15 @@ public class PublicDatasetService {
   }
 
   @GET
-  @Path("{publicDSId}")
-  public Response getPublicDataset(@PathParam("publicDSId") String publicDSId) throws ThirdPartyException {
+  @Path("datasets/{publicDSId}")
+  public Response getDataset(@PathParam("publicDSId") String publicDSId) throws ThirdPartyException {
     DatasetDTO.Complete datasets = hopsSite.getDataset(publicDSId);
     LOGGER.log(Settings.DELA_DEBUG, "Get a dataset");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasets).build();
   }
 
   @GET
-  @Path("localByPublicId/{publicDSId}")
+  @Path("datasets/{publicDSId}/local")
   public Response getLocalDataset(@PathParam("publicDSId") String publicDSId) {
     Optional<Dataset> datasets = datasetFacade.findByPublicDsId(publicDSId);
     if (!datasets.isPresent()) {
@@ -116,33 +148,11 @@ public class PublicDatasetService {
   }
 
   @GET
-  @Path("topRated")
-  public Response getTopTenPublicDatasets() throws ThirdPartyException {
-    List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
-    markLocalDatasets(datasets);
-    GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
-    };
-    LOGGER.log(Settings.DELA_DEBUG, "Get all top rated datasets");
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasetsJson).build();
-  }
-
-  @GET
-  @Path("new")
-  public Response getNewPublicDatasets() throws ThirdPartyException {
-    List<HopsSiteDatasetDTO> datasets = hopsSite.getAll();
-    markLocalDatasets(datasets);
-    GenericEntity<List<HopsSiteDatasetDTO>> datasetsJson = new GenericEntity<List<HopsSiteDatasetDTO>>(datasets) {
-    };
-    LOGGER.log(Settings.DELA_DEBUG, "Get all top rated datasets");
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasetsJson).build();
-  }
-
-  @GET
-  @Path("displayCategories")
+  @Path("categories")
   public Response getDisplayCategories() {
-    CategoryDTO categoryAll = new CategoryDTO("all", "All", false);
-    CategoryDTO categoryNew = new CategoryDTO("new", "Recently added", false);
-    CategoryDTO categoryTopRated = new CategoryDTO("topRated", "Top Rated", false);
+    CategoryDTO categoryAll = new CategoryDTO(CategoriesFilter.ALL.name(), "All", false);
+    CategoryDTO categoryNew = new CategoryDTO(CategoriesFilter.NEW.name(), "Recently added", false);
+    CategoryDTO categoryTopRated = new CategoryDTO(CategoriesFilter.TOP_RATED.name(), "Top Rated", false);
     List<CategoryDTO> categories = Arrays.asList(categoryAll, categoryNew, categoryTopRated);
     GenericEntity<List<CategoryDTO>> categoriesEntity = new GenericEntity<List<CategoryDTO>>(categories) {
     };
@@ -150,20 +160,8 @@ public class PublicDatasetService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(categoriesEntity).build();
   }
 
-  @GET
-  @Path("categories")
-  public Response getAllCategories() {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @GET
-  @Path("byCategory/{category}")
-  public Response getPublicDatasetsByCategory(@PathParam("category") String category) {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
   @POST
-  @Path("{publicDSId}/issue")
+  @Path("datasets/{publicDSId}/issue")
   public Response addDatasetIssue(@PathParam("publicDSId") String publicDSId, DatasetIssueReqDTO datasetIssueReq,
           @Context SecurityContext sc) throws ThirdPartyException {
     if (datasetIssueReq == null) {
@@ -180,45 +178,13 @@ public class PublicDatasetService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_MODIFIED).build();
   }
 
-  @GET
-  @Path("role")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getRole() throws ThirdPartyException {
-    String role = hopsSite.getRole();
-    LOGGER.log(Level.INFO, "Cluster role on hops-site: {0}", role);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(role).build();
-  }
-
-  @GET
-  @Path("clusterId")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getClusterId() throws ThirdPartyException {
-    String clusterId = settings.getDELA_CLUSTER_ID();
-    LOGGER.log(Level.INFO, "Cluster id on hops-site: {0}", clusterId);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(clusterId).build();
-  }
-
-  @GET
-  @Path("userId")
-  public Response getUserId(@Context SecurityContext sc) throws ThirdPartyException {
-    String id = hopsSite.getUserId(sc.getUserPrincipal().getName());
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(id).build();
-  }
-
-  @GET
-  @Path("user")
-  public Response getUser(@Context SecurityContext sc) throws ThirdPartyException {
-    UserDTO.Complete user = hopsSite.getUser(sc.getUserPrincipal().getName());
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(user).build();
-  }
-
-  @Path("{publicDSId}/comments")
+  @Path("datasets/{publicDSId}/comments")
   public CommentService getComments(@PathParam("publicDSId") String publicDSId) {
     this.commentService.setPublicDSId(publicDSId);
     return this.commentService;
   }
 
-  @Path("{publicDSId}/rating")
+  @Path("datasets/{publicDSId}/rating")
   public RatingService getRating(@PathParam("publicDSId") String publicDSId) {
     this.ratingService.setPublicDSId(publicDSId);
     return this.ratingService;

@@ -5,7 +5,7 @@ import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
-import io.hops.hopsworks.dela.hopssite.HopsSiteController;
+import io.hops.hopsworks.dela.hopssite.HopssiteController;
 import io.hops.hopsworks.util.SettingsHelper;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -44,7 +44,7 @@ public class DelaHeartbeatWorker {
   @EJB
   private DelaStateController delaStateCtrl;
   @EJB
-  private HopsSiteController hopsSiteProxy;
+  private HopssiteController hopsSiteProxy;
   @EJB
   private TransferDelaController delaCtrl;
 

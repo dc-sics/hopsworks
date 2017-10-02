@@ -1,10 +1,10 @@
 angular.module('hopsWorksApp')
         .controller('ViewSearchResultCtrl', ['$scope', '$uibModalInstance',
           'RequestService', 'DataSetService', 'growl', 'response',
-          'result', 'projects', '$showdown', 'DelaService', 'DelaGService', 'PublicDatasetService',
+          'result', 'projects', '$showdown', 'DelaProjectService', 'DelaService', 'HopssiteService',
           'ProjectService', 'ModalService', '$routeParams', '$location', '$rootScope',
           function ($scope, $uibModalInstance, RequestService, DataSetService,
-                  growl, response, result, projects, $showdown, DelaService, DelaGService, PublicDatasetService,
+                  growl, response, result, projects, $showdown, DelaProjectService, DelaService, HopssiteService,
                   ProjectService, ModalService, $routeParams, $location, $rootScope) {
             var self = this;
             self.request = {'inodeId': "", 'projectId': "", 'message': ""};
@@ -86,8 +86,8 @@ angular.module('hopsWorksApp')
                   if (error.data && error.data.details) {
                     growl.error(error.data.details, {title: 'Error', ttl: 1000});
                   }
-                  self.delaService = new DelaService(self.request.projectId);
-                  self.delaService.cancelByPublicDSId(result.publicId).then(function (success) {
+                  self.delaService = new DelaProjectService(self.request.projectId);
+                  self.delaService.cancel(result.publicId, false).then(function (success) {
                     growl.info("Download cancelled.", {title: 'Info', ttl: 1000});
                   }, function (error) {
                     growl.warning(error, {title: 'Warning', ttl: 1000});
@@ -111,7 +111,7 @@ angular.module('hopsWorksApp')
               if (self.content.localDataset) {
                 self.spinner = true;
                 console.log("getReadme view search result: ", self.content);
-                PublicDatasetService.getReadmeByInode(self.content.id).then(
+                HopssiteService.getReadmeByInode(self.content.id).then(
                   function (success) {
                     var content = success.data.content;
                     self.spinner = false;
@@ -124,7 +124,7 @@ angular.module('hopsWorksApp')
                 });
               } else {
                 self.spinner = true;
-                DelaGService.getReadme(self.content.publicId, self.content.bootstrap).then(function (success) {
+                DelaService.getReadme(self.content.publicId, self.content.bootstrap).then(function (success) {
                   self.spinner = false;
                   var content = success.data.content;
                   $scope.readme = $showdown.makeHtml(content);
