@@ -313,6 +313,7 @@ public class JupyterConfig {
                       startsWith("tensorflow")),
                   "jupyter_home", this.confDirPath,
                   "project", this.project.getName(),
+                  "mode", js.getMode(),
                   "nn_endpoint", this.nameNodeEndpoint,
                   "spark_user", this.settings.getSparkUser(),
                   "java_home", this.settings.getJavaHome(),

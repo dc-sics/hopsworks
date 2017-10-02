@@ -1,19 +1,20 @@
 package io.hops.hopsworks.common.dao.jobs.description;
 
+import java.io.Serializable;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class TfUrlsDTO {
+public class YarnAppUrlsDTO implements Serializable {
 
   String name;
-  String tbUrl;
+  String url;
 
-  public TfUrlsDTO() {
+  public YarnAppUrlsDTO() {
   }
 
-  public TfUrlsDTO(String name, String tbUrl) {
+  public YarnAppUrlsDTO(String name, String url) {
     this.name = name;
-    this.tbUrl = tbUrl;
+    this.url = url;
   }
 
   public String getName() {
@@ -24,12 +25,12 @@ public class TfUrlsDTO {
     this.name = name;
   }
 
-  public String getTbUrl() {
-    return tbUrl;
+  public String getUrl() {
+    return url;
   }
 
-  public void setTbUrl(String tbUrl) {
-    this.tbUrl = tbUrl;
+  public void setUrl(String url) {
+    this.url = url;
   }
 
 }

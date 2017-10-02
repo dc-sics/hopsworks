@@ -142,8 +142,8 @@ angular.module('hopsWorksApp')
                * @param {type} jobId
                * @returns {unresolved} The address of the job ui.
                */
-              getExecutionUI: function (projectId, appId) {
-                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/ui');
+              getExecutionUI: function (projectId, appId, isLivy) {
+                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/ui/' + isLivy);
               },
               
               /* Get the tensorboard URLs for the appid.

@@ -57,8 +57,15 @@ public class TensorboardProxyServlet extends ProxyServlet {
       HttpServletResponse servletResponse)
       throws ServletException, IOException {
     String email = servletRequest.getUserPrincipal().getName();
-    if (servletRequest.getParameterMap().containsKey("jobType")) {
-      jobType = servletRequest.getParameterMap().get("jobType")[0];
+//    if (servletRequest.getParameterMap().containsKey("jobType")) {
+//      jobType = servletRequest.getParameterMap().get("jobType")[0];
+//    }
+    String url = "";
+    if (servletRequest.getParameterMap().containsKey("url")) {
+      url = servletRequest.getParameterMap().get("url")[0];
+    } else {
+      servletResponse.sendError(Response.Status.BAD_REQUEST.getStatusCode(),
+          "No redirect URL supplied for the tensorboard");
     }
     String trackingUrl;
     Pattern pattern = Pattern.compile("(application_.*?_\\d*)");
@@ -122,7 +129,9 @@ public class TensorboardProxyServlet extends ProxyServlet {
         sendErrorResponse(servletResponse, "This tensorboard is not running right now");
         return;
       }
-      targetUri = uri;
+//      targetUri = uri;
+//      url = url.replace("\/", "/");
+      targetUri = url;
       try {
         targetUriObj = new URI(targetUri);
       } catch (Exception e) {

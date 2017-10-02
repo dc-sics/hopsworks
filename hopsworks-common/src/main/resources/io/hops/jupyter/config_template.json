@@ -45,7 +45,7 @@
     "executorCores": %%executor_cores%%,
     "executorMemory": "%%executor_memory%%",
     "proxyUser": "%%hdfs_user%%",
-    "name": "remotesparkmagics-jupyter",
+    "name": "remotesparkmagics-jupyter-%%mode%%",
     "queue": "%%yarn_queue%%",
     "archives": [%%archives%%],
     "jars": [%%jars%%],

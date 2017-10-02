@@ -40,6 +40,17 @@ angular.module('hopsWorksApp')
               {id: 5, name: 'ERROR'}
             ];
             self.logLevelSelected;
+            self.job = {'type': '',
+                        'name': '',
+                        'id': '',
+                        'project': 
+                                  { 'name': '',
+                                    'id': self.projectId
+                                  }
+                      };
+
+
+
 
             self.changeLogLevel = function () {
               self.val.logLevel = self.logLevelSelected.name;
