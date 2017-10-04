@@ -425,6 +425,10 @@ public class JobService {
         try {
           in = fs.open(new org.apache.hadoop.fs.Path(status.getPath().toString()));
           String url = IOUtils.toString(in, "UTF-8");
+          int prefix = url.indexOf("http://");
+          if (prefix != -1) {
+            url = url.substring("http://".length());
+          }
           String name = status.getPath().getName();
           urls.add(new YarnAppUrlsDTO(name, url));
         } catch (Exception e) {
@@ -460,7 +464,6 @@ public class JobService {
    */
   @GET
   @Path("/{appId}/ui/{isLivy}")
-//  @Produces(MediaType.TEXT_PLAIN)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getJobUI(@PathParam("appId") String appId,
@@ -481,16 +484,13 @@ public class JobService {
       if (isLivy.compareToIgnoreCase("true") == 0) {
         YarnApplicationstate appStates;
         appStates = appStateBean.findByAppId(appId);
-        if (appStates != null && appStates.getAppname().contains("TENSORFLOW")) {
+        if (appStates != null && appStates.getAppname().toUpperCase().contains("TENSORFLOW")) {
           urls = getTensorboardUrls(hdfsUser, appId);
+          isTensorflow = true;
         }
-
-      } else {
-        isTensorflow = true;
-      }
+      } 
 
       if (!isTensorflow) {
-
         String trackingUrl = appAttemptStateFacade.findTrackingUrlByAppId(appId);
         if (trackingUrl != null && !trackingUrl.isEmpty()) {
           trackingUrl = "/hopsworks-api/api/project/" + project.getId() + "/jobs/"

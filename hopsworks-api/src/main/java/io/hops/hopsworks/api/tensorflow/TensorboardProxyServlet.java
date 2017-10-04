@@ -1,6 +1,5 @@
 package io.hops.hopsworks.api.tensorflow;
 
-import com.google.common.base.Strings;
 import io.hops.hopsworks.api.kibana.ProxyServlet;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationAttemptStateFacade;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstate;
@@ -11,7 +10,6 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.project.ProjectDTO;
 import java.io.BufferedReader;
@@ -21,6 +19,8 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -48,25 +48,48 @@ public class TensorboardProxyServlet extends ProxyServlet {
   private ProjectController projectController;
   @EJB
   private TensorflowFacade tensorflowFacade;
+  
+  private String hostPortPair = "";
+  private String uriToFinish = "/";
 
   private String jobType; //TFSPARK or TENSORFLOW
   private final static Logger LOGGER = Logger.getLogger(TensorboardProxyServlet.class.getName());
 
+  private static final HashSet<String> PASS_THROUGH_HEADERS
+      = new HashSet<String>(
+          Arrays
+              .asList("User-Agent", "user-agent", "Accept", "accept",
+                  "Accept-Encoding", "accept-encoding",
+                  "Accept-Language",
+                  "accept-language",
+                  "Accept-Charset", "accept-charset"));
+
+  
+  // A request will come in with the format: 
+  // 
+  // 
   @Override
   protected void service(HttpServletRequest servletRequest,
       HttpServletResponse servletResponse)
       throws ServletException, IOException {
     String email = servletRequest.getUserPrincipal().getName();
-//    if (servletRequest.getParameterMap().containsKey("jobType")) {
-//      jobType = servletRequest.getParameterMap().get("jobType")[0];
-//    }
-    String url = "";
-    if (servletRequest.getParameterMap().containsKey("url")) {
-      url = servletRequest.getParameterMap().get("url")[0];
-    } else {
-      servletResponse.sendError(Response.Status.BAD_REQUEST.getStatusCode(),
-          "No redirect URL supplied for the tensorboard");
+    LOGGER.log(Level.INFO, "Request URL: {0}", servletRequest.getRequestURL());
+    LOGGER.log(Level.INFO, "Request URI: {0}", servletRequest.getRequestURI());
+    String uri = servletRequest.getRequestURI();
+    // valid hostname regex: 
+    // https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
+    Pattern urlPattern = Pattern.compile("([a-zA-Z0-9\\-\\.]{2,255}:[0-9]{4,6})(/.*$)");
+    Matcher urlMatcher = urlPattern.matcher(uri);
+    hostPortPair = "";
+    uriToFinish = "/";
+    if (urlMatcher.find()) {
+      hostPortPair = urlMatcher.group(1);
+      uriToFinish = urlMatcher.group(2);
     }
+    if (hostPortPair.isEmpty()) {
+      throw new ServletException("Couldn't extract host:port from: " + servletRequest.getRequestURI());
+    }
+
     String trackingUrl;
     Pattern pattern = Pattern.compile("(application_.*?_\\d*)");
     Matcher matcher = pattern.matcher(servletRequest.getRequestURI());
@@ -106,39 +129,21 @@ public class TensorboardProxyServlet extends ProxyServlet {
         sendErrorResponse(servletResponse, "This tensorboard has finished running");
         return;
       }
-      //get tensorboard address from hdfs file
-      String uri = null;
-      if (!Strings.isNullOrEmpty(jobType) && jobType.equalsIgnoreCase(JobType.TENSORFLOW.toString())) {
-        //Get amTrackingUri of distributed tensorflow
-        try {
-          uri = getHTML(trackingUrl + "/tensorboard");
-        } catch (Exception ex) {
-          LOGGER.log(Level.SEVERE, "Could not get TensorBoard URL", ex);
-        }
-        //TensorFlow ApplicationMaster returns a list of tensorboards, so we must parse it
-        //Currently it returns a single tensorboard
-        if (Strings.isNullOrEmpty(uri)) {
-          sendErrorResponse(servletResponse, "This tensorboard is not running right now");
-          return;
-        }
-        uri = "http://" + uri.replace("\"", "").replace("[", "").replace("]", "");
-      } else {
-        uri = tensorflowFacade.getTensorboardURI(appId, projectName);
-      }
-      if (uri == null) {
-        sendErrorResponse(servletResponse, "This tensorboard is not running right now");
-        return;
-      }
-//      targetUri = uri;
-//      url = url.replace("\/", "/");
-      targetUri = url;
+      targetUri = uriToFinish;
+
+      String theHost = "http://" + hostPortPair;
+      URI targetUriHost;
       try {
         targetUriObj = new URI(targetUri);
+        targetUriHost = new URI(theHost);
       } catch (Exception e) {
         throw new ServletException("Trying to process targetUri init parameter: "
             + e, e);
       }
-      targetHost = URIUtils.extractHost(targetUriObj);
+      targetHost = URIUtils.extractHost(targetUriHost);
+      servletRequest.setAttribute(ATTR_TARGET_URI, targetUri);
+      servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
+
       try {
         super.service(servletRequest, servletResponse);
       } catch (IOException ex) {
@@ -173,13 +178,15 @@ public class TensorboardProxyServlet extends ProxyServlet {
    */
   protected String rewriteUrlFromRequest(HttpServletRequest servletRequest) {
     StringBuilder uri = new StringBuilder(500);
-    uri.append(getTargetUri(servletRequest));
+    String theUri = getTargetUri(servletRequest);
+    uri.append(theUri);
     // Handle the path given to the servlet
     if (servletRequest.getPathInfo() != null) {//ex: /my/path.html
       String pathInfo = servletRequest.getPathInfo();
       pathInfo = pathInfo.substring(1);
-      if (pathInfo.contains("/")) {
-        pathInfo = pathInfo.substring(pathInfo.indexOf("/"));
+      String targetUrl = hostPortPair + uriToFinish;
+      if (pathInfo.contains(targetUrl)) {
+        pathInfo = pathInfo.substring(pathInfo.indexOf(targetUrl)+ targetUrl.length());
       } else {
         pathInfo = "";
       }

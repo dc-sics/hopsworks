@@ -23,7 +23,9 @@ angular.module('hopsWorksApp')
             self.loading = false;
             self.loadingText = "";
             self.sessions = [];
+            self.session;
             self.tfExecutorId;
+            
             var startLoading = function (label) {
               self.loading = true;
               self.loadingText = label;
@@ -63,6 +65,7 @@ angular.module('hopsWorksApp')
 //              if (self.jobName != undefined && self.jobName != false && self.jobName != "") {
                 self.job = StorageService.recover(self.projectId + "_jobui_" + self.jobName);
                 StorageService.store(self.projectId + "_jobui_" + self.jobName, self.job);
+                self.jobType = self.job.jobType;
               }
               if (self.job || self.appId) {
                 console.log("Job object found was: ");
@@ -72,46 +75,28 @@ angular.module('hopsWorksApp')
               }
             };
 
-//            var tfInt = function() {
-//              
-//              JobService.getTensorboardUIs(self.projectId, self.appId).then(
-//                      function (success) {
-//                        self.tfSessions = success.data;
-//                        self.current = "jobUI";
-//                        stopLoading();
-////                         $timeout(stopLoading(), 4000);
-//                      }, function (error) {
-////                          if (iframe) {
-////                            iframe.src = $sce.trustAsResourceUrl(self.ui);
-////                          }
-////                          $timeout(stopLoading(                growl.error(error.data.errorMsg, {title: 'Error fetching tensorboard ui.', ttl: 15000});
-//                stopLoading();
-//              }
-//              );              
-//              
-//            };
-            
+
             var getJobUIInt = function () {
 
               JobService.getExecutionUI(self.projectId, self.appId, self.isLivy).then(
                       function (success) {
-                        self.session = success.data;
+                        self.sessions = success.data;
                         var name;
                         if (self.sessions.length > 0) {
-                          if (self.sessions[0].name === "spark") {
-                            self.ui = self.sessions[0].url;
+                          self.session = self.sessions[0];
+                          if (self.session.name === "spark") {
+                            self.ui = self.session.url;
+                            self.current = "jobUI";
                           } else {
+//                            self.job.type = "TENSORFLOW";
                             // https://stackoverflow.com/questions/332872/encode-url-in-javascript
-                             self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType=TENSORFLOW&url=" 
-                                     + encodeURIComponent(self.sessions[0].url);
+                            self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/" +
+                                    self.session.url + "/";
+//                            ?jobType=TENSORFLOW";
+                            self.current = "tensorflowUI";
                           }
                         }
-                        
-//                        if (self.job != undefined && self.job.jobType === "TENSORFLOW") {
-//                          self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType=" + self.job.jobType;
-//                            tfInt();
-//                        }
-                        self.current = "jobUI";
+
                         if (self.ui !== "") {
                           var iframe = document.getElementById('ui_iframe');
                         }
@@ -251,14 +236,14 @@ angular.module('hopsWorksApp')
               // The rest of the logic is handled by vizopsCtrl.js
               stopLoading();
             };
-            self.tfUI = function () {
+            self.tfUI = function (id) {
               startLoading("Loading Tensorboard...");
-              getAppId(tensorboardInt);
+//              getAppId(tensorboardInt);
+              tensorboardInt(id);
             };
-            var tensorboardInt = function () {
-//              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType=" + self.job.jobType + "/" + self.tfSessions[self.tfExecutorId].url;
-              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/?jobType=" + self.job.jobType;
-              self.current = "tensorboard";
+            var tensorboardInt = function (tfSession) {
+              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/" + tfSession.url;
+              self.current = "tensorboardUI";
               var iframe = document.getElementById('ui_iframe');
               iframe.onload = function () {
                 stopLoading();
@@ -267,9 +252,9 @@ angular.module('hopsWorksApp')
                 iframe.src = $sce.trustAsResourceUrl(self.ui);
               }
             };
-            
+
             getJobUI();
-            
+
             self.backToHome = function () {
               if (self.jobName != undefined && self.jobName != false && self.jobName != "") {
                 StorageService.store(self.projectId + "_jobui_" + self.jobName, self.job);
@@ -288,8 +273,8 @@ angular.module('hopsWorksApp')
                 self.yarnUI();
               } else if (self.current === "kibanaUI") {
                 self.kibanaUI();
-              } else if (self.current === "tensorboard") {
-                self.tfUI();
+              } else if (self.current === "tensorboardUI") {
+                self.tfUI(self.session);
               } else if (ifram !== null) {
                 ifram.contentWindow.location.reload();
               }

@@ -69,11 +69,11 @@
                                             class="btn btn-primary btn-md fa fa-cubes"
                                             ng-if="jobUICtrl.job.jobType === 'TFSPARK' || jobUICtrl.job.jobType === 'TENSORFLOW'"> Tensorboard
                                     </button>-->
-                  <div ng-repeat="tf in tfSessions" >
+                  <div ng-repeat="tf in jobUiCtrl.sessions" >
                     <span class="field-info" uib-tooltip="Show tensorboard" style="padding-top: 5px;padding-left:3px">
                       <button style="" ng-click="jobUICtrl.tfUI(tf);  $event.stopPropagation();"  
                               class="btn btn-primary btn-md fa fa-cubes"
-                              ng-if="jobUICtrl.job.jobType === 'TFSPARK' || jobUICtrl.job.jobType === 'TENSORFLOW'"> 
+                              ng-if="jobUICtrl.current === 'tensorflowUI'"> 
                         {{tf}}
                       </button>
                     </span>
@@ -98,7 +98,7 @@
                 </span>
               </div>
               <div ng-if="jobUICtrl.ui !== '' && jobUICtrl.current !== 'vizopsUI'">
-                <iframe id="ui_iframe"  ng-src="{{jobUICtrl.ui}}" width="98%" height ="89%"></iframe> 
+                <iframe style="overflow-y: auto" id="ui_iframe"  ng-src="{{jobUICtrl.ui}}" width="98%" height ="89%"></iframe> 
               </div>
               <div ng-if="jobUICtrl.ui === ''">This job has not run yet</div>
               <div ng-if="jobUICtrl.current === 'vizopsUI'">
