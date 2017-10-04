@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -49,9 +50,8 @@ public class TensorboardProxyServlet extends ProxyServlet {
   @EJB
   private TensorflowFacade tensorflowFacade;
   
-  private String hostPortPair = "";
-  private String uriToFinish = "/";
-
+  private AtomicInteger barrier = new AtomicInteger(1);
+  
   private String jobType; //TFSPARK or TENSORFLOW
   private final static Logger LOGGER = Logger.getLogger(TensorboardProxyServlet.class.getName());
 
@@ -64,9 +64,8 @@ public class TensorboardProxyServlet extends ProxyServlet {
                   "accept-language",
                   "Accept-Charset", "accept-charset"));
 
-  
   // A request will come in with the format: 
-  // 
+  // http://127.0.0.1:8080/hopsworks-api/tensorboard/application_1507065031551_0005/hopsworks0:59460/#graphs
   // 
   @Override
   protected void service(HttpServletRequest servletRequest,
@@ -75,6 +74,13 @@ public class TensorboardProxyServlet extends ProxyServlet {
     String email = servletRequest.getUserPrincipal().getName();
     LOGGER.log(Level.INFO, "Request URL: {0}", servletRequest.getRequestURL());
     LOGGER.log(Level.INFO, "Request URI: {0}", servletRequest.getRequestURI());
+
+    if (barrier.get()==0) {
+      
+    }
+    String hostPortPair = "";
+    String uriToFinish = "/";
+
     String uri = servletRequest.getRequestURI();
     // valid hostname regex: 
     // https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
@@ -143,6 +149,8 @@ public class TensorboardProxyServlet extends ProxyServlet {
       targetHost = URIUtils.extractHost(targetUriHost);
       servletRequest.setAttribute(ATTR_TARGET_URI, targetUri);
       servletRequest.setAttribute(ATTR_TARGET_HOST, targetHost);
+      servletRequest.setAttribute(ATTR_URI_FINISH, uriToFinish);
+      servletRequest.setAttribute(ATTR_HOST_PORT, hostPortPair );
 
       try {
         super.service(servletRequest, servletResponse);
@@ -184,9 +192,10 @@ public class TensorboardProxyServlet extends ProxyServlet {
     if (servletRequest.getPathInfo() != null) {//ex: /my/path.html
       String pathInfo = servletRequest.getPathInfo();
       pathInfo = pathInfo.substring(1);
-      String targetUrl = hostPortPair + uriToFinish;
+      String targetUrl = ((String) servletRequest.getAttribute(ATTR_HOST_PORT)) +
+          ((String) servletRequest.getAttribute(ATTR_URI_FINISH));
       if (pathInfo.contains(targetUrl)) {
-        pathInfo = pathInfo.substring(pathInfo.indexOf(targetUrl)+ targetUrl.length());
+        pathInfo = pathInfo.substring(pathInfo.indexOf(targetUrl) + targetUrl.length());
       } else {
         pathInfo = "";
       }

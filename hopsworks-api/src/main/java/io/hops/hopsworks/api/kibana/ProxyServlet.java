@@ -98,6 +98,10 @@ public class ProxyServlet extends HttpServlet {
       getSimpleName() + ".targetUri";
   protected static final String ATTR_TARGET_HOST = ProxyServlet.class.
       getSimpleName() + ".targetHost";
+  protected static final String ATTR_URI_FINISH = ProxyServlet.class.
+      getSimpleName() + ".uriFinish";
+  protected static final String ATTR_HOST_PORT = ProxyServlet.class.
+      getSimpleName() + ".hostPort";
 
   /*
    * MISC

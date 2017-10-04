@@ -263,12 +263,15 @@ angular.module('hopsWorksApp')
                 iframe.src = $sce.trustAsResourceUrl(self.ui);
               }
 
-              $window.open(self.ui, '_blank');
 
             };
 
             getJobUI();
 
+            self.openUiInNewWindow = function () {
+              $window.open(self.ui, '_blank');
+            };
+            
             self.backToHome = function () {
               if (self.jobName != undefined && self.jobName != false && self.jobName != "") {
                 StorageService.store(self.projectId + "_jobui_" + self.jobName, self.job);

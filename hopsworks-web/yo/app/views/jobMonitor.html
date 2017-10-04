@@ -76,7 +76,7 @@
                           class="btn btn-success btn-md glyphicon glyphicon-refresh">
                   </button>
                 </span>
-                <span ng-if="jobUICtrl.job !== undefined"> 
+                <span ng-if="jobUICtrl.isLivy !== 'true'"> 
                   <ui-select name="appId" theme="select2"  ng-model="jobUICtrl.appId" on-select="jobUICtrl.refresh()">
 
                     <ui-select-match placeholder="Select an appId">{{$select.selected.id}}</ui-select-match>
@@ -86,6 +86,9 @@
                     </ui-select-choices>
                   </ui-select>
                 </span>
+                <span class="pull-right" style="padding-right: 50px; padding-top: 10px;"> 
+                  <a ng-click="jobUICtrl.openUiInNewWindow()"> <i class="glyphicon glyphicon-new-window"></i>Open in new Window</a>
+                </span> 
               </div>
               <div ng-if="jobUICtrl.ui !== '' && jobUICtrl.current !== 'vizopsUI'">
                 <iframe style="overflow-y: auto" id="ui_iframe"  ng-src="{{jobUICtrl.ui}}" width="98%" height ="89%"></iframe> 
