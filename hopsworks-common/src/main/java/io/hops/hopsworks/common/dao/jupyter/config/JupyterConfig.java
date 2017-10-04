@@ -286,6 +286,8 @@ public class JupyterConfig {
           .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
 
       String projectPath = "/Projects/" + this.project.getName();
+      
+      boolean isTensorflow = js.getMode().toLowerCase().contains("tensorflow");
 
       StringBuilder sparkmagic_sb
           = ConfigFileGenerator.
@@ -309,8 +311,7 @@ public class JupyterConfig {
                   "yarn_queue", "default",
                   "num_ps", Integer.toString(js.getNumTfPs()),
                   "num_gpus", Integer.toString(js.getNumTfGpus()),
-                  "tensorflow", Boolean.toString(js.getMode().
-                      startsWith("tensorflow")),
+                  "tensorflow", Boolean.toString(isTensorflow),
                   "jupyter_home", this.confDirPath,
                   "project", this.project.getName(),
                   "mode", js.getMode(),
