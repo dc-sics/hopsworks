@@ -9,6 +9,7 @@ import io.hops.hopsworks.dela.DelaStateController;
 import io.hops.hopsworks.dela.dto.common.UserDTO;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
 import io.hops.hopsworks.dela.dto.hopssite.CommentDTO;
+import io.hops.hopsworks.dela.dto.hopssite.CommentIssueDTO;
 import io.hops.hopsworks.dela.dto.hopssite.DatasetDTO;
 import io.hops.hopsworks.dela.dto.hopssite.HopsSiteDatasetDTO;
 import io.hops.hopsworks.dela.dto.hopssite.RateDTO;
@@ -16,6 +17,7 @@ import io.hops.hopsworks.dela.dto.hopssite.RatingDTO;
 import io.hops.hopsworks.dela.dto.hopssite.SearchServiceDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.util.HopsSiteEndpoints;
+import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.hops.hopsworks.dela.old_hopssite_dto.PopularDatasetJSON;
 import io.hops.hopsworks.util.CertificateHelper;
 import io.hops.hopsworks.util.SettingsHelper;
@@ -487,7 +489,8 @@ public class HopssiteController {
   public List<RateDTO> getAllRatingsByPublicId(String publicId) throws ThirdPartyException {
     delaStateCtrl.checkHopssiteState();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.RATING_SERVICE_ALL_BY_PUBLICID + "/" + publicId, RateDTO.class);
+      ClientWrapper client
+        = getClient(HopsSiteEndpoints.RATING_SERVICE_ALL_BY_PUBLICID + "/" + publicId, RateDTO.class);
       return (List<RateDTO>) client.doGetGenericType();
     } catch (IllegalStateException ise) {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), ise.getMessage(),
