@@ -5,7 +5,6 @@ import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationAttemptStateFacade
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstate;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
-import io.hops.hopsworks.common.dao.tensorflow.TensorflowFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
@@ -19,8 +18,6 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,22 +44,10 @@ public class TensorboardProxyServlet extends ProxyServlet {
   private HdfsUsersController hdfsUsersBean;
   @EJB
   private ProjectController projectController;
-  @EJB
-  private TensorflowFacade tensorflowFacade;
   
   private AtomicInteger barrier = new AtomicInteger(1);
   
-  private String jobType; //TFSPARK or TENSORFLOW
   private final static Logger LOGGER = Logger.getLogger(TensorboardProxyServlet.class.getName());
-
-  private static final HashSet<String> PASS_THROUGH_HEADERS
-      = new HashSet<String>(
-          Arrays
-              .asList("User-Agent", "user-agent", "Accept", "accept",
-                  "Accept-Encoding", "accept-encoding",
-                  "Accept-Language",
-                  "accept-language",
-                  "Accept-Charset", "accept-charset"));
 
   // A request will come in with the format: 
   // http://127.0.0.1:8080/hopsworks-api/tensorboard/application_1507065031551_0005/hopsworks0:59460/#graphs
@@ -78,16 +63,14 @@ public class TensorboardProxyServlet extends ProxyServlet {
     if (barrier.get()==0) {
       
     }
-    String hostPortPair = "";
-    String uriToFinish = "/";
 
     String uri = servletRequest.getRequestURI();
     // valid hostname regex: 
     // https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
     Pattern urlPattern = Pattern.compile("([a-zA-Z0-9\\-\\.]{2,255}:[0-9]{4,6})(/.*$)");
     Matcher urlMatcher = urlPattern.matcher(uri);
-    hostPortPair = "";
-    uriToFinish = "/";
+    String hostPortPair = "";
+    String uriToFinish = "/";
     if (urlMatcher.find()) {
       hostPortPair = urlMatcher.group(1);
       uriToFinish = urlMatcher.group(2);
@@ -96,13 +79,11 @@ public class TensorboardProxyServlet extends ProxyServlet {
       throw new ServletException("Couldn't extract host:port from: " + servletRequest.getRequestURI());
     }
 
-    String trackingUrl;
     Pattern pattern = Pattern.compile("(application_.*?_\\d*)");
     Matcher matcher = pattern.matcher(servletRequest.getRequestURI());
     if (matcher.find()) {
       String appId = matcher.group(1);
       YarnApplicationstate appState = yarnApplicationstateFacade.findByAppId(appId);
-      trackingUrl = yarnApplicationAttemptStateFacade.findTrackingUrlByAppId(appId);
       if (appState == null) {
         servletResponse.sendError(Response.Status.FORBIDDEN.getStatusCode(),
             "You don't have the access right for this application");
@@ -184,6 +165,7 @@ public class TensorboardProxyServlet extends ProxyServlet {
    * considering targetUri.
    * It's used to make the new request.
    */
+  @Override
   protected String rewriteUrlFromRequest(HttpServletRequest servletRequest) {
     StringBuilder uri = new StringBuilder(500);
     String theUri = getTargetUri(servletRequest);
