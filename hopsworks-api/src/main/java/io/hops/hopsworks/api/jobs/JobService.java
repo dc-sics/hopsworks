@@ -457,6 +457,7 @@ public class JobService {
    * Get the Job UI url for the specified job
    * <p>
    * @param appId
+   * @param isLivy
    * @param sc
    * @param req
    * @return url
@@ -480,24 +481,21 @@ public class JobService {
     String hdfsUser = getHdfsUser(sc);
 
     try {
-      boolean isTensorflow = false;
+      String trackingUrl = appAttemptStateFacade.findTrackingUrlByAppId(appId);
+      if (trackingUrl != null && !trackingUrl.isEmpty()) {
+        trackingUrl = "/hopsworks-api/api/project/" + project.getId() + "/jobs/"
+            + appId + "/prox/" + trackingUrl;
+        urls.add(new YarnAppUrlsDTO("spark", trackingUrl));
+      }
+
       if (isLivy.compareToIgnoreCase("true") == 0) {
         YarnApplicationstate appStates;
         appStates = appStateBean.findByAppId(appId);
         if (appStates != null && appStates.getAppname().toUpperCase().contains("TENSORFLOW")) {
-          urls = getTensorboardUrls(hdfsUser, appId);
-          isTensorflow = true;
-        }
-      } 
-
-      if (!isTensorflow) {
-        String trackingUrl = appAttemptStateFacade.findTrackingUrlByAppId(appId);
-        if (trackingUrl != null && !trackingUrl.isEmpty()) {
-          trackingUrl = "/hopsworks-api/api/project/" + project.getId() + "/jobs/"
-              + appId + "/prox/" + trackingUrl;
-          urls.add(new YarnAppUrlsDTO("spark", trackingUrl));
+          urls.addAll(getTensorboardUrls(hdfsUser, appId));
         }
       }
+
     } catch (Exception e) {
       LOGGER.log(Level.SEVERE, "exception while geting job ui " + e.
           getLocalizedMessage(), e);

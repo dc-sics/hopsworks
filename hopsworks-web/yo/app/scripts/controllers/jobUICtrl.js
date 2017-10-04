@@ -4,9 +4,9 @@
  */
 angular.module('hopsWorksApp')
         .controller('JobUICtrl', ['$scope', '$timeout', 'growl', 'JobService', '$interval', 'StorageService',
-          '$routeParams', '$route', 'VizopsService', '$sce',
+          '$routeParams', '$route', 'VizopsService', '$sce', '$window', 
           function ($scope, $timeout, growl, JobService, $interval, StorageService,
-                  $routeParams, $route, VizopsService, $sce) {
+                  $routeParams, $route, VizopsService, $sce, $window) {
 
             var self = this;
             self.job;
@@ -25,7 +25,7 @@ angular.module('hopsWorksApp')
             self.sessions = [];
             self.session;
             self.tfExecutorId;
-            
+
             var startLoading = function (label) {
               self.loading = true;
               self.loadingText = label;
@@ -81,25 +81,29 @@ angular.module('hopsWorksApp')
               JobService.getExecutionUI(self.projectId, self.appId, self.isLivy).then(
                       function (success) {
                         self.sessions = success.data;
-                        var name;
                         if (self.sessions.length > 0) {
                           self.session = self.sessions[0];
-                          if (self.session.name === "spark") {
-                            self.ui = self.session.url;
-                            self.current = "jobUI";
-                          } else {
-//                            self.job.type = "TENSORFLOW";
-                            // https://stackoverflow.com/questions/332872/encode-url-in-javascript
-                            self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/" +
-                                    self.session.url + "/";
-//                            ?jobType=TENSORFLOW";
-                            self.current = "tensorflowUI";
+//                          if (self.session.name === "spark") {
+                          self.ui = self.session.url;
+                          self.current = "jobUI";
+//                          } else {
+//                            // https://stackoverflow.com/questions/332872/encode-url-in-javascript
+//                            self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/" +
+//                                    self.session.url + "/";
+//                            self.current = "tensorboardUI";
+//                          }
+                          if (self.ui !== "") {
+                            var iframe = document.getElementById('ui_iframe');
+                            if (iframe) {
+                              iframe.src = $sce.trustAsResourceUrl(self.ui);
+                            }
+                            $timeout(stopLoading(), 2000);
                           }
                         }
 
-                        if (self.ui !== "") {
-                          var iframe = document.getElementById('ui_iframe');
-                        }
+//                        if (self.ui !== "") {
+//                          var iframe = document.getElementById('ui_iframe');
+//                        }
                       }, function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error fetching ui.', ttl: 15000});
                 stopLoading();
@@ -236,21 +240,31 @@ angular.module('hopsWorksApp')
               // The rest of the logic is handled by vizopsCtrl.js
               stopLoading();
             };
-            self.tfUI = function (id) {
+            self.tfUI = function (tfSession) {
               startLoading("Loading Tensorboard...");
-//              getAppId(tensorboardInt);
-              tensorboardInt(id);
+              getAppId(tensorboardDummy);
+              tensorboardInt(tfSession);
+            };
+            var tensorboardDummy = function () {
             };
             var tensorboardInt = function (tfSession) {
-              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/" + tfSession.url;
+              self.ui = "/hopsworks-api/tensorboard/" + self.appId + "/" + tfSession.url + "/";
               self.current = "tensorboardUI";
+              self.session = tfSession;
               var iframe = document.getElementById('ui_iframe');
-              iframe.onload = function () {
+              if (iframe === null) {
                 stopLoading();
-              };
+              } else {
+                iframe.onload = function () {
+                  stopLoading();
+                };
+              }
               if (iframe !== null) {
                 iframe.src = $sce.trustAsResourceUrl(self.ui);
               }
+
+              $window.open(self.ui, '_blank');
+
             };
 
             getJobUI();
