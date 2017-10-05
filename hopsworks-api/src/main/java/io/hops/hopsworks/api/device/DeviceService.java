@@ -19,12 +19,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
-import com.google.gson.Gson;
-import io.hops.hopsworks.api.filter.AllowedRoles;
-import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.swagger.annotations.Api;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,7 +30,12 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
+import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.hops.hopsworks.common.dao.device.DeviceFacade2;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
@@ -440,7 +439,7 @@ public class DeviceService {
       // The device is authenticated at this point.
 
       // Extracts deviceUuid from jwtToken
-      String deviceUuid = null;
+      String deviceUuid;
       try {
         DecodedJWT decodedJwt = getDecodedJwt(secret, jwtToken);
         deviceUuid = decodedJwt.getClaim(DEVICE_UUID).asString();
@@ -453,9 +452,9 @@ public class DeviceService {
 
       // Extracts the Avro Schema contents from the database
       SchemaDTO schema = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
-
       try {
-        kafkaFacade2.produce(true, projectId, user.getUsername(), topicName, schema.getContents(), records);
+        kafkaFacade2.produce(
+          true, projectId, user.getUsername(), deviceUuid, topicName, schema.getContents(), records);
 
         return successfulJsonResponse(Status.OK, MessageFormat.format(
           "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3}",
