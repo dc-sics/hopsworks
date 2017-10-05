@@ -457,8 +457,8 @@ public class DeviceService {
       // Extracts the Avro Schema contents from the database
       SchemaDTO schema = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
       try {
-        //kafkaFacade2.produce(
-        //  true, projectId, user.getUsername(), deviceUuid, topicName, schema.getContents(), records);
+        kafkaFacade2.produce(
+          true, projectId, user.getUsername(), deviceUuid, topicName, schema.getContents(), records);
 
         return successfulJsonResponse(Status.OK, MessageFormat.format(
           "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3}",
