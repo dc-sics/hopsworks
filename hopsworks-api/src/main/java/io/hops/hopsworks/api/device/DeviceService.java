@@ -10,6 +10,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -55,6 +57,7 @@ import io.hops.hopsworks.common.exception.AppException;
 @Api(value = "Device Service",
     description = "Device Service")
 @Stateless
+@TransactionAttribute(TransactionAttributeType.NEVER)
 public class DeviceService {
 
   private final static Logger logger = Logger.getLogger(DeviceService.class.getName());
@@ -221,6 +224,7 @@ public class DeviceService {
   @Path("/activate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @TransactionAttribute(TransactionAttributeType.NEVER)
   public Response postActivateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
@@ -232,6 +236,7 @@ public class DeviceService {
       List<ProjectTeam> list = new ArrayList<>();
       ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
       pt.setTeamRole(AllowedRoles.DATA_OWNER);
+      pt.setTimestamp(new Date());
       list.add(pt);
       projectController.addMembers(projectFacade.find(projectId), DEFAULT_DEVICE_USER_EMAIL, list);
 
