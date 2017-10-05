@@ -25,6 +25,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.swagger.annotations.Api;
@@ -239,8 +240,8 @@ public class DeviceService {
       pt.setTimestamp(new Date());
       list.add(pt);
 
-      List<String>  failed = projectController.addMembers(
-        projectController.findProjectById(projectId), DEFAULT_DEVICE_USER_EMAIL, list);
+      Project project = projectController.findProjectById(projectId);
+      List<String>  failed = projectController.addMembers(project, project.getOwner().getEmail(), list);
       if (failed != null && failed.size() > 0){
         logger.warning("Failure for user: " + failed.get(0));
       }else{
