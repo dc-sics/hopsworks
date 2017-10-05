@@ -1239,8 +1239,7 @@ public class ProjectController {
             try {
               createCertificates(project, newMember, false);
               if (settings.isPythonKernelEnabled()) {
-                String hdfsUsername = hdfsUsersBean.getHdfsUserName(project, user);
-                jupyterProcessFacade.createPythonKernelForProjectUser(hdfsUsername);
+                jupyterProcessFacade.createPythonKernelForProjectUser(project, newMember);
               }
             } catch (Exception ex) {
               LOGGER.log(Level.SEVERE, "error while creating certificates, jupyter kernel: " + ex.getMessage(), ex);
@@ -1399,6 +1398,10 @@ public class ProjectController {
         ActivityFacade.FLAG_PROJECT, user, project);
     //update role information in project
     addProjectOwner(project.getId(), user.getEmail());
+    if (settings.isPythonKernelEnabled()) {
+      String hdfsUsername = hdfsUsersBean.getHdfsUserName(project, user);
+      jupyterProcessFacade.createPythonKernelForProjectUser(hdfsUsername);
+    }
     LOGGER.log(Level.FINE, "{0} - project created successfully.", project.
         getName());
   }

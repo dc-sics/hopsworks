@@ -7,6 +7,9 @@ import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
 import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.user.UserFacade;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.Settings;
@@ -41,13 +44,13 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.ws.rs.core.Response;
 
-/***
+/**
+ * *
  * This class wraps a bash script with sudo rights that can be executed by the node['hopsworks']['user'].
  * /srv/hops/domains/domain1/bin/jupyter.sh
  * The bash script has several commands with parameters that can be exceuted.
  * This class provides a Java interface for executing the commands.
  */
-
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class JupyterProcessFacade {
@@ -67,7 +70,11 @@ public class JupyterProcessFacade {
   @EJB
   private JupyterFacade jupyterFacade;
   @EJB
+  private ProjectFacade projectFacade;
+  @EJB
   private JupyterSettingsFacade jupyterSettingsFacade;
+  @EJB
+  private UserFacade userFacade;
 
   private String hadoopClasspath = null;
 
@@ -449,20 +456,43 @@ public class JupyterProcessFacade {
     return exitValue == 0;
   }
 
-  
-  
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public void createPythonKernelForProjectUser(String hdfsUser) {
-    int res = executeJupyterCommand("kernel-add", hdfsUser);
+  public int createPythonKernelForProjectUser(String hdfsUser) {
+    String secretPath = "";
+    String projectName = hdfsUsersController.getProjectName(hdfsUser);
+    Project project = projectFacade.findByName(projectName);
+    boolean notFound = true;
+    for (JupyterSettings js : project.getJupyterSettingsCollection()) {
+      if (js.getPrivateDir().contains(hdfsUser)) {
+        secretPath = js.getPrivateDir();
+        notFound = false;
+        break;
+      }
+    }
+    if (notFound) {
+      return -11;
+    }
+    return createPythonKernelForProjectUser(secretPath, hdfsUser);
   }
-  
+
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public void removePythonKernelForProjectUser(String hdfsUser) {
-    int res = executeJupyterCommand("kernel-remove", hdfsUser);
-  }  
-  
-  
-  
+  public int createPythonKernelForProjectUser(Project project, Users user) {
+    JupyterSettings js = jupyterSettingsFacade.findByProjectUser(project.getId(), user.getEmail());
+    String privateDir = this.settings.getStagingDir() + Settings.PRIVATE_DIRS + js.getSecret();
+    String hdfsUser = hdfsUsersController.getHdfsUserName(project, user);
+    return executeJupyterCommand("kernel-add", privateDir, hdfsUser);
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public int createPythonKernelForProjectUser(String privateDir, String hdfsUser) {
+    return executeJupyterCommand("kernel-add", privateDir, hdfsUser);
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public int removePythonKernelForProjectUser(String hdfsUser) {
+    return executeJupyterCommand("kernel-remove", hdfsUser);
+  }
+
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public List<JupyterProject> getAllNotebooks() {
     List<JupyterProject> allNotebooks = jupyterFacade.getAllNotebookServers();
@@ -509,9 +539,6 @@ public class JupyterProcessFacade {
 
     return allNotebooks;
   }
-  
-  
-  
 
   private int executeJupyterCommand(String... args) {
     if (args == null || args.length == 0) {
