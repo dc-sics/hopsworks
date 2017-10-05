@@ -13,12 +13,18 @@ import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -35,12 +41,18 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.ws.rs.core.Response;
 
+/***
+ * This class wraps a bash script with sudo rights that can be executed by the node['hopsworks']['user'].
+ * /srv/hops/domains/domain1/bin/jupyter.sh
+ * The bash script has several commands with parameters that can be exceuted.
+ * This class provides a Java interface for executing the commands.
+ */
+
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
-public class JupyterConfigFactory {
+public class JupyterProcessFacade {
 
-  private static final Logger logger = Logger.getLogger(
-      JupyterConfigFactory.class.getName());
+  private static final Logger logger = Logger.getLogger(JupyterProcessFacade.class.getName());
   private static final String JUPYTER_NOTEBOOK_CONFIG
       = "conf/jupyter_notebook_config.py";
 
@@ -61,19 +73,10 @@ public class JupyterConfigFactory {
 
   @PostConstruct
   public void init() {
-    loadConfig();
   }
 
   @PreDestroy
   public void preDestroy() {
-
-  }
-
-  private void loadConfig() {
-
-  }
-
-  public void initNotebook(Project project, HdfsUsers user) {
 
   }
 
@@ -442,14 +445,88 @@ public class JupyterConfigFactory {
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public boolean pingServerJupyterUser(Long pid) {
+    int exitValue = executeJupyterCommand("ping", pid.toString());
+    return exitValue == 0;
+  }
+
+  
+  
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public void createPythonKernelForProjectUser(String hdfsUser) {
+    int res = executeJupyterCommand("kernel-add", hdfsUser);
+  }
+  
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public void removePythonKernelForProjectUser(String hdfsUser) {
+    int res = executeJupyterCommand("kernel-remove", hdfsUser);
+  }  
+  
+  
+  
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public List<JupyterProject> getAllNotebooks() {
+    List<JupyterProject> allNotebooks = jupyterFacade.getAllNotebookServers();
+
+    executeJupyterCommand("list");
+
+    File file = new File(Settings.JUPYTER_PIDS);
+
+    List<Long> pidsRunning = new ArrayList<>();
+    try {
+      Scanner scanner = new Scanner(file);
+      while (scanner.hasNextLine()) {
+        String line = scanner.nextLine();
+        pidsRunning.add(Long.parseLong(line));
+      }
+    } catch (FileNotFoundException e) {
+      logger.warning("Invalid pids in file: " + Settings.JUPYTER_PIDS);
+    }
+
+    List<Long> pidsOrphaned = new ArrayList<>();
+    pidsOrphaned.addAll(pidsRunning);
+
+    for (Long pid : pidsRunning) {
+      boolean foundPid = false;
+      for (JupyterProject jp : allNotebooks) {
+        if (pid == jp.getPid()) {
+          foundPid = true;
+        }
+        if (foundPid) {
+          pidsOrphaned.remove(pid);
+        }
+      }
+    }
+
+    for (Long pid : pidsOrphaned) {
+      JupyterProject jp = new JupyterProject();
+      jp.setPid(pid);
+      jp.setPort(-1);
+      jp.setLastAccessed(Date.from(Instant.now()));
+      jp.setHdfsUserId(-1);
+      allNotebooks.add(jp);
+    }
+    file.deleteOnExit();
+
+    return allNotebooks;
+  }
+  
+  
+  
+
+  private int executeJupyterCommand(String... args) {
+    if (args == null || args.length == 0) {
+      return -99;
+    }
     int exitValue;
     Integer id = 1;
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
-    String[] command = {"/usr/bin/sudo", prog, "ping", pid.toString()};
+    ArrayList<String> command = new ArrayList<>();
+    command.add("/usr/bin/sudo");
+    command.add(prog);
+    command.addAll(java.util.Arrays.asList(args));
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();
-
       BufferedReader br = new BufferedReader(new InputStreamReader(
           process.getInputStream(), Charset.forName("UTF8")));
       String line;
@@ -465,8 +542,7 @@ public class JupyterConfigFactory {
               toString());
       exitValue = -2;
     }
-
-    return exitValue == 0;
+    return exitValue;
   }
 
 }

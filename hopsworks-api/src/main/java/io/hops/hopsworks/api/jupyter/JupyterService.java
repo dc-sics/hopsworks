@@ -22,7 +22,7 @@ import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
-import io.hops.hopsworks.common.dao.jupyter.config.JupyterConfigFactory;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -70,7 +70,7 @@ public class JupyterService {
   @EJB
   private UserFacade userFacade;
   @EJB
-  private JupyterConfigFactory jupyterConfigFactory;
+  private JupyterProcessFacade jupyterConfigFactory;
   @EJB
   private JupyterFacade jupyterFacade;
   @EJB
