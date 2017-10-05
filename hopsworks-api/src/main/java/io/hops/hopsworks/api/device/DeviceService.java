@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.UUID;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -22,6 +23,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.project.ProjectController;
 import io.swagger.annotations.Api;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -77,6 +80,12 @@ public class DeviceService {
 
   @EJB
   private ProjectTeamFacade projectTeamFacade;
+
+  @EJB
+  private ProjectController projectController;
+
+  @EJB
+  private ProjectFacade projectFacade;
 
   @EJB
   private DeviceFacade2 deviceFacade2;
@@ -219,14 +228,17 @@ public class DeviceService {
       Integer projectId = json.getInt(PROJECT_ID);
       Integer projectTokenDurationInHours = json.getInt(JWT_DURATION_IN_HOURS);
 
+      // Adds the device-user to the project as a Data Owner
+      List<ProjectTeam> list = new ArrayList<>();
+      ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
+      pt.setTeamRole(AllowedRoles.DATA_OWNER);
+      list.add(pt);
+      projectController.addMembers(projectFacade.find(projectId), DEFAULT_DEVICE_USER_EMAIL, list);
+
       // Generates a random UUID to serve as the project secret.
       String projectSecret = UUID.randomUUID().toString();
 
-      // Adds the device-user to the project as a Data Owner
-      ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
-      pt.setTeamRole(AllowedRoles.DATA_OWNER);
-      projectTeamFacade.update(pt);
-
+      // Saves Project Secret
       deviceFacade2.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
