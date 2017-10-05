@@ -1117,8 +1117,8 @@ public class KafkaFacade2 {
   public boolean produce (boolean synchronous, Integer projectId, String username,  String deviceUuid, String topic,
     String schemaContents, JSONArray records) throws Exception{
 
-      return produce(synchronous, projectId, username, deviceUuid, topic, schemaContents,
-        convertJSONArrayToAvroRecords(schemaContents, records));
+    return produce(synchronous, projectId, username, deviceUuid, topic, schemaContents,
+      convertJSONArrayToAvroRecords(schemaContents, records));
   }
 
   public boolean produce(boolean synchronous, Integer projectId, String username, String deviceUuid, String topic,
