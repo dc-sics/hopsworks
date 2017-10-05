@@ -419,6 +419,7 @@ public class DeviceService {
 
     try {
       JSONObject json = new JSONObject(jsonString);
+      logger.info(json.toString());
       Integer projectId = json.getInt(PROJECT_ID);
       String topicName = json.getString(TOPIC);
       JSONArray records = json.getJSONArray(RECORDS);
