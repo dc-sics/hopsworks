@@ -238,7 +238,14 @@ public class DeviceService {
       pt.setTeamRole(AllowedRoles.DATA_OWNER);
       pt.setTimestamp(new Date());
       list.add(pt);
-      projectController.addMembers(projectFacade.find(projectId), DEFAULT_DEVICE_USER_EMAIL, list);
+
+      List<String>  failed = projectController.addMembers(
+        projectController.findProjectById(projectId), DEFAULT_DEVICE_USER_EMAIL, list);
+      if (failed != null && failed.size() > 0){
+        logger.warning("Failure for user: " + failed.get(0));
+      }else{
+        logger.warning("No failure detected");
+      }
 
       // Generates a random UUID to serve as the project secret.
       String projectSecret = UUID.randomUUID().toString();
