@@ -322,15 +322,6 @@ angular.module('hopsWorksApp')
               removeInode(getPath(removePathArray));
             };
 
-            self.isPublic = function (id) {
-              dataSetService.isPublic(id).then(
-                      function (success) {
-                          return success.data;
-                      }, function (error) {
-                      growl.error(error.data.errorMsg, {title: 'Error', ttl: 1000});
-              });
-            };
-
 //            self.deleteSelected = function () {
 //              var removePathArray = self.pathArray.slice(0);
 //              for(var fileName in self.selectedFiles){
