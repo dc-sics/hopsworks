@@ -3,6 +3,7 @@ package io.hops.hopsworks.api.pythonDeps;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.pythonDeps.OpStatus;
@@ -11,11 +12,13 @@ import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepJson;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
 import io.hops.hopsworks.common.dao.pythonDeps.Version;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.common.util.WebCommunication;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -67,8 +70,12 @@ public class PythonDepsService {
   private HostEJB hostsFacade;
 
   private Project project;
+  @EJB
+  private JupyterProcessFacade jupyterProcessFacade;
+  @EJB
+  private UserManager userBean;
 
-  public void setProject(Project project) {
+  public void setProject(Project project) { 
     this.project = project;
   }
 
@@ -125,26 +132,25 @@ public class PythonDepsService {
     project.setPythonVersion(version);
     projectFacade.update(project);
 
-    //For tensorflow tour project, install numpy as well
-    //Wait for env to be enabled
-//    if (project.getName().startsWith("demo_tensorflow")) {
-//      List<OpStatus> opStatuses = pythonDepsFacade.opStatus(project);
-//      int counter = 0;
-//      while ((opStatuses != null && !opStatuses.isEmpty()) && counter < 10) {
-//        try {
-//          Thread.sleep(500);
-//        } catch (InterruptedException ex) {
-//          logger.log(Level.SEVERE, "Error enabled anaconda for demo project", ex);
-//        }
-//        opStatuses = pythonDepsFacade.opStatus(project);
-//        counter++;
-//      }
-//      PythonDepJson numpyLib = new PythonDepJson("default", "numpy", "1.13.1", "false");
-//      pythonDepsFacade.addLibrary(project, numpyLib.getChannelUrl(), numpyLib.getLib(), numpyLib.getVersion());
-//    }
+    if (settings.isPythonKernelEnabled()) {
+      Users user = getUser(sc.getUserPrincipal().getName());
+
+      jupyterProcessFacade.createPythonKernelForProjectUser(project, user);
+    }
+
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
+
+  private Users getUser(String email) throws ThirdPartyException {
+    Users user = userBean.getUserByEmail(email);
+    if (user == null) {
+      throw new ThirdPartyException(Response.Status.FORBIDDEN.getStatusCode(), "user not found",
+        ThirdPartyException.Source.LOCAL, "exception");
+    }
+    return user;
+  }  
+  
   @GET
   @Path("/installed")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
@@ -343,7 +349,7 @@ public class PythonDepsService {
     }
 
     GenericEntity<Collection<LibVersions>> libsFound
-        = new GenericEntity<Collection<LibVersions>>(response) { };
+        = new GenericEntity<Collection<LibVersions>>(response) {  };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         libsFound).build();

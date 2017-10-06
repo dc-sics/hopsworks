@@ -267,8 +267,7 @@ public class JupyterService {
 
         jupyterSettingsFacade.update(jupyterSettings);
 
-        dto = jupyterConfigFactory.startServerAsJupyterUser(project,
-            configSecret, hdfsUser, jupyterSettings);
+        dto = jupyterConfigFactory.startServerAsJupyterUser(project, configSecret, hdfsUser, jupyterSettings);
 
         if (dto == null) {
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -279,7 +278,7 @@ public class JupyterService {
             project_user[1], settings.getHopsworksTmpCertDir(), settings
             .getHdfsTmpCertDir(), dfso, certificateMaterializer,
             settings, false);
-      } catch (IOException ex) {
+      } catch (InterruptedException | IOException ex) {
         Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null, ex);
         try {
           HopsUtils.cleanupCertificatesForUser(project_user[1], project

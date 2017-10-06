@@ -1403,9 +1403,6 @@ public class ProjectController {
         ActivityFacade.FLAG_PROJECT, user, project);
     //update role information in project
     addProjectOwner(project.getId(), user.getEmail());
-    if (settings.isPythonKernelEnabled()) {
-      jupyterProcessFacade.createPythonKernelForProjectUser(project, user);
-    }
     LOGGER.log(Level.FINE, "{0} - project created successfully.", project.
         getName());
   }
