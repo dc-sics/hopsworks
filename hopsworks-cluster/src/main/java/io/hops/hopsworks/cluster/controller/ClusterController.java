@@ -18,10 +18,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -37,6 +33,8 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.security.cert.CertificateException;
+import javax.security.cert.X509Certificate;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -45,7 +43,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 public class ClusterController {
 
   private final static Logger LOGGER = Logger.getLogger(ClusterController.class.getName());
-  private final static String CERT_INDEX_FILE = "index.txt";
   private final static String DATE_FORMAT = "yyMMddHHmmssZ";//010704120856-0700
   private final static String CLUSTER_NAME_PREFIX = "Agent";
   private final static long VALIDATION_KEY_EXPIRY_DATE = 24l;
@@ -121,7 +118,8 @@ public class ClusterController {
     userBean.update(clusterAgent);
   }
 
-  public void validateRequest(String key, HttpServletRequest req, OP_TYPE type) throws ParseException {
+  public void validateRequest(String key, HttpServletRequest req, OP_TYPE type) throws ParseException, IOException,
+      FileNotFoundException, InterruptedException, CertificateException {
     String agentName = extractUsername(key);
     int keyLen = (type.equals(OP_TYPE.REGISTER) ? REG_RANDOM_KEY_LEN : UNREG_RANDOM_KEY_LEN);
     Date date = extractDate(key, keyLen);
@@ -142,7 +140,7 @@ public class ClusterController {
       agent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT.getValue());
       userBean.update(agent);
     } else {
-      removeCluster(agent);
+      revokeCert(agent);
       userBean.remove(agent);
     }
   }
@@ -227,34 +225,42 @@ public class ClusterController {
     return TimeUnit.MILLISECONDS.toHours(diff);
   }
 
-  private void removeCluster(Users agent) {
-
-  }
-
   private void revokeCert(Users agent) throws FileNotFoundException, IOException, InterruptedException,
       CertificateException {
-    File newcertsDir = new File("certs-dir/newcerts/");
+    if (agent == null || agent.getEmail() == null || agent.getEmail().isEmpty()) {
+      throw new IllegalArgumentException("User email required.");
+    }
+    File newcertsDir = new File(settings.getCertsDir() + "newcerts/");
     File[] listOfFiles = newcertsDir.listFiles();
+    File agentPem = null;
     for (int i = 0; i < listOfFiles.length; i++) {
       if (listOfFiles[i].isFile()) {
-       
-      } 
+        if (checkCertOwner(listOfFiles[i], agent.getEmail())) {
+          agentPem = listOfFiles[i];
+        }
+      }
+    }
+    if (agentPem != null) {
+      PKIUtils.revokeCert(agentPem.getPath(), settings.getHopsworksMasterPasswordSsl());
     }
   }
 
-  /**
-   * Retrieve email from line:
-   *
-   * @param line
-   * @return
-   */
+  private boolean checkCertOwner(File pem, String email) throws FileNotFoundException, IOException, 
+      InterruptedException, CertificateException {
+    X509Certificate cert;
+    try (FileInputStream is = new FileInputStream(pem)) {
+      cert = X509Certificate.getInstance(is);
+    }
+    return getEmailFromLine(cert.getSubjectDN().getName()).equals(email);
+  }
+
   private String getEmailFromLine(String line) {
     String email = "emailAddress=";
     int start = line.indexOf(email);
     String tmpName, name = "";
     if (start > -1) {
       tmpName = line.substring(start + email.length());
-      int end = tmpName.indexOf("/");
+      int end = tmpName.indexOf(",");
       if (end > 0) {
         name = tmpName.substring(0, end);
       } else {
