@@ -56,7 +56,7 @@ public class CertSigningService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response register(@Context HttpServletRequest req, String jsonString)
           throws AppException {
-    logger.info("Request to sign host certificate: \n" + jsonString);        
+    logger.info("Request to sign host certificate: \n" + jsonString);
     JSONObject json = new JSONObject(jsonString);
     String pubAgentCert = "no certificate";
     String caPubCert = "no certificate";
@@ -65,7 +65,7 @@ public class CertSigningService {
       try {
         
         pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
-        logger.info("Signed host certificate.");        
+        logger.info("Signed host certificate.");
         caPubCert = Files.toString(new File(settings.getIntermediateCaDir()
                 + "/certs/ca-chain.cert.pem"), Charsets.UTF_8);
       } catch (IOException | InterruptedException ex) {
@@ -133,7 +133,7 @@ public class CertSigningService {
       logger.log(Level.SEVERE, null, ex);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(ex.getMessage()).build();
     }
-    InputStream stream = new FileInputStream(certFile); 
+    InputStream stream = new FileInputStream(certFile);
     StreamingOutput sout = (OutputStream out) -> {
       try {
         int length;

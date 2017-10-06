@@ -109,7 +109,7 @@ public class ZeppelinConfig {
       createSymLinks();//interpreter and lib
       createVisCacheSymlink();//create a symlink to node and npm tar cache.
       newFile = createZeppelinConfFiles(interpreterConf);//create project specific configurations for zeppelin 
-      this.conf = loadConfig();//load the newly created zeppelin-site.xml
+      this.conf = loadConfig();//load the newly jsonCreated zeppelin-site.xml
       this.depResolver = new DependencyResolver(conf.getString(
           ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETER_LOCALREPO));
       InterpreterOutput.limit = conf.getInt(
@@ -141,9 +141,9 @@ public class ZeppelinConfig {
         setNotebookServer(nbs);
       }
     } catch (IOException |RepositoryException|TaskRunnerException e) {
-      if (newDir) { // if the folder was newly created delete it
+      if (newDir) { // if the folder was newly jsonCreated delete it
         removeProjectDirRecursive();
-      } else if (newFile) { // if the conf files were newly created delete them
+      } else if (newFile) { // if the conf files were newly jsonCreated delete them
         removeProjectConfFiles();
       }
       LOGGER.log(Level.SEVERE, "Error in initializing ZeppelinConfig for project: {0}. {1}",
@@ -344,7 +344,7 @@ public class ZeppelinConfig {
     return credentials;
   }
 
-  //returns true if the project dir was created
+  //returns true if the project dir was jsonCreated
   private boolean createZeppelinDirs() {
     File projectDir = new File(projectDirPath);
     boolean newProjectDir = projectDir.mkdirs();
@@ -401,7 +401,7 @@ public class ZeppelinConfig {
     }
   }
 
-  // returns true if one of the conf files were created anew
+  // returns true if one of the conf files were jsonCreated anew
   private boolean createZeppelinConfFiles(String interpreterConf) throws IOException {
     File zeppelin_env_file = new File(confDirPath + ZEPPELIN_ENV_SH);
     File zeppelin_site_xml_file = new File(confDirPath + ZEPPELIN_SITE_XML);

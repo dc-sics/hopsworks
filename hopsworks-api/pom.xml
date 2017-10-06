@@ -156,7 +156,7 @@
     <dependency>
       <groupId>io.swagger</groupId>
       <artifactId>swagger-jersey2-jaxrs</artifactId>
-      <version>1.5.10</version>
+      <version>${swagger.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>

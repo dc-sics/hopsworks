@@ -53,7 +53,7 @@ import javax.ws.rs.core.SecurityContext;
 @Stateless
 @RolesAllowed({"HOPS_ADMIN", "AGENT"})
 @Api(value = "Agent Service",
-        description = "Agent Service")
+        description = "Agent Service", hidden = true)
 public class AgentResource {
 
   @EJB

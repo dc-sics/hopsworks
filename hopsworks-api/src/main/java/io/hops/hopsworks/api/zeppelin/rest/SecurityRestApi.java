@@ -48,7 +48,7 @@ import javax.ws.rs.core.Context;
 @Produces("application/json")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Zeppelin Security",
-        description = "Zeppelin Security")
+        description = "Zeppelin Security", hidden = true)
 public class SecurityRestApi {
 
   private static final Logger LOG = LoggerFactory.getLogger(

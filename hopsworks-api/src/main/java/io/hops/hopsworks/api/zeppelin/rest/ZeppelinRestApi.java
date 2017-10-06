@@ -15,7 +15,7 @@ import org.apache.zeppelin.util.Util;
 @Stateless
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Zeppelin",
-        description = "Zeppelin Api")
+        description = "Zeppelin Api", hidden = true)
 public class ZeppelinRestApi {
 
   public ZeppelinRestApi() {

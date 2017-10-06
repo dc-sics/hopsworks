@@ -177,7 +177,7 @@ public class InterpreterRestApi {
               .createNewSetting(request.getName(), request.getGroup(), request.getDependencies(),
                       request.getOption(), request.getProperties());
       zeppelinResource.persistToDB(this.project);
-      logger.info("new setting created with {}", interpreterSetting.getId());
+      logger.info("new setting jsonCreated with {}", interpreterSetting.getId());
       return new JsonResponse<>(Status.OK, "", interpreterSetting).build();
     } catch (InterpreterException | IOException e) {
       logger.error("Exception in InterpreterRestApi while creating ", e);

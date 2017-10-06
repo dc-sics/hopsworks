@@ -29,7 +29,7 @@ public class ServletAwareConfig extends ServerEndpointConfig.Configurator {
 
     /*
      * store these attributes to servletContext so that they are available to
-     * every created user socket session
+     * every jsonCreated user socket session
      */
     config.getUserProperties().put("protocol", context.getAttribute("protocol"));
   }

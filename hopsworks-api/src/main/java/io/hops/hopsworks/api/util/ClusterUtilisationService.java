@@ -24,7 +24,7 @@ import javax.ws.rs.core.Response;
 @Path("/clusterUtilisation")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Cluster Utilisation Service",
-    description = "Cluster Utilisation Service")
+    description = "Cluster Utilisation Service", hidden = true)
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class ClusterUtilisationService {
 

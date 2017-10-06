@@ -121,7 +121,7 @@ public class TensorFlowService {
           "Incomplete request!");
     }
 
-    json.setSuccessMessage("The Topic has been created.");
+    json.setSuccessMessage("The Topic has been jsonCreated.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         json).build();
   }

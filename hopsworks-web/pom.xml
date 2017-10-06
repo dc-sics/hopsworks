@@ -124,7 +124,7 @@
     <profile>
       <id>swagger-ui</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <activeByDefault>true</activeByDefault>
       </activation> 
       <properties>
         <swagger-ui-version>2.2.8</swagger-ui-version>

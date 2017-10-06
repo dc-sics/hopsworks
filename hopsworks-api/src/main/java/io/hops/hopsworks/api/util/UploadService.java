@@ -96,7 +96,7 @@ public class UploadService {
    * @param username the username of the user uploading the file
    * @param templateId the template to associate the the uploaded file
    * @param role
-   * @throws AppException if new directories need to be created and the name
+   * @throws AppException if new directories need to be jsonCreated and the name
    * is not valid
    */
   public void confFileUpload(DsPath dsPath, String username,
@@ -141,6 +141,15 @@ public class UploadService {
     this.isTemplate = false;
     this.path = dsPath.getFullPath().toString();
   }
+  
+  public void confFileUpload(String fullPath, String userName, int templateId, String role) throws AppException {
+    this.username = userName;
+    this.role = role;
+    this.templateId = templateId;
+    this.isTemplate = false;
+    this.path = fullPath;
+  }
+  
 
 
   /**
@@ -158,7 +167,7 @@ public class UploadService {
       }
     } catch (IOException e) {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
-              "Uploads directory could not be created in the file system");
+              "Uploads directory could not be jsonCreated in the file system");
     } finally {
       if (dfso != null) {
         dfso.close();

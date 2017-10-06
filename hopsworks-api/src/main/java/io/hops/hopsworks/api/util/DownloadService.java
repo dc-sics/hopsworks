@@ -16,7 +16,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
 import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -50,6 +49,7 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.mail.Message;
+import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
@@ -102,7 +102,7 @@ public class DownloadService {
   }
 
   @GET
-  @javax.ws.rs.Path("/{path: .+}")
+  @Path("/{path: .+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response downloadFromHDFS(@PathParam("path") String path, @Context SecurityContext sc) throws AppException,
@@ -121,7 +121,7 @@ public class DownloadService {
     try {
       if (projectUsername != null) {
         udfso = dfs.getDfsOps(projectUsername);
-        stream = udfso.open(new Path(fullPath));
+        stream = udfso.open(new org.apache.hadoop.fs.Path(fullPath));
         Response.ResponseBuilder response = Response.ok(buildOutputStream(stream, udfso));
         response.header("Content-disposition", "attachment;");
         return response.build();
@@ -141,7 +141,7 @@ public class DownloadService {
   }
 
   @GET
-  @javax.ws.rs.Path("/certs/{path: .+}")
+  @Path("/certs/{path: .+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
   public Response downloadCerts(@PathParam("path") String path, @Context SecurityContext sc) throws AppException,

@@ -160,7 +160,7 @@ public class KafkaService {
             Settings.KAFKA_ACL_WILDCARD);
     kafkaFacade.addAclsToTopic(topicDto.getName(), projectId, aclDto);
 
-    json.setSuccessMessage("The Topic has been created.");
+    json.setSuccessMessage("The Topic has been jsonCreated.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             json).build();
   }
@@ -528,7 +528,7 @@ public class KafkaService {
       default:
         kafkaFacade.addSchemaForTopics(schemaData);
 
-        json.setSuccessMessage("Schema for Topic created/updated successfuly");
+        json.setSuccessMessage("Schema for Topic jsonCreated/updated successfuly");
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
                 entity(json).build();
     }

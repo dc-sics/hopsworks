@@ -628,7 +628,7 @@ public class DataSetService {
     }
 
     JsonResponse json = new JsonResponse();
-    json.setSuccessMessage("The Dataset was created successfully.");
+    json.setSuccessMessage("The Dataset was jsonCreated successfully.");
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             json).build();
   }
@@ -681,7 +681,7 @@ public class DataSetService {
         dfs.closeDfsClient(udfso);
       }
     }
-    json.setSuccessMessage("A directory was created at " + fullPath);
+    json.setSuccessMessage("A directory was jsonCreated at " + fullPath);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             json).build();
   }

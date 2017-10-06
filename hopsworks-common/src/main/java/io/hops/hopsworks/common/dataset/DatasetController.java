@@ -495,8 +495,11 @@ public class DatasetController {
       // TODO (Fabio) - add hive dataset path resolution here
     }
 
+    LOGGER.info("XXX: GET DATASET PATH FOR DS: " + ds + " returns: " + path);
     return path;
   }
+  
+  
 
   public Project getOwningProject(Dataset ds) {
     // If the dataset is not a shared one, just return the project
@@ -551,4 +554,6 @@ public class DatasetController {
     }
     return false;
   }
+  
+  
 }

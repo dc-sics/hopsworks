@@ -22,8 +22,7 @@ import javax.ws.rs.core.SecurityContext;
 
 @Path("/endpoint")
 @RequestScoped
-@Api(value = "Endpoint service",
-        description = "Endpoint Rest Api")
+@Api(value = "Endpoint service", description = "Endpoint Rest Api")
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class EndpointService {
 
