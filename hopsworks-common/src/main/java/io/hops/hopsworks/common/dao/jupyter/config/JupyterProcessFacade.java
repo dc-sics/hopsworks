@@ -52,13 +52,11 @@ import javax.ws.rs.core.Response;
  * This class provides a Java interface for executing the commands.
  */
 @Singleton
-@ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
-//@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
+//@ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
+@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class JupyterProcessFacade {
 
   private static final Logger logger = Logger.getLogger(JupyterProcessFacade.class.getName());
-  private static final String JUPYTER_NOTEBOOK_CONFIG
-      = "conf/jupyter_notebook_config.py";
 
   @EJB
   private Settings settings;
