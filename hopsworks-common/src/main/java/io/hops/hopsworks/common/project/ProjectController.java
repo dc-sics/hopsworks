@@ -891,6 +891,11 @@ public class ProjectController {
     cleanup(project, sessionId);
     certificateMaterializer.forceRemoveCertificates(user.getUsername(),
         project.getName(), true);
+
+    if (settings.isPythonKernelEnabled()) {
+      jupyterProcessFacade.removePythonKernelsForProject(project.getName());
+    }
+
   }
 
   public void cleanup(Project project, String sessionId) throws AppException {
@@ -1399,8 +1404,7 @@ public class ProjectController {
     //update role information in project
     addProjectOwner(project.getId(), user.getEmail());
     if (settings.isPythonKernelEnabled()) {
-      String hdfsUsername = hdfsUsersBean.getHdfsUserName(project, user);
-      jupyterProcessFacade.createPythonKernelForProjectUser(hdfsUsername);
+      jupyterProcessFacade.createPythonKernelForProjectUser(project, user);
     }
     LOGGER.log(Level.FINE, "{0} - project created successfully.", project.
         getName());

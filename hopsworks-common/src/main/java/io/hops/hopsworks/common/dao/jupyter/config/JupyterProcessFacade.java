@@ -52,7 +52,8 @@ import javax.ws.rs.core.Response;
  * This class provides a Java interface for executing the commands.
  */
 @Singleton
-@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
+@ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
+//@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
 public class JupyterProcessFacade {
 
   private static final Logger logger = Logger.getLogger(JupyterProcessFacade.class.getName());
@@ -491,6 +492,11 @@ public class JupyterProcessFacade {
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public int removePythonKernelForProjectUser(String hdfsUser) {
     return executeJupyterCommand("kernel-remove", hdfsUser);
+  }
+  
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public int removePythonKernelsForProject(String projectName) {
+    return executeJupyterCommand("kernel-remove", projectName + "*");
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)

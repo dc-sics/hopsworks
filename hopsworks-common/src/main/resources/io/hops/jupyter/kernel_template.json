@@ -7,7 +7,7 @@
   "ipykernel_launcher",
   "-f",
   "{connection_file}",
-  "env" : {
+  "env" :{
      "HADOOP_HOME" : "%%hadoop_home%%",
      "LIBHDFS_OPTS" : "-Xmx96m",
      "PDIR" : "%%secret_dir%%",

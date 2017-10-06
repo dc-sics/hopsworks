@@ -279,9 +279,8 @@ public class JupyterService {
             project_user[1], settings.getHopsworksTmpCertDir(), settings
             .getHdfsTmpCertDir(), dfso, certificateMaterializer,
             settings, false);
-      } catch (InterruptedException | IOException ex) {
-        Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null,
-            ex);
+      } catch (IOException ex) {
+        Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null, ex);
         try {
           HopsUtils.cleanupCertificatesForUser(project_user[1], project
               .getName(), settings.getHdfsTmpCertDir(), dfso,
