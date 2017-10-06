@@ -26,6 +26,36 @@ public class PKIUtils {
     }
     return null;
   }
+  
+  public static void revokeCert(String certFile, String hopsMasterPassword) throws IOException, InterruptedException {
+    logger.info("Revoking certificate...");
+    List<String> cmds = new ArrayList<>();
+    cmds.add("openssl");
+    cmds.add("ca");
+    cmds.add("-passin");
+    cmds.add("pass:" + hopsMasterPassword);
+    cmds.add("-revoke");
+    cmds.add(certFile);
+    
+    StringBuilder sb = new StringBuilder("/usr/bin/");
+    for (String s : cmds) {
+      sb.append(s).append(" ");
+    }
+    logger.info(sb.toString());
+
+    Process process = new ProcessBuilder(cmds).directory(new File("/usr/bin/")).redirectErrorStream(true).start();
+    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF8")));
+    String line;
+    while ((line = br.readLine()) != null) {
+      logger.info(line);
+    }
+    process.waitFor();
+    int exitValue = process.exitValue();
+    if (exitValue != 0) {
+      throw new RuntimeException("Failed to sign certificate. Exit value: " + exitValue);
+    }
+    logger.info("Revoked certificate....");    
+  }
 
   private static boolean verifyCSR(File csr) throws IOException,
           InterruptedException {
