@@ -1046,25 +1046,15 @@ public class KafkaFacade2 {
   private String getAllBootstrapServers() throws Exception {
     // Get all the Kafka broker endpoints (Protocol, IP, port number) from Zookeeper.
     brokers = getBrokerEndpoints();
+    String broker = null;
+
     Iterator<String> iter = brokers.iterator();
-
-    // Remove all Kafka broker endpoints that contain the PLAINTEXT protocol.
     while (iter.hasNext()) {
-      String seed = iter.next();
-      if (seed.split(COLON_SEPARATOR)[0].equalsIgnoreCase(PLAINTEXT_PROTOCOL)) {
-        iter.remove();
-      }
+      String seed = iter.next().split("://")[1];
+      LOG.info("Next broker: " + seed);
+      broker = seed;
     }
-
-    // Combines all Kafka broker locations consisiting of (IP, port number) pairs
-    String brokerAddress = null;
-    for (String address : brokers) {
-      brokerAddress += address.split("://")[1] + ",";
-    }
-    if (brokerAddress!=null) {
-      brokerAddress = brokerAddress.substring(0, brokerAddress.length() - 1);
-    }
-    return brokerAddress;
+    return broker;
   }
 
   private KafkaProducer<String, byte[]> getKafkaProducer(
