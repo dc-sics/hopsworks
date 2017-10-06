@@ -131,7 +131,7 @@ public class SparkYarnRunnerBuilder {
       throw new IOException(ex);
     }
 
-    String stagingPath = "/Projects/ " + project + "/"
+    String stagingPath = "/Projects/" + project + "/"
         + Settings.PROJECT_STAGING_DIR + "/.sparkjobstaging";
     builder.localResourcesBasePath(stagingPath);
 
@@ -272,6 +272,8 @@ public class SparkYarnRunnerBuilder {
     builder.addToAppMasterEnvironment("SPARK_YARN_MODE", "true");
     builder.addToAppMasterEnvironment("SPARK_YARN_STAGING_DIR", stagingPath);
     builder.addToAppMasterEnvironment("SPARK_USER", jobUser);
+    builder.addToAppMasterEnvironment("HADOOP_HOME", settings.getHadoopSymbolicLinkDir());
+    builder.addToAppMasterEnvironment("HADOOP_VERSION", settings.getHadoopVersion());
 
     //Set TensorFlowOnSpark required environment variables
     if (jobType == JobType.TFSPARK) {
