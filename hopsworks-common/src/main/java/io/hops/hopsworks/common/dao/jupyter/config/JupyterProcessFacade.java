@@ -38,6 +38,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
+import javax.ejb.DependsOn;
 import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.ejb.TransactionAttribute;
@@ -52,8 +53,8 @@ import javax.ws.rs.core.Response;
  * This class provides a Java interface for executing the commands.
  */
 @Singleton
-//@ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
-@ConcurrencyManagement(ConcurrencyManagementType.BEAN)
+@ConcurrencyManagement(ConcurrencyManagementType.CONTAINER)
+@DependsOn("Settings")
 public class JupyterProcessFacade {
 
   private static final Logger logger = Logger.getLogger(JupyterProcessFacade.class.getName());
@@ -148,10 +149,8 @@ public class JupyterProcessFacade {
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public JupyterDTO startServerAsJupyterUser(Project project,
-      String secretConfig,
-      String hdfsUser, JupyterSettings js) throws
-      AppException, IOException, InterruptedException {
+  public JupyterDTO startServerAsJupyterUser(Project project, String secretConfig, String hdfsUser, 
+      JupyterSettings js) throws AppException, IOException, InterruptedException {
 
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
 
@@ -180,6 +179,11 @@ public class JupyterProcessFacade {
           hdfsLeFacade.getSingleEndpoint(), settings, port, token, js);
 
       String secretDir = settings.getStagingDir() + Settings.PRIVATE_DIRS + js.getSecret();
+
+      if (settings.isPythonKernelEnabled()) {
+        createPythonKernelForProjectUser(jc.getNotebookPath(), hdfsUser);
+      }
+
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       String[] command
           = {"/usr/bin/sudo", prog, "start", jc.getNotebookPath(),
@@ -471,19 +475,26 @@ public class JupyterProcessFacade {
     if (notFound) {
       return -11;
     }
-    return createPythonKernelForProjectUser(secretPath, hdfsUser);
+    String privateDir = this.settings.getJupyterDir()
+        + Settings.DIR_ROOT + File.separator + project.getName()
+        + File.separator + hdfsUser + File.separator + secretPath;
+
+    return createPythonKernelForProjectUser(privateDir, hdfsUser);
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public int createPythonKernelForProjectUser(Project project, Users user) {
     JupyterSettings js = jupyterSettingsFacade.findByProjectUser(project.getId(), user.getEmail());
-    String privateDir = this.settings.getStagingDir() + Settings.PRIVATE_DIRS + js.getSecret();
     String hdfsUser = hdfsUsersController.getHdfsUserName(project, user);
+
+    String privateDir = this.settings.getJupyterDir()
+        + Settings.DIR_ROOT + File.separator + project.getName()
+        + File.separator + hdfsUser + File.separator + js.getSecret();
+
     return executeJupyterCommand("kernel-add", privateDir, hdfsUser);
   }
 
-  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public int createPythonKernelForProjectUser(String privateDir, String hdfsUser) {
+  private int createPythonKernelForProjectUser(String privateDir, String hdfsUser) {
     return executeJupyterCommand("kernel-add", privateDir, hdfsUser);
   }
 
@@ -491,7 +502,7 @@ public class JupyterProcessFacade {
   public int removePythonKernelForProjectUser(String hdfsUser) {
     return executeJupyterCommand("kernel-remove", hdfsUser);
   }
-  
+
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public int removePythonKernelsForProject(String projectName) {
     return executeJupyterCommand("kernel-remove", projectName + "*");
@@ -550,7 +561,7 @@ public class JupyterProcessFacade {
     }
     int exitValue;
     Integer id = 1;
-    String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
+    String prog = this.settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
     ArrayList<String> command = new ArrayList<>();
     command.add("/usr/bin/sudo");
     command.add(prog);

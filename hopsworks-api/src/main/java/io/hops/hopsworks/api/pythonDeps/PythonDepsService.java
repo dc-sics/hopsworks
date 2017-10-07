@@ -132,12 +132,6 @@ public class PythonDepsService {
     project.setPythonVersion(version);
     projectFacade.update(project);
 
-    if (settings.isPythonKernelEnabled()) {
-      Users user = getUser(sc.getUserPrincipal().getName());
-
-      jupyterProcessFacade.createPythonKernelForProjectUser(project, user);
-    }
-
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
