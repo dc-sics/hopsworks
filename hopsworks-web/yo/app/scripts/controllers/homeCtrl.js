@@ -22,7 +22,7 @@ angular.module('hopsWorksApp')
             self.tutorials = [];
             self.working = [];
             self.user = {};
-            self.showTourTips;
+            self.showTourTips = false;
             self.getTours = function () {
               self.tours = [
                 {'name': 'Spark', 'tip': 'Take a tour of HopsWorks by creating a project and running a Spark job!'},
@@ -272,7 +272,9 @@ angular.module('hopsWorksApp')
 
             self.createExampleProject = function (tourName) {
               $scope.creating[tourName] = true;
-              self.showTourTips = true;
+              if (self.showTourTips === false) {
+                self.toggleTourTips();
+              }
               ProjectService.example({type: tourName}).$promise.then(
                       function (success) {
                         $scope.creating[tourName] = false;
@@ -287,7 +289,7 @@ angular.module('hopsWorksApp')
                           growl.warning("some problem", {title: 'Error', ttl: 10000});
                         }
                       },
-                      function (error) {
+                      function (error) {showTourTips
                         $scope.creating[tourName] = false;
                         growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                       }

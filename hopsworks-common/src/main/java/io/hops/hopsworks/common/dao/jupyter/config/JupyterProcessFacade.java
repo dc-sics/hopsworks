@@ -183,7 +183,7 @@ public class JupyterProcessFacade {
       if (settings.isPythonKernelEnabled()) {
         createPythonKernelForProjectUser(jc.getNotebookPath(), hdfsUser);
       }
-
+      
       String logfile = jc.getLogDirPath() + "/" + hdfsUser + "-" + port + ".log";
       String[] command
           = {"/usr/bin/sudo", prog, "start", jc.getNotebookPath(),
@@ -407,7 +407,7 @@ public class JupyterProcessFacade {
     for (JupyterProject jp : project.getJupyterProjectCollection()) {
       HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
       for (JupyterSettings js : jupyterSettings) {
-        if (hdfsUser.getName().compareTo(js.getJupyterSettingsPK().getTeamMember()) == 0) {
+        if (hdfsUser.getName().compareTo(js.getJupyterSettingsPK().getEmail()) == 0) {
           path = hdfsUser.getName();
           break;
         }
@@ -566,6 +566,7 @@ public class JupyterProcessFacade {
     command.add("/usr/bin/sudo");
     command.add(prog);
     command.addAll(java.util.Arrays.asList(args));
+    logger.log(Level.INFO, Arrays.toString(command.toArray()));
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();

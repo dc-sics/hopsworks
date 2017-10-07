@@ -70,7 +70,7 @@ public class JupyterService {
   @EJB
   private UserFacade userFacade;
   @EJB
-  private JupyterProcessFacade jupyterConfigFactory;
+  private JupyterProcessFacade jupyterProcessFacade;
   @EJB
   private JupyterFacade jupyterFacade;
   @EJB
@@ -203,7 +203,7 @@ public class JupyterService {
           "Could not find any Jupyter notebook server for this project.");
     }
     // Check to make sure the jupyter notebook server is running
-    boolean running = jupyterConfigFactory.pingServerJupyterUser(jp.getPid());
+    boolean running = jupyterProcessFacade.pingServerJupyterUser(jp.getPid());
     // if the notebook is not running but we have a database entry for it,
     // we should remove the DB entry (and restart the notebook server).
     if (!running) {
@@ -267,7 +267,7 @@ public class JupyterService {
 
         jupyterSettingsFacade.update(jupyterSettings);
 
-        dto = jupyterConfigFactory.startServerAsJupyterUser(project, configSecret, hdfsUser, jupyterSettings);
+        dto = jupyterProcessFacade.startServerAsJupyterUser(project, configSecret, hdfsUser, jupyterSettings);
 
         if (dto == null) {
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -323,7 +323,7 @@ public class JupyterService {
   public Response stopAll(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
-    jupyterConfigFactory.stopProject(project);
+    jupyterProcessFacade.stopProject(project);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
@@ -362,10 +362,10 @@ public class JupyterService {
           "Could not find Jupyter entry for user: " + hdfsUser);
     }
     livyService.deleteAllJupyterLivySessions(hdfsUser);
-    String projectPath = jupyterConfigFactory.getJupyterHome(hdfsUser, jp);
+    String projectPath = jupyterProcessFacade.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
-    jupyterConfigFactory.killServerJupyterUser(projectPath, jp.getPid(), jp.
+    jupyterProcessFacade.killServerJupyterUser(projectPath, jp.getPid(), jp.
         getPort());
     // remove the reference to th e server in the DB.
     jupyterFacade.removeNotebookServer(hdfsUser);
