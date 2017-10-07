@@ -1,5 +1,8 @@
 package io.hops.hopsworks.api.device;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -25,10 +28,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.swagger.annotations.Api;
+import org.apache.commons.net.util.Base64;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -478,12 +483,12 @@ public class DeviceService {
 
       // Extracts the default device-user from the database
       Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
+      Project project = projectFacade.find(projectId);
 
       // Extracts the Avro Schema contents from the database
       SchemaDTO schema = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
       try {
-        kafkaFacade2.produce(
-          true, projectId, user.getUsername(), deviceUuid, topicName, schema.getContents(), records);
+        kafkaFacade2.produce(true, project, user, deviceUuid, topicName, schema.getContents(), records);
 
         return successfulJsonResponse(Status.OK, MessageFormat.format(
           "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3}",
