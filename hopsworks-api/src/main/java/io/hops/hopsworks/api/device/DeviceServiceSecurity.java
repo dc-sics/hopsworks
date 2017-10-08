@@ -54,7 +54,7 @@ class DeviceServiceSecurity {
    * @param jwtToken The jwt token
    * @return Returns null if the token is verified or an Unauthorized Response with the reason for the failure.
    */
-   static Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
+  static Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
     try {
       Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
       JWTVerifier verifier = JWT.require(algorithm).build();
