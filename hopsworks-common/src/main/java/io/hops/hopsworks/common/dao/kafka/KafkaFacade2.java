@@ -1,12 +1,9 @@
 package io.hops.hopsworks.common.dao.kafka;
 
-import com.google.common.io.ByteStreams;
-import com.google.gson.Gson;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.Project;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -29,7 +26,6 @@ import javax.persistence.TypedQuery;
 import javax.ws.rs.core.Response;
 
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.user.CertificateMaterializer;
 import io.hops.hopsworks.common.util.BaseHadoopClientsService;
 import io.hops.hopsworks.common.util.Settings;
@@ -37,7 +33,6 @@ import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
 import kafka.common.TopicAlreadyMarkedForDeletionException;
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.commons.net.util.Base64;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import kafka.utils.ZKStringSerializer$;
@@ -68,9 +63,6 @@ import com.twitter.bijection.Injection;
 import com.twitter.bijection.avro.GenericAvroCodecs;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericData;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 
 @Stateless
 public class KafkaFacade2 {
@@ -86,9 +78,6 @@ public class KafkaFacade2 {
 
   @EJB
   private CertsFacade userCerts;
-
-  @EJB
-  private ProjectController projectController;
 
   @EJB
   private ProjectFacade projectsFacade;
@@ -1054,95 +1043,57 @@ public class KafkaFacade2 {
   private String getAllKafkaBootstrapServers() throws Exception {
     // Get all the Kafka broker endpoints (Protocol, IP, port number) from Zookeeper and
     // returns a String with a bunch of IP:port pairs separated with the character ','
-    Iterator<String> iter = getBrokerEndpoints().iterator();
-    StringBuilder builder = new StringBuilder(1000);
-    while (iter.hasNext()) {
-      builder.append(iter.next().split("://")[1]);
-      if (iter.hasNext()){
-        builder.append(",");
+    Iterator<String> iterator = getBrokerEndpoints().iterator();
+    String servers = "";
+    while (iterator.hasNext()) {
+      servers += iterator.next().split("://")[1];
+      if (iterator.hasNext()){
+        servers += ",";
       }
     }
-    return builder.toString();
+    return servers;
   }
 
-  private String keystoreEncode(String keystoreFilePath) throws IOException {
-    FileInputStream kfin = new FileInputStream(new File(keystoreFilePath));
-    byte[] kStoreBlob = ByteStreams.toByteArray(kfin);
-    return Base64.encodeBase64String(kStoreBlob);
-  }
-
-  private KafkaProducer<String, String> getKafkaProducer(Project project, Users user, String bootstrapServers){
-
-    // TODO: Change Trustore and Keystore Location for the certificates (if need be)
-    String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
-      HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());
-
-    String trustStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
-      HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername());
-
-    CertPwDTO certPwDTO = null;
+  private KafkaProducer<String, String> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
     try {
-      certPwDTO = projectController.getProjectSpecificCertPw(user, project.getName(), keystoreEncode(keyStoreFilePath));
+
+      // TODO: Change Trust store and Keys tore Location for the certificates (if need be)
+      String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
+        HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());
+
+      String trustStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
+        HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername());
+
+      Properties props = new Properties();
+      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, getAllKafkaBootstrapServers());
+      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+      //configure the ssl parameters
+      props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, trustStoreFilePath);
+      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,keyStoreFilePath);
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, certPwDTO.getTrustPw());
+      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, certPwDTO.getKeyPw());
+      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, certPwDTO.getKeyPw());
+      return new KafkaProducer<>(props);
     } catch (Exception e) {
       e.printStackTrace();
       LOG.warning(e.getMessage());
       return null;
     }
 
-    Properties props = new Properties();
-    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-    props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-    props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-    //configure the ssl parameters
-    props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-    props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, trustStoreFilePath);
-    props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,keyStoreFilePath);
-    props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, certPwDTO.getTrustPw());
-    props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, certPwDTO.getKeyPw());
-    props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, certPwDTO.getKeyPw());
-    return new KafkaProducer<>(props);
+
   }
 
-  private List<GenericData.Record> convertJSONArrayToAvroRecords(String avroSchemaContents, JSONArray records)
-    throws Exception{
-
-    ArrayList<GenericData.Record> list = new ArrayList<>();
-    Schema.Parser parser = new Schema.Parser();
-    Schema schema = parser.parse(avroSchemaContents);
-
-    // Loop through records
-    for (int i = 0; i < records.length(); i++) {
-      JSONObject object = records.getJSONObject(i);
-      Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
-      Map<String, Object> map = new HashMap<String, Object>();
-      map = (Map<String, Object>) new Gson().fromJson(object.toString(), map.getClass());
-
-      //create the avro message
-      GenericData.Record avroRecord = new GenericData.Record(schema);
-      for (Map.Entry<String, Object> message : map.entrySet()) {
-        avroRecord.put(message.getKey(), message.getValue());
-      }
-      list.add(avroRecord);
-    }
-    return list;
-  }
-
-  public boolean produce (boolean synchronous, Project project,  Users user, String deviceUuid, String topic,
-    String schemaContents, JSONArray records) throws Exception{
-
-    return produce(synchronous, project, user, deviceUuid, topic, schemaContents,
-      convertJSONArrayToAvroRecords(schemaContents, records));
-  }
-
-  public boolean produce(boolean synchronous, Project project, Users user, String deviceUuid, String topic,
-    String schemaContents, List<GenericData.Record> avroRecords) throws Exception{
+  public boolean produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO, String deviceUuid,
+                         String topic, String schemaContents, List<GenericData.Record> avroRecords){
 
     KafkaProducer<String, String> producer = null;
 
     try {
       HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(),
         settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
-      producer = getKafkaProducer(project, user, getAllKafkaBootstrapServers());
+      producer = getKafkaProducer(project, user, certPwDTO);
 
       Schema.Parser parser = new Schema.Parser();
       Schema schema = parser.parse(schemaContents);
@@ -1167,6 +1118,7 @@ public class KafkaFacade2 {
     }
     return true;
   }
+
 
   public class ZookeeperWatcher implements Watcher {
 

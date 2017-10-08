@@ -161,6 +161,12 @@
       <artifactId>influxdb-java</artifactId>
       <version>2.5</version>
     </dependency>
+    <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>bijection-avro_2.10</artifactId>
+      <version>0.9.2</version>
+      <type>jar</type>
+    </dependency>
   </dependencies>
   <build>
     <finalName>hopsworks-api</finalName>

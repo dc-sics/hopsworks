@@ -3,7 +3,7 @@ package io.hops.hopsworks.api.device;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class JsonResp {
+public class DeviceResponse {
   
   private String message;
   
@@ -13,15 +13,15 @@ public class JsonResp {
   
   private String jwt;
   
-  public JsonResp(){
+  public DeviceResponse(){
   }
   
-  public JsonResp(Integer code, String message) {
+  public DeviceResponse(Integer code, String message) {
     this.code = code;
     this.message = message;
   }
   
-  public JsonResp(Integer code, String message, String reason) {
+  public DeviceResponse(Integer code, String message, String reason) {
     this.code = code;
     this.message = message;
     this.reason = reason;
