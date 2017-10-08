@@ -1,8 +1,6 @@
 package io.hops.hopsworks.api.device;
 
 import com.google.gson.Gson;
-import com.twitter.bijection.Injection;
-import com.twitter.bijection.avro.GenericAvroCodecs;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
@@ -26,7 +24,6 @@ public class JsonToAvroConverter {
     // Loop through records
     for (int i = 0; i < records.length(); i++) {
       JSONObject object = records.getJSONObject(i);
-      Injection<GenericRecord, byte[]> recordInjection = GenericAvroCodecs.toBinary(schema);
       Map<String, Object> map = new HashMap<String, Object>();
       map = (Map<String, Object>) new Gson().fromJson(object.toString(), map.getClass());
 
