@@ -27,11 +27,13 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.io.ByteStreams;
+import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.project.ProjectController;
 
+import io.hops.hopsworks.common.user.CertificateMaterializer;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
@@ -79,6 +81,11 @@ public class DeviceService {
 
   private static final String JWT_DURATION_IN_HOURS = "jwtTokenDurationInHours";
 
+  @EJB
+  private CertsFacade userCerts;
+
+  @EJB
+  private CertificateMaterializer certificateMaterializer;
 
   @EJB
   private Settings settings;
@@ -390,6 +397,9 @@ public class DeviceService {
       // Extracts the default device-user from the database
       Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
       Project project = projectFacade.find(projectId);
+
+      HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(),
+        settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
 
       String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
         HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());

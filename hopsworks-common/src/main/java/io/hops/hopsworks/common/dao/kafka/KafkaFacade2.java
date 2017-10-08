@@ -1091,8 +1091,6 @@ public class KafkaFacade2 {
     KafkaProducer<String, String> producer = null;
 
     try {
-      HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(),
-        settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
       producer = getKafkaProducer(project, user, certPwDTO);
 
       Schema.Parser parser = new Schema.Parser();
