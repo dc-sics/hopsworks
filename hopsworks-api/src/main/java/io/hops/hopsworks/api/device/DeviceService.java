@@ -434,17 +434,18 @@ public class DeviceService {
 
   }
 
-  private String keystoreEncode(String keystoreFilePath) {
+  private String keystoreEncode(String keystoreFilePath) throws DeviceServiceException {
     try {
       FileInputStream kfin = new FileInputStream(new File(keystoreFilePath));
       byte[] kStoreBlob = ByteStreams.toByteArray(kfin);
       return Base64.encodeBase64String(kStoreBlob);
     } catch (FileNotFoundException e) {
-      e.printStackTrace();
+      throw new DeviceServiceException(DeviceResponseBuilder.failedJsonResponse(
+        Status.INTERNAL_SERVER_ERROR, "File not found"));
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new DeviceServiceException(DeviceResponseBuilder.failedJsonResponse(
+        Status.INTERNAL_SERVER_ERROR, "File to Byte IO exception"));
     }
-    return null;
   }
 
 }
