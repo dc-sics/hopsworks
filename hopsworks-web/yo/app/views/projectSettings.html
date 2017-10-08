@@ -136,7 +136,7 @@
                       <p>You cannot change the version of python after you have selected enabled the anaconda environment for this project.</p>
                       <p class="lead">
                       <div><span> <label>Enable Python Kernel: 
-                            <input type="checkbox" ng-init="pythonDepsCtrl.pythonKernelEnabled = false" ng-model="pythonDepsCtrl.pythonKernelEnabled"></label>
+                            <input type="checkbox" ng-init="pythonDepsCtrl.pythonKernelEnabled = true" ng-model="pythonDepsCtrl.pythonKernelEnabled"></label>
                       <i class="fa" ng-class="{'fa-exclamation-triangle' : pythonDepsCtrl.pythonKernelEnabled == true, 'fa-info' : pythonDepsCtrl.pythonKernelEnabled == false }" uib-tooltip="Enabling the Python kernel risks that users who are not Data Owners can perform unauthorized copying of data out from a Project." 
                                                           style="margin-left: 10px"></i></span>
                       </div>
