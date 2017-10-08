@@ -402,7 +402,7 @@ public class DeviceService {
         settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
 
       String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
-        HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());
+        HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername());
 
       String base64EncodedKeyStore = keystoreEncode(keyStoreFilePath);
 
