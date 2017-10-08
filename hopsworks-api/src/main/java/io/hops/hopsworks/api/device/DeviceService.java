@@ -360,6 +360,7 @@ public class DeviceService {
   @Path("/produce")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @TransactionAttribute(TransactionAttributeType.NEVER)
   public Response postProduceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
