@@ -46,7 +46,7 @@ import io.hops.hopsworks.api.zeppelin.rest.message.NewParagraphRequest;
 import io.hops.hopsworks.api.zeppelin.rest.message.RunParagraphWithParametersRequest;
 import io.hops.hopsworks.api.zeppelin.server.JsonResponse;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfig;
-import io.hops.hopsworks.api.zeppelin.socket.NotebookServer;
+import io.hops.hopsworks.api.zeppelin.socket.NotebookServerImpl;
 import io.hops.hopsworks.api.zeppelin.types.InterpreterSettingsList;
 import io.hops.hopsworks.api.zeppelin.util.InterpreterBindingUtils;
 import io.hops.hopsworks.api.zeppelin.util.SecurityUtils;
@@ -84,23 +84,19 @@ public class NotebookRestApi {
   
   Gson gson = new Gson();
   private Notebook notebook;
-  private NotebookServer notebookServer;
+  private NotebookServerImpl notebookServer;
   private SearchService noteSearchService;
   private NotebookAuthorization notebookAuthorization;
   private Project project;
-  private ZeppelinConfig zeppelinConf;
-  private String roleInProject;
   private String hdfsUserName;
 
   public NotebookRestApi() {
   }
 
-  public void setParms(Project project, String userRole, String hdfsUserName,
+  public void setParms(Project project, String hdfsUserName,
           ZeppelinConfig zeppelinConf) {
     this.project = project;
-    this.zeppelinConf = zeppelinConf;
     this.hdfsUserName = hdfsUserName;
-    this.roleInProject = userRole;
     this.notebook = zeppelinConf.getNotebook();
     this.notebookServer = zeppelinConf.getNotebookServer();
     this.noteSearchService = zeppelinConf.getNotebookIndex();
@@ -612,8 +608,7 @@ public class NotebookRestApi {
           String interpreterGroup = interpreter.getInterpreterGroup().getId()
               .split(":")[0];
           String username = hdfsUsersController.getUserName(hdfsUserName);
-          if (certificateMaterializer.openedInterpreter(project.getId(),
-              username, interpreterGroup)) {
+          if (certificateMaterializer.openedInterpreter(project.getId(), interpreterGroup)) {
             try {
               HopsUtils.materializeCertificatesForUser(project.getName(),
                   username, settings
