@@ -289,7 +289,7 @@ angular.module('hopsWorksApp')
                           growl.warning("some problem", {title: 'Error', ttl: 10000});
                         }
                       },
-                      function (error) {showTourTips
+                      function (error) {
                         $scope.creating[tourName] = false;
                         growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                       }

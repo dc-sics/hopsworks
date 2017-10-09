@@ -222,7 +222,7 @@ public class ProjectController {
         }
       }
     }
-    LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 1: " + (System.currentTimeMillis() - startTime));
+    LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 1: " + (System.currentTimeMillis() - startTime));
 
     DistributedFileSystemOps dfso = null;
     DistributedFileSystemOps udfso = null;
@@ -255,11 +255,11 @@ public class ProjectController {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), "An error occured when creating the project");
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 2 (hdfs): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 2 (hdfs): " + (System.currentTimeMillis() - startTime));
 
       verifyProject(project, dfso, sessionId);
 
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 3 (verify): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 3 (verify): " + (System.currentTimeMillis() - startTime));
 
       String username = hdfsUsersBean.getHdfsUserName(project, owner);
       if (username == null || username.isEmpty()) {
@@ -280,7 +280,7 @@ public class ProjectController {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), "Error while creating certificates");
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 4 (certs): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 4 (certs): " + (System.currentTimeMillis() - startTime));
 
       udfso = dfs.getDfsOps(username);
       if (udfso == null) {
@@ -299,7 +299,7 @@ public class ProjectController {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), "problem creating project folder");
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 5 (folders): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 5 (folders): " + (System.currentTimeMillis() - startTime));
       if (projectPath == null) {
         cleanup(project, sessionId);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
@@ -318,7 +318,7 @@ public class ProjectController {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), "An error occured when creating the project");
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 6 (inodes): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 6 (inodes): " + (System.currentTimeMillis() - startTime));
 
       //set payment and quotas
       try {
@@ -331,7 +331,7 @@ public class ProjectController {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), "could not set folder quota");
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 7 (quotas): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 7 (quotas): " + (System.currentTimeMillis() - startTime));
 
       try {
         hdfsUsersBean.addProjectFolderOwner(project, dfso);
@@ -346,7 +346,7 @@ public class ProjectController {
         cleanup(project, sessionId);
         throw ex;
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 8 (logs): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 8 (logs): " + (System.currentTimeMillis() - startTime));
 
       // enable services
       for (ProjectServiceEnum service : projectServices) {
@@ -367,7 +367,7 @@ public class ProjectController {
         cleanup(project, sessionId);
         throw ex;
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 9 (members): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 9 (members): " + (System.currentTimeMillis() - startTime));
 
       //Create Template for this project in elasticsearch
       try {
@@ -376,7 +376,7 @@ public class ProjectController {
         LOGGER.log(Level.SEVERE, "Error while adding elasticsearch service for project:" + projectName, ex);
         cleanup(project, sessionId);
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 10 (elastic): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 10 (elastic): " + (System.currentTimeMillis() - startTime));
       return project;
 
     } finally {
@@ -386,7 +386,7 @@ public class ProjectController {
       if (udfso != null) {
         dfs.closeDfsClient(udfso);
       }
-      LOGGER.log(Level.INFO, "PROJECT CREATION TIME. Step 11 (close): " + (System.currentTimeMillis() - startTime));
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 11 (close): " + (System.currentTimeMillis() - startTime));
     }
 
   }
