@@ -131,7 +131,7 @@
                tooltip-placement="bottom" ng-class="clusterUtilCtrl.YarnStatus">
           </span>
         </div>
-        <div class="sidebar-nav-static">          
+        <div class="sidebar-nav-static" ng-show="projectCtrl.showKafka()">          
           <small style="color: #ddd; font-size: 80%;"><em>Kafka status: </em></small>
           <span class="fa fa-circle pull-right" 
                uib-tooltip="If this indicator is orange, your job may encounter problems running.
