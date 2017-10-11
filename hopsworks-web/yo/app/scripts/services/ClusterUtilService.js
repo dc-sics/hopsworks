@@ -17,6 +17,9 @@ angular.module('hopsWorksApp')
               },
               getYarnStatus: function () {
                 return $http.get('/api/kmon/services/YARN');
+              },
+              getKafkaStatus: function () {
+                return $http.get('/api/kmon/services/kafka');
               }
             };
           }]);

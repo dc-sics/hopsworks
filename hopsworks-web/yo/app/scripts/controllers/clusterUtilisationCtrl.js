@@ -127,7 +127,7 @@ angular.module('hopsWorksApp')
             };
 
             var getKafkaStatus = function () {
-              ClusterUtilService.getYarnStatus().then(
+              ClusterUtilService.getKafkaStatus().then(
                       function (success) {
                         var nbInstances = 0;
                         var nbRunningInstances = 0;
