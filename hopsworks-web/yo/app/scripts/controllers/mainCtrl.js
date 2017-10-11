@@ -5,13 +5,13 @@
 
 angular.module('hopsWorksApp')
         .controller('MainCtrl', ['$interval', '$cookies', '$location', '$scope', '$rootScope',
-          'AuthService', 'UtilsService', 'ElasticService', 'DelaService',
-          'DelaGService', 'md5', 'ModalService', 'ProjectService', 'growl',
-          'MessageService', '$routeParams', '$window', 'PublicDatasetService',
+          'AuthService', 'UtilsService', 'ElasticService', 'DelaProjectService',
+          'DelaService', 'md5', 'ModalService', 'ProjectService', 'growl',
+          'MessageService', '$routeParams', '$window', 'HopssiteService',
           function ($interval, $cookies, $location, $scope, $rootScope, AuthService, UtilsService,
-                  ElasticService, DelaService, DelaGService, md5, ModalService,
+                  ElasticService, DelaProjectService, DelaService, md5, ModalService,
                   ProjectService, growl,
-                  MessageService, $routeParams, $window, PublicDatasetService) {
+                  MessageService, $routeParams, $window, HopssiteService) {
 
             var self = this;
             self.email = $cookies.get('email');
@@ -52,7 +52,7 @@ angular.module('hopsWorksApp')
             };
             
             var checkDelaEnabled = function () {
-              PublicDatasetService.getServiceInfo("dela").then(function (success) {
+              HopssiteService.getServiceInfo("dela").then(function (success) {
                 console.log("isDelaEnabled", success);
                 self.delaServiceInfo = success.data;
                 if (self.delaServiceInfo.status === 1 ) {
@@ -192,7 +192,7 @@ angular.module('hopsWorksApp')
                           }
                           self.resultPages = Math.ceil(self.searchResult.length / self.pageSize);
                           self.resultItems = self.searchResult.length;
-                          DelaGService.search(self.searchTerm).then(function (response2) {
+                          DelaService.search(self.searchTerm).then(function (response2) {
                             global_data = response2.data;
                             if (global_data.length > 0) {
                               self.searchResult = concatUnique(searchHits, global_data);
@@ -313,8 +313,8 @@ angular.module('hopsWorksApp')
                   if (error.data && error.data.details) {
                     growl.error(error.data.details, {title: 'Error', ttl: 1000});
                   }
-                  self.delaService = new DelaService(destProj);
-                  self.delaService.cancelAndClean(result.publicId).then(function (success) {
+                  self.delaService = new DelaProjectService(destProj);
+                  self.delaService.cancel(result.publicId, true).then(function (success) {
                     growl.info("Download cancelled.", {title: 'Info', ttl: 1000});
                   }, function (error) {
                     growl.warning(error, {title: 'Warning', ttl: 1000});

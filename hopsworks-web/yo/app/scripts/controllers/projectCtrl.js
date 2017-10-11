@@ -6,9 +6,10 @@
 angular.module('hopsWorksApp')
         .controller('ProjectCtrl', ['$scope', '$rootScope', '$location', '$routeParams', '$route',  '$timeout', 'UtilsService',
           'growl', 'ProjectService', 'ModalService', 'ActivityService', '$cookies', 'DataSetService', 'EndpointService',
-          'UserService', 'TourService', 'PythonDepsService',
+          'UserService', 'TourService', 'PythonDepsService', 'StorageService',
           function ($scope, $rootScope, $location, $routeParams, $route, $timeout, UtilsService, growl, ProjectService,
-                  ModalService, ActivityService, $cookies, DataSetService, EndpointService, UserService, TourService, PythonDepsService) {
+                  ModalService, ActivityService, $cookies, DataSetService, EndpointService, UserService, TourService, PythonDepsService, 
+                  StorageService) {
 
             var self = this;
             self.loadedView = false;
@@ -29,7 +30,11 @@ angular.module('hopsWorksApp')
             self.endpoint = '...';
 
             // We could instead implement a service to get all the available types but this will do it for now
-            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER','DELA'];
+            if ($rootScope.isDelaEnabled) {
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER','DELA'];
+            } else {
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER'];
+            }
 
             $scope.activeService = "home";
 
@@ -74,6 +79,10 @@ angular.module('hopsWorksApp')
                       .substr(0, self.tourService.tensorflowProjectPrefix.length),
                       self.tourService.tensorflowProjectPrefix)) {
                 self.tourService.setActiveTour('tensorflow');
+              } else if (angular.equals(self.currentProject.projectName
+                      .substr(0, self.tourService.distributedtensorflowProjectPrefix.length),
+                      self.tourService.distributedtensorflowProjectPrefix)) {
+                self.tourService.setActiveTour('distributed tensorflow');
               }
 
               // Angular adds '#' symbol to the url when click on the home logo
@@ -81,7 +90,7 @@ angular.module('hopsWorksApp')
               self.loc = $location.url().split('#')[0];
               if (self.loc === "/project/" + self.projectId) {
                 self.tourService.currentStep_TourTwo = 0;
-              } else if (self.loc === "/project/" + self.projectId + "/" + "jobs") {
+              } else if (self.loc === "/project/" + self.projectId + "/" + "jobs" || self.loc === "/project/" + self.projectId + "/" + "jupyter") {
                 if (self.tourService.currentStep_TourThree === -1) {
                   self.tourService.currentStep_TourThree = 0;
                 }
@@ -286,17 +295,25 @@ angular.module('hopsWorksApp')
 
 //              http://localhost:8080/hopsworks/#!/project/1/settings
 
-              self.enabling = true;
-              PythonDepsService.enabled(self.projectId).then(function (success) {
-                self.goToUrl('jupyter');
-              }, function (error) {
-                  ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
-                    .then(function (success) {
-                      self.goToUrl('settings');
-                    }, function (error) {
-                      self.goToUrl('jupyter');
+              
+//              if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+//                self.goToUrl('jupyter');
+//              } else {
+                self.enabling = true;
+                PythonDepsService.enabled(self.projectId).then(function (success) {
+                  self.goToUrl('jupyter');
+                }, function (error) {
+                  if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+                    self.goToUrl('jupyter');
+                  } else {
+                      ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
+                              .then(function (success) {
+                                self.goToUrl('settings');
+                              }, function (error) {
+                                self.goToUrl('jupyter');
+                              });
+                            }
                     });
-              });
             };
             
             self.goToZeppelin = function () {
@@ -304,12 +321,16 @@ angular.module('hopsWorksApp')
               PythonDepsService.enabled(self.projectId).then( function (success) {
                   self.goToUrl('zeppelin');
                 }, function (error) {
+                  if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+                    self.goToUrl('zeppelin');
+                  } else {
                    ModalService.confirm('sm', 'Enable anaconda', 'You need to enable anaconda to use pyspark!')
                       .then(function (success) {
                         self.goToUrl('settings');
                       }, function (error) {
                         self.goToUrl('zeppelin');
                    });
+                 }
               });
             };
 
@@ -331,6 +352,9 @@ angular.module('hopsWorksApp')
 
             self.goToSettings = function () {
               self.goToUrl('settings');
+              if (self.tourService.currentStep_TourTwo > -1) {
+                self.tourService.resetTours();
+              }
             };
 
             self.goToService = function (service) {
@@ -525,6 +549,14 @@ angular.module('hopsWorksApp')
               var multiplicator = Math.pow(10, digits);
               n = parseFloat((n * multiplicator).toFixed(11));
               return Math.round(n) / multiplicator;
+            };
+            
+            self.tourDone = function(tour){
+              StorageService.store("hopsworks-tourdone-"+tour,true);
+            };
+            
+            self.isTourDone = function(tour){
+              var isDone = StorageService.get("hopsworks-tourdone-"+tour);
             };
 
           }]);

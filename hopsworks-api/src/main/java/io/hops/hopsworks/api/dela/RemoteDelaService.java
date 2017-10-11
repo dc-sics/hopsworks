@@ -4,9 +4,9 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
 import io.hops.hopsworks.common.dataset.FilePreviewDTO;
-import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.DelaHdfsController;
+import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.swagger.annotations.Api;
 import java.util.Optional;
 import java.util.logging.Logger;
@@ -40,7 +40,7 @@ public class RemoteDelaService {
   private DatasetFacade datasetFacade;
 
   @GET
-  @Path("/dataset/{publicDSId}/readme")
+  @Path("/datasets/{publicDSId}/readme")
   @Produces(MediaType.APPLICATION_JSON)
   public Response readme(@PathParam("publicDSId") String publicDSId) throws ThirdPartyException {
     LOG.log(Settings.DELA_DEBUG, "remote:dela:readme {0}", publicDSId);

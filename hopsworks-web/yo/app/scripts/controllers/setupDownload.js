@@ -1,8 +1,8 @@
 
 
 angular.module('hopsWorksApp')
-        .controller('SetupDownloadCtrl', ['$uibModalInstance', 'DataSetService', 'KafkaService', 'DelaService', 'growl', 'defaultDatasetName', 'projectId', 'datasetId', 'bootstrap', 'ModalService',
-            function ($uibModalInstance, DataSetService, KafkaService, DelaService, growl, defaultDatasetName, projectId, datasetId, bootstrap, ModalService) {
+        .controller('SetupDownloadCtrl', ['$uibModalInstance', 'DataSetService', 'KafkaService', 'DelaProjectService', 'growl', 'defaultDatasetName', 'projectId', 'datasetId', 'bootstrap', 'ModalService',
+            function ($uibModalInstance, DataSetService, KafkaService, DelaProjectService, growl, defaultDatasetName, projectId, datasetId, bootstrap, ModalService) {
 
                 var self = this;
                 self.projectId = projectId;
@@ -12,7 +12,7 @@ angular.module('hopsWorksApp')
                 self.datasetDestination = defaultDatasetName;
 
                 var dataSetService = DataSetService(self.projectId);
-                self.delaService = new DelaService(self.projectId);
+                self.delaService = new DelaProjectService(self.projectId);
 
                 self.manifestAvailable = false;
                 self.manifest;
@@ -138,7 +138,7 @@ angular.module('hopsWorksApp')
                     json.name = self.datasetDestination;
                     json.publicDSId = self.datasetId;
                     json.bootstrap = self.bootstrap;
-                    self.delaService.startDownload(json).then(function (success) {
+                    self.delaService.downloadMetadata(self.datasetId, json).then(function (success) {
                         self.manifest = success.data;
                         self.manifestAvailable = true;
                         },
@@ -174,7 +174,7 @@ angular.module('hopsWorksApp')
                         json.topics = JSON.stringify(self.topicsMap);
                         
                     if (!self.DownloadTypeKafka) {
-                        self.delaService.downloadHdfs(json).then(function (success) {
+                        self.delaService.downloadHdfs(self.datasetId, json).then(function (success) {
                             growl.success(success.data.details, {title: 'Success', ttl: 1000});
                             $uibModalInstance.close(success);
                         }, function (error) {
@@ -182,7 +182,7 @@ angular.module('hopsWorksApp')
                         });
 
                     } else {
-                        self.delaService.downloadKafka(json).then(function (success) {
+                        self.delaService.downloadKafka(self.datasetId, json).then(function (success) {
                             growl.success(success.data.details, {title: 'Success', ttl: 1000});
                             $uibModalInstance.close(success);
                         }, function (error) {

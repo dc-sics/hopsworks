@@ -223,7 +223,7 @@
                             <a class="pointer"
                                role="menuitem"
                                tabindex="6"
-                               ng-click="datasetsCtrl.removePublic(dataset.id); $event.stopPropagation();">
+                               ng-click="datasetsCtrl.removePublic(dataset.publicId); $event.stopPropagation();">
                               <span><i class="fa fa-share-alt"></i>
                                 Remove Public</span>
                             </a>
@@ -232,7 +232,7 @@
                             <a class="pointer"
                                role="menuitem"
                                tabindex="6"
-                               ng-click="datasetsCtrl.showManifest(dataset.id); $event.stopPropagation();">
+                               ng-click="datasetsCtrl.showManifest(dataset.publicId); $event.stopPropagation();">
                               <span>Show Manifest</span>
                             </a>
                           </li>

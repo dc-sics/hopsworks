@@ -10,8 +10,9 @@ import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstate;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
 import io.hops.hopsworks.common.dao.jobs.description.AppIdDTO;
 import io.hops.hopsworks.common.dao.jobs.description.AppInfoDTO;
-import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
-import io.hops.hopsworks.common.dao.jobs.description.JobDescriptionFacade;
+import io.hops.hopsworks.common.dao.jobs.description.Jobs;
+import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
+import io.hops.hopsworks.common.dao.jobs.description.YarnAppUrlsDTO;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -81,6 +82,9 @@ import javax.ws.rs.core.StreamingOutput;
 
 import io.hops.hopsworks.common.yarn.YarnClientService;
 import io.hops.hopsworks.common.yarn.YarnClientWrapper;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
@@ -89,6 +93,9 @@ import org.apache.commons.httpclient.cookie.CookiePolicy;
 import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.params.HttpClientParams;
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.util.ConverterUtils;
@@ -111,7 +118,7 @@ public class JobService {
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
-  private JobDescriptionFacade jobFacade;
+  private JobFacade jobFacade;
   @EJB
   private ExecutionFacade exeFacade;
   @Inject
@@ -150,6 +157,10 @@ public class JobService {
   private UserFacade userFacade;
   @EJB
   private ExecutionController executionController;
+  @EJB
+  private HdfsUsersController hdfsUsersController;
+  @EJB
+  private YarnApplicationstateFacade appStateBean;
 
   private Project project;
   private static final String PROXY_USER_COOKIE_NAME = "proxy-user";
@@ -173,9 +184,9 @@ public class JobService {
   public Response findAllJobs(@Context SecurityContext sc,
       @Context HttpServletRequest req)
       throws AppException {
-    List<JobDescription> jobs = jobFacade.findForProject(project);
-    GenericEntity<List<JobDescription>> jobList
-        = new GenericEntity<List<JobDescription>>(jobs) {};
+    List<Jobs> jobs = jobFacade.findForProject(project);
+    GenericEntity<List<Jobs>> jobList
+        = new GenericEntity<List<Jobs>>(jobs) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         jobList).build();
   }
@@ -196,7 +207,7 @@ public class JobService {
   public Response getJob(@PathParam("jobId") int jobId,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
@@ -215,7 +226,7 @@ public class JobService {
    * Get the JobConfiguration object for the specified job. The sole reason of
    * existence of this method is the dodginess
    * of polymorphism in JAXB/JAXRS. As such, the jobConfig field is always empty
-   * when a JobDescription object is
+   * when a Jobs object is
    * returned. This method must therefore be called explicitly to get the job
    * configuration.
    * <p>
@@ -232,7 +243,7 @@ public class JobService {
   public Response getJobConfiguration(@PathParam("jobId") int jobId,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
@@ -263,7 +274,7 @@ public class JobService {
   public Response getAppId(@PathParam("jobId") int jobId,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
@@ -315,7 +326,7 @@ public class JobService {
   public Response getAppIds(@PathParam("jobId") int jobId,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
@@ -339,7 +350,7 @@ public class JobService {
         }
 
         GenericEntity<List<AppIdDTO>> appIds
-            = new GenericEntity<List<AppIdDTO>>(appIdStrings) {};
+            = new GenericEntity<List<AppIdDTO>>(appIdStrings) { };
         return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
             entity(appIds).build();
 
@@ -350,6 +361,22 @@ public class JobService {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
     }
+  }
+
+  private String getHdfsUser(SecurityContext sc) throws AppException {
+    if (project.getId() == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          "Incomplete request!");
+    }
+    String loggedinemail = sc.getUserPrincipal().getName();
+    Users user = userFacade.findByEmail(loggedinemail);
+    if (user == null) {
+      throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
+          "You are not authorized for this invocation.");
+    }
+    String hdfsUsername = hdfsUsersController.getHdfsUserName(project, user);
+
+    return hdfsUsername;
   }
 
   /**
@@ -382,43 +409,102 @@ public class JobService {
 
   }
 
+  private List<YarnAppUrlsDTO> getTensorboardUrls(String hdfsUser, String appId) throws AppException {
+    List<YarnAppUrlsDTO> urls = new ArrayList<>();
+
+    DistributedFileSystemOps client = null;
+
+    try {
+      client = dfs.getDfsOps(hdfsUser);
+      FileStatus[] statuses = client.getFilesystem().globStatus(new org.apache.hadoop.fs.Path("/Projects/" + project.
+          getName() + "/Logs/Tensorboard/" + appId + "/tensorboard.exec*"));
+      DistributedFileSystem fs = client.getFilesystem();
+      for (FileStatus status : statuses) {
+        LOGGER.log(Level.INFO, "Reading tensorboard for: {0}", status.getPath());
+        FSDataInputStream in = null;
+        try {
+          in = fs.open(new org.apache.hadoop.fs.Path(status.getPath().toString()));
+          String url = IOUtils.toString(in, "UTF-8");
+          int prefix = url.indexOf("http://");
+          if (prefix != -1) {
+            url = url.substring("http://".length());
+          }
+          String name = status.getPath().getName();
+          urls.add(new YarnAppUrlsDTO(name, url));
+        } catch (Exception e) {
+          LOGGER.log(Level.WARNING, "Problem reading file with tensorboard address from HDFS: " + e.getMessage());
+        } finally {
+          org.apache.hadoop.io.IOUtils.closeStream(in);
+        }
+
+      }
+
+    } catch (Exception e) {
+      LOGGER.log(Level.SEVERE, "exception while geting job ui " + e.
+          getLocalizedMessage(), e);
+      throw new AppException(Response.Status.NO_CONTENT.getStatusCode(),
+          "Error getting the Tensorboard(s) for this application.");
+    } finally {
+      if (client != null) {
+        dfs.closeDfsClient(client);
+      }
+    }
+
+    return urls;
+  }
+
   /**
    * Get the Job UI url for the specified job
    * <p>
    * @param appId
+   * @param isLivy
    * @param sc
    * @param req
    * @return url
    * @throws AppException
    */
   @GET
-  @Path("/{appId}/ui")
-  @Produces(MediaType.TEXT_PLAIN)
+  @Path("/{appId}/ui/{isLivy}")
+  @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getJobUI(@PathParam("appId") String appId,
+      @PathParam("isLivy") String isLivy,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
-    Response response = checkAccessRight(appId);
-    if (response != null) {
-      return response;
+    Response noAccess = checkAccessRight(appId);
+    if (noAccess != null) {
+      return noAccess;
     }
+    Response.Status response = Response.Status.OK;
+    List<YarnAppUrlsDTO> urls = new ArrayList<>();
+    YarnAppUrlsDTO ui = new YarnAppUrlsDTO();
+    String hdfsUser = getHdfsUser(sc);
+
     try {
       String trackingUrl = appAttemptStateFacade.findTrackingUrlByAppId(appId);
       if (trackingUrl != null && !trackingUrl.isEmpty()) {
         trackingUrl = "/hopsworks-api/api/project/" + project.getId() + "/jobs/"
             + appId + "/prox/" + trackingUrl;
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-            entity(trackingUrl).build();
-      } else {
-        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-            entity("").build();
+        urls.add(new YarnAppUrlsDTO("spark", trackingUrl));
       }
+
+      if (isLivy.compareToIgnoreCase("true") == 0) {
+        YarnApplicationstate appStates;
+        appStates = appStateBean.findByAppId(appId);
+        if (appStates != null && appStates.getAppname().toUpperCase().contains("TENSORFLOW")) {
+          urls.addAll(getTensorboardUrls(hdfsUser, appId));
+        }
+      }
+
     } catch (Exception e) {
       LOGGER.log(Level.SEVERE, "exception while geting job ui " + e.
           getLocalizedMessage(), e);
     }
-    return noCacheResponse.
-        getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
+
+    GenericEntity<List<YarnAppUrlsDTO>> listUrls = new GenericEntity<List<YarnAppUrlsDTO>>(urls) { };
+
+    return noCacheResponse.getNoCacheResponseBuilder(response)
+        .entity(listUrls).build();
   }
 
   private Response checkAccessRight(String appId) {
@@ -615,8 +701,10 @@ public class JobService {
   @Path("/{appId}/prox/{path: .+}")
   @Produces(MediaType.WILDCARD)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public Response getProx(@PathParam("appId") final String appId,
-      @PathParam("path") final String param,
+  public Response getProxy(@PathParam("appId")
+      final String appId,
+      @PathParam("path")
+      final String param,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
@@ -850,10 +938,10 @@ public class JobService {
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getConfigurationTemplate(@Context SecurityContext sc,
       @Context HttpServletRequest req) {
-    List<JobDescription> running = jobFacade.getRunningJobs(project);
-    List<JobDescription> allJobs = jobFacade.findForProject(project);
+    List<Jobs> running = jobFacade.getRunningJobs(project);
+    List<Jobs> allJobs = jobFacade.findForProject(project);
     JsonObjectBuilder builder = Json.createObjectBuilder();
-    for (JobDescription desc : allJobs) {
+    for (Jobs desc : allJobs) {
       try {
         List<Execution> jobExecutions = exeFacade.findForJob(desc);
         if (jobExecutions != null && jobExecutions.isEmpty() == false) {
@@ -873,7 +961,7 @@ public class JobService {
             .getMessage());
       }
     }
-    for (JobDescription desc : running) {
+    for (Jobs desc : running) {
       try {
         Execution execution = exeFacade.findForJob(desc).get(0);
         Execution updatedExecution = exeFacade.getExecution(execution.getJob().
@@ -933,21 +1021,21 @@ public class JobService {
 
     JsonObjectBuilder builder = Json.createObjectBuilder();
     JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-    List<Execution> executionHistory = exeFacade.
-        findbyProjectAndJobId(project, jobId);
+    List<Execution> executionHistory = exeFacade.findbyProjectAndJobId(project, jobId);
     JsonObjectBuilder arrayObjectBuilder;
     if (executionHistory != null && !executionHistory.isEmpty()) {
       for (Execution e : executionHistory) {
         arrayObjectBuilder = Json.createObjectBuilder();
-        arrayObjectBuilder.add("appId", e.getAppId() == null ? "" : e.
-            getAppId());
+        arrayObjectBuilder.add("jobId", e.getJob().getId());
+        arrayObjectBuilder.add("appId", e.getAppId() == null ? "" : e.getAppId());
         arrayObjectBuilder.add("time", e.getSubmissionTime().toString());
         arrayBuilder.add(arrayObjectBuilder);
       }
     } else {
       arrayObjectBuilder = Json.createObjectBuilder();
+      arrayObjectBuilder.add("jobId", "");
       arrayObjectBuilder.add("appId", "");
-      arrayObjectBuilder.add("time", "No log available");
+      arrayObjectBuilder.add("time", "Not available");
       arrayObjectBuilder.add("log", "No log available");
       arrayObjectBuilder.add("err", "No log available");
       arrayBuilder.add(arrayObjectBuilder);
@@ -1018,8 +1106,10 @@ public class JobService {
     try {
       dfso = dfs.getDfsOps();
       readLog(execution, type, dfso, arrayObjectBuilder);
+
     } catch (IOException ex) {
-      Logger.getLogger(JobService.class.getName()).log(Level.SEVERE, null, ex);
+      Logger.getLogger(JobService.class
+          .getName()).log(Level.SEVERE, null, ex);
     } finally {
       if (dfso != null) {
         dfso.close();
@@ -1028,6 +1118,56 @@ public class JobService {
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         arrayObjectBuilder.build()).build();
+  }
+
+  @GET
+  @Path("/getLogByJobId/{jobId}/{submissionTime}/{type}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  public Response getLogByJobId(@PathParam("jobId") Integer jobId, @PathParam("submissionTime") String submissionTime,
+      @PathParam("type") String type) throws AppException {
+    if (jobId == null || jobId <= 0) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Can not get log. No JobId.");
+    }
+    if (submissionTime == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Can not get log. With no submission time.");
+    }
+    Jobs job = jobFacade.find(jobId);
+    if (job == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Can not get log. Job not found.");
+    }
+    SimpleDateFormat sdf = new SimpleDateFormat("EEE MMM dd HH:mm:ss Z yyyy");
+    Date date;
+    try {
+      date = sdf.parse(submissionTime);
+    } catch (ParseException ex) {
+      LOGGER.log(Level.SEVERE, "Can not get log. Incorrect submission time. ", ex);
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Can't get log. Incorrect submission time.");
+    }
+    Execution execution = exeFacade.findByJobIdAndSubmissionTime(date, job);
+    if (execution == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "No excution for jobId " + jobId);
+    }
+    if (!execution.getState().isFinalState()) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Job still running.");
+    }
+    if (!execution.getJob().getProject().equals(this.project)) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "No excution for jobId " + jobId + ".");
+    }
+
+    JsonObjectBuilder arrayObjectBuilder = Json.createObjectBuilder();
+    DistributedFileSystemOps dfso = null;
+    try {
+      dfso = dfs.getDfsOps();
+      readLog(execution, type, dfso, arrayObjectBuilder);
+    } catch (IOException ex) {
+      LOGGER.log(Level.SEVERE, null, ex);
+    } finally {
+      if (dfso != null) {
+        dfso.close();
+      }
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(arrayObjectBuilder.build()).build();
   }
 
   @GET
@@ -1060,7 +1200,7 @@ public class JobService {
     DistributedFileSystemOps udfso = null;
     Users user = execution.getUser();
     String hdfsUser = hdfsUsersBean.getHdfsUserName(project, user);
-    String aggregatedLogPath = settings.getAggregatedLogPath(hdfsUser, appId);   
+    String aggregatedLogPath = settings.getAggregatedLogPath(hdfsUser, appId);
     if (aggregatedLogPath == null) {
       throw new AppException(Response.Status.NOT_FOUND.
           getStatusCode(),
@@ -1087,7 +1227,7 @@ public class JobService {
             String[] desiredLogTypes = {"out"};
             YarnClientWrapper yarnClientWrapper = ycs
                 .getYarnClientSuper(settings.getConfiguration());
-            
+
             ApplicationId applicationId = ConverterUtils.toApplicationId(appId);
             YarnMonitor monitor = new YarnMonitor(applicationId,
                 yarnClientWrapper, ycs);
@@ -1171,7 +1311,7 @@ public class JobService {
       throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
           "You are not authorized for this invocation.");
     }
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
@@ -1218,10 +1358,11 @@ public class JobService {
    * @param jobId
    * @return
    */
-  @Path("/{jobId}/executions")
+  @Path(
+      "/{jobId}/executions")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public ExecutionService executions(@PathParam("jobId") int jobId) {
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return null;
     } else if (!job.getProject().equals(project)) {
@@ -1243,7 +1384,7 @@ public class JobService {
       @PathParam("jobId") int jobId,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
-    JobDescription job = jobFacade.findById(jobId);
+    Jobs job = jobFacade.findById(jobId);
     if (job == null) {
       return noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
@@ -1286,7 +1427,8 @@ public class JobService {
         Response.Status.INTERNAL_SERVER_ERROR).build();
   }
 
-  @Path("/spark")
+  @Path(
+      "/spark")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public SparkService spark() {
     return this.spark.setProject(project);

@@ -406,7 +406,6 @@ public class ZeppelinConfig {
       StringBuilder log4j = ConfigFileGenerator.instantiateFromTemplate(ConfigFileGenerator.LOG4J_TEMPLATE);
       createdLog4j = ConfigFileGenerator.createConfigFile(log4j_file, log4j.toString());
     }
-    String metricsPath = Settings.getSparkMetricsPath(settings.getSparkUser());
     String log4jPath = Settings.getSparkLog4JPath(settings.getHdfsSuperUser());
     String zeppelinPythonPath = settings.getAnacondaProjectDir(this.projectName)
         + File.separator + "bin" + File.separator + "python";
@@ -518,6 +517,7 @@ public class ZeppelinConfig {
               "spark.yarn.stagingDir", hdfsResourceDir,
               "livy.spark.sql.warehouse.dir", hdfsResourceDir + "spark-warehouse",
               "livy.spark.yarn.stagingDir", hdfsResourceDir,
+              "hadoop_version", settings.getHadoopVersion(),
               "zeppelin.python_conda_path", zeppelinPythonPath,
               "spark.yarn.dist.files", sparkDistFiles.toString()
           );
@@ -618,7 +618,9 @@ public class ZeppelinConfig {
   public void clean() {
     LOGGER.log(Level.INFO, "Cleanup of zeppelin resources for project {0}",
         this.projectName);
-    interpreterSettingManager.close();
+    if (interpreterSettingManager != null) {
+      interpreterSettingManager.close();
+    }
     // will close repo and index
     if (this.notebook != null) {
       this.notebook.close();

@@ -1,7 +1,7 @@
 'use strict';
 angular.module('hopsWorksApp')
-        .controller('SearchResultCtrl', ['DelaGService', '$routeParams', '$scope', '$rootScope', '$interval',
-          function (DelaGService, $routeParams, $scope, $rootScope, $interval) {
+        .controller('SearchResultCtrl', ['DelaService', '$routeParams', '$scope', '$rootScope', '$interval',
+          function (DelaService, $routeParams, $scope, $rootScope, $interval) {
             var self = this;
             self.userContents = [];
             self.projectId = parseInt($routeParams.projectID, 10);
@@ -25,7 +25,7 @@ angular.module('hopsWorksApp')
               }
               var elementSummaries = [];
               if (dataset) {
-                DelaGService.getUserContents().then(function (success) {
+                DelaService.getUserContents().then(function (success) {
                   self.userContents = success.data;
                   elementSummaries = getElementSummary();
                   if (self.results.files.length > 0 && self.userContents.length > 0) {
@@ -37,7 +37,7 @@ angular.module('hopsWorksApp')
                   console.log("Error getting user contents: ", error);
                 });
               } else {
-                DelaGService.getUserContents().then(function (success) {
+                DelaService.getUserContents().then(function (success) {
                   self.userContents = success.data;
                   elementSummaries = getElementSummary();
                   if (self.results.length > 0 && self.userContents.length > 0) {

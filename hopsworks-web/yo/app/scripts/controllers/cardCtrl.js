@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('CardCtrl', ['$scope', 'ProjectService', 'DelaGService', '$routeParams', '$rootScope', '$location',
-          function ($scope, ProjectService, DelaGService, $routeParams, $rootScope, $location) {
+        .controller('CardCtrl', ['$scope', 'ProjectService', 'DelaService', '$routeParams', '$rootScope', '$location',
+          function ($scope, ProjectService, DelaService, $routeParams, $rootScope, $location) {
             var self = this;
             self.detail = [];
             var init = function (content) {
@@ -65,7 +65,7 @@ angular.module('hopsWorksApp')
                   });
                 }
               } else {
-                DelaGService.getDetails(content.publicId).then(function (success) {
+                DelaService.getDetails(content.publicId).then(function (success) {
                   //console.log("More info ", success);
                   self.setHopsSiteDetails(success);
                 }, function (error) {

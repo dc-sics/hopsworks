@@ -56,7 +56,7 @@ public class ClientWrapper<T extends Object> {
       WebTarget webTarget = client.target(target).path(path);
       Response response = webTarget.request(mediaType).get();
       return getResponse(response);
-    } catch (ProcessingException ex)  {
+    } catch (ProcessingException ex) {
       throw new IllegalStateException(ex.getMessage());
     } finally {
       if (client != null) {
@@ -115,9 +115,9 @@ public class ClientWrapper<T extends Object> {
       WebTarget webTarget = client.target(target).path(path);
       Response response = webTarget.request(mediaType).post(payload);
       return getResponse(response);
-    } catch (ProcessingException ex)  {
+    } catch (ProcessingException ex) {
       throw new IllegalStateException(ex.getMessage());
-    }finally {
+    } finally {
       if (client != null) {
         client.close();
         client = null;
@@ -131,6 +131,8 @@ public class ClientWrapper<T extends Object> {
       WebTarget webTarget = client.target(target).path(path);
       Response response = webTarget.request(mediaType).put(payload);
       return getResponse(response);
+    } catch (ProcessingException ex) {
+      throw new IllegalStateException(ex.getMessage());
     } finally {
       if (client != null) {
         client.close();
@@ -145,6 +147,8 @@ public class ClientWrapper<T extends Object> {
       WebTarget webTarget = client.target(target).path(path);
       Response response = webTarget.request(mediaType).delete();
       return getResponse(response);
+    } catch (ProcessingException ex) {
+      throw new IllegalStateException(ex.getMessage());
     } finally {
       if (client != null) {
         client.close();
@@ -197,7 +201,7 @@ public class ClientWrapper<T extends Object> {
       hostnameVerifier(hostnameVerifier).build();
     return new ClientWrapper(client, resultClass);
   }
-  
+
   public static <T> ClientWrapper httpInstance(Class<T> resultClass) {
     Client client = ClientBuilder.newClient();
     return new ClientWrapper(client, resultClass);

@@ -9,7 +9,7 @@ import io.hops.hopsworks.dela.dto.hopssite.CommentDTO;
 import io.hops.hopsworks.dela.dto.hopssite.CommentIssueDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopsSite;
-import io.hops.hopsworks.dela.hopssite.HopsSiteController;
+import io.hops.hopsworks.dela.hopssite.HopssiteController;
 import io.hops.hopsworks.util.SettingsHelper;
 import java.util.List;
 import java.util.logging.Logger;
@@ -36,7 +36,7 @@ public class CommentService {
 
   private final static Logger LOG = Logger.getLogger(CommentService.class.getName());
   @EJB
-  private HopsSiteController hopsSite;
+  private HopssiteController hopsSite;
   @EJB
   private UserManager userBean;
   @EJB
@@ -119,7 +119,7 @@ public class CommentService {
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
-  @Path("report/{commentId}")
+  @Path("{commentId}/report")
   public Response reportAbuse(@Context SecurityContext sc, @PathParam("commentId") Integer commentId,
     CommentIssueReqDTO commentReqIssue) throws ThirdPartyException {
     LOG.log(Settings.DELA_DEBUG, "hops-site:comment:report {0}", publicDSId);

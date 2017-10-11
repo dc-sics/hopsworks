@@ -32,10 +32,6 @@ public class HopsSite {
     public static String getUser(String publicCId, String email) {
       return "user/" + publicCId + "/" + email;
     }
-    
-    public static String getUserId(String publicCId, String email) {
-      return "user/id/" + publicCId + "/" + email;
-    }
   }
 
   public static class DatasetService {
