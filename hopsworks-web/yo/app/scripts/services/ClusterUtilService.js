@@ -11,6 +11,12 @@ angular.module('hopsWorksApp')
               },
               getYarnGpu: function () {
                 return $http.get('/api/clusterUtilisation/gpus');
+              },
+              getHdfsStatus: function () {
+                return $http.get('/api/kmon/services/HDFS');
+              },
+              getYarnStatus: function () {
+                return $http.get('/api/kmon/services/YARN');
               }
             };
           }]);
