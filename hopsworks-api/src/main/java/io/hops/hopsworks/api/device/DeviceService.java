@@ -419,7 +419,7 @@ public class DeviceService {
       try {
         List<GenericData.Record> avroRecords = JsonToAvroConverter.toAvro(schema.getContents(), records);
         boolean success = kafkaFacade2.produce(
-          true, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
+          false, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
         if (success){
           return DeviceResponseBuilder.successfulJsonResponse(Status.OK, MessageFormat.format(
             "projectId:{0}, deviceUuid:{1}, userEmail:{2}, topicName:{3}",
