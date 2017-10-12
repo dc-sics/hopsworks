@@ -50,10 +50,10 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
-import io.hops.hopsworks.common.dao.device.DeviceFacade2;
+import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -103,10 +103,10 @@ public class DeviceService {
   private ProjectFacade projectFacade;
 
   @EJB
-  private DeviceFacade2 deviceFacade2;
+  private DeviceFacade deviceFacade;
   
   @EJB
-  private KafkaFacade2 kafkaFacade2;
+  private KafkaFacade kafkaFacade;
 
   public DeviceService() {
   }
@@ -125,7 +125,7 @@ public class DeviceService {
 
   private ProjectSecret getProjectSecret(Integer projectId) throws DeviceServiceException{
     try {
-      return deviceFacade2.getProjectSecret(projectId);
+      return deviceFacade.getProjectSecret(projectId);
     }catch (Exception e) {
       throw new DeviceServiceException(DeviceResponseBuilder.DEVICES_FEATURE_NOT_ACTIVE);
     }
@@ -172,7 +172,7 @@ public class DeviceService {
       String projectSecret = UUID.randomUUID().toString();
 
       // Saves Project Secret
-      deviceFacade2.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
@@ -193,9 +193,9 @@ public class DeviceService {
 
     List<ProjectDeviceDTO> listDevices;
     if (state != null){
-      listDevices = deviceFacade2.getProjectDevices(projectId, Integer.valueOf(state));
+      listDevices = deviceFacade.getProjectDevices(projectId, Integer.valueOf(state));
     }else{
-      listDevices = deviceFacade2.getProjectDevices(projectId);
+      listDevices = deviceFacade.getProjectDevices(projectId);
     }
     GenericEntity<List<ProjectDeviceDTO>> projectDevices = new GenericEntity<List<ProjectDeviceDTO>>(listDevices){};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(projectDevices).build();
@@ -208,7 +208,7 @@ public class DeviceService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response postDevicesStateEndpoint(
     @Context HttpServletRequest req, List<ProjectDeviceDTO> listDevices) throws AppException {
-    deviceFacade2.updateDevicesState(listDevices);
+    deviceFacade.updateDevicesState(listDevices);
     return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
   }
 
@@ -274,7 +274,7 @@ public class DeviceService {
       ProjectSecret secret = getProjectSecret(projectId);
 
       try {
-        deviceFacade2.addProjectDevice(projectId, deviceUuid, passUuid, alias);
+        deviceFacade.addProjectDevice(projectId, deviceUuid, passUuid, alias);
         return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return DeviceResponseBuilder.failedJsonResponse(
@@ -309,7 +309,7 @@ public class DeviceService {
 
       ProjectDevice device;
       try {
-        device = deviceFacade2.getProjectDevice(projectId, deviceUuid);
+        device = deviceFacade.getProjectDevice(projectId, deviceUuid);
       }catch (Exception e) {
         return DeviceResponseBuilder.failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
                 "No device is registered with the given {0}.", DEVICE_UUID));
@@ -352,7 +352,7 @@ public class DeviceService {
       }
       // Device is authenticated at this point
 
-      SchemaDTO schemaDTO = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
+      SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
 
     }catch(JSONException e) {
@@ -415,10 +415,10 @@ public class DeviceService {
       }
 
       // Extracts the Avro Schema contents from the database
-      SchemaDTO schema = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
+      SchemaDTO schema = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
       try {
         List<GenericData.Record> avroRecords = JsonToAvroConverter.toAvro(schema.getContents(), records);
-        boolean success = kafkaFacade2.produce(
+        boolean success = kafkaFacade.produce(
           false, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
         if (success){
           return DeviceResponseBuilder.successfulJsonResponse(Status.OK, MessageFormat.format(
