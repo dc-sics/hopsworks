@@ -1,7 +1,7 @@
 package io.hops.hopsworks.common.jobs.spark;
 
 import com.google.common.base.Strings;
-import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
+import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
@@ -38,7 +38,7 @@ public class SparkYarnRunnerBuilder {
       SparkYarnRunnerBuilder.class.getName());
 
   //Necessary parameters
-  private final JobDescription jobDescription;
+  private final Jobs job;
 
   //Optional parameters
   private final List<String> jobArgs = new ArrayList<>();
@@ -64,9 +64,9 @@ public class SparkYarnRunnerBuilder {
   private String sessionId;
   final private Set<String> blacklistedProps = new HashSet<>();
 
-  public SparkYarnRunnerBuilder(JobDescription jobDescription) {
-    this.jobDescription = jobDescription;
-    SparkJobConfiguration jobConfig = (SparkJobConfiguration) jobDescription.
+  public SparkYarnRunnerBuilder(Jobs job) {
+    this.job = job;
+    SparkJobConfiguration jobConfig = (SparkJobConfiguration) job.
         getJobConfig();
 
     if (jobConfig.getAppPath() == null || jobConfig.getAppPath().isEmpty()) {
@@ -107,14 +107,13 @@ public class SparkYarnRunnerBuilder {
       blacklistedProps.addAll(Arrays.asList(content.split("\n")));
     }
 
-    JobType jobType = ((SparkJobConfiguration) jobDescription.getJobConfig()).
+    JobType jobType = ((SparkJobConfiguration) job.getJobConfig()).
         getType();
-    String appPath = ((SparkJobConfiguration) jobDescription.getJobConfig()).
+    String appPath = ((SparkJobConfiguration) job.getJobConfig()).
         getAppPath();
 
     String hdfsSparkJarPath = Settings.getHdfsSparkJarPath(sparkUser);
     String log4jPath = Settings.getSparkLog4JPath(sparkUser);
-    String metricsPath = Settings.getSparkMetricsPath(sparkUser);
     StringBuilder pythonPath = null;
     StringBuilder pythonPathExecs = null;
     //Create a builder
@@ -132,7 +131,7 @@ public class SparkYarnRunnerBuilder {
       throw new IOException(ex);
     }
 
-    String stagingPath = "/Projects/ " + project + "/"
+    String stagingPath = "/Projects/" + project + "/"
         + Settings.PROJECT_STAGING_DIR + "/.sparkjobstaging";
     builder.localResourcesBasePath(stagingPath);
 
@@ -145,9 +144,9 @@ public class SparkYarnRunnerBuilder {
         Settings.SPARK_LOG4J_PROPERTIES, log4jPath,
         LocalResourceVisibility.APPLICATION.toString(),
         LocalResourceType.FILE.toString(), null), false);
-    //Add metrics
+    //Add metrics 
     builder.addLocalResource(new LocalResourceDTO(
-        Settings.SPARK_METRICS_PROPERTIES, metricsPath,
+        Settings.SPARK_METRICS_PROPERTIES, settings.getSparkConfDir() + "/metrics.properties",
         LocalResourceVisibility.PRIVATE.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
@@ -240,7 +239,6 @@ public class SparkYarnRunnerBuilder {
         + File.pathSeparator + Settings.SPARK_LOCALIZED_LIB_DIR + "/*"
         + File.pathSeparator + Settings.SPARK_LOCRSC_APP_JAR
         + File.pathSeparator + Settings.SPARK_LOG4J_PROPERTIES
-        + File.pathSeparator + Settings.SPARK_METRICS_PROPERTIES
     );
 
     //Add extra files to local resources, use filename as key
@@ -274,6 +272,8 @@ public class SparkYarnRunnerBuilder {
     builder.addToAppMasterEnvironment("SPARK_YARN_MODE", "true");
     builder.addToAppMasterEnvironment("SPARK_YARN_STAGING_DIR", stagingPath);
     builder.addToAppMasterEnvironment("SPARK_USER", jobUser);
+    builder.addToAppMasterEnvironment("HADOOP_HOME", settings.getHadoopSymbolicLinkDir());
+    builder.addToAppMasterEnvironment("HADOOP_VERSION", settings.getHadoopVersion());
 
     //Set TensorFlowOnSpark required environment variables
     if (jobType == JobType.TFSPARK) {
@@ -289,22 +289,20 @@ public class SparkYarnRunnerBuilder {
 
       //The following configuration is based on:
       //https://github.com/yahoo/TensorFlowOnSpark/wiki/GetStarted_YARN
-
       //IMPORTANT, if TFoS still can't find cuda libraries there may be issues with cuda installation
       // 1. ssh to machine where the container failed
       // 2. Make sure /usr/local/cuda exists and is a symlink pointing to e.g. /usr/local/cuda-8.0
       // 3. Make sure /etc/ld.so.conf.d directory on the host has an entry pointing to /usr/local/cuda/lib64
       // 4. /usr/local/cuda/lib64 can be a symlink and should point to the real location with libcu(...).so files
       // 5. Run 'sudo ldconfig'
-
       String libCuda = settings.getCudaDir() + "/lib64";
       String libJVM = settings.getJavaHome() + "/jre/lib/amd64/server";
-      String libHDFS = settings.getHadoopDir() + "/lib/native";
+      String libHDFS = settings.getHadoopSymbolicLinkDir() + "/lib/native";
 
       builder.addToAppMasterEnvironment("LD_LIBRARY_PATH", libCuda);
 
       addSystemProperty(Settings.SPARK_EXECUTORENV_LD_LIBRARY_PATH,
-              libCuda + ":" + libJVM + ":" + libHDFS);
+          libCuda + ":" + libJVM + ":" + libHDFS);
     }
 
     for (String key : envVars.keySet()) {
@@ -365,11 +363,11 @@ public class SparkYarnRunnerBuilder {
     //Comma-separated list of attributes sent to Logstash
     addSystemProperty(Settings.LOGSTASH_JOB_INFO, project.toLowerCase() + ","
         + jobName + ","
-        + jobDescription.getId() + "," + YarnRunner.APPID_PLACEHOLDER);
+        + job.getId() + "," + YarnRunner.APPID_PLACEHOLDER);
     addSystemProperty(Settings.HOPSWORKS_APPID_PROPERTY,
         YarnRunner.APPID_PLACEHOLDER);
-    addSystemProperty(Settings.SPARK_JAVA_LIBRARY_PROP, services.getSettings().
-        getHadoopDir() + "/lib/native/");
+    addSystemProperty(Settings.SPARK_JAVA_LIBRARY_PROP, services.getSettings().getHadoopSymbolicLinkDir()
+        + "/lib/native/");
 
     //Set executor extraJavaOptions to make parameters available to executors
     StringBuilder extraJavaOptions = new StringBuilder();
@@ -379,11 +377,11 @@ public class SparkYarnRunnerBuilder {
         append(" ").
         append("-D").append(Settings.LOGSTASH_JOB_INFO).append("=").append(
         project.toLowerCase()).append(",").
-        append(jobName).append(",").append(jobDescription.getId()).append(
+        append(jobName).append(",").append(job.getId()).append(
         ",").append(YarnRunner.APPID_PLACEHOLDER).
         append(" ").
         append("-D").append(Settings.SPARK_JAVA_LIBRARY_PROP).append("=").
-        append(services.getSettings().getHadoopDir()).
+        append(services.getSettings().getHadoopSymbolicLinkDir()).
         append("/lib/native/").
         append(" ").
         append("-D").append(Settings.HOPSWORKS_APPID_PROPERTY).append("=").
@@ -427,7 +425,7 @@ public class SparkYarnRunnerBuilder {
           getJobName());
       addSystemProperty(Settings.HOPSWORKS_JOBTYPE_PROPERTY, jobType.getName());
       addSystemProperty(Settings.HOPSWORKS_PROJECTUSER_PROPERTY, jobUser);
-      
+
       extraJavaOptions.append(" -D" + Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY
           + "=").
           append(serviceProps.getRestEndpoint()).
@@ -474,7 +472,7 @@ public class SparkYarnRunnerBuilder {
 
     //Set up command
     StringBuilder amargs = new StringBuilder("--class ");
-    amargs.append(((SparkJobConfiguration) jobDescription.getJobConfig()).
+    amargs.append(((SparkJobConfiguration) job.getJobConfig()).
         getMainClass());
     //TODO(set app file from path)
 

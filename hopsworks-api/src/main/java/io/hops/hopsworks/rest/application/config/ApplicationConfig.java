@@ -24,10 +24,10 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.jobs.ExecutionService.class);
     register(io.hops.hopsworks.api.jobs.FlinkService.class);
     register(io.hops.hopsworks.api.jobs.JobService.class);
+    register(io.hops.hopsworks.api.jupyter.JupyterService.class);
     register(io.hops.hopsworks.api.jobs.KafkaService.class);
     register(io.hops.hopsworks.api.jobs.DeviceService.class);
     register(io.hops.hopsworks.api.jobs.SparkService.class);
-    register(io.hops.hopsworks.api.jobs.TensorFlowService.class);
     register(io.hops.hopsworks.api.project.DataSetService.class);
     register(io.hops.hopsworks.api.project.HistoryService.class);
     register(io.hops.hopsworks.api.project.MessageService.class);
@@ -47,11 +47,6 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.util.LocalFsService.class);
     register(io.hops.hopsworks.api.util.UploadService.class);
     register(io.hops.hopsworks.api.util.VariablesService.class);
-    register(io.hops.hopsworks.api.workflow.EdgeService.class);
-    register(io.hops.hopsworks.api.workflow.NodeService.class);
-    register(io.hops.hopsworks.api.workflow.WorkflowExecutionService.class);
-    register(io.hops.hopsworks.api.workflow.WorkflowJobService.class);
-    register(io.hops.hopsworks.api.workflow.WorkflowService.class);
     register(io.hops.hopsworks.api.zeppelin.rest.ConfigurationsRestApi.class);
     register(io.hops.hopsworks.api.zeppelin.rest.HeliumService.class);
     register(io.hops.hopsworks.api.zeppelin.rest.HeliumRestApi.class);
@@ -63,8 +58,18 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.zeppelin.rest.SecurityRestApi.class);
     register(io.hops.hopsworks.api.zeppelin.rest.ZeppelinRestApi.class);
     register(io.hops.hopsworks.api.app.ApplicationService.class);
-    
+    register(io.hops.hopsworks.api.cluster.Monitor.class);
+
     register(org.glassfish.jersey.media.multipart.MultiPartFeature.class);
+    
+    //dela
+    register(io.hops.hopsworks.api.dela.DelaService.class);
+    register(io.hops.hopsworks.api.dela.DelaProjectService.class);
+    register(io.hops.hopsworks.api.dela.RemoteDelaService.class);
+    register(io.hops.hopsworks.api.hopssite.HopssiteService.class);
+    register(io.hops.hopsworks.api.hopssite.CommentService.class);
+    register(io.hops.hopsworks.api.hopssite.RatingService.class);
+    //
     
     //swagger
     register(io.swagger.jaxrs.listing.ApiListingResource.class);

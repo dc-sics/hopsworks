@@ -2,7 +2,7 @@ package io.hops.hopsworks.common.jobs.tensorflow;
 
 import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptorsFacade;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
-import io.hops.hopsworks.common.dao.jobs.description.JobDescription;
+import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
@@ -45,7 +45,7 @@ public class TensorFlowController {
   @EJB
   private YarnJobsMonitor jobsMonitor;
 
-  public Execution startJob(final JobDescription job, final Users user) throws
+  public Execution startJob(final Jobs job, final Users user) throws
       IllegalStateException,
       IOException, NullPointerException, IllegalArgumentException {
     //First: some parameter checking.
@@ -66,7 +66,7 @@ public class TensorFlowController {
         @Override
         public TensorFlowJob run() throws Exception {
           return new TensorFlowJob(job, submitter, user,
-              settings.getHadoopDir(),
+              settings.getHadoopSymbolicLinkDir(),
               settings.getHdfsSuperUser(),
               hdfsUsersBean.getHdfsUserName(job.getProject(), job.getCreator()),
               jobsMonitor, settings);
@@ -91,7 +91,7 @@ public class TensorFlowController {
     return execution;
   }
 
-  public void stopJob(JobDescription job, Users user, String appid) throws
+  public void stopJob(Jobs job, Users user, String appid) throws
       IllegalStateException,
       IOException, NullPointerException, IllegalArgumentException {
     //First: some parameter checking.
@@ -105,7 +105,7 @@ public class TensorFlowController {
     }
 
     TensorFlowJob tfJob = new TensorFlowJob(job, submitter, user,
-        settings.getHadoopDir(),
+        settings.getHadoopSymbolicLinkDir(),
         settings.getHdfsSuperUser(),
         hdfsUsersBean.getHdfsUserName(job.getProject(), 
                 job.getCreator()), jobsMonitor, settings);

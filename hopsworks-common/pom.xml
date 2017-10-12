@@ -16,7 +16,17 @@
   <description>Hopsworks common</description>
   <name>hopsworks-common</name>
 
+  <properties>
+    <tuples.version>1.2</tuples.version>
+  </properties> 
+  
   <dependencies>
+    <dependency>
+      <groupId>org.javatuples</groupId>
+      <artifactId>javatuples</artifactId>
+      <version>${tuples.version}</version>
+    </dependency>
+    
     <dependency>
       <groupId>org.eclipse.persistence</groupId>
       <artifactId>eclipselink</artifactId>
@@ -37,7 +47,7 @@
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-clients</artifactId>
-      <version>0.10.2.0</version>
+      <version>0.11.0.1</version>
       <type>jar</type>
     </dependency>
     <!-- io.hops -->
@@ -49,7 +59,7 @@
     <dependency>
       <groupId>io.hops</groupId>
       <artifactId>hadoop-client</artifactId>
-      <version>2.8.2</version>
+      <version>2.8.2.1</version>
       <exclusions>
         <exclusion>
           <groupId>com.sun.jersey</groupId>
@@ -65,7 +75,7 @@
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka_2.11</artifactId>
-      <version>0.10.2.0</version>
+      <version>0.11.0.1</version>
       <type>jar</type>
     </dependency>
     <dependency>
@@ -101,21 +111,6 @@
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch</artifactId>
       <version>2.4.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.oozie</groupId>
-      <artifactId>oozie-client</artifactId>
-      <version>4.2.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.oozie</groupId>
-          <artifactId>oozie-hadoop-auth</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>commons-beanutils</groupId>

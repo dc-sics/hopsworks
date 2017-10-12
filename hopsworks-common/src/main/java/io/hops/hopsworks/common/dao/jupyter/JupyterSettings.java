@@ -33,7 +33,7 @@ import javax.xml.bind.annotation.XmlRootElement;
   ,
   @NamedQuery(name = "JupyterSettings.findByTeamMember",
           query
-          = "SELECT j FROM JupyterSettings j WHERE j.jupyterSettingsPK.teamMember = :teamMember")
+          = "SELECT j FROM JupyterSettings j WHERE j.jupyterSettingsPK.email = :email")
   ,
   @NamedQuery(name = "JupyterSettings.findByNumTfPs",
           query
@@ -98,7 +98,7 @@ public class JupyterSettings implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Column(name = "appmaster_memory")
-  private int appmasterMemory = 512;
+  private int appmasterMemory = 1024;
   @Basic(optional = false)
   @NotNull
   @Column(name = "num_executors")
@@ -110,7 +110,7 @@ public class JupyterSettings implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Column(name = "executor_memory")
-  private int executorMemory = 512;
+  private int executorMemory = 1024;
   @Basic(optional = false)
   @NotNull
   @Column(name = "dynamic_initial_executors")
@@ -141,6 +141,12 @@ public class JupyterSettings implements Serializable {
           max = 255)
   @Column(name = "secret")
   private String secret;
+
+  @Basic(optional = true)
+  @Size(min = 3,
+          max = 15)
+  @Column(name = "log_level")
+  private String logLevel = "INFO";
 
   @Basic(optional = false)
   @NotNull
@@ -195,14 +201,14 @@ public class JupyterSettings implements Serializable {
   }
 
   public JupyterSettings(JupyterSettingsPK jupyterSettingsPK, String secret,
-          String framework) {
+          String mode) {
     this.jupyterSettingsPK = jupyterSettingsPK;
     this.secret = secret;
-    this.mode = framework;
+    this.mode = mode;
   }
 
-  public JupyterSettings(int projectId, String teamMember) {
-    this.jupyterSettingsPK = new JupyterSettingsPK(projectId, teamMember);
+  public JupyterSettings(int projectId, String email) {
+    this.jupyterSettingsPK = new JupyterSettingsPK(projectId, email);
   }
 
   public JupyterSettingsPK getJupyterSettingsPK() {
@@ -299,6 +305,14 @@ public class JupyterSettings implements Serializable {
 
   public void setSecret(String secret) {
     this.secret = secret;
+  }
+
+  public String getLogLevel() {
+    return logLevel;
+  }
+
+  public void setLogLevel(String logLevel) {
+    this.logLevel = logLevel;
   }
 
   public Users getUsers() {

@@ -6,6 +6,8 @@ import javax.persistence.Basic;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.Enumerated;
+import javax.persistence.EnumType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -27,8 +29,7 @@ import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(name = "Dataset.findAll",
-          query
-          = "SELECT d FROM Dataset d"),
+          query = "SELECT d FROM Dataset d"),
   @NamedQuery(name = "Dataset.findById",
           query
           = "SELECT d FROM Dataset d WHERE d.id = :id"),
@@ -36,8 +37,7 @@ import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
           query
           = "SELECT d FROM Dataset d WHERE d.InodeId = :inodeId"),
   @NamedQuery(name = "Dataset.findByInode",
-          query
-          = "SELECT d FROM Dataset d WHERE d.inode = :inode"),
+          query = "SELECT d FROM Dataset d WHERE d.inode = :inode"),
   @NamedQuery(name = "Dataset.findByProjectAndInode",
           query
           = "SELECT d FROM Dataset d WHERE d.project = :projectId AND d.inode = :inode"),
@@ -45,18 +45,22 @@ import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
           query
           = "SELECT d FROM Dataset d WHERE d.project = :projectId"),
   @NamedQuery(name = "Dataset.findAllPublic",
-          query
-          = "SELECT d FROM Dataset d WHERE d.publicDs = 1 AND d.shared = 0"),
+          query = "SELECT d FROM Dataset d WHERE d.publicDs = true"),//AND d.shared = 0
   @NamedQuery(name = "Dataset.findByDescription",
-          query
-          = "SELECT d FROM Dataset d WHERE d.description = :description"),
+          query = "SELECT d FROM Dataset d WHERE d.description = :description"),
+  @NamedQuery(name = "Dataset.findByPublicDsIdProject",
+          query = "SELECT d FROM Dataset d WHERE d.publicDsId = :publicDsId AND d.project = :project"),
+  @NamedQuery(name = "Dataset.findByName",
+          query = "SELECT d FROM Dataset d WHERE d.name = :name"),
   @NamedQuery(name = "Dataset.findByNameAndProjectId",
           query
           = "SELECT d FROM Dataset d WHERE d.name = :name AND d.project = :projectId"),
   @NamedQuery(name = "Dataset.findSharedWithProject",
           query
           = "SELECT d FROM Dataset d WHERE d.project = :projectId AND "
-                  + "d.shared = true")})
+                  + "d.shared = true"),
+  @NamedQuery(name = "Dataset.findByPublicDsId",
+    query = "SELECT d FROM Dataset d WHERE d.publicDsId = :publicDsId")})
 public class Dataset implements Serializable {
 
   private static final long serialVersionUID = 1L;
@@ -110,10 +114,18 @@ public class Dataset implements Serializable {
   @NotNull
   @Column(name = "public_ds")
   private boolean publicDs;
+  @Size(max = 1000)
+  @Column(name = "public_ds_id")
+  private String publicDsId;
   @Basic(optional = false)
   @NotNull
   @Column(name = "shared")
   private boolean shared = false;
+  @Basic(optional = false)
+  @NotNull
+  @Enumerated(EnumType.ORDINAL)
+  @Column(name = "dstype")
+  private DatasetType type = DatasetType.DATASET;
 
   @OneToMany(cascade = CascadeType.ALL,
           mappedBy = "dataset")
@@ -138,6 +150,22 @@ public class Dataset implements Serializable {
     this.project = project;
     this.InodeId = inode.getId();
     this.name = inode.getInodePK().getName();
+  }
+
+  public Dataset(Dataset ds, Project project){
+    this.inode = ds.getInode();
+    this.project = project;
+    this.InodeId = ds.getInodeId();
+    this.name = ds.getInode().getInodePK().getName();
+    this.searchable = ds.isSearchable();
+    this.description = ds.getDescription();
+    this.editable = ds.isEditable();
+    this.publicDs = ds.isPublicDs();
+    this.type = ds.getType();
+  }
+  
+  public String getName() {
+    return name;
   }
 
   public Integer getId() {
@@ -204,6 +232,14 @@ public class Dataset implements Serializable {
     this.publicDs = publicDs;
   }
 
+  public String getPublicDsId() {
+    return publicDsId;
+  }
+
+  public void setPublicDsId(String publicDsId) {
+    this.publicDsId = publicDsId;
+  }
+
   public boolean isShared() {
     return shared;
   }
@@ -211,6 +247,10 @@ public class Dataset implements Serializable {
   public void setShared(boolean shared) {
     this.shared = shared;
   }
+
+  public void setType(DatasetType type) { this.type = type; }
+
+  public DatasetType getType() { return this.type; }
 
   public Collection<DatasetRequest> getDatasetRequestCollection() {
     return datasetRequestCollection;
@@ -241,7 +281,6 @@ public class Dataset implements Serializable {
     }
     return true;
   }
-
   /**
    * DO NOT USE THIS - used by ePipe
    *

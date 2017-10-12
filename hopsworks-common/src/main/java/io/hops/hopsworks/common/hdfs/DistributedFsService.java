@@ -63,7 +63,7 @@ public class DistributedFsService {
   
   @PostConstruct
   public void init() {
-    System.setProperty("hadoop.home.dir", settings.getHadoopDir());
+    System.setProperty("hadoop.home.dir", settings.getHadoopSymbolicLinkDir());
     hadoopConfDir = settings.getHadoopConfDir();
     //Get the configuration file at found path
     File hadoopConfFile = new File(hadoopConfDir, "core-site.xml");
@@ -92,8 +92,6 @@ public class DistributedFsService {
 //    conf.setStrings("dfs.namenodes.rpc.addresses", hdfsLeDescriptorsFacade.getActiveNN().getHostname());
 //    conf.setStrings("fs.defaultFS", "hdfs://"+hdfsLeDescriptorsFacade.getActiveNN().getHostname());
     if (settings.getHopsRpcTls()) {
-      bhcs.parseServerSSLConf(conf);
-      
       try {
         hostname = InetAddress.getLocalHost().getHostName();
         transientDir = settings.getHopsworksTmpCertDir();
@@ -206,7 +204,7 @@ public class DistributedFsService {
     if (null != udfso) {
       String[] tokens = udfso.getEffectiveUser().split(HdfsUsersController
           .USER_NAME_DELIMITER);
-      if (null != tokens && tokens.length == 2) {
+      if (null != tokens && tokens.length == 2 && settings.getHopsRpcTls()) {
         bhcs.removeNonSuperUserCertificate(tokens[1], tokens[0]);
       }
       udfso.close();
