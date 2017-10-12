@@ -65,9 +65,9 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericData;
 
 @Stateless
-public class KafkaFacade {
+public class KafkaFacade2 {
 
-  private final static Logger LOG = Logger.getLogger(KafkaFacade.class.
+  private final static Logger LOG = Logger.getLogger(KafkaFacade2.class.
       getName());
 
   @PersistenceContext(unitName = "kthfsPU")
@@ -108,7 +108,7 @@ public class KafkaFacade {
     return em;
   }
 
-  public KafkaFacade() throws Exception {
+  public KafkaFacade2() throws Exception {
   }
 
   /**
@@ -347,7 +347,7 @@ public class KafkaFacade {
         zkConnection.close();
       } catch (InterruptedException ex) {
         Logger.getLogger(
-            KafkaFacade.class.getName()).log(Level.SEVERE, null, ex);
+            KafkaFacade2.class.getName()).log(Level.SEVERE, null, ex);
       }
     }
   }

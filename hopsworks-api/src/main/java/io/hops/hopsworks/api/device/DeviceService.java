@@ -50,10 +50,10 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
-import io.hops.hopsworks.common.dao.device.DeviceFacade;
+import io.hops.hopsworks.common.dao.device.DeviceFacade2;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectSecret;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -103,10 +103,10 @@ public class DeviceService {
   private ProjectFacade projectFacade;
 
   @EJB
-  private DeviceFacade deviceFacade;
+  private DeviceFacade2 deviceFacade;
   
   @EJB
-  private KafkaFacade kafkaFacade;
+  private KafkaFacade2 kafkaFacade;
 
   public DeviceService() {
   }
