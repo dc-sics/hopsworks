@@ -36,7 +36,6 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
-import io.hops.hopsworks.common.dao.workflow.Workflow;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
@@ -90,10 +89,6 @@ public class Project implements Serializable {
   private Collection<Dataset> datasetCollection;
 
   @OneToMany(cascade = CascadeType.ALL,
-          mappedBy = "project")
-  private Collection<Workflow> workflowCollection;
-
-  @OneToMany(cascade = CascadeType.ALL,
           mappedBy = "projectId")
   private Collection<CondaCommands> condaCommandsCollection;
   @OneToMany(cascade = CascadeType.ALL,
@@ -139,7 +134,11 @@ public class Project implements Serializable {
   @Column(name = "deleted")
   private Boolean deleted;
 
-  @Size(max = 3000)
+  @Column(name = "python_version")
+  private String pythonVersion;
+  
+  
+  @Size(max = 2000)
   @Column(name = "description")
   private String description;
 
@@ -237,6 +236,14 @@ public class Project implements Serializable {
     this.retentionPeriod = retentionPeriod;
   }
 
+  public String getPythonVersion() {
+    return pythonVersion;
+  }
+
+  public void setPythonVersion(String pythonVersion) {
+    this.pythonVersion = pythonVersion;
+  }
+  
   public String getDescription() {
     return description;
   }
@@ -355,16 +362,6 @@ public class Project implements Serializable {
 
   public void setDatasetCollection(Collection<Dataset> datasetCollection) {
     this.datasetCollection = datasetCollection;
-  }
-
-  @XmlTransient
-  @JsonIgnore
-  public Collection<Workflow> getWorkflowCollection() {
-    return workflowCollection;
-  }
-
-  public void setWorkflowCollection(Collection<Workflow> workflowCollection) {
-    this.workflowCollection = workflowCollection;
   }
 
   @XmlTransient

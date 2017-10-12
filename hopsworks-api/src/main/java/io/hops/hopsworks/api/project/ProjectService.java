@@ -1,7 +1,9 @@
 package io.hops.hopsworks.api.project;
 
+import io.hops.hopsworks.api.dela.DelaProjectService;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
 import io.hops.hopsworks.api.jobs.BiobankingService;
 import io.hops.hopsworks.api.jobs.DeviceService;
 import io.hops.hopsworks.api.jobs.JobService;
@@ -10,7 +12,6 @@ import io.hops.hopsworks.api.jupyter.JupyterService;
 import io.hops.hopsworks.api.pythonDeps.PythonDepsService;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.api.util.LocalFsService;
-import io.hops.hopsworks.api.workflow.WorkflowService;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.DataSetDTO;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
@@ -40,10 +41,9 @@ import io.hops.hopsworks.common.project.TourProjectType;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
-
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -66,6 +66,7 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.xml.rpc.ServiceException;
 import org.apache.hadoop.security.AccessControlException;
 
 @Path("/project")
@@ -99,8 +100,6 @@ public class ProjectService {
   @Inject
   private BiobankingService biobanking;
   @Inject
-  private WorkflowService workflowService;
-  @Inject
   private PythonDepsService pysparkService;
   @Inject
   private CertService certs;
@@ -116,13 +115,14 @@ public class ProjectService {
   private HdfsUsersController hdfsUsersBean;
 
   @EJB
-  private ActivityFacade activityController;
-  @EJB
   private UsersController usersController;
   @EJB
   private UserManager userManager;
   @EJB
   private DistributedFsService dfs;
+  
+  @Inject
+  private DelaProjectService delaService;
 
   private final static Logger logger = Logger.getLogger(ProjectService.class.
       getName());
@@ -151,9 +151,7 @@ public class ProjectService {
       @Context HttpServletRequest req) {
 
     List<Project> list = projectFacade.findAll();
-    GenericEntity<List<Project>> projects = new GenericEntity<List<Project>>(
-        list) {
-    };
+    GenericEntity<List<Project>> projects = new GenericEntity<List<Project>>(list) {};
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         projects).build();
@@ -218,28 +216,25 @@ public class ProjectService {
   }
   
   @GET
-  @Path("/readme/{path: .+}")
+  @Path("/readme/byInodeId/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getReadme(@PathParam("path") String path) throws AppException {
-    if (path == null) {
+  public Response getReadmeByInodeId(@PathParam("inodeId") Integer inodeId) throws AppException {
+    if (inodeId == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           "No path given.");
     }
-    String[] parts = path.split(File.separator);
-    if (parts.length < 5) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Should specify full path.");
-    }
-    Project proj = projectFacade.findByName(parts[2]);
-    Dataset ds = datasetFacade.findByNameAndProjectId(proj, parts[3]);
+    Inode inode = inodes.findById(inodeId);
+    Inode parent = inodes.findParent(inode);
+    Project proj = projectFacade.findByName(parent.getInodePK().getName());
+    Dataset ds = datasetFacade.findByProjectAndInode(proj, inode);
     if (ds != null && !ds.isSearchable()) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          "Readme not accessable.");
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Readme not accessable.");
     }
     DistributedFileSystemOps dfso = dfs.getDfsOps();
     FilePreviewDTO filePreviewDTO;
+    String path = inodes.getPath(inode);
     try {
-      filePreviewDTO = datasetController.getReadme(path, dfso);
+      filePreviewDTO = datasetController.getReadme(path + "/README.md", dfso);
     } catch (IOException ex) {
       filePreviewDTO = new FilePreviewDTO();
       filePreviewDTO.setContent("No README file found for this dataset.");
@@ -374,96 +369,83 @@ public class ProjectService {
       @PathParam("id") Integer id,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
+
     JsonResponse json = new JsonResponse();
+    String userEmail = sc.getUserPrincipal().getName();
+    Users user = userManager.getUserByEmail(userEmail);
+    Project project = projectController.findProjectById(id);
+
     boolean updated = false;
 
-    Project project = projectController.findProjectById(id);
-    String userEmail = sc.getUserPrincipal().getName();
-
-    // Update the description if it have been chenged
-    if (project.getDescription() == null || !project.getDescription().equals(
-        projectDTO.getDescription())) {
-      projectController.updateProject(project, projectDTO, userEmail);
-
+    if (projectController.updateProjectDescription(project,
+        projectDTO.getDescription(), user)){
       json.setSuccessMessage(ResponseMessages.PROJECT_DESCRIPTION_CHANGED);
       updated = true;
     }
 
-    // Update the retention period if it have been chenged
-    if (project.getRetentionPeriod() == null || !project.getRetentionPeriod().
-        equals(
-            projectDTO.getRetentionPeriod())) {
-      projectController.updateProject(project, projectDTO,
-          userEmail);
-      activityController.persistActivity("Changed   retention period to "
-          + projectDTO.getRetentionPeriod(), project, userEmail);
-      json.setSuccessMessage(ResponseMessages.PROJECT_RETENTON_CHANGED);
+    if (projectController.updateProjectRetention(project,
+        projectDTO.getRetentionPeriod(), user)){
+      json.setSuccessMessage(json.getSuccessMessage() + "\n" +
+          ResponseMessages.PROJECT_RETENTON_CHANGED);
       updated = true;
     }
 
-    // Add all the new services
-    List<ProjectServiceEnum> projectServices = new ArrayList<>();
-    for (String s : projectDTO.getServices()) {
-      try {
-        ProjectServiceEnum se = ProjectServiceEnum.valueOf(s.toUpperCase());
-        se.toString();
-        if (se.equals(ProjectServiceEnum.ZEPPELIN)) {
-          Users user = userManager.getUserByEmail(userEmail);
-          DistributedFileSystemOps udfso = null;
-          DistributedFileSystemOps dfso = null;
-          Settings.DefaultDataset ds = Settings.DefaultDataset.ZEPPELIN;
-          try {
-            String username = hdfsUsersBean.getHdfsUserName(project, user);
-            udfso = dfs.getDfsOps(username);
-            dfso = dfs.getDfsOps();
-            datasetController.createDataset(user, project, ds.getName(), ds.
-                    getDescription(), -1, false, true, dfso, dfso);
-            datasetController.generateReadme(udfso, ds.getName(),
-                    ds.getDescription(), project.getName());
-          } catch (IOException | AppException ex) {
-            logger.log(Level.SEVERE, "Could not create zeppelin notebook dir.",
-                    ex);
-            json.setErrorMsg(json.getErrorMsg() + "\n " 
-                    + "Failed to create zeppelin notebook dir. "
-                    + "Zeppelin will not work properly. "
-                    + "Try recreating "+ ds.getName() +" dir manualy.");
-          } finally {
-            if (udfso != null) {
-              dfs.closeDfsClient(udfso);
-            }
-            if (dfso != null) {
-              dfso.close();
-            }
+    if (!projectDTO.getServices().isEmpty()) {
+      // Create dfso here and pass them to the different controllers
+      DistributedFileSystemOps dfso = dfs.getDfsOps();
+      DistributedFileSystemOps udfso = dfs.getDfsOps(hdfsUsersBean.getHdfsUserName(project, user));
+
+      for (String s : projectDTO.getServices()) {
+        ProjectServiceEnum se = null;
+        try {
+          se = ProjectServiceEnum.valueOf(s.toUpperCase());
+          if (projectController.addService(project, se, user, dfso, udfso)) {
+            // Service successfully enabled
+            json.setSuccessMessage(json.getSuccessMessage() + "\n"
+                + ResponseMessages.PROJECT_SERVICE_ADDED
+                + s
+            );
+            updated = true;
           }
+        } catch (IllegalArgumentException iex) {
+          logger.log(Level.SEVERE,
+              ResponseMessages.PROJECT_SERVICE_NOT_FOUND);
+          json.setErrorMsg(s + ResponseMessages.PROJECT_SERVICE_NOT_FOUND + "\n "
+              + json.getErrorMsg());
+        } catch (ServiceException sex) {
+          // Error enabling the service
+          String error = null;
+          switch (se) {
+            case ZEPPELIN:
+              error = ResponseMessages.ZEPPELIN_ADD_FAILURE + Settings.ServiceDataset.ZEPPELIN.getName();
+              break;
+            case JUPYTER:
+              error = ResponseMessages.JUPYTER_ADD_FAILURE + Settings.ServiceDataset.JUPYTER.getName();
+              break;
+            default:
+              error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
+          }
+          json.setErrorMsg(json.getErrorMsg() + "\n" + error);
         }
-        projectServices.add(se);
-      } catch (IllegalArgumentException iex) {
-        logger.log(Level.SEVERE,
-                ResponseMessages.PROJECT_SERVICE_NOT_FOUND);
-        json.setErrorMsg(s + ResponseMessages.PROJECT_SERVICE_NOT_FOUND + "\n "
-                + json.getErrorMsg());
+      }
+
+      // close dfsos
+      if (dfso != null) {
+        dfso.close();
+      }
+      if (udfso != null) {
+        dfs.closeDfsClient(udfso);
       }
     }
 
-    if (!projectServices.isEmpty()) {
-      boolean added = projectController.addServices(project, projectServices,
-          userEmail);
-      if (added) {
-        json.setSuccessMessage(ResponseMessages.PROJECT_SERVICE_ADDED);
-        updated = true;
-      }
-    }
     if (!updated) {
-      json.setSuccessMessage("Nothing to update.");
+      json.setSuccessMessage(ResponseMessages.NOTHING_TO_UPDATE);
     }
 
     return noCacheResponse.getNoCacheResponseBuilder(
         Response.Status.CREATED).entity(json).build();
   }
 
-  
-  
-  
   private void populateActiveServices(List<String> projectServices,
       TourProjectType tourType) {
     for (ProjectServiceEnum service : tourType.getActiveServices()) {
@@ -509,12 +491,18 @@ public class ProjectService {
       projectDTO.setProjectName("demo_" + TourProjectType.KAFKA.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.KAFKA);
       readMeMessage = "jar file to demonstrate Kafka streaming";
+    } else if (TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName().replace("_", " ").equalsIgnoreCase(type)) {
+      // It's a Distributed TensorFlow guide
+      demoType = TourProjectType.DISTRIBUTED_TENSORFLOW;
+      projectDTO.setProjectName("demo_" + TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName() + "_" + username);
+      populateActiveServices(projectServices, TourProjectType.DISTRIBUTED_TENSORFLOW);
+      readMeMessage = "Mnist data to demonstrate the creation of a distributed TensorFlow job";
     } else if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)) {
       // It's a TensorFlow guide
       demoType = TourProjectType.TENSORFLOW;
       projectDTO.setProjectName("demo_" + TourProjectType.TENSORFLOW.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.TENSORFLOW);
-      readMeMessage = "Mnist data and python files to demonstrate the creation of a TensorFlow job";
+      readMeMessage = "Mnist data and python files to demonstrate running TensorFlow noteooks";
     } else {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.STARTER_PROJECT_BAD_REQUEST);
@@ -531,6 +519,10 @@ public class ProjectService {
       projectController.addTourFilesToProject(owner, project, dfso, dfso, demoType);
       //TestJob dataset
       datasetController.generateReadme(udfso, "TestJob", readMeMessage, project.getName());
+      //Activate Anaconda and install numppy
+//      if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)){
+//        projectController.initAnacondaForTFDemo(project, req.getSession().getId());
+//      }
     } catch (Exception ex) {
       projectController.cleanup(project, req.getSession().getId());
       throw ex;
@@ -726,16 +718,21 @@ public class ProjectService {
   @Path("getPublicDatasets")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.ALL})
-  public Response getPublicDatasets(
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) throws AppException {
-
-    List<DataSetDTO> publicDatasets = datasetFacade.findPublicDatasets();
-    GenericEntity<List<DataSetDTO>> datasets
-        = new GenericEntity<List<DataSetDTO>>(publicDatasets) {};
-
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        datasets).build();
+  public Response getPublicDatasets(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
+    List<Dataset> publicDatasets = datasetFacade.findAllPublicDatasets();
+    List<LocalDatasetDTO> localDS = new ArrayList<>();
+    Date date;
+    long size;
+    for (Dataset d : publicDatasets) {
+      if (!d.isShared()) {
+        date = new Date(d.getInode().getModificationTime().longValue());
+        size = inodes.getSize(d.getInode());
+        localDS.add(new LocalDatasetDTO(d.getInodeId(), d.getName(), d.getDescription(), d.getProject().getName(), date,
+                date, size));
+      }
+    }
+    GenericEntity<List<LocalDatasetDTO>> datasets = new GenericEntity<List<LocalDatasetDTO>>(localDS) {};
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasets).build();
   }
 
   @GET
@@ -852,19 +849,6 @@ public class ProjectService {
     return this.jupyter;
   }
 
-  @Path("{id}/workflows")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  public WorkflowService workflows(@PathParam("id") Integer id) throws
-      AppException {
-    Project project = projectController.findProjectById(id);
-    if (project == null) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.PROJECT_NOT_FOUND);
-    }
-    this.workflowService.setProject(project);
-    return workflowService;
-  }
-
   @Path("{id}/pythonDeps")
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public PythonDepsService pysparkDeps(@PathParam("id") Integer id) throws
@@ -878,4 +862,17 @@ public class ProjectService {
     return pysparkService;
   }
 
+  @Path("{id}/dela")
+  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  public DelaProjectService dela(
+    @PathParam("id") Integer id) throws AppException {
+    Project project = projectController.findProjectById(id);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+        ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    this.delaService.setProjectId(id);
+
+    return this.delaService;
+  }
 }

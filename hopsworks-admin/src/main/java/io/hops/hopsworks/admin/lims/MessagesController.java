@@ -9,7 +9,6 @@ public class MessagesController {
   public static final String ERROR = "Error.";
   public static final String SUCCESS = "Success.";
 
-  //TODO: replace all occurrences of similar methods elsewhere.
   public static void addInfoMessage(String message) {
     addInfoMessage(message, message, null);
   }
@@ -51,7 +50,7 @@ public class MessagesController {
   public static void addSecurityErrorMessage(String message) {
     FacesContext context = FacesContext.getCurrentInstance();
     context.addMessage("messages", new FacesMessage(FacesMessage.SEVERITY_ERROR,
-            message, "null"));
+        message, "null"));
 
   }
 

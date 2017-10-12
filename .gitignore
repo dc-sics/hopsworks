@@ -30,6 +30,7 @@ glassfish-resources.xml
 nb-configuration.xml
 nbactions.xml
 
+
 ### Eclipse ###
 .project
 .settings/
@@ -55,6 +56,10 @@ hopsworks-kmon/.settings/
 hopsworks-web/.classpath
 hopsworks-web/.project
 hopsworks-web/.settings/
+
+### Intellj ###
+hopsworks-web/overlays/
+
 
 ### Java ###
 *.class
@@ -114,6 +119,7 @@ build/Release
 # Dependency directory
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git
 #node_modules
+package-lock.json
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm

@@ -2,11 +2,11 @@
 
 angular.module('hopsWorksApp')
         .controller('DatasetsCtrl', ['$scope', '$q', '$mdSidenav', '$mdUtil', '$log',
-          'DataSetService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
-          'MetadataHelperService', '$showdown', '$rootScope',
-          function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, $routeParams,
+          'DataSetService', 'JupyterService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
+          'MetadataHelperService', '$showdown', '$rootScope', 'DelaProjectService',
+          function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, JupyterService, $routeParams,
                   $route, ModalService, growl, $location, MetadataHelperService,
-                  $showdown, $rootScope) {
+                  $showdown, $rootScope, DelaProjectService) {
 
             var self = this;
             self.itemsPerPage = 14;
@@ -17,15 +17,17 @@ angular.module('hopsWorksApp')
             self.pathArray; //An array containing all the path components of the current path. If empty: project root directory.
             self.sharedPathArray; //An array containing all the path components of a path in a shared dataset 
             self.highlighted;
+            self.parentDS = $rootScope.parentDS;
+            
 
             // Details of the currently selecte file/dir
             self.selected = null; //The index of the selected file in the files array.
-//            self.fileDetail = null; //The details about the currently selected file.
             self.sharedPath = null; //The details about the currently selected file.
             self.routeParamArray = [];
             $scope.readme = null;
             var dataSetService = DataSetService(self.projectId); //The datasetservice for the current project.
-
+            var delaService = DelaProjectService(self.projectId);
+            
             $scope.all_selected = false;
             self.selectedFiles = {}; //Selected files
 
@@ -169,7 +171,6 @@ angular.module('hopsWorksApp')
                         //Clear any selections
                         self.all_selected = false;
                         self.selectedFiles = {};
-                        self.selected = null;
                         //Reset the selected file
                         self.selected = null;
                         self.working = false;
@@ -321,7 +322,13 @@ angular.module('hopsWorksApp')
               removeInode(getPath(removePathArray));
             };
 
-
+//            self.deleteSelected = function () {
+//              var removePathArray = self.pathArray.slice(0);
+//              for(var fileName in self.selectedFiles){
+//                removePathArray.push(fileName);
+//                removeInode(getPath(removePathArray));
+//              }
+//            };
 
             /**
              * Makes the dataset public for anybody within the local cluster or any outside cluster.
@@ -332,27 +339,34 @@ angular.module('hopsWorksApp')
               ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet public? \n\
 This will make all its files available for any registered user to download and process.').then(
                       function (success) {
-                        dataSetService.makePublic(id).then(
+                        delaService.publishByInodeId(id).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Public.', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Hops Site).', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
-                          growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
+                                  growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                         });
 
                       }
               );
-
+            };
+            
+            self.showManifest = function(publicDSId){
+                delaService.getManifest(publicDSId).then(function(success){
+                    var manifest = success.data;
+                    ModalService.json('md','Manifest', manifest).then(function(){
+                        
+                    });
+                });
             };
 
-            self.removePublic = function (id) {
+            self.removePublic = function (publicDSId) {
 
-              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? \n\
-This will make all its files unavailable to other projects unless you share it explicitly.').then(
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet internet_private? ').then(
                       function (success) {
-                        dataSetService.removePublic(id).then(
+                        delaService.cancel(publicDSId, false).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Private.', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
@@ -369,20 +383,21 @@ This will make all its files unavailable to other projects unless you share it e
               return clippedPath;
             };
 
-            self.unzip = function () {
+            self.unzip = function (filename) {
               var pathArray = self.pathArray.slice(0);
-              pathArray.push(self.selected);
+//              pathArray.push(self.selected);
+              pathArray.push(filename);
               var filePath = getPath(pathArray);
 
-                growl.info("Started unzipping...", 
-                {title: 'Unzipping Started', ttl: 2000, referenceId: 4});
-                dataSetService.unzip(filePath).then(
+              growl.info("Started unzipping...",
+                      {title: 'Unzipping Started', ttl: 2000, referenceId: 4});
+              dataSetService.unzip(filePath).then(
                       function (success) {
-                growl.success("Refresh your browser when finished", 
-                {title: 'Unzipping in Background', ttl: 5000, referenceId: 4});
+                        growl.success("Refresh your browser when finished",
+                                {title: 'Unzipping in Background', ttl: 5000, referenceId: 4});
                       }, function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error unzipping file', ttl: 5000, referenceId: 4});
-              }); 
+              });
             };
 
             self.isZippedfile = function () {
@@ -392,7 +407,7 @@ This will make all its files unavailable to other projects unless you share it e
               var ext = re.exec(self.selected)[1];
               switch (ext) {
                 case "zip":
-                  return true; 
+                  return true;
                 case "rar":
                   return true;
                 case "tar":
@@ -410,6 +425,41 @@ This will make all its files unavailable to other projects unless you share it e
               return false;
             };
 
+            self.convertIPythonNotebook = function (filename) {
+              var pathArray = self.pathArray.slice(0);
+              pathArray.push(filename); //self.selected
+              var filePath = getPath(pathArray);
+
+              growl.info("Converting...",
+                      {title: 'Conversion Started', ttl: 2000, referenceId: 4});
+              JupyterService.convertIPythonNotebook(self.projectId, filePath).then(
+                      function (success) {
+                        growl.success("Finished - refresh your browser",
+                                {title: 'Converting in Background', ttl: 3000, referenceId: 4});
+                        getDirContents();
+                      }, function (error) {
+                growl.error(error.data.errorMsg, {title: 'Error converting notebook', ttl: 5000, referenceId: 4});
+              });
+            };
+
+            self.isIPythonNotebook = function () {
+              if (self.selected === null || self.selected === undefined) {
+                return false;
+              }
+              if (self.selected.indexOf('.') == -1) {
+                return false;
+              }
+              
+              var ext =  self.selected.split('.').pop();
+              if (ext === null || ext === undefined) {
+                return false;
+              }
+              switch (ext) {
+                case "ipynb":
+                  return true;
+              }
+              return false;
+            };
 
             /**
              * Preview the requested file in a Modal. If the file is README.md
@@ -498,7 +548,7 @@ This will make all its files unavailable to other projects unless you share it e
                             names[i] = name;
                             i++;
                           }
-
+                          var errorMsg = '';
                           for (var name in self.selectedFiles) {
                             dataSetService.copy(self.selectedFiles[name].id, relPath + "/" + name).then(
                                     function (success) {
@@ -511,9 +561,13 @@ This will make all its files unavailable to other projects unless you share it e
                                         self.all_selected = false;
                                       }
                                       //growl.success('',{title: 'Copied successfully', ttl: 5000, referenceId: 4});
-                                    }, function (error) {
-                              growl.error(error.data.errorMsg, {title: name + ' was not copied', ttl: 5000, referenceId: 4});
+                                    }, function (error) {                                      
+                                       growl.error(error.data.errorMsg, {title: name + ' was not copied', ttl: 5000});
+                                       errorMsg = error.data.errorMsg;
                             });
+                            if (errorMsg === 'Can not copy/move to a public dataset.') {
+                              break;
+                            }
                           }
                         }, function (error) {
                   //The user changed their mind.
@@ -524,7 +578,7 @@ This will make all its files unavailable to other projects unless you share it e
 
             self.move = function (inodeId, name) {
               ModalService.selectDir('lg', "/[^]*/",
-                      "problem selecting doler").then(
+                      "problem selecting folder").then(
                       function (success) {
                         var destPath = success;
                         // Get the relative path of this DataSet, relative to the project home directory
@@ -537,7 +591,7 @@ This will make all its files unavailable to other projects unless you share it e
                                   getDirContents();
                                   growl.success(success.data.successMessage, {title: 'Moved successfully. Opened dest dir: ' + relPath, ttl: 2000});
                                 }, function (error) {
-                          growl.error(error.data.errorMsg, {title: name + ' was not moved', ttl: 5000, referenceId: 4});
+                                  growl.error(error.data.errorMsg, {title: name + ' was not moved', ttl: 5000});
                         });
                       }, function (error) {
               });
@@ -573,6 +627,7 @@ This will make all its files unavailable to other projects unless you share it e
                             i++;
                           }
 
+                          var errorMsg = '';
                           for (var name in self.selectedFiles) {
                             dataSetService.move(self.selectedFiles[name].id, relPath + "/" + name).then(
                                     function (success) {
@@ -585,8 +640,12 @@ This will make all its files unavailable to other projects unless you share it e
                                         self.all_selected = false;
                                       }
                                     }, function (error) {
-                              growl.error(error.data.errorMsg, {title: name + ' was not moved', ttl: 5000, referenceId: 4});
+                                        growl.error(error.data.errorMsg, {title: name + ' was not moved', ttl: 5000});
+                                        errorMsg = error.data.errorMsg;
                             });
+                            if (errorMsg === 'Can not copy/move to a public dataset.') {
+                              break;
+                            }
                           }
                         }, function (error) {
                   //The user changed their mind.
@@ -771,11 +830,12 @@ This will make all its files unavailable to other projects unless you share it e
                           var downloadPathArray = self.pathArray.slice(0);
                           downloadPathArray.push(file.name);
                           var filePath = getPath(downloadPathArray);
+                          //growl.success("Asdfasdf", {title: 'asdfasd', ttl: 5000});
                           dataSetService.checkFileForDownload(filePath).then(
                                   function (success) {
                                     dataSetService.fileDownload(filePath);
                                   }, function (error) {
-                            growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
+                                    growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                           });
                         }
                 );
@@ -949,8 +1009,9 @@ This will make all its files unavailable to other projects unless you share it e
                         });
               }, 300);
               return debounceFn;
-            };
-            
+            }
+            ;
+
             self.getSelectedPath = function (selectedFile) {
               if (self.isSelectedFiles() !== 1) {
                 return "";
