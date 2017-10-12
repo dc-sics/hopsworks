@@ -398,6 +398,9 @@ public class DeviceService {
       Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
       Project project = projectFacade.find(projectId);
 
+      logger.info(user.getUsername());
+      logger.info(settings.getHopsworksTmpCertDir());
+      logger.info(settings.getHdfsTmpCertDir());
       HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(),
         settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
 
