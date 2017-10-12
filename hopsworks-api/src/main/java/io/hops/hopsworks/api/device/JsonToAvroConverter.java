@@ -3,8 +3,14 @@ package io.hops.hopsworks.api.device;
 import com.google.gson.Gson;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.io.DatumReader;
+import org.apache.avro.io.Decoder;
+import org.apache.avro.io.DecoderFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,4 +40,24 @@ public class JsonToAvroConverter {
     }
     return list;
   }
+
+  public static List<GenericData.Record> toAvro(String avroSchemaContents, JSONArray records)
+    throws IOException {
+
+    ArrayList<GenericData.Record> list = new ArrayList<>();
+    for (int i = 0; i < records.length(); i++) {
+      JSONObject json = records.getJSONObject(i);
+      Schema.Parser parser = new Schema.Parser();
+      Schema schema = parser.parse(avroSchemaContents);
+      Decoder decoder = DecoderFactory.get().jsonDecoder(schema, json.toString());
+      DatumReader<GenericData.Record> reader = new GenericDatumReader<>(schema);
+      list.add(reader.read(null, decoder));
+    }
+    return list;
+  }
 }
+
+
+
+
+

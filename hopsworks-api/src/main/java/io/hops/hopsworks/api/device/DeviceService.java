@@ -417,8 +417,7 @@ public class DeviceService {
       // Extracts the Avro Schema contents from the database
       SchemaDTO schema = kafkaFacade2.getSchemaForProjectTopic(projectId, topicName);
       try {
-        List<GenericData.Record> avroRecords = JsonToAvroConverter.convertJSONArrayToAvroRecords(
-          schema.getContents(), records);
+        List<GenericData.Record> avroRecords = JsonToAvroConverter.toAvro(schema.getContents(), records);
         boolean success = kafkaFacade2.produce(
           true, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
         if (success){
