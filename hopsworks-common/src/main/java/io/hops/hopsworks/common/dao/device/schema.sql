@@ -2,7 +2,7 @@
 CREATE TABLE `project_devices`(
 	`project_id` INT(11) NOT NULL,
 	`device_uuid` VARCHAR(36) NOT NULL,
-	`pass_uuid` VARCHAR(36) NOT NULL,
+	`pass_uuid` VARCHAR(64) NOT NULL,
 	`alias` VARCHAR(80) NOT NULL,
 	`created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`state` TINYINT(1) NOT NULL DEFAULT '1',

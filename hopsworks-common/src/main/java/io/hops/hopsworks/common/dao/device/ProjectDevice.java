@@ -41,7 +41,7 @@ public class ProjectDevice implements Serializable{
 
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1, max = 36)
+  @Size(min = 1, max = 64)
   @Column(name = "pass_uuid")
   private String passUuid;
 

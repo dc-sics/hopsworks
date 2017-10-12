@@ -38,6 +38,7 @@ import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
 import org.apache.avro.generic.GenericData;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.net.util.Base64;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -274,7 +275,8 @@ public class DeviceService {
       ProjectSecret secret = getProjectSecret(projectId);
 
       try {
-        deviceFacade.addProjectDevice(projectId, deviceUuid, passUuid, alias);
+        String pass = DigestUtils.sha256Hex(passUuid);
+        deviceFacade.addProjectDevice(projectId, deviceUuid, pass, alias);
         return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return DeviceResponseBuilder.failedJsonResponse(
@@ -315,7 +317,7 @@ public class DeviceService {
                 "No device is registered with the given {0}.", DEVICE_UUID));
       }
 
-      if (device.getPassUuid().equals(passUuid)) {
+      if (device.getPassUuid().equals(DigestUtils.sha256Hex(passUuid))) {
         return DeviceResponseBuilder.successfulJsonResponse(
           Status.OK, DeviceServiceSecurity.generateJwt(secret, device));
       }else {
