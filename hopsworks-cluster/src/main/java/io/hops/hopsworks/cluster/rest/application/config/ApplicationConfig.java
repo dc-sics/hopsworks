@@ -1,27 +1,23 @@
 package io.hops.hopsworks.cluster.rest.application.config;
 
-import java.util.Set;
-import javax.ws.rs.core.Application;
+import io.swagger.annotations.Api;
+import org.glassfish.jersey.server.ResourceConfig;
 
+@Api
 @javax.ws.rs.ApplicationPath("api")
-public class ApplicationConfig extends Application {
-
-  @Override
-  public Set<Class<?>> getClasses() {
-    Set<Class<?>> resources = new java.util.HashSet<>();
-    addRestResourceClasses(resources);
-    return resources;
-  }
+public class ApplicationConfig extends ResourceConfig {
 
   /**
-   * Do not modify addRestResourceClasses() method.
-   * It is automatically populated with
-   * all resources defined in the project.
-   * If required, comment out calling this method in getClasses().
+   * adding manually all the restful services of the application.
    */
-  private void addRestResourceClasses(
-          Set<Class<?>> resources) {
-    resources.add(io.hops.hopsworks.cluster.Cluster.class);
+  public ApplicationConfig() {
+    register(io.hops.hopsworks.cluster.Cluster.class);
+    register(io.hops.hopsworks.cluster.exception.mapper.EJBExceptionMapper.class);
+    register(io.hops.hopsworks.cluster.response.filter.CORSFilter.class);
+    
+    //swagger
+    register(io.swagger.jaxrs.listing.ApiListingResource.class);
+    register(io.swagger.jaxrs.listing.SwaggerSerializers.class);
   }
   
 }

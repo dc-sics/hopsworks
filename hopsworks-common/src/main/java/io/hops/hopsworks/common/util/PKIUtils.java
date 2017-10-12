@@ -27,11 +27,19 @@ public class PKIUtils {
     return null;
   }
   
-  public static void revokeCert(String certFile, String hopsMasterPassword) throws IOException, InterruptedException {
+  public static void revokeCert(String certFile, String caDir, String hopsMasterPassword, boolean intermediate) throws
+      IOException, InterruptedException {
     logger.info("Revoking certificate...");
     List<String> cmds = new ArrayList<>();
     cmds.add("openssl");
     cmds.add("ca");
+    cmds.add("-batch");
+    cmds.add("-config");
+    if (intermediate) {
+      cmds.add(caDir + "/openssl-intermediate.cnf");
+    } else {
+      cmds.add(caDir + "/openssl-ca.cnf");
+    }
     cmds.add("-passin");
     cmds.add("pass:" + hopsMasterPassword);
     cmds.add("-revoke");
@@ -52,7 +60,7 @@ public class PKIUtils {
     process.waitFor();
     int exitValue = process.exitValue();
     if (exitValue != 0) {
-      throw new RuntimeException("Failed to sign certificate. Exit value: " + exitValue);
+      throw new RuntimeException("Failed to revoke certificate. Exit value: " + exitValue);
     }
     logger.info("Revoked certificate....");    
   }

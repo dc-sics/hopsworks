@@ -2,17 +2,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>hopsworks</artifactId>
     <groupId>io.hops</groupId>
+    <artifactId>hopsworks</artifactId>
     <version>0.1.0</version>
     <relativePath>..</relativePath>
   </parent>
 
-  <groupId>io.hops</groupId>
+  <groupId>io.hops.hopsworks</groupId>
   <artifactId>hopsworks-cluster</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.1.0</version>
   <packaging>war</packaging>
-
+  <description>Hopsworks cluster registration api</description>
   <name>hopsworks-cluster</name>
 
   <properties>
@@ -29,10 +29,9 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.glassfish.metro</groupId>
-      <artifactId>webservices-rt</artifactId>
-      <version>2.3</version>
-      <scope>provided</scope>
+      <groupId>io.swagger</groupId>
+      <artifactId>swagger-jersey2-jaxrs</artifactId>
+      <version>1.5.10</version>
     </dependency>
     <dependency>
       <groupId>javax</groupId>
@@ -43,7 +42,7 @@
   </dependencies>
 
   <build>
-    <finalName>hopsworks-api</finalName>
+    <finalName>hopsworks-cluster</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

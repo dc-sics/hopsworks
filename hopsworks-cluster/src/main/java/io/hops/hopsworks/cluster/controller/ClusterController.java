@@ -6,7 +6,6 @@ import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
-import io.hops.hopsworks.common.dao.user.security.audit.AuditManager;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
@@ -60,8 +59,6 @@ public class ClusterController {
   @EJB
   private EmailBean emailBean;
   @EJB
-  private AuditManager am;
-  @EJB
   private Settings settings;
 
   public void register(ClusterDTO cluster, HttpServletRequest req) throws MessagingException {
@@ -77,6 +74,7 @@ public class ClusterController {
     agentUser.setEmail(cluster.getEmail());
     agentUser.setFname(CLUSTER_NAME_PREFIX);
     agentUser.setLname("008");
+    agentUser.setTitle("Mrs");
     agentUser.setStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT.getValue());
     agentUser.setMode(PeopleAccountStatus.M_ACCOUNT_TYPE.getValue());
     agentUser.setPassword(DigestUtils.sha256Hex(cluster.getChosenPassword()));
@@ -86,16 +84,16 @@ public class ClusterController {
     BbcGroup group = groupFacade.findByGroupName("CLUSTER_AGENT");
     if (group == null) {
       group = new BbcGroup(1008, "CLUSTER_AGENT");//get id from table or do this in chef
+      group.setGroupDesc("Cluster outside the system");
       groupFacade.save(group);
     }
 
     List<BbcGroup> groups = new ArrayList<>();
     groups.add(group);
     agentUser.setBbcGroupCollection(groups);
-
+    userBean.persist(agentUser);
     sendEmail(cluster, req, agentName + agentUser.getValidationKey(), agentUser, AccountsAuditActions.REGISTRATION.
         name());
-    userBean.persist(agentUser);
     LOGGER.log(Level.INFO, "New cluster added with email: {0}, and username: {1}", new Object[]{agentUser.getEmail(),
       agentUser.getUsername()});
 
@@ -112,10 +110,10 @@ public class ClusterController {
       throw new SecurityException("Incorrect password.");
     }
     String validationKey = getNewKey(UNREG_RANDOM_KEY_LEN);
-    sendEmail(cluster, req, clusterAgent.getUsername() + validationKey, clusterAgent,
-        AccountsAuditActions.UNREGISTRATION.name());
     clusterAgent.setValidationKey(validationKey);
     userBean.update(clusterAgent);
+    sendEmail(cluster, req, clusterAgent.getUsername() + validationKey, clusterAgent,
+        AccountsAuditActions.UNREGISTRATION.name());
   }
 
   public void validateRequest(String key, HttpServletRequest req, OP_TYPE type) throws ParseException, IOException,
@@ -141,7 +139,7 @@ public class ClusterController {
       userBean.update(agent);
     } else {
       revokeCert(agent);
-      userBean.remove(agent);
+      userBean.removeByEmail(agent.getEmail());
     }
   }
 
@@ -183,10 +181,10 @@ public class ClusterController {
                 buildClusterUnregisterRequestMessage(AuditUtil.getUserURL(req), validationKey));
       }
 
-      am.registerAccountChange(u, type, AccountsAuditActions.SUCCESS.name(), "", u, req);
+      //am.registerAccountChange(u, type, AccountsAuditActions.SUCCESS.name(), "", u, req); prevents user deletion
     } catch (MessagingException ex) {
       LOGGER.log(Level.SEVERE, "Could not send email to ", u.getEmail());
-      am.registerAccountChange(u, type, AccountsAuditActions.FAILED.name(), "", u, req);
+      //am.registerAccountChange(u, type, AccountsAuditActions.FAILED.name(), "", u, req);
       throw new MessagingException(ex.getMessage());
     }
   }
@@ -215,6 +213,9 @@ public class ClusterController {
   private Date extractDate(String key, int keyLen) throws ParseException {
     int start = Settings.USERNAME_LEN + keyLen;
     SimpleDateFormat format = new SimpleDateFormat(DATE_FORMAT);
+    if (start >= key.length()) {
+      throw new IllegalArgumentException("Invalid validation key.");
+    }
     String date = key.substring(start);
     return format.parse(date);
   }
@@ -230,7 +231,10 @@ public class ClusterController {
     if (agent == null || agent.getEmail() == null || agent.getEmail().isEmpty()) {
       throw new IllegalArgumentException("User email required.");
     }
-    File newcertsDir = new File(settings.getCertsDir() + "newcerts/");
+    File newcertsDir = new File(settings.getCertsDir() + "/newcerts/");
+    if (!newcertsDir.exists()) {
+      throw new IllegalStateException(newcertsDir + " not found.");
+    }
     File[] listOfFiles = newcertsDir.listFiles();
     File agentPem = null;
     for (int i = 0; i < listOfFiles.length; i++) {
@@ -241,7 +245,7 @@ public class ClusterController {
       }
     }
     if (agentPem != null) {
-      PKIUtils.revokeCert(agentPem.getPath(), settings.getHopsworksMasterPasswordSsl());
+      PKIUtils.revokeCert(agentPem.getPath(),settings.getCaDir(), settings.getHopsworksMasterPasswordSsl(), false);
     }
   }
 
@@ -255,7 +259,7 @@ public class ClusterController {
   }
 
   private String getEmailFromLine(String line) {
-    String email = "emailAddress=";
+    String email = "EMAILADDRESS=";
     int start = line.indexOf(email);
     String tmpName, name = "";
     if (start > -1) {

@@ -1,40 +1,72 @@
 package io.hops.hopsworks.cluster;
 
+import io.hops.hopsworks.cluster.controller.ClusterController;
+import io.swagger.annotations.Api;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.ejb.EJB;
+import javax.mail.MessagingException;
+import javax.security.cert.CertificateException;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 @Path("cluster")
+@Api(value = "Cluster registration Service", description = "Cluster registration Service")
 public class Cluster {
+
+  private final static Logger LOGGER = Logger.getLogger(Cluster.class.getName());
+  @EJB
+  private ClusterController clusterController;
 
   public Cluster() {
   }
-  
+
   @POST
   @Path("register")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void register(ClusterDTO cluster) {
-    
+  public Response register(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
+    clusterController.register(cluster, req);
+    return Response.ok().build();
   }
-  
+
   @POST
   @Path("unregister")
   @Consumes(MediaType.APPLICATION_JSON)
-  public void unregister(ClusterDTO cluster) {
-    
+  public Response unregister(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
+    clusterController.unregister(cluster, req);
+    return Response.ok().build();
   }
-  
+
   @PUT
-  @Path("register/confirm/{}")
-  public void confirmRegister() {
-    
+  @Path("register/confirm/{validationKey}")
+  public Response confirmRegister(@PathParam("validationKey") String validationKey, @Context HttpServletRequest req) {
+    try {
+      clusterController.validateRequest(validationKey, req, ClusterController.OP_TYPE.REGISTER);
+    } catch (ParseException | IOException | InterruptedException | CertificateException ex) {
+      LOGGER.log(Level.SEVERE, null, ex);
+      return Response.ok("Could not validate registration.").build();
+    }
+    return Response.ok().build();
   }
-  
+
   @PUT
-  @Path("unregister/confirm/{}")
-  public void confirmUnregister() {
-    
+  @Path("unregister/confirm/{validationKey}")
+  public Response confirmUnregister(@PathParam("validationKey") String validationKey, @Context HttpServletRequest req) {
+    try {
+      clusterController.validateRequest(validationKey, req, ClusterController.OP_TYPE.UNREGISTER);
+    } catch (ParseException | IOException | InterruptedException | CertificateException ex) {
+      LOGGER.log(Level.SEVERE, null, ex);
+      return Response.ok("Could not validate unregistration.").build();
+    }
+    return Response.ok().build();
   }
 }
