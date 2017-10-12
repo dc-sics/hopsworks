@@ -17,17 +17,16 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(
-      name = "ProjectSecrets.findAll",
+      name = "ProjectSecret.findAll",
       query = "SELECT ps FROM ProjectSecret ps"),
   @NamedQuery(
-      name = "ProjectSecrets.findByProjectId",
+      name = "ProjectSecret.findByProjectId",
       query= "SELECT ps FROM ProjectSecret ps WHERE ps.projectId = :projectId")})
 public class ProjectSecret implements Serializable{
 
   private static final long serialVersionUID = 1L;
 
   @Id
-  @Basic(optional = false)
   @Column(name = "project_id")
   private Integer projectId;
 
@@ -41,8 +40,12 @@ public class ProjectSecret implements Serializable{
   @NotNull
   @Column(name = "jwt_token_duration")
   private Integer jwtTokenDuration;
+  
+  public ProjectSecret(){
+  }
 
-  public ProjectSecret(Integer projectId, String jwtSecret, Integer jwtTokenDuration) {
+  public ProjectSecret(Integer projectId, String jwtSecret,
+      Integer jwtTokenDuration) {
     this.projectId = projectId;
     this.jwtSecret = jwtSecret;
     this.jwtTokenDuration = jwtTokenDuration;
@@ -85,15 +88,13 @@ public class ProjectSecret implements Serializable{
       return false;
     }
     ProjectSecret other = (ProjectSecret) object;
-    if (this.projectId != other.projectId ) {
-      return false;
-    }
-    return true;
+    return this.projectId != other.projectId;
   }
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectSecret[ projectId=" + this.projectId + " ]";
+    return "io.hops.hopsworks.common.dao.device.ProjectSecret[" +
+        "projectId=" + this.projectId + " ]";
   }
 
 }

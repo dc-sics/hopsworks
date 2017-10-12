@@ -1,11 +1,11 @@
 package io.hops.hopsworks.api.project;
 
 import io.hops.hopsworks.api.dela.DelaProjectService;
+import io.hops.hopsworks.api.device.DeviceManagementService;
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
 import io.hops.hopsworks.api.jobs.BiobankingService;
-import io.hops.hopsworks.api.jobs.DeviceService;
 import io.hops.hopsworks.api.jobs.JobService;
 import io.hops.hopsworks.api.jobs.KafkaService;
 import io.hops.hopsworks.api.jupyter.JupyterService;
@@ -47,7 +47,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -70,7 +69,6 @@ import javax.xml.rpc.ServiceException;
 import org.apache.hadoop.security.AccessControlException;
 
 @Path("/project")
-@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Project Service", description = "Project Service")
 @Produces(MediaType.APPLICATION_JSON)
 @Stateless
@@ -88,7 +86,7 @@ public class ProjectService {
   @Inject
   private KafkaService kafka;
   @Inject
-  private DeviceService device;
+  private DeviceManagementService deviceManagementService;
   @Inject
   private JupyterService jupyter;
   @Inject
@@ -823,16 +821,16 @@ public class ProjectService {
   }
   
   @Path("{id}/device")
-  public DeviceService device(
+  public DeviceManagementService device(
       @PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
     if (project == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.PROJECT_NOT_FOUND);
     }
-    this.device.setProjectId(id);
+    this.deviceManagementService.setProjectId(id);
 
-    return this.device;
+    return this.deviceManagementService;
   }
   
   @Path("{id}/jupyter")

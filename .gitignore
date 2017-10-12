@@ -32,6 +32,7 @@ nbactions.xml
 
 
 ### Eclipse ###
+.DS_Store
 .project
 .settings/
 hopsworks-admin/.classpath
@@ -59,7 +60,7 @@ hopsworks-web/.settings/
 
 ### Intellj ###
 hopsworks-web/overlays/
-
+hopsworks-web/overlays/
 
 ### Java ###
 *.class

@@ -409,7 +409,7 @@ public class HopsUtils {
       Map<String, String> jobSystemProperties,
       String flinkCertsDir, String applicationId, CertificateMaterializer
       certMat) {
-  
+
     // Let the Certificate Materializer handle the certificates
     UserCerts userCert = new UserCerts(project.getName(), username);
     try {

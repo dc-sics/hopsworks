@@ -159,6 +159,12 @@
       <version>7.0</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>bijection-avro_2.10</artifactId>
+      <version>0.9.2</version>
+      <type>jar</type>
+    </dependency>
   </dependencies>
 
   <build>

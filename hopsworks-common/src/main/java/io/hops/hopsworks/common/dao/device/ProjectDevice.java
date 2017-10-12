@@ -21,10 +21,16 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(
-      name = "ProjectDevices.findAll",
+      name = "ProjectDevice.findAll",
       query = "SELECT pd FROM ProjectDevice pd"),
   @NamedQuery(
-      name = "ProjectDevices.findByProjectDevicePK",
+      name = "ProjectDevice.findByProjectId",
+      query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId"),
+  @NamedQuery(
+    name = "ProjectDevice.findByProjectIdAndState",
+    query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.state = :state"),
+  @NamedQuery(
+      name = "ProjectDevice.findByProjectDevicePK",
       query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
 public class ProjectDevice implements Serializable{
 
@@ -39,38 +45,35 @@ public class ProjectDevice implements Serializable{
   @Column(name = "pass_uuid")
   private String passUuid;
 
-  @Basic(optional = false)
-  @NotNull
-  @Size(min = 1, max = 11)
-  @Column(name = "user_id")
-  private Integer userId;
+  @Size(min = 1, max = 80)
+  @Column(name = "alias")
+  private String alias;
 
-  @Basic(optional = false)
-  @NotNull
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "created_at")
   private Date createdAt;
 
   @Basic(optional = false)
-  @NotNull
-  @Column(name = "enabled")
-  private Integer enabled;
+  @Column(name = "state")
+  private Integer state;
+  
+  @Temporal(TemporalType.TIMESTAMP)
+  @Column(name = "last_produced")
+  private Date lastProduced;
 
+  public static enum State{
+    PENDING,
+    ENABLED,
+    DISABLED
+  }
+  
   public ProjectDevice() {}
 
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId) {
+  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid, State deviceState, String alias) {
     this.projectDevicePK = projectDevicePK;
     this.passUuid = passUuid;
-    this.userId = userId;
-  }
-
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String passUuid, Integer userId, Date createdAt,
-      Integer enabled) {
-    this.projectDevicePK = projectDevicePK;
-    this.passUuid = passUuid;
-    this.userId = userId;
-    this.createdAt = createdAt;
-    this.enabled = enabled;
+    this.state = deviceState.ordinal();
+    this.alias = alias;
   }
 
   public ProjectDevicePK getProjectDevicePK() {
@@ -89,12 +92,12 @@ public class ProjectDevice implements Serializable{
     this.passUuid = passUuid;
   }
 
-  public Integer getUserId() {
-    return userId;
+  public String getAlias() {
+    return alias;
   }
 
-  public void setUserId(Integer userId) {
-    this.userId = userId;
+  public void setAlias(String alias) {
+    this.alias = alias;
   }
 
   public Date getCreatedAt() {
@@ -105,18 +108,27 @@ public class ProjectDevice implements Serializable{
     this.createdAt = createdAt;
   }
 
-  public Integer getEnabled() {
-    return enabled;
+  public Integer getState() {
+    return state;
   }
 
-  public void setEnabled(Integer enabled) {
-    this.enabled = enabled;
+  public void setState(Integer state) {
+    this.state = state;
+  }
+
+  public Date getLastProduced() {
+    return lastProduced;
+  }
+
+  public void setLastProduced(Date lastProduced) {
+    this.lastProduced = lastProduced;
   }
 
   @Override
   public int hashCode() {
     int hash = 0;
-    hash += (this.projectDevicePK != null ? this.projectDevicePK.hashCode() : 0);
+    hash += (
+        this.projectDevicePK != null ? this.projectDevicePK.hashCode() : 0);
     return hash;
   }
 
@@ -135,7 +147,8 @@ public class ProjectDevice implements Serializable{
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectDevice[ projectDevicePK= " + this.projectDevicePK + " ]";
+    return "io.hops.hopsworks.common.dao.device.ProjectDevice[ " +
+        "projectDevicePK= " + this.projectDevicePK + " ]";
   }
 
 }

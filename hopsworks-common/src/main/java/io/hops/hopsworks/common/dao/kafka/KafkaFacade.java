@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.dao.kafka;
 
+import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.Project;
 import java.io.File;
@@ -57,6 +58,11 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.HopsUtils;
+
+import com.twitter.bijection.Injection;
+import com.twitter.bijection.avro.GenericAvroCodecs;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericData;
 
 @Stateless
 public class KafkaFacade {
@@ -797,6 +803,30 @@ public class KafkaFacade {
     return schemaDto;
   }
 
+  public SchemaDTO getSchemaForProjectTopic(Integer projectId, String topicName) throws AppException {
+
+    ProjectTopics topic = em.find(ProjectTopics.class, new ProjectTopicsPK(topicName, projectId));
+
+    if (topic == null) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), "Topic not found");
+    }
+
+    SchemaTopics schema = em.find(SchemaTopics.class,
+            new SchemaTopicsPK(
+                    topic.getSchemaTopics().getSchemaTopicsPK().getName(),
+                    topic.getSchemaTopics().getSchemaTopicsPK().getVersion()));
+
+    if (schema == null) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), "topic has not schema");
+    }
+    return new SchemaDTO(
+            schema.getSchemaTopicsPK().getName(),
+            schema.getContents(),
+            schema.getSchemaTopicsPK().getVersion());
+  }
+
+
+
   public List<SchemaDTO> listSchemasForTopics() {
     //get all schemas, and return the DTO
     Map<String, List<Integer>> schemas = new HashMap<>();
@@ -936,9 +966,10 @@ public class KafkaFacade {
   
       String projectSpecificUser = hdfsUsersController.getHdfsUserName(project,
           user);
-      String certPassword = baseHadoopService.getProjectSpecificUserCertPassword
-          (projectSpecificUser);
-      
+      String certPassword;
+      certPassword = baseHadoopService.getProjectSpecificUserCertPassword(
+          projectSpecificUser);
+  
       for (String brokerAddress : brokers) {
         brokerAddress = brokerAddress.split("://")[1];
         Properties props = new Properties();
@@ -978,13 +1009,13 @@ public class KafkaFacade {
             leaders.put(id, partition.leader().host());
 
             //list the replicas of the partition
-            replicas.put(id, new ArrayList<>());
+            replicas.put(id, new ArrayList<String>());
             for (Node node : partition.replicas()) {
               replicas.get(id).add(node.host());
             }
 
             //list the insync replicas of the parition
-            inSyncReplicas.put(id, new ArrayList<>());
+            inSyncReplicas.put(id, new ArrayList<String>());
             for (Node node : partition.inSyncReplicas()) {
               inSyncReplicas.get(id).add(node.host());
             }
@@ -1009,70 +1040,70 @@ public class KafkaFacade {
     return partitionDetailsDto;
   }
 
-  private String getAllBootstrapServers() throws Exception {
-    // Get all the Kafka broker endpoints (Protocol, IP, port number) from Zookeeper.
-    brokers = getBrokerEndpoints();
-    Iterator<String> iter = brokers.iterator();
-
-    // Remove all Kafka broker endpoints that contain the PLAINTEXT protocol.
-    while (iter.hasNext()) {
-      String seed = iter.next();
-      if (seed.split(COLON_SEPARATOR)[0].equalsIgnoreCase(PLAINTEXT_PROTOCOL)) {
-        iter.remove();
+  private String getAllKafkaBootstrapServers() throws Exception {
+    // Get all the Kafka broker endpoints (Protocol, IP, port number) from Zookeeper and
+    // returns a String with a bunch of IP:port pairs separated with the character ','
+    Iterator<String> iterator = getBrokerEndpoints().iterator();
+    String servers = "";
+    while (iterator.hasNext()) {
+      servers += iterator.next().split("://")[1];
+      if (iterator.hasNext()){
+        servers += ",";
       }
     }
-
-    // Combines all Kafka broker locations consisiting of (IP, port number) pairs
-    String brokerAddress = null;
-    for (String address : brokers) {
-      brokerAddress += address.split("://")[1] + ",";
-    }
-    if (brokerAddress!=null) {
-      brokerAddress = brokerAddress.substring(0, brokerAddress.length() - 1);
-    }
-    return brokerAddress;
+    return servers;
   }
 
-  public boolean produce(Integer projectId, Users user, String topicName, ArrayList<String> records) throws Exception{
-
-    Project project = projectsFacade.find(projectId);
-    String projectName = project.getName();
-    String userName = user.getUsername();
-
-    KafkaProducer<Integer, String> producer = null;
+  private KafkaProducer<String, String> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
     try {
-      String bootstrapServers = getAllBootstrapServers();
-      HopsUtils.copyUserKafkaCerts(userCerts, project, userName,
-          settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir());
-      Properties props = new Properties();
-      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.IntegerSerializer");
-      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-          "org.apache.kafka.common.serialization.StringSerializer");
 
+      // TODO: Change Trust store and Keys tore Location for the certificates (if need be)
+      String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
+        HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());
+
+      String trustStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
+        HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername());
+
+      Properties props = new Properties();
+      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, getAllKafkaBootstrapServers());
+      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
       //configure the ssl parameters
       props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
-      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils. //TODO: Add  File.separator "device" 
-          getProjectTruststoreName(projectName, userName));
-      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectKeystoreName(projectName, userName));
-      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
-      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-          settings.getHopsworksMasterPasswordSsl());
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, trustStoreFilePath);
+      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,keyStoreFilePath);
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, certPwDTO.getTrustPw());
+      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, certPwDTO.getKeyPw());
+      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, certPwDTO.getKeyPw());
+      return new KafkaProducer<>(props);
+    } catch (Exception e) {
+      e.printStackTrace();
+      LOG.warning(e.getMessage());
+      return null;
+    }
 
-      producer = new KafkaProducer<>(props);
-      for (String record: records) {
-        // Asynchronous production
-        producer.send(new ProducerRecord<Integer, String>(topicName, record)); // TODO: Get the Callback and delete the certs there.
 
-        // Synchronous production
-        //producer.send(new ProducerRecord<Integer, String>(topicName, record)).get();
+  }
+
+  public boolean produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO, String deviceUuid,
+                         String topic, String schemaContents, List<GenericData.Record> avroRecords){
+
+    KafkaProducer<String, String> producer = null;
+
+    try {
+      producer = getKafkaProducer(project, user, certPwDTO);
+
+      Schema.Parser parser = new Schema.Parser();
+      Schema schema = parser.parse(schemaContents);
+      Injection<GenericRecord, String>  recordInjection = GenericAvroCodecs.toJson(schema);
+
+      // Loop through records
+      for (GenericData.Record avroRecord: avroRecords) {
+        String record = recordInjection.apply(avroRecord);
+        producer.send(new ProducerRecord<String, String>(topic, deviceUuid, record));
+      }
+      if (synchronous){
+        producer.flush();
       }
     }catch (Exception ex){
       ex.printStackTrace();
@@ -1081,13 +1112,7 @@ public class KafkaFacade {
       if (producer != null) {
         producer.close();
       }
-      //Remove certificates from local dir
-      Files.deleteIfExists(FileSystems.getDefault().getPath(
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectTruststoreName(projectName, userName)));
-      Files.deleteIfExists(FileSystems.getDefault().getPath(
-          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-          getProjectKeystoreName(projectName, userName)));
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
     }
     return true;
   }
