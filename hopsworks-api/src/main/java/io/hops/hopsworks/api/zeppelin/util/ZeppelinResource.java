@@ -1,5 +1,7 @@
 package io.hops.hopsworks.api.zeppelin.util;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfig;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfigFactory;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -92,13 +94,15 @@ public class ZeppelinResource {
         }
       }
     }
-    zeppelinConfFactory.removeFromCache(project.getName());
   }
 
   private FileObject[] getPidFiles(Project project) throws URISyntaxException,
           FileSystemException {
-    ZeppelinConfiguration conf = zeppelinConfFactory.getprojectConf(
-            project.getName()).getConf();
+    ZeppelinConfig zepConf = zeppelinConfFactory.getProjectConf(project.getName());
+    if(zepConf==null){
+      return new FileObject[0];
+    }
+    ZeppelinConfiguration conf = zepConf.getConf();
     URI filesystemRoot;
     FileSystemManager fsManager;
     String runPath = conf.getRelativeDir("run");
@@ -155,7 +159,7 @@ public class ZeppelinResource {
     }
     return project;
   }
-  
+
   public Project getProject(String projectId) {
     Integer pId;
     Project proj;
@@ -166,6 +170,16 @@ public class ZeppelinResource {
       return null;
     }
     return proj;
+  }
+
+  public boolean isJSONValid(String jsonInString) {
+    Gson gson = new Gson();
+    try {
+      gson.fromJson(jsonInString, Object.class);
+      return true;
+    } catch (JsonSyntaxException ex) {
+      return false;
+    }
   }
 
   private boolean isProccessAlive(String pid) {
@@ -232,29 +246,33 @@ public class ZeppelinResource {
     }
     return s;
   }
-  
+
   public void persistToDB(Project project) {
     if (project == null) {
       logger.log(Level.SEVERE, "Can not persist interpreter json for null project.");
       return;
     }
-    ZeppelinConfig zeppelinConf = zeppelinConfFactory.getprojectConf(project.getName());
+    ZeppelinConfig zeppelinConf = zeppelinConfFactory.getProjectConf(project.getName());
     if (zeppelinConf == null) {
       logger.log(Level.SEVERE, "Can not persist interpreter json for project.");
       return;
     }
     try {
       String s = readConfigFile(new File(zeppelinConf.getConfDirPath() + ZeppelinConfig.INTERPRETER_JSON));
-      zeppelinInterpreterConfFacade.create(project.getName(), s);
+      if (!isJSONValid(s)) {
+        logger.log(Level.SEVERE, "Zeppelin interpreter json not valid. For project {0}", project.getName() );
+        throw new IllegalStateException("Zeppelin interpreter json not valid.");
+      }
+      zeppelinInterpreterConfFacade.create(project, s);
     } catch (IOException ex) {
       logger.log(Level.SEVERE, ex.getMessage());
     }
   }
 
   private String readConfigFile(File path) throws IOException {
-    // write contents to file as text, not binary data
+    // read contents from file
     if (!path.exists()) {
-      throw new IOException("Problem creating file: " + path);
+      throw new IOException("File not found: " + path);
     }
     return new String(Files.readAllBytes(path.toPath()));
   }

@@ -142,9 +142,19 @@ angular.module('hopsWorksApp')
                * @param {type} jobId
                * @returns {unresolved} The address of the job ui.
                */
-              getExecutionUI: function (projectId, appId) {
-                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/ui');
+              getExecutionUI: function (projectId, appId, isLivy) {
+                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/ui/' + isLivy);
               },
+              
+              /* Get the tensorboard URLs for the appid.
+               * @param {type} projectId
+               * @param {type} appId
+               * @returns {unresolved} The addresses of the tensorboard uis.
+               */
+              getTensorboardUIs: function (projectId, appId) {
+                return $http.get('/api/project/' + projectId + '/jobs/' + appId + '/tensorboard');
+              },              
+              
               /**
                * Get the yarn ui of the given job.
                * @param {type} projectId
@@ -189,6 +199,17 @@ angular.module('hopsWorksApp')
                */
               getLog: function (projectId, jobId, type) {
                 return $http.get('/api/project/' + projectId + '/jobs/getLog/' + jobId + '/' + type);
+              },
+              /**
+               * Get log by job id and submission time if app id not available.
+               * @param {type} projectId
+               * @param {type} jobId
+               * @param {type} submissionTime
+               * @param {type} type
+               * @returns {unresolved}
+               */
+              getLogByJobIdAndSubmissionTime: function (projectId, jobId, submissionTime, type) {
+                return $http.get('/api/project/' + projectId + '/jobs/getLogByJobId/' + jobId + '/' + submissionTime + '/' + type);
               },
               /**
                * Retrieve the logs associated to a certain job.

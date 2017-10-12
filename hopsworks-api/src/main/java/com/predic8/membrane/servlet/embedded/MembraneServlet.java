@@ -51,9 +51,6 @@ public class MembraneServlet extends HttpServlet {
   private static final long serialVersionUID = 1L;
   private static final Log logger = LogFactory.getLog(MembraneServlet.class);
 
-//  @EJB
-//  private Settings settings;
-
   @Override
   public void init(ServletConfig config) throws ServletException {
   }
@@ -94,11 +91,7 @@ public class MembraneServlet extends HttpServlet {
 
     String externalIp = Ip.getHost(req.getRequestURL().toString());
 
-    StringBuffer urlBuf
-            = new StringBuffer("http://"
-                                        + "localhost"
-                    + ":"
-            );
+    StringBuffer urlBuf = new StringBuffer("http://localhost:");
 
     String ctxPath = req.getRequestURI();
 
@@ -132,6 +125,10 @@ public class MembraneServlet extends HttpServlet {
             new ServiceProxyKey(
                     externalIp, "*", "*", -1),
             "localhost", targetPort);
+//    ServiceProxy sp = new ServiceProxy(
+//            new ServiceProxyKey(
+//                    externalIp, "*", "*", -1),
+//            "localhost", targetPort);
     sp.setTargetURL(newQueryBuf.toString());
     // only set external hostname in case admin console is used
     try {

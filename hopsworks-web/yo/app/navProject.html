@@ -12,7 +12,8 @@
 
       <li ng-click="projectCtrl.goToJupyter()" ng-show="projectCtrl.showJupyter()">
         <a>
-          Jupyter <img class="pull-right" style="margin-right:5px" width="30" src="images/jupyter-200x200-bw.png"/>
+          Jupyter <img class="pull-right" style="margin-right:5px" width="30" src="images/jupyter-200x200-bw.png"
+                       id="jupyterTab"/>
         </a>
       </li>
 
@@ -49,11 +50,14 @@
       <li ng-click="projectCtrl.goToKafka()"
           ng-show="projectCtrl.showKafka()">
         <a>
-          Kafka<img class="pull-right" style="margin-right:15px" height="25"
-                    src="images/kafka_logo.png" id="kafkaTab"/>
+          Kafka<img class="pull-right" style="margin-right:15px" height="25" src="images/kafka_logo.png" id="kafkaTab"/>
         </a>
       </li>
-
+      <li ng-click="projectCtrl.goToService('DELA')" ng-show="projectCtrl.showDela()">
+          <a>
+             Dela<img class="pull-right" style="margin-right:15px" height="25" src="images/dela-green.png">
+          </a>
+      </li>
 
       <li ng-click="projectCtrl.goToTensorflow()" ng-show="projectCtrl.showTensorflow()">
         <a>
@@ -62,7 +66,6 @@
           <img ng-show="projectCtrl.activeService === 'tensorflow'" class="pull-right" style="margin-left:10px" height="25" src="images/tf-175x200.png"/>
         </a>
       </li>
-
 
       <li ng-click="projectCtrl.goToWorklows()" style="margin-top:40px;"  ng-show="projectCtrl.showWorkflows()">
         <a>
@@ -78,7 +81,7 @@
 
       <li ng-click="projectCtrl.goToSettings()" style="margin-top:40px;" ng-show="projectCtrl.cloak">
         <a>
-          Settings<span class="sub_icon fa fa-dashboard fa-lg pull-right"></span>
+          Settings<span class="sub_icon fa fa-dashboard fa-lg pull-right" id="settingsTab"></span>
         </a>
       </li>
 
@@ -95,18 +98,38 @@
         </a>
       </li>
       <br>
-      <div class="sidebar-nav-static" ng-controller="ClusterUtilisationCtrl as clusterUtilCtrl">
-        <small ng-show="clusterUtilCtrl.utilisation == 20" style="color: #ddd; font-size: 80%;"><em>Cluster Utilization is low</em></small>
-        <small ng-show="clusterUtilCtrl.utilisation > 1 && clusterUtilCtrl.utilisation != 20" style="color: #ddd; font-size: 80%;"><em>Cluster Utilization: {{clusterUtilCtrl.utilisation}}%</em></small>
-        <small ng-show="clusterUtilCtrl.utilisation < 1" style="color: #ddd;"><em>Cluster Utilization is unknown</em></small>
-        <div class="progress" style="height: 10px;"
-             uib-tooltip="If this bar is orange (> 50%), consider allocating less resources for your application.
-             If this bar is red (> 80%), consider running your jobs at a later time. "
-             tooltip-placement="bottom">
-          <div class="progress-bar" style="opacity: 0.7;"
-               ng-class="clusterUtilCtrl.progressBarClass"
-               role="progressbar"
-               ng-style="{'width' : clusterUtilCtrl.utilisation + '%'}">
+      <div  ng-controller="ClusterUtilisationCtrl as clusterUtilCtrl">
+        <div class="sidebar-nav-static">
+          <small ng-show="clusterUtilCtrl.utilisation === 20" style="color: #ddd; font-size: 80%;"><em>Cluster Utilization is low</em></small>
+          <small ng-show="clusterUtilCtrl.utilisation > 1 && clusterUtilCtrl.utilisation !== 20" style="color: #ddd; font-size: 80%;"><em>Cluster Utilization: {{clusterUtilCtrl.utilisation}}%</em></small>
+          <small ng-show="clusterUtilCtrl.utilisation < 1" style="color: #ddd;"><em>Cluster Utilization is unknown</em></small>
+          <div class="progress" style="height: 10px;"
+               uib-tooltip="If this bar is orange (> 50%), consider allocating less resources for your application.
+               If this bar is red (> 80%), consider running your jobs at a later time. "
+               tooltip-placement="bottom">
+            <div class="progress-bar" style="opacity: 0.7;"
+                 ng-class="clusterUtilCtrl.progressBarClass"
+                 role="progressbar"
+                 ng-style="{'width' : clusterUtilCtrl.utilisation + '%'}">
+            </div>
+          </div>
+          <br>
+        </div>
+        <div class="sidebar-nav-static">
+          <div ng-if="clusterUtilCtrl.allocatedGPUs !== 0 || clusterUtilCtrl.availableGPUs !== 0">
+            <small style="color: #ddd; font-size: 80%;">
+              <em>Allocated GPUs: {{clusterUtilCtrl.allocatedGPUs}}<br>Available GPUs: {{clusterUtilCtrl.availableGPUs}}
+                <br>Queued GPU Requests: {{clusterUtilCtrl.reservedGPUs}}</em></small>
+            <div class="progress" style="height: 10px;"
+                 uib-tooltip="If this bar is orange, a job requesting a small number of GPUs may succeed.
+                 If this bar is red, there are no GPUs available currently for running jobs."
+                 tooltip-placement="bottom">
+              <div class="progress-bar" style="opacity: 0.7;"
+                   ng-class="clusterUtilCtrl.gpuBarClass"
+                   role="progressbar"
+                   ng-style="{'width' : clusterUtilCtrl.gpusPercent + '%'}">
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -145,9 +168,22 @@
     on-proceed="projectCtrl.goToKafka()"
     tourtip-offset-vertical="-15"
     ></virtual-step>
-  
+
   <virtual-step
     ng-if="projectCtrl.tourService.activeTour === 'tensorflow'"
+    id="TourTwo"
+    class="ng-scope"
+    tourtip="Click Next to navigate to Jupyter and start your TensorFlow coding!"
+    tourtip-step="0"
+    tourtip-element="#jupyterTab"
+    tourtip-placement="right"
+    tourtip-next-label="Done"
+    on-proceed="projectCtrl.goToJupyter()"
+    tourtip-offset-vertical="-18"
+    tourtip-offset-horizontal="-13"
+    ></virtual-step>
+   <virtual-step
+    ng-if="projectCtrl.tourService.activeTour === 'distributed tensorflow'"
     id="TourTwo"
     class="ng-scope"
     tourtip="Click Next, OR click on the Jobs tab to continue"
@@ -159,4 +195,5 @@
     tourtip-offset-vertical="-18"
     tourtip-offset-horizontal="-13"
     ></virtual-step>
+  
 </tour>
