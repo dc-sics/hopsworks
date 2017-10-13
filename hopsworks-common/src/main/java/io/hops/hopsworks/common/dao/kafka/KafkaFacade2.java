@@ -1058,10 +1058,10 @@ public class KafkaFacade2 {
     try {
 
       // TODO: Change Trust store and Keys tore Location for the certificates (if need be)
-      String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
+      String trustStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
         HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());
 
-      String trustStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
+      String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
         HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername());
 
       Properties props = new Properties();
