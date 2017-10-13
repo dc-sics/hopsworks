@@ -30,7 +30,6 @@ glassfish-resources.xml
 nb-configuration.xml
 nbactions.xml
 
-
 ### Eclipse ###
 .DS_Store
 .project
@@ -61,6 +60,7 @@ hopsworks-web/.settings/
 ### Intellj ###
 hopsworks-web/overlays/
 hopsworks-web/overlays/
+.out/
 
 ### Java ###
 *.class
