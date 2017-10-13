@@ -60,7 +60,7 @@ hopsworks-web/.settings/
 ### Intellj ###
 hopsworks-web/overlays/
 hopsworks-web/overlays/
-.out/
+out/
 
 ### Java ###
 *.class
