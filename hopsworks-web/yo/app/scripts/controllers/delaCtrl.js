@@ -13,7 +13,7 @@ angular.module('hopsWorksApp')
                 ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? \n\
                   This will make all its files unavailable to other projects unless you share it explicitly.').then(
                   function (success) {
-                    self.delaService.cancel(dataset.torrentId, false).then(
+                    self.delaService.unshareFromHops(dataset.torrentId, false).then(
                       function (success) {
                         growl.success(success.data.successMessage, {title: 'The DataSet is now Private.', ttl: 1500});
                         self.preview = {};
@@ -22,7 +22,7 @@ angular.module('hopsWorksApp')
                     });
                   });
               } else {
-                self.delaService.cancel(dataset.torrentId, false).then(
+                self.delaService.unshareFromHops(dataset.torrentId, false).then(
                   function (success) {
                     growl.success("Download cancelled.", {title: 'Success', ttl: 1500});
                     self.preview = {};

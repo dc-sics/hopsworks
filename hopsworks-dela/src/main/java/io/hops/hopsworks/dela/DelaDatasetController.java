@@ -34,18 +34,34 @@ public class DelaDatasetController {
   @EJB
   private DistributedFsService dfs;
 
-  public Dataset upload(Dataset dataset, String publicDSId) {
-    dataset.setPublicDs(true);
+  public Dataset uploadToHops(Dataset dataset, String publicDSId) {
+    dataset.setPublicDs(Dataset.SharedState.HOPS);
     dataset.setPublicDsId(publicDSId);
     dataset.setEditable(false);
     datasetFacade.merge(dataset);
     datasetCtrl.logDataset(dataset, OperationType.Update);
     return dataset;
   }
+  
+  public Dataset shareWithCluster(Dataset dataset) {
+    dataset.setPublicDs(Dataset.SharedState.CLUSTER);
+    dataset.setEditable(false);
+    datasetFacade.merge(dataset);
+    datasetCtrl.logDataset(dataset, OperationType.Update);
+    return dataset;
+  }
 
-  public Dataset cancel(Dataset dataset) {
-    dataset.setPublicDs(false);
+  public Dataset unshareFromHops(Dataset dataset) {
+    dataset.setPublicDs(Dataset.SharedState.PRIVATE);
     dataset.setPublicDsId(null);
+    dataset.setEditable(true);
+    datasetFacade.merge(dataset);
+    datasetCtrl.logDataset(dataset, OperationType.Update);
+    return dataset;
+  }
+  
+  public Dataset unshareFromCluster(Dataset dataset) {
+    dataset.setPublicDs(Dataset.SharedState.PRIVATE);
     dataset.setEditable(true);
     datasetFacade.merge(dataset);
     datasetCtrl.logDataset(dataset, OperationType.Update);
@@ -61,7 +77,7 @@ public class DelaDatasetController {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), e.getMessage(),
         ThirdPartyException.Source.LOCAL, "");
     }
-    dataset.setPublicDs(true);
+    dataset.setPublicDs(Dataset.SharedState.HOPS);
     dataset.setPublicDsId(publicDSId);
     dataset.setEditable(false);
     datasetFacade.merge(dataset);

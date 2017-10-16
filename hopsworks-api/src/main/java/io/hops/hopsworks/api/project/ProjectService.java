@@ -772,7 +772,7 @@ public class ProjectService {
       newDS.setDescription(ds.getDescription());
     }
     if (ds.isPublicDs()) {
-      newDS.setPublicDs(true);
+      newDS.setPublicDs(ds.getPublicDs());
     }
     newDS.setEditable(false);
     datasetFacade.persistDataset(newDS);

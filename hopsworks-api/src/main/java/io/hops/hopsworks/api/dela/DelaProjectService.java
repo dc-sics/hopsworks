@@ -39,6 +39,7 @@ import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -118,12 +119,25 @@ public class DelaProjectService {
   @Path("/uploads")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response publish(@Context SecurityContext sc, InodeIdDTO inodeId)
-    throws ThirdPartyException {
+  public Response publish(@Context SecurityContext sc, InodeIdDTO inodeId) throws ThirdPartyException {
     Inode inode = getInode(inodeId.getId());
     Dataset dataset = getDatasetByInode(inode);
     Users user = getUser(sc.getUserPrincipal().getName());
-    delaWorkerCtrl.publishDataset(project, dataset, user);
+    delaWorkerCtrl.shareDatasetWithHops(project, dataset, user);
+    JsonResponse json = new JsonResponse();
+    json.setSuccessMessage("Dataset transfer is started - published");
+    return successResponse(json);
+  }
+  
+  @POST
+  @Path("/shared")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response share(@Context SecurityContext sc, InodeIdDTO inodeId) throws ThirdPartyException {
+    Inode inode = getInode(inodeId.getId());
+    Dataset dataset = getDatasetByInode(inode);
+    Users user = getUser(sc.getUserPrincipal().getName());
+    delaWorkerCtrl.shareDatasetWithHops(project, dataset, user);
     JsonResponse json = new JsonResponse();
     json.setSuccessMessage("Dataset transfer is started - published");
     return successResponse(json);
@@ -151,12 +165,27 @@ public class DelaProjectService {
     Dataset dataset = getDatasetByPublicId(publicDSId);
     Users user = getUser(sc.getUserPrincipal().getName());
     if (clean) {
-      delaWorkerCtrl.cancelAndClean(project, dataset, user);
+      delaWorkerCtrl.unshareFromHopsAndClean(project, dataset, user);
     } else {
-      delaWorkerCtrl.cancel(project, dataset, user);
+      delaWorkerCtrl.unshareFromHops(project, dataset, user);
     }
     JsonResponse json = new JsonResponse();
-    json.setSuccessMessage("Dataset transfer is now stopped - cancelled");
+    json.setSuccessMessage("Dataset is now private");
+    return successResponse(json);
+  }
+  
+  @DELETE
+  @Path("/shared/{inodeId}")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response removePublic(@Context SecurityContext sc, @PathParam("inodeId") Integer inodeId) 
+    throws ThirdPartyException {
+    Inode inode = getInode(inodeId);
+    Dataset dataset = getDatasetByInode(inode);
+    Users user = getUser(sc.getUserPrincipal().getName());
+    delaWorkerCtrl.unshareFromCluster(project, dataset, user);
+    JsonResponse json = new JsonResponse();
+    json.setSuccessMessage("Dataset is now private");
     return successResponse(json);
   }
 

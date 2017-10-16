@@ -334,12 +334,33 @@ angular.module('hopsWorksApp')
              * Makes the dataset public for anybody within the local cluster or any outside cluster.
              * @param id inodeId
              */
-            self.makePublic = function (id) {
+            self.shareWithHops = function (id) {
 
               ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet public? \n\
 This will make all its files available for any registered user to download and process.').then(
                       function (success) {
-                        delaService.publishByInodeId(id).then(
+                        delaService.shareWithHopsByInodeId(id).then(
+                                function (success) {
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Hops Site).', ttl: 1500});
+                                  getDirContents();
+                                }, function (error) {
+                                  growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
+                        });
+
+                      }
+              );
+            };
+            
+            /**
+             * Makes the dataset public for anybody within the local cluster
+             * @param id inodeId
+             */
+            self.shareWithCluster = function (id) {
+
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet public? \n\
+This will make all its files available for any cluster user to share and process.').then(
+                      function (success) {
+                        delaService.shareWithClusterByInodeId(id).then(
                                 function (success) {
                                   growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Hops Site).', ttl: 1500});
                                   getDirContents();
@@ -360,11 +381,27 @@ This will make all its files available for any registered user to download and p
                 });
             };
 
-            self.removePublic = function (publicDSId) {
+            self.unshareFromHops = function (publicDSId) {
 
-              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet internet_private? ').then(
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? ').then(
                       function (success) {
-                        delaService.cancel(publicDSId, false).then(
+                        delaService.unshareFromHops(publicDSId, false).then(
+                                function (success) {
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
+                                  getDirContents();
+                                }, function (error) {
+                          growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
+                        });
+
+                      }
+              );
+            };
+            
+            self.unshareFromCluster = function (inodeId) {
+
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? ').then(
+                      function (success) {
+                        delaService.unshareFromCluster(inodeId).then(
                                 function (success) {
                                   growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
                                   getDirContents();
