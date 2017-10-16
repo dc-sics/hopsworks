@@ -11,6 +11,7 @@ import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import java.io.IOException;
+import java.util.List;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -35,7 +36,7 @@ public class DelaDatasetController {
   private DistributedFsService dfs;
 
   public Dataset uploadToHops(Dataset dataset, String publicDSId) {
-    dataset.setPublicDs(Dataset.SharedState.HOPS);
+    dataset.setPublicDsState(Dataset.SharedState.HOPS);
     dataset.setPublicDsId(publicDSId);
     dataset.setEditable(false);
     datasetFacade.merge(dataset);
@@ -43,16 +44,8 @@ public class DelaDatasetController {
     return dataset;
   }
   
-  public Dataset shareWithCluster(Dataset dataset) {
-    dataset.setPublicDs(Dataset.SharedState.CLUSTER);
-    dataset.setEditable(false);
-    datasetFacade.merge(dataset);
-    datasetCtrl.logDataset(dataset, OperationType.Update);
-    return dataset;
-  }
-
   public Dataset unshareFromHops(Dataset dataset) {
-    dataset.setPublicDs(Dataset.SharedState.PRIVATE);
+    dataset.setPublicDsState(Dataset.SharedState.PRIVATE);
     dataset.setPublicDsId(null);
     dataset.setEditable(true);
     datasetFacade.merge(dataset);
@@ -60,14 +53,6 @@ public class DelaDatasetController {
     return dataset;
   }
   
-  public Dataset unshareFromCluster(Dataset dataset) {
-    dataset.setPublicDs(Dataset.SharedState.PRIVATE);
-    dataset.setEditable(true);
-    datasetFacade.merge(dataset);
-    datasetCtrl.logDataset(dataset, OperationType.Update);
-    return dataset;
-  }
-
   public Dataset download(Project project, Users user, String publicDSId, String name)
     throws ThirdPartyException {
     Dataset dataset;
@@ -77,7 +62,7 @@ public class DelaDatasetController {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), e.getMessage(),
         ThirdPartyException.Source.LOCAL, "");
     }
-    dataset.setPublicDs(Dataset.SharedState.HOPS);
+    dataset.setPublicDsState(Dataset.SharedState.HOPS);
     dataset.setPublicDsId(publicDSId);
     dataset.setEditable(false);
     datasetFacade.merge(dataset);
@@ -122,5 +107,9 @@ public class DelaDatasetController {
       dfs.getDfsOps());
     Dataset dataset = datasetFacade.findByNameAndProjectId(project, name);
     return dataset;
+  }
+  
+  public List<Dataset> getLocalPublicDatasets() {
+    return datasetFacade.findAllDatasetsByState(Dataset.SharedState.HOPS.state, false);
   }
 }

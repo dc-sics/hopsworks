@@ -16,27 +16,10 @@ angular.module('hopsWorksApp')
                     data: payload
                   });
                 },
-                shareWithClusterByInodeId: function (inodeId) {
-                  var payload = {"id": inodeId};
-                  return $http({
-                    method: 'POST',
-                    url: '/api/project/' + id + '/dela/shared',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    data: payload
-                  });
-                },
                 unshareFromHops: function (publicDSId, cleanVal) {
                   return $http({
                     method: 'POST',
                     url: '/api/project/' + id + '/dela/transfers/' + publicDSId + '/cancel?clean=cleanVal'
-                  });
-                },
-                unshareFromCluster: function (inodeId) {
-                  return $http({
-                    method: 'DELETE',
-                    url: '/api/project/' + id + '/dela/shared/' + inodeId
                   });
                 },
                 downloadMetadata: function (publicDSId, json) {

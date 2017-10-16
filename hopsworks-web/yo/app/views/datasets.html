@@ -19,11 +19,11 @@
               <div flex="65">
                 Filter: &nbsp;
                 <a ng-click="datasetsCtrl.shared = undefined; datasetsCtrl.status = undefined; datasetsCtrl.isPublic = undefined;" class="file-control active">All</a>
-                <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = true; datasetsCtrl.isPublic = false;" class="file-control">Shared</a>
-                <a ng-click="datasetsCtrl.isPublic = true; datasetsCtrl.status = true;" class="file-control">Public in Cluster</a>
-                <a ng-click="datasetsCtrl.isPublic = true; datasetsCtrl.status = true;" class="file-control">Public in Hops</a>
-                <a ng-click="datasetsCtrl.shared = false; datasetsCtrl.status = true; datasetsCtrl.isPublic = false;" class="file-control">Exclusive</a>
-                <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = false; datasetsCtrl.isPublic = false;" class="file-control">Pending</a>
+                <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = true; datasetsCtrl.isPublic = 0;" class="file-control">Shared</a>
+                <a ng-click="datasetsCtrl.isPublic = 1; datasetsCtrl.status = true;" class="file-control">Public in Cluster</a>
+                <a ng-click="datasetsCtrl.isPublic = 2; datasetsCtrl.status = true;" class="file-control">Public in Hops</a>
+                <a ng-click="datasetsCtrl.shared = false; datasetsCtrl.status = true; datasetsCtrl.isPublic = 0;" class="file-control">Exclusive</a>
+                <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = false; datasetsCtrl.isPublic = 0;" class="file-control">Pending</a>
               </div>
               <div style="margin-left: 450px" flex="20">
                 <div class="input-group" style="margin-top:-25px;">
@@ -91,10 +91,10 @@
                                   {{dataset.owner| cut:true:17:'...'}}
                                 </span>
                               </small>
-                              <span ng-if="dataset.publicDs === 2" class="pull-right dataset-icon glyphicon glyphicon-globe"  data-toggle="tooltip"
+                              <span ng-if="dataset.publicDs === 2" class="pull-right dataset-icon fa fa-globe"  data-toggle="tooltip"
                                     title="Dataset is public (within hops)">
                               </span>
-                              <span ng-if="dataset.publicDs === 1" class="pull-right dataset-icon glyphicon glyphicon-globe"  data-toggle="tooltip"
+                              <span ng-if="dataset.publicDs === 1" class="pull-right dataset-icon fa fa-server"  data-toggle="tooltip"
                                     title="Dataset is public (within cluster)">
                               </span>
                               <span ng-if="dataset.publicDs === 0 && dataset.shared === false" 

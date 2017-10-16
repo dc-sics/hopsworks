@@ -32,7 +32,7 @@ public final class InodeView {
   private String owner;
   private String permission;
   private String email;
-  private byte publicDs = 0;
+  private int publicDs = 0;
   private int sharedWith = 0;
   private boolean searchable = false;
   // FSM states: STAGING, UNZIPPING, UPLOADING, CHOWNING, SUCCESS, FAILED
@@ -111,7 +111,7 @@ public final class InodeView {
     }
     this.permission = FsPermission.
       createImmutable(ds.getInode().getPermission()).toString();
-    this.publicDs = ds.getPublicDs().state;
+    this.publicDs = ds.getPublicDs();
     this.searchable = ds.isSearchable();
   }
 
@@ -279,11 +279,19 @@ public final class InodeView {
     this.permission = permission;
   }
 
-  public void setPublicDs(Dataset.SharedState sharedState) {
-    this.publicDs = sharedState.state;
+  public int getPublicDs() {
+    return publicDs;
   }
 
-  public boolean isPublicDs() {
+  public void setPublicDs(int publicDs) {
+    this.publicDs = publicDs;
+  }
+  
+  public void setPublicDsState(Dataset.SharedState sharedState) {
+    this.publicDs = sharedState.state;
+  }
+  
+  public boolean isPublicDataset() {
     if(publicDs == 0) {
       return false;
     }

@@ -45,7 +45,9 @@ import javax.xml.bind.annotation.XmlRootElement;
           query
           = "SELECT d FROM Dataset d WHERE d.project = :projectId"),
   @NamedQuery(name = "Dataset.findAllPublic",
-          query = "SELECT d FROM Dataset d WHERE d.publicDs = true"),//AND d.shared = 0
+          query = "SELECT d FROM Dataset d WHERE d.publicDs in (1,2)"),//AND d.shared = 0
+  @NamedQuery(name = "Dataset.findAllByState",
+          query = "SELECT d FROM Dataset d WHERE d.publicDs = :state AND d.shared = :shared"),
   @NamedQuery(name = "Dataset.findByDescription",
           query = "SELECT d FROM Dataset d WHERE d.description = :description"),
   @NamedQuery(name = "Dataset.findByPublicDsIdProject",
@@ -113,7 +115,7 @@ public class Dataset implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Column(name = "public_ds")
-  private byte publicDs;
+  private int publicDs;
   @Size(max = 1000)
   @Column(name = "public_ds_id")
   private String publicDsId;
@@ -160,7 +162,7 @@ public class Dataset implements Serializable {
     this.searchable = ds.isSearchable();
     this.description = ds.getDescription();
     this.editable = ds.isEditable();
-    this.publicDs = ds.getPublicDs().state;
+    this.publicDs = ds.getPublicDs();
     this.type = ds.getType();
   }
   
@@ -231,11 +233,18 @@ public class Dataset implements Serializable {
     return true;
   }
 
-  public SharedState getPublicDs() {
+  public int getPublicDs() {
+    return publicDs;
+  }
+  public void setPublicDs(int sharedState) {
+    this.publicDs = sharedState;
+  }
+  
+  public SharedState getPublicDsState() {
     return SharedState.of(publicDs);
   }
   
-  public void setPublicDs(SharedState sharedState) {
+  public void setPublicDsState(SharedState sharedState) {
     this.publicDs = sharedState.state;
   }
 
@@ -311,13 +320,13 @@ public class Dataset implements Serializable {
     CLUSTER((byte)1),
     HOPS((byte)2);
     
-    public final byte state;
+    public final int state;
     
     SharedState(byte state) {
       this.state = state;
     }
     
-    public static SharedState of(byte state) {
+    public static SharedState of(int state) {
       switch(state) {
         case 0:
           return SharedState.PRIVATE;

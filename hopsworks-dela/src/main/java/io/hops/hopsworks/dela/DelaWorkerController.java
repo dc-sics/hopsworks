@@ -91,13 +91,6 @@ public class DelaWorkerController {
     return publicDSId;
   }
 
-  public void shareDatasetWithCluster(Dataset dataset) {
-    if (dataset.isPublicDs()) {
-      return;
-    }
-    delaDatasetCtrl.shareWithCluster(dataset);
-  }
-
   private void delaCtrlUpload(Project project, Dataset dataset, Users user, String publicDSId)
     throws ThirdPartyException {
     String datasetPath = DatasetHelper.getDatasetPath(project, dataset);
@@ -124,13 +117,6 @@ public class DelaWorkerController {
     delaDatasetCtrl.delete(project, dataset);
   }
   
-  public void unshareFromCluster(Project project, Dataset dataset, Users user) throws ThirdPartyException {
-    if (!dataset.isPublicDs()) {
-      return;
-    }
-    delaDatasetCtrl.unshareFromCluster(dataset);
-  }
-
   public ManifestJSON startDownload(Project project, Users user, HopsworksTransferDTO.Download downloadDTO)
     throws ThirdPartyException {
     delaStateCtrl.checkDelaAvailable();
