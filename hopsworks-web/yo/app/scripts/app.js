@@ -88,11 +88,15 @@ angular.module('hopsWorksApp', [
                       templateUrl: 'views/delahopsDataset.html',
                       controller: 'HopsDatasetCtrl as publicDataset',
                       resolve: {
-                        auth: ['$q', '$location', 'AuthService', '$cookies',
-                          function ($q, $location, AuthService, $cookies) {
+                        auth: ['$rootScope', '$q', '$location', 'AuthService', '$cookies',
+                          function ($rootScope, $q, $location, AuthService, $cookies) {
                             return AuthService.session().then(
                                     function (success) {
-                                      $cookies.put("email", success.data.data.value);
+                                      if($rootScope.isDelaEnabled) {
+                                        $cookies.put("email", success.data.data.value);
+                                      } else {
+                                        return $q.reject(err);
+                                      }
                                     },
                                     function (err) {
                                       $cookies.remove("email");

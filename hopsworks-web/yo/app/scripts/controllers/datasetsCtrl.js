@@ -363,7 +363,7 @@ This will make all its files available for any cluster user to share and process
                       function (success) {
                         delaClusterService.shareWithClusterByInodeId(id).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Hops Site).', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Cluster).', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
                                   growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
@@ -388,7 +388,7 @@ This will make all its files available for any cluster user to share and process
                       function (success) {
                         delaHopsService.unshareFromHops(publicDSId, false).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not Public(internet) anymore.', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
@@ -404,7 +404,7 @@ This will make all its files available for any cluster user to share and process
                       function (success) {
                         delaClusterService.unshareFromCluster(inodeId).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not Public(cluster) anymore.', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
