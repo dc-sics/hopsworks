@@ -61,11 +61,7 @@ angular.module('hopsWorksApp')
               self.selectedDataset = undefined;
               self.selectedCategory = category;
               self.selectedCategoryMap[category.categoryName] = category;
-              if ($rootScope.isDelaEnabled) {
-                doGet(self.selectedCategoryMap[category.categoryName]);
-              } else {
-                doGetLocalCluster(self.selectedCategoryMap[category.categoryName]);
-              }
+              doGetLocalCluster(self.selectedCategoryMap[category.categoryName]);
             };
 
             self.selectItem = function (selectItem) {
@@ -87,7 +83,7 @@ angular.module('hopsWorksApp')
               
               DelaClusterService.getLocalPublicDatasets().then(
                       function (success) {
-                        category['selectedList'] = success;
+                        category['selectedList'] = success.data;
                         category['selectedSubCategoryList'] = success.data;
                         self.loadingSelectedCategory = false;
                         console.log("doGetLocalCluster", success);
@@ -101,25 +97,6 @@ angular.module('hopsWorksApp')
                       }
               );
             };
-
-            var doGet = function (category) {
-              if (category['selectedList'] === undefined || category['selectedList'].lenght === 0) {
-                self.loadingSelectedCategory = true;
-              }
-
-              DelaClusterService.getLocalPublicDatasets().then(
-                      function (success) {
-                        console.log("doGet", success);
-                        category['selectedList'] = success.data;
-                        category['selectedSubCategoryList'] = success.data;
-                        self.loadingSelectedCategory = false;
-                      }, function (error) {
-                        category['selectedList'] = [];
-                        category['selectedSubCategoryList'] = [];
-                        self.loadingSelectedCategory = false;
-                        console.log("doGet", error);
-                      });
-                    };
 
             var getReadMeLocal = function (inodeId) {
               self.readme = '';
