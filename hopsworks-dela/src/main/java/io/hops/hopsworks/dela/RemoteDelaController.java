@@ -11,8 +11,15 @@ import java.security.KeyStore;
 import java.util.Optional;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.ejb.Timeout;
+import javax.ejb.Timer;
+import javax.ejb.TimerService;
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
 import javax.ws.rs.core.Response;
 import org.javatuples.Triplet;
 
@@ -21,30 +28,57 @@ public class RemoteDelaController {
 
   private final static Logger LOG = Logger.getLogger(RemoteDelaController.class.getName());
 
+  @Resource
+  TimerService timerService;
   @EJB
   private Settings settings;
   @EJB
-  private DelaStateController delaStateController;
+  private DelaStateController delaStateCtlr;
 
+  private boolean ready = false;
   private KeyStore keystore;
   private KeyStore truststore;
   private String keystorePassword;
 
   @PostConstruct
   public void init() {
-    if (delaStateController.delaEnabled()) {
+    timerService.createTimer(0, settings.getHOPSSITE_HEARTBEAT_RETRY(), "Timer for dela settings check.");
+  }
+  
+  @PreDestroy
+  private void destroyTimer() {
+    for (Timer timer : timerService.getTimers()) {
+      timer.cancel();
+    }
+  }
+
+  @Timeout
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  private void setup(Timer timer) {
+    if (delaStateCtlr.hopsworksDelaSetup()) {
       Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
       if (certSetup.isPresent()) {
-        delaStateController.delaCertsAvailable();
+        ready = true;
         keystore = certSetup.get().getValue0();
         truststore = certSetup.get().getValue1();
         keystorePassword = certSetup.get().getValue2();
+
+        timer.cancel();
       }
     }
   }
-  
+
+  private void checkReady() throws ThirdPartyException {
+    if (!ready) {
+      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
+        ThirdPartyException.Source.SETTINGS, "certificates not ready");
+    }
+    delaStateCtlr.checkHopsworksDelaSetup();
+  }
+
+  //********************************************************************************************************************
   public FilePreviewDTO readme(String publicDSId, ClusterAddressDTO source) throws ThirdPartyException {
-    delaStateController.checkRemoteDelaAvaileble();
+    checkReady();
     try {
       ClientWrapper client = getClient(source.getDelaClusterAddress(), Path.readme(publicDSId), FilePreviewDTO.class);
       LOG.log(Settings.DELA_DEBUG, "dela:cross:readme {0}", client.getFullPath());

@@ -37,9 +37,9 @@ public class DelaStateController {
   public boolean delaEnabled() {
     return delaEnabled;
   }
-
+  
   public boolean delaAvailable() {
-    return delaEnabled && delaCertsAvailable && transferDelaAvailable && hopssiteAvailable;
+    return hopsworksDelaSetup() && transferDelaAvailable && hopssiteAvailable;
   }
 
   public void checkDelaAvailable() throws ThirdPartyException {
@@ -50,26 +50,26 @@ public class DelaStateController {
   }
 
   public boolean transferDelaAvailable() {
-    return delaEnabled && transferDelaAvailable;
+    return hopsworksDelaSetup() && transferDelaAvailable;
   }
 
   public boolean hopssiteAvailable() {
-    return delaEnabled && delaCertsAvailable && hopssiteAvailable;
+    return hopsworksDelaSetup() && hopssiteAvailable;
   }
   
-  public void checkHopssiteState() throws ThirdPartyException {
+  public void checkHopssiteAvailable() throws ThirdPartyException {
     if (!hopssiteAvailable()) {
       throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "hopssite not available", 
         ThirdPartyException.Source.LOCAL, "bad request");
     }
   }
 
-  public boolean remoteDelaAvailable() {
+  public boolean hopsworksDelaSetup() {
     return delaEnabled && delaCertsAvailable;
   }
 
-  public void checkRemoteDelaAvaileble() throws ThirdPartyException {
-    if (!remoteDelaAvailable()) {
+  public void checkHopsworksDelaSetup() throws ThirdPartyException {
+    if (!hopsworksDelaSetup()) {
       throw new ThirdPartyException(Response.Status.BAD_REQUEST.getStatusCode(), "remote dela not available",
         ThirdPartyException.Source.LOCAL, "bad request");
     }
