@@ -27,6 +27,7 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.SecurityContext;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -123,17 +124,21 @@ public class DeviceManagementService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response postDeactivateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postDeactivateEndpoint(@Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
       checkForProjectId();
       Project project = projectController.findProjectById(projectId);
+      String sessionId = req.getHeader("SESSIONID");
+      String userEmail = sc.getUserPrincipal().getName();
+
       try {
-        projectController.removeMemberFromTeam(project, project.getOwner().getEmail(), DEFAULT_DEVICE_USER_EMAIL);
+        projectController.removeMemberFromTeam(
+          project, userEmail, DEFAULT_DEVICE_USER_EMAIL, sessionId);
       } catch (Exception e) {
         e.printStackTrace();
       }
-      // Saves Project Secret
+      // Deletes Project Secret
       deviceFacade.removeProjectSecret(projectId);
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
