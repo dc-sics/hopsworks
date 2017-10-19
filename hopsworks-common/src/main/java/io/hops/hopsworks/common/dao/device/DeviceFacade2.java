@@ -89,6 +89,13 @@ public class DeviceFacade2 {
         projectTokenDurationInHours));
   }
 
+  public void removeProjectSecret(Integer projectId) {
+    ProjectSecret projectSecret = this.getProjectSecret(projectId);
+    if (projectSecret != null){
+      em.remove(projectSecret);
+    }
+  }
+
   public ProjectSecret getProjectSecret(Integer projectId) {
     TypedQuery<ProjectSecret> query = em.createNamedQuery(
         "ProjectSecret.findByProjectId",

@@ -375,7 +375,6 @@ public class DeviceService {
     try {
       // Extracts all the json parameters
       JSONObject json = new JSONObject(jsonString);
-      logger.info(json.toString()); //TODO: Remove after debugging
       Integer projectId = json.getInt(PROJECT_ID);
       String topicName = json.getString(TOPIC);
       JSONArray records = json.getJSONArray(RECORDS);
@@ -400,9 +399,6 @@ public class DeviceService {
       Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
       Project project = projectFacade.find(projectId);
 
-      logger.info(user.getUsername());
-      logger.info(settings.getHopsworksTmpCertDir());
-      logger.info(settings.getHdfsTmpCertDir());
       HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(),
         settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
 
