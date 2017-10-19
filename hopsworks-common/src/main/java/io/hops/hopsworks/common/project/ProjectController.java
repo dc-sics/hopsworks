@@ -4,7 +4,6 @@ import io.hops.hopsworks.common.constants.auth.AllowedRoles;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import java.io.File;
 import java.io.IOException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -71,16 +70,11 @@ import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.LocalhostServices;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -229,7 +223,6 @@ public class ProjectController {
     LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 1: " + (System.currentTimeMillis() - startTime));
 
     DistributedFileSystemOps dfso = null;
-    DistributedFileSystemOps udfso = null;
     Project project = null;
     try {
       dfso = dfs.getDfsOps();
@@ -289,29 +282,7 @@ public class ProjectController {
       }
       
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 4 (certs): " + (System.currentTimeMillis() - startTime));
-
-      if (settings.getHopsRpcTls()) {
-        if (certsGenerationFuture != null) {
-          try {
-            certsGenerationFuture.get();
-          } catch (InterruptedException | ExecutionException ex) {
-            LOGGER.log(Level.SEVERE, "Error while waiting for certificates " +
-                "generation thread to finish. Will try to cleanup...");
-            cleanup(project, sessionId, certsGenerationFuture);
-            throw new AppException(Response.Status.INTERNAL_SERVER_ERROR
-                .getStatusCode(), "Error while waiting for certificates " +
-                "generation thread to finish.");
-          }
-        }
-      }
       
-      udfso = dfs.getDfsOps(username);
-      if (udfso == null) {
-        cleanup(project, sessionId, certsGenerationFuture);
-        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-            getStatusCode(), "error geting access to the file system");
-      }
-
       //all the verifications have passed, we can now create the project  
       //create the project folder
       String projectPath = null;
@@ -358,7 +329,7 @@ public class ProjectController {
 
       try {
         hdfsUsersBean.addProjectFolderOwner(project, dfso);
-        createProjectLogResources(owner, project, dfso, udfso);
+        createProjectLogResources(owner, project, dfso);
       } catch (IOException | EJBException ex) {
         LOGGER.log(Level.SEVERE, "Error while creating project sub folders: "
             + ex.getMessage(), ex);
@@ -374,7 +345,7 @@ public class ProjectController {
       // enable services
       for (ProjectServiceEnum service : projectServices) {
         try {
-          addService(project, service, owner, dfso, udfso);
+          addService(project, service, owner, dfso);
         } catch (ServiceException sex) {
           cleanup(project, sessionId, certsGenerationFuture);
           throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
@@ -415,9 +386,6 @@ public class ProjectController {
     } finally {
       if (dfso != null) {
         dfso.close();
-      }
-      if (udfso != null) {
-        dfs.closeDfsClient(udfso);
       }
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 11 (close): " + (System.currentTimeMillis() - startTime));
     }
@@ -645,18 +613,24 @@ public class ProjectController {
    * @param user
    * @param project
    * @param dfso
-   * @param udfso
    * @throws io.hops.hopsworks.common.exception.AppException
    * @throws java.io.IOException
    */
   public void createProjectLogResources(Users user, Project project,
-      DistributedFileSystemOps dfso, DistributedFileSystemOps udfso) throws
-      AppException, IOException {
+      DistributedFileSystemOps dfso) throws AppException, IOException {
 
     for (Settings.BaseDataset ds : Settings.BaseDataset.values()) {
       datasetController.createDataset(user, project, ds.getName(), ds.
           getDescription(), -1, false, true, dfso);
-
+      
+      StringBuilder dsStrBuilder = new StringBuilder();
+      dsStrBuilder.append(File.separator).append(Settings.DIR_ROOT)
+          .append(File.separator).append(project.getName())
+          .append(File.separator).append(ds.getName());
+      
+      Path dsPath = new Path(dsStrBuilder.toString());
+      FileStatus fstatus = dfso.getFileStatus(dsPath);
+      
       // create subdirectories for the resource dataset
       if (ds.equals(Settings.BaseDataset.RESOURCES)) {
         String[] subResources = settings.getResourceDirs().split(";");
@@ -665,14 +639,16 @@ public class ProjectController {
               ds.getName());
           Path subDirPath = new Path(resourceDir, sub);
           datasetController.createSubDirectory(project, subDirPath, -1,
-              "", false, udfso);
+              "", false, dfso);
+          dfso.setOwner(subDirPath, fstatus.getOwner(), fstatus.getGroup());
         }
       }
 
       //Persist README.md to hdfs for Default Datasets
-      datasetController.generateReadme(udfso, ds.getName(),
+      datasetController.generateReadme(dfso, ds.getName(),
           ds.getDescription(), project.getName());
-
+      Path readmePath = new Path(dsPath, Settings.README_FILE);
+      dfso.setOwner(readmePath, fstatus.getOwner(), fstatus.getGroup());
     }
   }
 
@@ -736,6 +712,12 @@ public class ProjectController {
     }
   }
 
+  // Used only during project creation
+  private boolean addService(Project project, ProjectServiceEnum service,
+      Users user, DistributedFileSystemOps dfso) throws ServiceException {
+    return addService(project, service, user, dfso, dfso);
+  }
+  
   public boolean addService(Project project, ProjectServiceEnum service,
       Users user, DistributedFileSystemOps dfso,
       DistributedFileSystemOps udfso) throws ServiceException {
@@ -780,6 +762,22 @@ public class ProjectController {
           getDescription(), -1, false, true, dfso);
       datasetController.generateReadme(udfso, ds.getName(),
           ds.getDescription(), project.getName());
+      
+      // This should only happen in project creation
+      // Create dataset and corresponding README file as superuser
+      // to postpone waiting for the certificates generation thread when
+      // RPC TLS is enabled
+      if (dfso == udfso && udfso.getEffectiveUser()
+          .equals(settings.getHdfsSuperUser())) {
+        StringBuilder dsStrBuilder = new StringBuilder();
+        dsStrBuilder.append(File.separator).append(Settings.DIR_ROOT)
+            .append(File.separator).append(project.getName())
+            .append(File.separator).append(ds.getName());
+        Path dsPath = new Path(dsStrBuilder.toString());
+        FileStatus fstatus = dfso.getFileStatus(dsPath);
+        Path readmePath = new Path(dsPath, Settings.README_FILE);
+        dfso.setOwner(readmePath, fstatus.getOwner(), fstatus.getGroup());
+      }
     } catch (IOException | AppException ex) {
       LOGGER.log(Level.SEVERE, "Could not create dir: " + ds.getName(), ex);
       return false;
@@ -2121,48 +2119,34 @@ public class ProjectController {
    */
   public void validateCert(byte[] keyStore, char[] keyStorePwd, String projectUser, boolean isProjectSpecific)
       throws AppException {
-    try {
-      KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-      ByteArrayInputStream stream = new ByteArrayInputStream(keyStore);
-
-      ks.load(stream, keyStorePwd);
-
-      X509Certificate certificate = (X509Certificate) ks
-          .getCertificate(projectUser.toLowerCase());
-      String subjectDN = certificate.getSubjectX500Principal()
-          .getName("RFC2253");
-      String[] dnTokens = subjectDN.split(",");
-      String[] cnTokens = dnTokens[0].split("=", 2);
-
-      if (!projectUser.equals(cnTokens[1])) {
+    String commonName = certificatesController.extractCNFromCertificate
+        (keyStore, keyStorePwd, projectUser);
+  
+    if (!projectUser.equals(commonName)) {
+      throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
+          "Certificate CN does not match the username provided");
+    }
+  
+    byte[] userKey;
+  
+    if (isProjectSpecific) {
+      userKey = userCertsFacade.findUserCert(hdfsUsersBean.
+              getProjectName(commonName),
+          hdfsUsersBean.getUserName(commonName)).getUserKey();
+    } else {
+      // In that case projectUser is the name of the Project, see Spark
+      // interpreter in Zeppelin
+      List<ServiceCerts> serviceCerts = userCertsFacade
+          .findServiceCertsByName(projectUser);
+      if (serviceCerts.isEmpty() || serviceCerts.size() > 1) {
         throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
-            "Certificate CN does not match the username provided");
+            "Could not find exactly one certificate for " + projectUser);
       }
-
-      byte[] userKey;
-
-      if (isProjectSpecific) {
-        userKey = userCertsFacade.findUserCert(hdfsUsersBean.
-            getProjectName(cnTokens[1]),
-            hdfsUsersBean.getUserName(cnTokens[1])).getUserKey();
-      } else {
-        // In that case projectUser is the name of the Project, see Spark
-        // interpreter in Zeppelin
-        List<ServiceCerts> serviceCerts = userCertsFacade
-            .findServiceCertsByName(projectUser);
-        if (serviceCerts.isEmpty() || serviceCerts.size() > 1) {
-          throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
-              "Could not find exactly one certificate for " + projectUser);
-        }
-        userKey = serviceCerts.get(0).getServiceKey();
-      }
-
-      if (!Arrays.equals(userKey, keyStore)) {
-        throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
-            "Certificate error!");
-      }
-    } catch (IOException | CertificateException | KeyStoreException | NoSuchAlgorithmException ex) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+      userKey = serviceCerts.get(0).getServiceKey();
+    }
+  
+    if (!Arrays.equals(userKey, keyStore)) {
+      throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
           "Certificate error!");
     }
   }
