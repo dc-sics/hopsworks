@@ -124,7 +124,8 @@ public class DeviceManagementService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response postDeactivateEndpoint(@Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postDeactivateEndpoint(
+    @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
 
     try {
       checkForProjectId();
