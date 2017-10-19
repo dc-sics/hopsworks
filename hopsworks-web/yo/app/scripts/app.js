@@ -474,7 +474,7 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
-                    .when('/project/:projectID/jobMonitor-app/:appId/:isLivy', {
+                    .when('/project/:projectID/jobMonitor-app/:appId/:isLivy/:type', {
                       templateUrl: 'views/jobMonitor.html',
                       controller: 'JobUICtrl as jobUICtrl',
                       resolve: {
