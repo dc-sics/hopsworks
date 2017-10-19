@@ -1,7 +1,7 @@
 body {
     background-image: url("../img/network.png");
     background-color: #8ec3eb;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .center {

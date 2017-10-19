@@ -5,7 +5,7 @@
       <!-- START panel-->
       <div class="panel">
         <div class="panel-body">
-          <form role="form" name="registerForm" ng-submit="register()" novalidate class="form-validate">
+          <form name="registerForm" ng-submit="register()" role="form">
             <div class="form-group has-feedback">
               <label class="text-muted">Cluster Name</label>
               <input name="first_name" placeholder="Cluster Name" autocomplete="off"
@@ -21,32 +21,37 @@
                      type="email">
               <span class="fa fa-envelope form-control-feedback text-muted" style="top: 34px;"></span>
             </div>
-
             <div class="form-group has-feedback">
               <label class="text-muted">Password</label>
               <input id="id-password" name="user_password" placeholder="Password"
                      ng-model="newUser.chosenPassword"
-                     ng-minlength="6"
-                     ng-pattern="/(?=.*[a-z])(?=.*[A-Z])(?=.*[\d\W]).*$/"
-                     required
+                     pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" 
+                     title="Password must contain at least one number and one uppercase and lowercase letter, and be at least 8 or more characters"
                      class="form-control"
-                     type="password">
+                     type="password" required>
               <span class="fa fa-lock form-control-feedback text-muted" style="top: 34px;"></span>
             </div>
             <div class="form-group has-feedback">
               <label class="text-muted">Confirm Password</label>
-              <input name="user_password_confirm" ng-model="newUser.repeatedPassword" placeholder="Confirm password"
-                     match="id-password"
-                     class="form-control" type="password">
+              <input id="confirm-pwd" name="user_password_confirm" placeholder="Confirm password"
+                     ng-model="newUser.repeatedPassword"
+                     pw-check="id-password"
+                     class="form-control" type="password" required>
               <span class="fa fa-lock form-control-feedback text-muted" style="top: 34px;"></span>               
+            </div>
+            <div>
+              <span class="text-danger" 
+                    ng-show="(registerForm.$submitted || registerForm.user_password_confirm.$dirty) && registerForm.user_password_confirm.$error.pwmatch">
+                Passwords don't match.
+              </span>
             </div>
             <div class="checkbox">
               <label class="text-muted">
-                <input required="" name="user_agreed" ng-model="newUser.ToS" type="checkbox">I agree to the 
+                <input name="user_agreed" ng-model="newUser.tos" type="checkbox" required>I agree to the 
                 <a type="button" data-target="#tosModal" data-toggle="modal">terms and conditions</a>
               </label>
               <div ng-show="(registerForm.$submitted || registerForm.user_agreed.$dirty) && registerForm.user_agreed.$error.required"
-                   class="text-danger ng-hide">You must agree to the terms
+                   class="text-danger">You must agree to the terms
               </div>      
             </div>            
             <div>

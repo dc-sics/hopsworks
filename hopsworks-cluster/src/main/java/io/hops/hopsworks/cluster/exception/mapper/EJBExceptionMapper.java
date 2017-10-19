@@ -1,8 +1,10 @@
 package io.hops.hopsworks.cluster.exception.mapper;
 
+import io.hops.hopsworks.cluster.JsonResponse;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJBException;
+import javax.mail.MessagingException;
 import javax.transaction.RollbackException;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
@@ -24,6 +26,8 @@ public class EJBExceptionMapper implements ExceptionMapper<EJBException> {
       return handleRollbackException((RollbackException) exception.getCause());
     } else if(exception.getCause() instanceof IllegalStateException) {
       return handleIllegalStateException((IllegalStateException) exception.getCause());
+    } else if (exception.getCause() instanceof MessagingException) {
+      return handleMessagingException((MessagingException) exception.getCause());
     }
 
     LOG.log(Level.INFO, "EJBException Caused by: {0}", exception.getCause().toString());
@@ -65,6 +69,15 @@ public class EJBExceptionMapper implements ExceptionMapper<EJBException> {
     jsonResponse.setStatus(Response.Status.EXPECTATION_FAILED.getReasonPhrase());
     jsonResponse.setStatusCode(Response.Status.EXPECTATION_FAILED.getStatusCode());
     jsonResponse.setErrorMsg(illegalStateException.getMessage());
+    return Response.status(Response.Status.EXPECTATION_FAILED).entity(jsonResponse).build();
+  }
+
+  private Response handleMessagingException(MessagingException messagingException) {
+    LOG.log(Level.INFO, "MessagingException: {0}", messagingException.getMessage());
+    JsonResponse jsonResponse = new JsonResponse();
+    jsonResponse.setStatus(Response.Status.EXPECTATION_FAILED.getReasonPhrase());
+    jsonResponse.setStatusCode(Response.Status.EXPECTATION_FAILED.getStatusCode());
+    jsonResponse.setErrorMsg(messagingException.getMessage());
     return Response.status(Response.Status.EXPECTATION_FAILED).entity(jsonResponse).build();
   }
 }

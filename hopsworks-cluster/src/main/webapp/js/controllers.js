@@ -15,9 +15,15 @@ controllers.controller("RegisterController", ['$scope', 'ClusterService', functi
                       email: '',
                       chosenPassword: '',
                       repeatedPassword: '',
-                      ToS: ''};
+                      tos: ''};//Terms of service
     $scope.validationKey = '';
     $scope.register = function () {
+      if ($scope.newUser.firstName === '' || $scope.newUser.email === '' ||
+          $scope.newUser.chosenPassword === '' || $scope.newUser.repeatedPassword === '') {
+        return;
+      }
+      $scope.successMessage = '';
+      $scope.errorMessage = '';
       ClusterService.register($scope.newUser).then(
         function (success) {
           $scope.successMessage = success.data.successMessage;
@@ -31,6 +37,7 @@ controllers.controller("RegisterController", ['$scope', 'ClusterService', functi
         $scope.errorMessage = 'Key not set or too short.';
         return;
       }
+      $scope.successMessage = '';
       $scope.errorMessage = '';
       ClusterService.confirmRegister($scope.validationKey).then(
         function (success) {
@@ -51,6 +58,11 @@ controllers.controller("UnregisterController", ['$scope', 'ClusterService', func
                    chosenPassword: ''};
     $scope.validationKey = '';
     $scope.unregister = function () {
+      if ($scope.user.chosenPassword === '' || $scope.user.email === '') {
+        return;
+      }
+      $scope.successMessage = '';
+      $scope.errorMessage = '';
       ClusterService.unregister($scope.user).then(
         function (success) {
           $scope.successMessage = success.data.successMessage;
@@ -64,6 +76,7 @@ controllers.controller("UnregisterController", ['$scope', 'ClusterService', func
         $scope.errorMessage = 'Key not set or too short.';
         return;
       }
+      $scope.successMessage = '';
       $scope.errorMessage = '';
       ClusterService.confirmUnregister($scope.validationKey).then(
         function (success) {

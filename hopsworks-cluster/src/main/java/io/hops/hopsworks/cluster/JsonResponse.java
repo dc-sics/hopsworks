@@ -1,4 +1,4 @@
-package io.hops.hopsworks.cluster.exception.mapper;
+package io.hops.hopsworks.cluster;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 

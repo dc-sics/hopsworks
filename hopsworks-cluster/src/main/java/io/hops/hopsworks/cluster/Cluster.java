@@ -34,39 +34,57 @@ public class Cluster {
   @Path("register")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response register(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
+    LOGGER.log(Level.INFO, "Registering : {0}", cluster);
     clusterController.register(cluster, req);
-    return Response.ok().build();
+    JsonResponse res = new JsonResponse();
+    res.setStatusCode(Response.Status.OK.getStatusCode());
+    res.setSuccessMessage("Cluster registerd. Please validate your email before installing your cluster.");
+    return Response.ok().entity(res).build();
   }
 
   @POST
   @Path("unregister")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response unregister(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
+    LOGGER.log(Level.INFO, "Unregistering : {0}", cluster);
     clusterController.unregister(cluster, req);
-    return Response.ok().build();
+    JsonResponse res = new JsonResponse();
+    res.setStatusCode(Response.Status.OK.getStatusCode());
+    res.setSuccessMessage("Cluster unregisterd. Please validate your email to complite the unregistration.");
+    return Response.ok().entity(res).build();
   }
 
   @PUT
   @Path("register/confirm/{validationKey}")
   public Response confirmRegister(@PathParam("validationKey") String validationKey, @Context HttpServletRequest req) {
+    JsonResponse res = new JsonResponse();
     try {
       clusterController.validateRequest(validationKey, req, ClusterController.OP_TYPE.REGISTER);
     } catch (ParseException | IOException | InterruptedException | CertificateException ex) {
       LOGGER.log(Level.SEVERE, null, ex);
-      return Response.ok("Could not validate registration.").build();
+      res.setStatusCode(Response.Status.BAD_REQUEST.getStatusCode());
+      res.setSuccessMessage("Could not validate registration.");
+      return Response.ok().entity(res).build();
     }
-    return Response.ok().build();
+    res.setStatusCode(Response.Status.OK.getStatusCode());
+    res.setSuccessMessage("Cluster registration validated.");
+    return Response.ok().entity(res).build();
   }
 
   @PUT
   @Path("unregister/confirm/{validationKey}")
   public Response confirmUnregister(@PathParam("validationKey") String validationKey, @Context HttpServletRequest req) {
+    JsonResponse res = new JsonResponse();
     try {
       clusterController.validateRequest(validationKey, req, ClusterController.OP_TYPE.UNREGISTER);
     } catch (ParseException | IOException | InterruptedException | CertificateException ex) {
       LOGGER.log(Level.SEVERE, null, ex);
+      res.setStatusCode(Response.Status.BAD_REQUEST.getStatusCode());
+      res.setSuccessMessage("Could not validate unregistration.");
       return Response.ok("Could not validate unregistration.").build();
     }
-    return Response.ok().build();
+    res.setStatusCode(Response.Status.OK.getStatusCode());
+    res.setSuccessMessage("Cluster unregistration validated.");
+    return Response.ok().entity(res).build();
   }
 }
