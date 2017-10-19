@@ -130,7 +130,7 @@ public class DeviceManagementService {
     try {
       checkForProjectId();
       Project project = projectController.findProjectById(projectId);
-      String sessionId = req.getHeader("SESSIONID");
+      String sessionId = req.getSession().getId();
       String userEmail = sc.getUserPrincipal().getName();
 
       try {
