@@ -27,14 +27,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Logger;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
-import javax.ejb.Timeout;
-import javax.ejb.Timer;
-import javax.ejb.TimerService;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.net.ssl.HostnameVerifier;
@@ -48,8 +42,6 @@ public class HopssiteController {
 
   private final static Logger LOG = Logger.getLogger(HopssiteController.class.getName());
 
-  @Resource
-  TimerService timerService;
   @EJB
   private Settings settings;
   @EJB
@@ -57,46 +49,7 @@ public class HopssiteController {
   @EJB
   private UserFacade userFacade;
 
-  private static String hopsSiteHost;
-  private boolean ready = false;
-  private KeyStore keystore;
-  private KeyStore truststore;
-  private String keystorePassword;
-
-  @PostConstruct
-  public void init() {
-    hopsSiteHost = settings.getHOPSSITE_HOST();
-    timerService.createTimer(0, settings.getHOPSSITE_HEARTBEAT_RETRY(), "Timer for dela settings check.");
-  }
-
-  @PreDestroy
-  private void destroyTimer() {
-    for (Timer timer : timerService.getTimers()) {
-      timer.cancel();
-    }
-  }
-
-  @Timeout
-  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  private void setup(Timer timer) {
-    if (delaStateCtrl.hopsworksDelaSetup()) {
-      Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
-      if (certSetup.isPresent()) {
-        ready = true;
-        keystore = certSetup.get().getValue0();
-        truststore = certSetup.get().getValue1();
-        keystorePassword = certSetup.get().getValue2();
-
-        timer.cancel();
-      }
-    }
-  }
-
   private void checkSetupReady() throws ThirdPartyException {
-    if (!ready) {
-      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
-        ThirdPartyException.Source.SETTINGS, "certificates not ready");
-    }
     delaStateCtrl.checkHopsworksDelaSetup();
   }
 
@@ -106,9 +59,17 @@ public class HopssiteController {
   }
   //********************************************************************************************************************
 
-  private ClientWrapper getClient(String path, Class resultClass) {
+  private ClientWrapper getClient(String path, Class resultClass) throws ThirdPartyException {
     String hopsSite = settings.getHOPSSITE();
-    return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword, HopsSiteHostnameVerifier.INSTANCE,
+    Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
+    if(!certSetup.isPresent()) {
+      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
+        ThirdPartyException.Source.SETTINGS, "certificates not ready");
+    }
+    KeyStore keystore = certSetup.get().getValue0();
+    KeyStore truststore = certSetup.get().getValue1();
+    String keystorePassword = certSetup.get().getValue2();
+    return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword, new HopsSiteHostnameVerifier(settings),
       resultClass).setTarget(hopsSite).setPath(path);
   }
 
@@ -654,14 +615,15 @@ public class HopssiteController {
 
   public static class HopsSiteHostnameVerifier implements HostnameVerifier {
 
-    public static HopsSiteHostnameVerifier INSTANCE = new HopsSiteHostnameVerifier();
+    private final Settings settings;
 
-    private HopsSiteHostnameVerifier() {
+    public HopsSiteHostnameVerifier(Settings settings) {
+      this.settings = settings;
     }
 
     @Override
     public boolean verify(String host, SSLSession ssls) {
-      return hopsSiteHost == null || hopsSiteHost.equals(host); // if hops-site host name not set or == host
+      return settings.getHOPSSITE_HOST() == null || settings.getHOPSSITE_HOST().equals(host); // if hops-site host name not set or == host
     }
   }
 }

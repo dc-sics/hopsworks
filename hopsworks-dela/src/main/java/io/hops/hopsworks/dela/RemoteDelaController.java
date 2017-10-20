@@ -10,16 +10,8 @@ import io.hops.hopsworks.util.CertificateHelper;
 import java.security.KeyStore;
 import java.util.Optional;
 import java.util.logging.Logger;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import javax.annotation.Resource;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
-import javax.ejb.Timeout;
-import javax.ejb.Timer;
-import javax.ejb.TimerService;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import javax.ws.rs.core.Response;
 import org.javatuples.Triplet;
 
@@ -28,51 +20,12 @@ public class RemoteDelaController {
 
   private final static Logger LOG = Logger.getLogger(RemoteDelaController.class.getName());
 
-  @Resource
-  TimerService timerService;
   @EJB
   private Settings settings;
   @EJB
   private DelaStateController delaStateCtlr;
 
-  private boolean ready = false;
-  private KeyStore keystore;
-  private KeyStore truststore;
-  private String keystorePassword;
-
-  @PostConstruct
-  public void init() {
-    timerService.createTimer(0, settings.getHOPSSITE_HEARTBEAT_RETRY(), "Timer for dela settings check.");
-  }
-  
-  @PreDestroy
-  private void destroyTimer() {
-    for (Timer timer : timerService.getTimers()) {
-      timer.cancel();
-    }
-  }
-
-  @Timeout
-  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  private void setup(Timer timer) {
-    if (delaStateCtlr.hopsworksDelaSetup()) {
-      Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
-      if (certSetup.isPresent()) {
-        ready = true;
-        keystore = certSetup.get().getValue0();
-        truststore = certSetup.get().getValue1();
-        keystorePassword = certSetup.get().getValue2();
-
-        timer.cancel();
-      }
-    }
-  }
-
   private void checkReady() throws ThirdPartyException {
-    if (!ready) {
-      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
-        ThirdPartyException.Source.SETTINGS, "certificates not ready");
-    }
     delaStateCtlr.checkHopsworksDelaSetup();
   }
 
@@ -91,9 +44,19 @@ public class RemoteDelaController {
     }
   }
 
-  private ClientWrapper getClient(String delaClusterAddress, String path, Class resultClass) {
+  private ClientWrapper getClient(String delaClusterAddress, String path, Class resultClass) 
+    throws ThirdPartyException {
+    Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
+    if(!certSetup.isPresent()) {
+      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
+        ThirdPartyException.Source.SETTINGS, "certificates not ready");
+    }
+    KeyStore keystore = certSetup.get().getValue0();
+    KeyStore truststore = certSetup.get().getValue1();
+    String keystorePassword = certSetup.get().getValue2();
     return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword,
-      HopssiteController.HopsSiteHostnameVerifier.INSTANCE, resultClass).setTarget(delaClusterAddress).setPath(path);
+      new HopssiteController.HopsSiteHostnameVerifier(settings), 
+      resultClass).setTarget(delaClusterAddress).setPath(path);
   }
 
   public static class Path {
