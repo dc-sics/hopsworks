@@ -2,6 +2,7 @@ package io.hops.hopsworks.dela;
 
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
+import java.security.KeyStore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
@@ -23,7 +24,11 @@ public class DelaStateController {
   private boolean delaCertsAvailable = false;
   private boolean transferDelaAvailable = false;
   private boolean hopssiteAvailable = false;
-
+  
+  private KeyStore keystore;
+  private KeyStore truststore;
+  private String keystorePassword;
+      
   @PostConstruct
   private void init() {
     if (settings.isDelaEnabled()) {
@@ -75,15 +80,30 @@ public class DelaStateController {
     }
   }
 
-  public void delaCertsAvailable() {
-    delaCertsAvailable = true;
-  }
-
   public void transferDelaContacted() {
     transferDelaAvailable = true;
   }
 
   public void hopssiteContacted() {
     hopssiteAvailable = true;
+  }
+  
+  public void delaCertsAvailable(KeyStore keystore, KeyStore truststore, String keystorePassword) {
+    delaCertsAvailable = true;
+    this.keystore = keystore;
+    this.truststore = truststore;
+    this.keystorePassword = keystorePassword;
+  }
+
+  public KeyStore getKeystore() {
+    return keystore;
+  }
+
+  public KeyStore getTruststore() {
+    return truststore;
+  }
+
+  public String getKeystorePassword() {
+    return keystorePassword;
   }
 }

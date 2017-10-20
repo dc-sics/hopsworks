@@ -6,14 +6,10 @@ import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.dto.common.ClusterAddressDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopssiteController;
-import io.hops.hopsworks.util.CertificateHelper;
-import java.security.KeyStore;
-import java.util.Optional;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ws.rs.core.Response;
-import org.javatuples.Triplet;
 
 @Stateless
 public class RemoteDelaController {
@@ -23,10 +19,10 @@ public class RemoteDelaController {
   @EJB
   private Settings settings;
   @EJB
-  private DelaStateController delaStateCtlr;
+  private DelaStateController delaStateCtrl;
 
   private void checkReady() throws ThirdPartyException {
-    delaStateCtlr.checkHopsworksDelaSetup();
+    delaStateCtrl.checkHopsworksDelaSetup();
   }
 
   //********************************************************************************************************************
@@ -46,17 +42,9 @@ public class RemoteDelaController {
 
   private ClientWrapper getClient(String delaClusterAddress, String path, Class resultClass) 
     throws ThirdPartyException {
-    Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
-    if(!certSetup.isPresent()) {
-      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
-        ThirdPartyException.Source.SETTINGS, "certificates not ready");
-    }
-    KeyStore keystore = certSetup.get().getValue0();
-    KeyStore truststore = certSetup.get().getValue1();
-    String keystorePassword = certSetup.get().getValue2();
-    return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword,
-      new HopssiteController.HopsSiteHostnameVerifier(settings), 
-      resultClass).setTarget(delaClusterAddress).setPath(path);
+    return ClientWrapper.httpsInstance(delaStateCtrl.getKeystore(), delaStateCtrl.getTruststore(), 
+      delaStateCtrl.getKeystorePassword(), new HopssiteController.HopsSiteHostnameVerifier(settings), resultClass)
+      .setTarget(delaClusterAddress).setPath(path);
   }
 
   public static class Path {

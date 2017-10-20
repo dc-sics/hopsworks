@@ -19,13 +19,10 @@ import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.util.HopsSiteEndpoints;
 import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.hops.hopsworks.dela.old_hopssite_dto.PopularDatasetJSON;
-import io.hops.hopsworks.util.CertificateHelper;
 import io.hops.hopsworks.util.SettingsHelper;
-import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -34,7 +31,6 @@ import javax.ejb.TransactionAttributeType;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 import javax.ws.rs.core.Response;
-import org.javatuples.Triplet;
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -61,16 +57,9 @@ public class HopssiteController {
 
   private ClientWrapper getClient(String path, Class resultClass) throws ThirdPartyException {
     String hopsSite = settings.getHOPSSITE();
-    Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
-    if(!certSetup.isPresent()) {
-      throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), "service unavailable",
-        ThirdPartyException.Source.SETTINGS, "certificates not ready");
-    }
-    KeyStore keystore = certSetup.get().getValue0();
-    KeyStore truststore = certSetup.get().getValue1();
-    String keystorePassword = certSetup.get().getValue2();
-    return ClientWrapper.httpsInstance(keystore, truststore, keystorePassword, new HopsSiteHostnameVerifier(settings),
-      resultClass).setTarget(hopsSite).setPath(path);
+    return ClientWrapper.httpsInstance(delaStateCtrl.getKeystore(), delaStateCtrl.getTruststore(), 
+      delaStateCtrl.getKeystorePassword(), new HopsSiteHostnameVerifier(settings), resultClass)
+      .setTarget(hopsSite).setPath(path);
   }
 
   // cluster services
@@ -623,7 +612,7 @@ public class HopssiteController {
 
     @Override
     public boolean verify(String host, SSLSession ssls) {
-      return settings.getHOPSSITE_HOST() == null || settings.getHOPSSITE_HOST().equals(host); // if hops-site host name not set or == host
+      return settings.getHOPSSITE_HOST() == null || settings.getHOPSSITE_HOST().equals(host);
     }
   }
 }

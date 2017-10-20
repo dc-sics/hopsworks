@@ -102,7 +102,8 @@ public class DelaHeartbeatWorker {
   private void settings(Timer timer) {
     Optional<Triplet<KeyStore, KeyStore, String>> certSetup = CertificateHelper.initKeystore(settings);
     if (certSetup.isPresent()) {
-      delaStateCtrl.delaCertsAvailable();
+      delaStateCtrl.delaCertsAvailable(certSetup.get().getValue0(), certSetup.get().getValue1(), 
+        certSetup.get().getValue2());
       state = State.DELA_VERSION;
       delaContact(resetToDelaContact(timer));
     } else {
