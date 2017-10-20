@@ -612,7 +612,11 @@ public class HopssiteController {
 
     @Override
     public boolean verify(String host, SSLSession ssls) {
-      return settings.getHOPSSITE_HOST() == null || settings.getHOPSSITE_HOST().equals(host);
+      String hopssite = settings.getHOPSSITE_HOST();
+      if(hopssite != null) {
+        return hopssite.equals(host);
+      }
+      return true; //TODO Alex - should return false; but test it - we always set the hopssite though
     }
   }
 }
