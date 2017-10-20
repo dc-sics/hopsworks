@@ -12,32 +12,24 @@
 
       <li ng-click="projectCtrl.goToJupyter()" ng-show="projectCtrl.showJupyter()">
         <a>
-          Jupyter <span ng-show="clusterUtilCtrl.YarnStatus!== 'status-success'"  class="fa fa-circle pull-right" 
-               uib-tooltip="If this indicator is orange, your job may encounter problems running.
-               If this bar is red your jobs will not be able to run. "
-               tooltip-placement="bottom" ng-class="clusterUtilCtrl.YarnStatus"></span>
-          <img ng-show="clusterUtilCtrl.YarnStatus=== 'status-success'" class="pull-right" style="margin-right:5px" width="30" src="images/jupyter-200x200-bw.png"
+          Jupyter <img class="pull-right" style="margin-right:5px" width="30" src="images/jupyter-200x200-bw.png"
                        id="jupyterTab"/>
+          <i class=" pull-left fa " ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>          
         </a>
       </li>
 
       <li ng-click="projectCtrl.goToZeppelin()" ng-show="projectCtrl.showZeppelin()">
         <a>
-          Zeppelin <span ng-show="clusterUtilCtrl.YarnStatus!== 'status-success'"  class="fa fa-circle pull-right" 
-               uib-tooltip="If this indicator is orange, your job may encounter problems running.
-               If this bar is red your jobs will not be able to run. "
-               tooltip-placement="bottom" ng-class="clusterUtilCtrl.YarnStatus"></span>
-          <img ng-show="clusterUtilCtrl.YarnStatus=== 'status-success'" class="pull-right" style="margin-right:5px" width="30" src="images/zeppelin_logo.png"/>
+          Zeppelin 
+          <img class="pull-right" style="margin-right:5px" width="30" src="images/zeppelin_logo.png"/>
+          <i class=" pull-left fa " ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
         </a>
       </li>
 
       <li ng-click="projectCtrl.goToJobs()" ng-show="projectCtrl.showJobs()" id="jobsTab">
         <a>
-          Jobs <span ng-show="clusterUtilCtrl.YarnStatus!== 'status-success'"  class="fa fa-circle pull-right" 
-               uib-tooltip="If this indicator is orange, your job may encounter problems running.
-               If this bar is red your jobs will not be able to run. "
-               tooltip-placement="bottom" ng-class="clusterUtilCtrl.YarnStatus"></span>
-          <span ng-show="clusterUtilCtrl.YarnStatus === 'status-success'"  class="sub_icon fa fa-cogs fa-lg pull-right"></span>
+          Jobs <span class="sub_icon fa fa-cogs fa-lg pull-right"></span>
+          <i class=" pull-left fa " ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
         </a>
       </li>
       <!--
@@ -62,11 +54,8 @@
       <li ng-click="projectCtrl.goToKafka()"
           ng-show="projectCtrl.showKafka()">
         <a>
-          Kafka <span ng-show="clusterUtilCtrl.KafkaStatus !== 'status-success'"  class="fa fa-circle pull-right" 
-               uib-tooltip="If this indicator is orange, your job may encounter problems running.
-               If this bar is red your jobs will not be able to run. "
-               tooltip-placement="bottom" ng-class="clusterUtilCtrl.KafkaStatus">
-          </span><img ng-show="clusterUtilCtrl.KafkaStatus === 'status-success'" class="pull-right" style="margin-right:15px" height="25" src="images/kafka_logo.png" id="kafkaTab"/>
+          Kafka <img class="pull-right" style="margin-right:15px" height="25" src="images/kafka_logo.png" id="kafkaTab"/>
+          <i class=" pull-left fa " ng-class="{'fa-ban text-danger': clusterUtilCtrl.KafkaBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.KafkaWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
         </a>
       </li>
       <li ng-click="projectCtrl.goToService('DELA')" ng-show="projectCtrl.showDela()">
@@ -91,11 +80,8 @@
 
       <li ng-click="projectCtrl.goToDatasets()" style="margin-top:40px;" ng-show="projectCtrl.cloak">
         <a>
-          Data Sets<span ng-show="clusterUtilCtrl.HdfsStatus!== 'status-success'" class="fa fa-circle pull-right" 
-               uib-tooltip="If this indicator is orange, your job may encounter problems running.
-               If this bar is red your jobs will not be able to run. "
-               tooltip-placement="bottom" ng-class="clusterUtilCtrl.HdfsStatus"></span>
-          <span ng-show="clusterUtilCtrl.HdfsStatus === 'status-success'" class="sub_icon fa fa-folder-open fa-lg pull-right"></span>
+          Data Sets <span class="sub_icon fa fa-folder-open fa-lg pull-right"></span>
+          <i class=" pull-left fa " ng-class="{'fa-ban text-danger': clusterUtilCtrl.HdfsBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.HdfsWarn }" aria-hidden="true" style="margin-top: 3px"></i>                              
         </a>
       </li>
 
