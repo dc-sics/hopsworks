@@ -105,7 +105,7 @@ public class DelaHeartbeatWorker {
       delaStateCtrl.delaCertsAvailable(certSetup.get().getValue0(), certSetup.get().getValue1(), 
         certSetup.get().getValue2());
       state = State.DELA_VERSION;
-      delaContact(resetToDelaContact(timer));
+      delaVersion(resetToDelaContact(timer));
     } else {
       LOG.log(Level.WARNING, "dela certificates not ready. waiting...");
     }
