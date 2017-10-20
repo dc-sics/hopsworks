@@ -104,8 +104,7 @@ public class DelaHeartbeatWorker {
     if (certSetup.isPresent()) {
       delaStateCtrl.delaCertsAvailable(certSetup.get().getValue0(), certSetup.get().getValue1(), 
         certSetup.get().getValue2());
-      state = State.DELA_VERSION;
-      delaVersion(resetToDelaContact(timer));
+      delaVersion(resetToDelaVersion(timer));
     } else {
       LOG.log(Level.WARNING, "dela certificates not ready. waiting...");
     }
@@ -246,6 +245,12 @@ public class DelaHeartbeatWorker {
     return timerService.createTimer(0, settings.getHOPSSITE_HEARTBEAT_RETRY(), "Timer for dela settings.");
   }
 
+  private Timer resetToDelaVersion(Timer timer) {
+    timer.cancel();
+    state = State.DELA_VERSION;
+    return timerService.createTimer(0, settings.getHOPSSITE_HEARTBEAT_RETRY(), "Timer for dela version.");
+  }
+  
   private Timer resetToDelaContact(Timer timer) {
     timer.cancel();
     state = State.DELA_CONTACT;
