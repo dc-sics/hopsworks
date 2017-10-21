@@ -389,13 +389,64 @@
                   </tbody>
                 </table>
 
-              </uib-tab>              
+              </uib-tab>
+              <uib-tab index="4" heading="Device Settings">
+                <div ng-controller="KafkaCtrl as kafkaCtrl">
+                  <form role="form" name="deviceForm" ng-submit="kafkaCtrl.saveProject()">
+                    <h2>Device Settings</h2> 
+                    <div class="panel panel-default"  style="width: 800px; background-color: #F7F7F7;">
+                      <div class="panel-body">
+                        <div id="updateDeviceSettings">
+                          <div class="controls">
+                            <p></p>
+                            <label class="control-label">Devices feature:</label><br />
+                            <div class="col-md-12">
+                              <select name="jwtTokeDurationInHours " ng-disabled="false">
+                                <option value="false">Disabled</option>
+                                <option value="true">Enabled</option>
+                              </select>
+                              <p></p>
+                              <label class="text-muted">By enabling this feature devices are allowed to login 
+                                to HopsWorks and produce records into the project's kafka topics.</label>
+                              <p></p>
+                            </div>
+                            <label class="control-label">Every time a device logs in authorize it up to:</label><br />
+                            <div class="col-md-12">
+                              <select name="jwtTokeDurationInHours " ng-disabled="false">
+                                <option value="1">1 hour</option>
+                                <option value="6">6 hours</option>
+                                <option value="12">12 hours</option>
+                                <option value="24">1 day</option>
+                                <option value="168">1 week</option>
+                                <option value="720">30 days</option>
+                                <option value="2160">90 days</option>
+                                <option value="8760">1 year</option>
+                              </select>
+                              <p></p>
+                              <label class="text-muted">Blocked devices can no longer login however they may still be able to produce into the project's topics if they were already logged in before the blocking occured and only up to the amount of time defined here since their last logged in timestamp. Blocked devices can still be instantly prevented from producing but it requires a forcing log out of all project devices. Approved devices will still be able to login after of the forcing log out.</label>
+                            </div>
+                            <p></p>
+                            <p></p>
+                            <label class="control-label">Documentation on how devices can authenticate and send data to Hopsworks can be found here:</label><br />
+                            <div class="col-md-12">
+                              <label class="text-muted">Documentation Link Here</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit" 
+                            ng-disabled="projectCtrl.working">
+                      <i ng-if="projectCtrl.working" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
+                      Save
+                    </button>
+                  </form>
+                </div>
+              </uib-tab>
+
             </uib-tabset>
           </div>
-
-
       </section>
-
     </div>
   </div>
 </div>

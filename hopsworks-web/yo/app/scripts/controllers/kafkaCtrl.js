@@ -7,13 +7,14 @@
 angular.module('hopsWorksApp')
         .controller('KafkaCtrl', ['$routeParams', 'growl',
         'KafkaService', '$location', 'ModalService', '$interval',
-        '$mdSidenav', 'TourService', 'ProjectService',
+        '$mdSidenav', 'TourService', 'ProjectService', 'DeviceManagementService',
           function ($routeParams, growl, KafkaService, $location,
-          ModalService, $interval, $mdSidenav, TourService, ProjectService) {
+          ModalService, $interval, $mdSidenav, TourService, ProjectService, DeviceManagementService) {
 
             var self = this;
             self.projectId = $routeParams.projectID;
             self.topics = [];
+            self.devices = [];
             self.sharedTopics = [];
             self.topicDetails = {};
             self.maxNumTopics = 10;
@@ -38,6 +39,7 @@ angular.module('hopsWorksApp')
            
             self.showTopics = 1;
             self.showSchemas = -1;
+            self.showDevices = -1;
             self.schemas = [];
             self.schemaVersions = [];
            self.tourService = TourService;
@@ -328,6 +330,16 @@ angular.module('hopsWorksApp')
                 });
             };
 
+            self.listDevices = function () {
+                DeviceManagementService.getDevices(this.projectId).then(
+                    function (success) {
+                        self.devices = success.data;
+                        var size = self.devices.length;
+                    }, function (error) {
+                        growl.error(error.data.errorMsg, {title: 'Failed to get devices', ttl: 5000});
+                    });
+            };
+
             self.init = function(){
               ProjectService.get({}, {'id': self.projectId}).$promise.then(
                 function (success) {
@@ -353,6 +365,7 @@ angular.module('hopsWorksApp')
               }
               self.showSchemas = -1;
               self.showTopics = 1;
+              self.showDevices = -1;
             };
 
             self.showSchema = function(){
@@ -361,7 +374,18 @@ angular.module('hopsWorksApp')
               }
               self.showSchemas = 1;
               self.showTopics = -1;
+              self.showDevices = -1;
               self.listSchemas();
+            };
+
+            self.showDevice = function(){
+              if (self.projectIsGuide) {
+                  self.tourService.currentStep_TourThree = 1;
+              }
+              self.showSchemas = -1;
+              self.showTopics = -1;
+              self.showDevices = 1;
+              //self.listDevices();
             };
               
           }]);
