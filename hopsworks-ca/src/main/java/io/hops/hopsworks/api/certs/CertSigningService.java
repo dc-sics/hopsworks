@@ -67,7 +67,7 @@ public class CertSigningService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response register(@Context HttpServletRequest req, String jsonString)
           throws AppException {
-    logger.info("Request to sign host certificate: \n" + jsonString);        
+    logger.log(Level.INFO, "Request to sign host certificate: \n{0}", jsonString);
     JSONObject json = new JSONObject(jsonString);
     String pubAgentCert = "no certificate";
     String caPubCert = "no certificate";
