@@ -74,7 +74,7 @@ public class DelaWorkerController {
       publicDSId = hopsSiteCtrl.performAsUser(user, new HopsSite.UserFunc<String>() {
         @Override
         public String perform() throws ThirdPartyException {
-          return hopsSiteCtrl.publish(project.getName(), dataset.getName(), dataset.getDescription(), getCategories(), 
+          return hopsSiteCtrl.publish(dataset.getName(), dataset.getDescription(), getCategories(), 
             datasetSize, user.getEmail());
           
         }

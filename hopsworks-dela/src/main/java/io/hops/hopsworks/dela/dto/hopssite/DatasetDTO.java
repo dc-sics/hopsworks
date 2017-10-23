@@ -9,7 +9,6 @@ public class DatasetDTO implements Serializable {
 
   @XmlRootElement
   public static class Proto {
-    private String projectName;
     private String name;
     private String description;
     private Collection<String> categories;
@@ -19,22 +18,13 @@ public class DatasetDTO implements Serializable {
     public Proto() {
     }
 
-    public Proto(String projectName, String name, String description, Collection<String> categories, long size, 
+    public Proto(String name, String description, Collection<String> categories, long size, 
       String userEmail) {
-      this.projectName = projectName;
       this.name = name;
       this.description = description;
       this.categories = categories;
       this.userEmail = userEmail;
       this.size = size;
-    }
-
-    public String getProjectName() {
-      return projectName;
-    }
-
-    public void setProjectName(String projectName) {
-      this.projectName = projectName;
     }
 
     public String getName() {
