@@ -2,9 +2,11 @@
   <div class="panel panel-default">
     <div class="panel-heading ds-panel-heading">
       <a ng-click="detailsFn(content)">{{content.name | limitTo: 100}}
-      {{content.heading.length > 100 ? '...':''}}</a>
-      <span> <label>version:</label>{{content.version}}</span>
-      <p class="pull-right text-muted"><span cuib-rating ng-model="content.rating" aria-labelledby="custom-icons-2" read-only="true"></span></p>
+      {{content.heading.length > 100 ? '...':''}}  version:{{content.version}}</a>
+      <p class="pull-right text-muted">
+        <span uib-rating ng-model="content.rating" aria-labelledby="custom-icons-2" read-only="true"></span>
+        </div>
+      </p>
     </div>
     <div class="panel-body">{{content.description}}</div>
     <div class="panel-footer ds-panel-footer text-muted">
