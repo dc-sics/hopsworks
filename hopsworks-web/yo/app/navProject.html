@@ -62,14 +62,14 @@
         <a>
           Kafka <img class="pull-right" style="margin-right:15px" height="25" src="images/kafka_logo.png" id="kafkaTab"/>
           <i class=" pull-left fa " 
-              uib-tooltip="If this indicator is orange, Kafka is encountering problems. If this bar is red, Kafka is down."             
+             uib-tooltip="If this indicator is orange, Kafka is encountering problems. If this bar is red, Kafka is down."             
              ng-class="{'fa-ban text-danger': clusterUtilCtrl.KafkaBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.KafkaWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
         </a>
       </li>
       <li ng-click="projectCtrl.goToService('DELA')" ng-show="projectCtrl.showDela()">
-          <a>
-             Dela<img class="pull-right" style="margin-right:15px" height="25" src="images/dela-green.png">
-          </a>
+        <a>
+          Dela<img class="pull-right" style="margin-right:15px" height="25" src="images/dela-green.png">
+        </a>
       </li>
 
       <li ng-click="projectCtrl.goToTensorflow()" ng-show="projectCtrl.showTensorflow()">
@@ -90,7 +90,7 @@
         <a>
           Data Sets <span class="sub_icon fa fa-folder-open fa-lg pull-right"></span>
           <i class=" pull-left fa " 
-              uib-tooltip="If this indicator is orange, the filesystem (HopsFS) is encountering problems. If this bar is red, HopsFS is down."                          
+             uib-tooltip="If this indicator is orange, the filesystem (HopsFS) is encountering problems. If this bar is red, HopsFS is down."                          
              ng-class="{'fa-ban text-danger': clusterUtilCtrl.HdfsBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.HdfsWarn }" aria-hidden="true" style="margin-top: 3px"></i>                              
         </a>
       </li>
@@ -198,7 +198,7 @@
     tourtip-offset-vertical="-18"
     tourtip-offset-horizontal="-13"
     ></virtual-step>
-   <virtual-step
+  <virtual-step
     ng-if="projectCtrl.tourService.activeTour === 'distributed tensorflow'"
     id="TourTwo"
     class="ng-scope"
@@ -211,5 +211,5 @@
     tourtip-offset-vertical="-18"
     tourtip-offset-horizontal="-13"
     ></virtual-step>
-  
+
 </tour>
