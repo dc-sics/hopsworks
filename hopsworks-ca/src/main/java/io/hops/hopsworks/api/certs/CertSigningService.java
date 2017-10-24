@@ -108,8 +108,9 @@ public class CertSigningService {
     if (json.has("csr")) {
       String csr = json.getString("csr");
       try {
-        pubAgentCert = PKIUtils.signCertificate(settings, csr, false);
-        caPubCert = Files.toString(new File(settings.getCaDir() + "/certs/ca.cert.pem"), Charsets.UTF_8);
+        pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
+        caPubCert = Files.toString(new File(settings.getIntermediateCaDir() + "/certs/intermediate.cert.pem"),
+            Charsets.UTF_8);
       } catch (IOException | InterruptedException ex) {
         logger.log(Level.SEVERE,null,ex);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.toString());
@@ -127,7 +128,7 @@ public class CertSigningService {
     File certFile;
     try {
       certFile = File.createTempFile(System.getProperty("java.io.tmpdir"), ".pem");
-      String crl = PKIUtils.createCRL(settings.getCaDir(), settings.getHopsworksMasterPasswordSsl(), false);
+      String crl = PKIUtils.createCRL(settings, true);
       FileUtils.writeStringToFile(certFile, crl);
     } catch (IOException | InterruptedException ex) {
       logger.log(Level.SEVERE, null, ex);
@@ -159,7 +160,7 @@ public class CertSigningService {
     if (json.has("cert")) {
       String cert = json.getString("cert");
       try {
-        status = PKIUtils.verifyCertificate(cert, settings.getCaDir(), settings.getHopsworksMasterPasswordSsl(), false);
+        status = PKIUtils.verifyCertificate(settings, cert, true);
       } catch (IOException | InterruptedException ex) {
         logger.log(Level.SEVERE, null, ex);
       }

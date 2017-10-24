@@ -148,7 +148,7 @@ public class ClusterController {
       agent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT.getValue());
       userBean.update(agent);
     } else {
-      revokeCert(agent);
+      revokeCert(agent, true);
       userBean.removeByEmail(agent.getEmail());
     }
   }
@@ -280,12 +280,14 @@ public class ClusterController {
     return TimeUnit.MILLISECONDS.toHours(diff);
   }
 
-  private void revokeCert(Users agent) throws FileNotFoundException, IOException, InterruptedException,
-      CertificateException {
+  private void revokeCert(Users agent, boolean intermediate) throws FileNotFoundException, IOException,
+      InterruptedException, CertificateException {
     if (agent == null || agent.getEmail() == null || agent.getEmail().isEmpty()) {
       throw new IllegalArgumentException("User email required.");
     }
-    File indexFile = new File(settings.getCertsDir() + "/index.txt");
+    String indexF = intermediate ? settings.getCertsDir() + "/intermediate/index.txt" : settings.getCertsDir()
+        + "/index.txt";
+    File indexFile = new File(indexF);
     if (!indexFile.exists()) {
       throw new IllegalStateException(indexFile + " not found.");
     }
@@ -293,8 +295,10 @@ public class ClusterController {
     if (serialPem == null || serialPem.isEmpty()) {
       return; //No cert signed for agent
     }
-    File agentPem = new File(settings.getCertsDir() + "/newcerts/" + serialPem);
-    PKIUtils.revokeCert(agentPem.getPath(), settings.getCaDir(), settings.getHopsworksMasterPasswordSsl(), false);
+    String agentP = intermediate ? settings.getCertsDir() + "/intermediate/newcerts/" : settings.getCertsDir()
+        + "/newcerts/";
+    File agentPem = new File(agentP  + serialPem);
+    PKIUtils.revokeCert(settings, agentPem.getPath(), intermediate);
   }
  
   private String getSerialNumberFromFile(File indexFile, String email) throws IOException {
