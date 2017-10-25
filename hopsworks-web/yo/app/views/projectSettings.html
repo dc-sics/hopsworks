@@ -122,6 +122,12 @@
                   </button>
 
                 </form>
+                <button class="btn btn-primary" type="button" 
+                        uib-tooltip="Click to download project's certificates. It allows communication with the project's services from outside Hospworks."
+                          ng-disabled="projectCtrl.working"
+                          ng-click="projectCtrl.getCerts()">
+                    Certificates
+                </button>
 
               </uib-tab>
 
@@ -132,7 +138,7 @@
                   <div class="jumbotron" style="margin-top: 30px;">
                     <div class="col-md-offset-1">
                       <h1 class="display-3">Anaconda</h1>
-                      <p class="lead">Jupyter requries an Anaconda installation. Click on the button below to install Anaconda for this project.</p>
+                      <p class="lead">Jupyter requires an Anaconda installation. Click on the button below to install Anaconda for this project.</p>
                       <p>You cannot change the version of python after you have selected enabled the anaconda environment for this project.</p>
                       <p class="lead">
                       <div><span> <label>Enable Python Kernel: 
