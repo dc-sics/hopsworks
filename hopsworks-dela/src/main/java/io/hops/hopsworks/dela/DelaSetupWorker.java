@@ -3,7 +3,6 @@ package io.hops.hopsworks.dela;
 import com.google.gson.Gson;
 import io.hops.hopsworks.common.dao.dela.certs.ClusterCertificateFacade;
 import io.hops.hopsworks.common.dela.AddressJSON;
-import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
@@ -30,6 +29,7 @@ import javax.ejb.TimerService;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.Session;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 
@@ -107,7 +107,8 @@ public class DelaSetupWorker {
     Optional<String> masterPswd = settings.getHopsSiteClusterPswd();
     if (!masterPswd.isPresent()) {
       //TODO Alex - use the registration pswd hash once the admin UI is ready
-      settings.setHopsSiteClusterPswd(HopsUtils.randomString(64));
+      String pswd = DigestUtils.sha256Hex("1234");
+      settings.setHopsSiteClusterPswd(pswd);
       masterPswd = settings.getHopsSiteClusterPswd();
     }
     Optional<String> clusterName = settings.getHopsSiteClusterName();
