@@ -1,4 +1,4 @@
-package io.hops.hopsworks.dela.dao.certs;
+package io.hops.hopsworks.common.dao.dela.certs;
 
 import java.io.Serializable;
 import javax.persistence.Basic;

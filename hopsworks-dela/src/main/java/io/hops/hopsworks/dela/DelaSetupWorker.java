@@ -3,7 +3,7 @@ package io.hops.hopsworks.dela;
 import com.google.gson.Gson;
 import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.hopsworks.dela.dao.certs.ClusterCertificateFacade;
+import io.hops.hopsworks.common.dao.dela.certs.ClusterCertificateFacade;
 import io.hops.hopsworks.dela.dto.hopssite.ClusterServiceDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import io.hops.hopsworks.dela.hopssite.HopssiteController;
