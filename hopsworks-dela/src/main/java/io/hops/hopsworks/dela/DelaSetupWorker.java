@@ -28,7 +28,6 @@ import javax.ejb.Timer;
 import javax.ejb.TimerService;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
-import javax.mail.Session;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
@@ -41,10 +40,6 @@ public class DelaSetupWorker {
 
   @Resource
   TimerService timerService;
-
-  @Resource(lookup = "mail/BBCMail")
-  private Session mailSession;
-
   @EJB
   private Settings settings;
   @EJB
@@ -199,9 +194,7 @@ public class DelaSetupWorker {
 
   private void hopsSiteRegister(Timer timer, String delaClusterAddress, AddressJSON delaTransferAddress)
     throws ThirdPartyException {
-
-    String publicCId = hopsSiteProxy.registerCluster(delaClusterAddress, new Gson().toJson(delaTransferAddress),
-      mailSession.getProperty("mail.from"));
+    String publicCId = hopsSiteProxy.registerCluster(delaClusterAddress, new Gson().toJson(delaTransferAddress));
     settings.setDELA_CLUSTER_ID(publicCId);
     heavyPing(resetToHeavyPing(timer));
   }
