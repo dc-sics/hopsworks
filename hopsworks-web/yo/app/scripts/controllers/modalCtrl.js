@@ -32,16 +32,12 @@ angular.module('hopsWorksApp')
                         var dataSetService = DataSetService(self.projectId);
                         dataSetService.getCerts().then(
                                 function (success) {
-                                  console.log("success");
-
                                 }, function (error) {
-                          console.log("error");
-                          growl.error("Error" + error.data.errorMsg, {title: 'Error', ttl: 5000});
+                          growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                         });
                       }, function (error) {
                 self.password = "";
-                console.log("error");
-                growl.error("Error" + error.data.errorMsg, {title: 'Error', ttl: 5000});
+                growl.error("Wrong password", {title: 'Error', ttl: 5000});
               });
               $uibModalInstance.close(self.content);
             };

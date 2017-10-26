@@ -109,6 +109,15 @@
                                 </div>
                               </div>
                             </fieldset>
+                            <div class="row" style="margin-left:15px; margin-bottom:0px">
+                              <button class="btn btn-success" type="button" 
+                                      
+                                      ng-disabled="projectCtrl.working"
+                                      ng-click="projectCtrl.getCerts()">
+                                Export Certificates
+                              </button>
+                              <i class="fa fa-info-circle" uib-tooltip="Click to download project's certificates. It allows communication with the project's services from outside Hospworks." style="margin-left: 10px; margin-bottom:0px"></i>
+                            </div>
                           </div>
 
                         </div>
@@ -122,12 +131,6 @@
                   </button>
 
                 </form>
-                <button class="btn btn-primary" type="button" 
-                        uib-tooltip="Click to download project's certificates. It allows communication with the project's services from outside Hospworks."
-                          ng-disabled="projectCtrl.working"
-                          ng-click="projectCtrl.getCerts()">
-                    Certificates
-                </button>
 
               </uib-tab>
 

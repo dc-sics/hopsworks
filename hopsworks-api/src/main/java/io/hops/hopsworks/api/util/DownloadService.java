@@ -147,7 +147,7 @@ public class DownloadService {
   public Response downloadCerts(@PathParam("path") String path, @Context SecurityContext sc) throws AppException,
       AccessControlException {
     if(user.getEmail().equals(Settings.SITE_EMAIL) || user.getEmail().equals(Settings.AGENT_EMAIL)){
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.FORBIDDEN).build();
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.EXPECTATION_FAILED).build();
     }
     
     String zipName = settings.getHopsworksTmpCertDir() + File.separator + project.getName() + "-" + user.getUsername()
@@ -182,7 +182,7 @@ public class DownloadService {
             "An email was sent with the password for your project's certificates. If an email does not arrive shortly, "
                 + "please check spam first and then contact the HopsWorks administrator.", "");
         email.sendEmail(user.getEmail(), Message.RecipientType.TO, "Hopsworks certificate information",
-            "This is the password for both certificates:" + password);
+            "The password for keystore and truststore is:" + password);
         return response.build();
       } catch (IOException ex) {
         LOG.log(Level.SEVERE, null, ex);

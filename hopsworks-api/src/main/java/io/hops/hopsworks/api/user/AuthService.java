@@ -96,7 +96,7 @@ public class AuthService {
     if (user.getPassword().equals(DigestUtils.sha256Hex(password))) {
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.FORBIDDEN).build();
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.EXPECTATION_FAILED).build();
   }
   
   @POST
