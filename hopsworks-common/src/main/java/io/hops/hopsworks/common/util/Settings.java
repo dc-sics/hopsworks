@@ -1936,7 +1936,10 @@ public class Settings implements Serializable {
   }
   
   public synchronized String getHopsSiteCaScript() {
-    return getHopsworksInstallDir() + File.separator + "ca-keystore.sh";
+    return getHopsworksInstallDir()
+      + File.separator + "domain1"
+      + File.separator + "bin"
+      + File.separator + "ca-keystore.sh";
   }
   
   public synchronized String getHopsSiteCert() {
