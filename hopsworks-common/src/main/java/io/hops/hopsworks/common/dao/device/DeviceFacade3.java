@@ -80,7 +80,7 @@ public class DeviceFacade3 {
               device.getProjectDevicePK().getDeviceUuid(),
               device.getAlias(),
               device.getCreatedAt(),
-              ProjectDevice.State.values()[device.getState()].name(),
+              device.getState().name(),
               device.getLastLoggedIn()));
     }
     return devicesDTO;
@@ -99,7 +99,7 @@ public class DeviceFacade3 {
         device.getProjectDevicePK().getDeviceUuid(),
         device.getAlias(),
         device.getCreatedAt(),
-        ProjectDevice.State.values()[device.getState()].name(),
+        device.getState().name(),
         device.getLastLoggedIn()));
     }
     return devicesDTO;
@@ -108,7 +108,7 @@ public class DeviceFacade3 {
   public void updateProjectDevice(ProjectDeviceDTO projectDeviceDTO) {
     ProjectDevice projectDevice = em.find(ProjectDevice.class,
       new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
-    projectDevice.setState(ProjectDevice.State.valueOf(projectDeviceDTO.getState()).ordinal());
+    projectDevice.setState(ProjectDevice.State.valueOf(projectDeviceDTO.getState()));
     projectDevice.setAlias(projectDeviceDTO.getAlias());
     em.persist(projectDevice);
   }

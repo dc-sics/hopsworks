@@ -66,7 +66,6 @@ public class DeviceService {
   private final static Logger logger = Logger.getLogger(DeviceService.class.getName());
 
   private static final String DEVICE_UUID = "deviceUuid";
-  private static final String PASSWORD = "password";
   private static final String PROJECT_ID = "projectId";
 
   private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
@@ -228,8 +227,7 @@ public class DeviceService {
   public Response postRegisterEndpoint(
     @Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
     try {
-      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
-
+      getProjectDevicesSettings(authDTO.getProjectId());
       try {
         authDTO.setPassword(DigestUtils.sha256Hex(authDTO.getPassword()));
         deviceFacade.createProjectDevice(authDTO);
@@ -238,10 +236,6 @@ public class DeviceService {
         return DeviceResponseBuilder.failedJsonResponse(
           Status.UNAUTHORIZED, "Device is already registered for this project.");
       }
-    }catch(JSONException e) {
-      return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-              "Json request is malformed! Required properties are [{0}, {1}, {2}]",
-              PROJECT_ID, DEVICE_UUID, PASSWORD));
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }
@@ -260,6 +254,8 @@ public class DeviceService {
     try {
       ProjectDevicesSettings devicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
       ProjectDevice device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
+
+      if (device.get)
 
       if (device.getPassword().equals(DigestUtils.sha256Hex(authDTO.getPassword()))) {
         deviceFacade.updateProjectDeviceLastLoggedIn(device);

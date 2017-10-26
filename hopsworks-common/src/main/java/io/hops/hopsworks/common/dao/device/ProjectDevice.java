@@ -116,12 +116,12 @@ public class ProjectDevice implements Serializable{
     this.createdAt = createdAt;
   }
 
-  public Integer getState() {
-    return state;
+  public State getState(){
+    return State.values()[state];
   }
 
-  public void setState(Integer state) {
-    this.state = state;
+  public void setState(State state) {
+    this.state = state.ordinal();
   }
 
   public Date getLastLoggedIn() {
