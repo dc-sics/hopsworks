@@ -1,7 +1,8 @@
 package io.hops.hopsworks.api.dela;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermission;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetHelper;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
@@ -47,7 +48,7 @@ public class DelaClusterService {
   
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response getPublicDatasets(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
     List<Dataset> clusterDatasets = datasetCtrl.getPublicDatasets();
     List<LocalDatasetDTO> localDS = LocalDatasetHelper.parse(inodes, clusterDatasets);

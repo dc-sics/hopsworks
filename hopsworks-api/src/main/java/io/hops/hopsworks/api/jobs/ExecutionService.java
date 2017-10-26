@@ -20,8 +20,10 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import org.slf4j.LoggerFactory;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.common.dao.jobhistory.Execution;
 import io.hops.hopsworks.common.dao.jobhistory.ExecutionFacade;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
@@ -65,7 +67,7 @@ public class ExecutionService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getAllExecutions(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     List<Execution> executions = executionFacade.findForJob(job);
@@ -86,7 +88,7 @@ public class ExecutionService {
    */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response startExecution(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     String loggedinemail = sc.getUserPrincipal().getName();
@@ -109,7 +111,7 @@ public class ExecutionService {
 
   @POST
   @Path("/stop")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response stopExecution(@PathParam("jobId") int jobId,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -143,7 +145,7 @@ public class ExecutionService {
   @GET
   @Path("/{executionId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getExecution(@PathParam("executionId") int executionId,
       @Context SecurityContext sc, @Context HttpServletRequest req) throws
       AppException {

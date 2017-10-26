@@ -20,6 +20,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.enterprise.context.RequestScoped;
 
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
@@ -32,7 +33,7 @@ import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.Paragraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.common.collect.Sets;
@@ -597,8 +598,7 @@ public class NotebookRestApi {
     return new JsonResponse(Status.OK, "").build();
   }
   
-  private void materializeCertificates(List<Paragraph> paragraphs)
-    throws IOException {
+  private void materializeCertificates(List<Paragraph> paragraphs) throws IOException {
     DistributedFileSystemOps dfso = null;
     try {
       dfso = dfsService.getDfsOps();
@@ -1030,7 +1030,7 @@ public class NotebookRestApi {
   @POST
   @Path("/new")
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response createNew(NewNotebookRequest newNote) throws AppException {
     Note note;
     NoteInfo noteInfo;

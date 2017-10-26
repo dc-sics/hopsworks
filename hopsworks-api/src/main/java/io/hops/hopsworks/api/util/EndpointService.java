@@ -1,7 +1,8 @@
 package io.hops.hopsworks.api.util;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptors;
 import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptorsFacade;
 import io.hops.hopsworks.common.exception.AppException;
@@ -37,7 +38,7 @@ public class EndpointService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response findEndpoint(
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {

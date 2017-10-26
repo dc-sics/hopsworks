@@ -22,7 +22,8 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.hdfs.inode.FsView;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -102,7 +103,7 @@ public class LocalFsService {
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response createDataSetDir(
           String path,
           @Context SecurityContext sc,
@@ -131,7 +132,7 @@ public class LocalFsService {
   @DELETE
   @Path("/{fileName: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response removedataSetdir(
           @PathParam("fileName") String fileName,
           @Context SecurityContext sc,
@@ -158,7 +159,7 @@ public class LocalFsService {
   @GET
   @Path("fileExists/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response checkFileExist(@PathParam("path") String path) throws
           AppException {
     if (path == null) {
@@ -184,7 +185,7 @@ public class LocalFsService {
   @GET
   @Path("isDir/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response isDir(@PathParam("path") String path) throws
           AppException {
 

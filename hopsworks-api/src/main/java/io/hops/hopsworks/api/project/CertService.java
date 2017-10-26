@@ -1,7 +1,8 @@
 package io.hops.hopsworks.api.project;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.user.UserFacade;
@@ -49,7 +50,7 @@ public class CertService {
   @GET
   @Path("/certpw")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getCertPw(@QueryParam("keyStore") String keyStore,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) {

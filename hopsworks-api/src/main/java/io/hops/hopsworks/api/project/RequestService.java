@@ -17,8 +17,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
@@ -77,7 +78,7 @@ public class RequestService {
   @POST
   @Path("/access")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response requestAccess(RequestDTO requestDTO,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
@@ -146,13 +147,13 @@ public class RequestService {
     // or the prior request is from a data owner do nothing.
     if (dsRequest != null && (dsRequest.getProjectTeam().getTeamRole().equals(
             projectTeam.getTeamRole()) || dsRequest.getProjectTeam().
-            getTeamRole().equals(AllowedRoles.DATA_OWNER))) {
+            getTeamRole().equals(ProjectPermissionLevel.DATA_OWNER.toString()))) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "There is a prior request for this dataset by " + projectTeam.
               getUser().getFname() + " " + projectTeam.getUser().getLname()
               + "from the same project.");
     } else if (dsRequest != null && projectTeam.getTeamRole().equals(
-            AllowedRoles.DATA_OWNER)) {
+            ProjectPermissionLevel.DATA_OWNER.toString())) {
       dsRequest.setProjectTeam(projectTeam);
       dsRequest.setMessageContent(requestDTO.getMessageContent());
       datasetRequest.merge(dsRequest);
@@ -206,7 +207,7 @@ public class RequestService {
   @POST
   @Path("/join")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response requestJoin(RequestDTO requestDTO,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
