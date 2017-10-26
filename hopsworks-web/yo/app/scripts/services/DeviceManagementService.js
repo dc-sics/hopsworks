@@ -12,13 +12,13 @@ angular.module('hopsWorksApp')
              * @returns {unresolved} A list of topic objects.
              */
             getDevices: function (projectId) {
-                return $http.get('/api/project/' + projectId + '/device/devices');
+                return $http.get('/api/project/' + projectId + '/devices/devices');
             },
 
             validateSchema: function (projectId, schemaDetails) {
                 var req = {
                     method: 'POST',
-                    url: '/api/project/' + projectId + '/kafka/schema/validate',
+                    url: '/api/project/' + projectId + '/devices/device',
                     headers: {
                         'Content-Type': 'application/json'
                     },

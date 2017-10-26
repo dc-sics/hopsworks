@@ -21,13 +21,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
+import io.hops.hopsworks.common.dao.device.*;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
@@ -48,12 +48,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
-import io.hops.hopsworks.common.dao.device.DeviceFacade2;
-import io.hops.hopsworks.common.dao.device.ProjectDevice;
-import io.hops.hopsworks.common.dao.device.ProjectSecret;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -70,10 +66,9 @@ public class DeviceService {
   private final static Logger logger = Logger.getLogger(DeviceService.class.getName());
 
   private static final String DEVICE_UUID = "deviceUuid";
-  private static final String PASS_UUID = "passUuid";
+  private static final String PASSWORD = "password";
   private static final String PROJECT_ID = "projectId";
-  private static final String ALIAS = "alias";
-  private static final String STATE = "state";
+
   private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
   
   private static final String AUTHORIZATION_HEADER = "Authorization";
@@ -104,7 +99,7 @@ public class DeviceService {
   private ProjectFacade projectFacade;
 
   @EJB
-  private DeviceFacade2 deviceFacade;
+  private DeviceFacade3 deviceFacade;
   
   @EJB
   private KafkaFacade2 kafkaFacade;
@@ -124,11 +119,19 @@ public class DeviceService {
     return authorizationHeader.substring("Bearer".length()).replaceAll("\\s","");
   }
 
-  private ProjectSecret getProjectSecret(Integer projectId) throws DeviceServiceException{
+  private ProjectDevicesSettings getProjectDevicesSettings(Integer projectId) throws DeviceServiceException{
     try {
-      return deviceFacade.getProjectSecret(projectId);
+      return deviceFacade.readProjectDevicesSettings(projectId);
     }catch (Exception e) {
       throw new DeviceServiceException(DeviceResponseBuilder.DEVICES_FEATURE_NOT_ACTIVE);
+    }
+  }
+
+  private ProjectDevice getProjectDevice(Integer projectId, String deviceUuid) throws DeviceServiceException{
+    try {
+      return deviceFacade.readProjectDevice(projectId, deviceUuid);
+    }catch (Exception e) {
+      throw new DeviceServiceException(DeviceResponseBuilder.DEVICE_NOT_REGISTERED);
     }
   }
 
@@ -173,54 +176,13 @@ public class DeviceService {
       String projectSecret = UUID.randomUUID().toString();
 
       // Saves Project Secret
-      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade.createProjectDevicesSettings(projectId, projectSecret, projectTokenDurationInHours);
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "Json request is malformed! Required properties are [{0}, {1}]",
               PROJECT_ID, JWT_DURATION_IN_HOURS));
     }
-  }
-
-  //TODO: Add deactivation endpoint that deletes the project secret.
-
-  @GET
-  @Path("/devices")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getDevicesEndpoint(@Context HttpServletRequest req) throws AppException {
-
-    Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
-    String state = req.getParameter(STATE);
-
-    List<ProjectDeviceDTO> listDevices;
-    if (state != null){
-      listDevices = deviceFacade.getProjectDevices(projectId, Integer.valueOf(state));
-    }else{
-      listDevices = deviceFacade.getProjectDevices(projectId);
-    }
-    GenericEntity<List<ProjectDeviceDTO>> projectDevices = new GenericEntity<List<ProjectDeviceDTO>>(listDevices){};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(projectDevices).build();
-
-  }
-
-  @POST
-  @Path("/devices")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response postDevicesStateEndpoint(
-    @Context HttpServletRequest req, List<ProjectDeviceDTO> listDevices) throws AppException {
-    deviceFacade.updateDevicesState(listDevices);
-    return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
-  }
-
-  @GET
-  @Path("/instructions")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getInstructionsEndpoint(@Context HttpServletRequest req) throws AppException {
-    //TODO: Change instructions text and provide the correct endpoints and parameters.
-    String instructions = "Instructions for how to connect the devices to hopsworks will go here";
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(instructions).build();
-
   }
 
   //===============================================================================================================
@@ -240,10 +202,10 @@ public class DeviceService {
       JSONObject json = new JSONObject(jsonString);
       Integer projectId = json.getInt(PROJECT_ID);
 
-      ProjectSecret secret = getProjectSecret(projectId);
+      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(projectId);
 
       String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      Response verification = DeviceServiceSecurity.verifyJwt(secret, jwtToken);
+      Response verification = DeviceServiceSecurity.verifyJwt(projectDevicesSettings, jwtToken);
       if (verification != null){
         return verification;
       }
@@ -263,20 +225,14 @@ public class DeviceService {
   @Path("/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response postRegisterEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-    
+  public Response postRegisterEndpoint(
+    @Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
     try {
-      JSONObject json = new JSONObject(jsonString);
-      String deviceUuid = json.getString(DEVICE_UUID);
-      String passUuid = json.getString(PASS_UUID);
-      Integer projectId = json.getInt(PROJECT_ID);
-      String alias = json.getString(ALIAS);
-
-      ProjectSecret secret = getProjectSecret(projectId);
+      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
 
       try {
-        String pass = DigestUtils.sha256Hex(passUuid);
-        deviceFacade.addProjectDevice(projectId, deviceUuid, pass, alias);
+        authDTO.setPassword(DigestUtils.sha256Hex(authDTO.getPassword()));
+        deviceFacade.createProjectDevice(authDTO);
         return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return DeviceResponseBuilder.failedJsonResponse(
@@ -285,7 +241,7 @@ public class DeviceService {
     }catch(JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "Json request is malformed! Required properties are [{0}, {1}, {2}]",
-              PROJECT_ID, DEVICE_UUID, PASS_UUID));
+              PROJECT_ID, DEVICE_UUID, PASSWORD));
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }
@@ -299,35 +255,24 @@ public class DeviceService {
   @Path("/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response postLoginEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postLoginEndpoint(@Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
     
     try {
-      JSONObject jsonRequest = new JSONObject(jsonString);
-      String deviceUuid = jsonRequest.getString(DEVICE_UUID);
-      String passUuid = jsonRequest.getString(PASS_UUID);
-      Integer projectId = jsonRequest.getInt(PROJECT_ID);
+      ProjectDevicesSettings devicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
+      ProjectDevice device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
 
-      ProjectSecret secret = getProjectSecret(projectId);
-
-      ProjectDevice device;
-      try {
-        device = deviceFacade.getProjectDevice(projectId, deviceUuid);
-      }catch (Exception e) {
-        return DeviceResponseBuilder.failedJsonResponse(Status.UNAUTHORIZED, MessageFormat.format(
-                "No device is registered with the given {0}.", DEVICE_UUID));
-      }
-
-      if (device.getPassUuid().equals(DigestUtils.sha256Hex(passUuid))) {
+      if (device.getPassword().equals(DigestUtils.sha256Hex(authDTO.getPassword()))) {
+        deviceFacade.updateProjectDeviceLastLoggedIn(device);
         return DeviceResponseBuilder.successfulJsonResponse(
-          Status.OK, DeviceServiceSecurity.generateJwt(secret, device));
+          Status.OK, DeviceServiceSecurity.generateJwt(devicesSettings, device));
       }else {
         return DeviceResponseBuilder.failedJsonResponse(
-          Status.UNAUTHORIZED, MessageFormat.format("{0} is incorrect.", PASS_UUID));
+          Status.UNAUTHORIZED, MessageFormat.format("{0} is incorrect.", PASSWORD));
       }
     }catch(JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
               "Json request is malformed! Required properties are [{0}, {1}, {2}]",
-              PROJECT_ID, DEVICE_UUID, PASS_UUID));
+              PROJECT_ID, DEVICE_UUID, PASSWORD));
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }
@@ -345,10 +290,10 @@ public class DeviceService {
       Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
       String topicName = req.getParameter(TOPIC);
 
-      ProjectSecret secret = getProjectSecret(projectId);
+      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(projectId);
 
       String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      Response authFailedResponse = DeviceServiceSecurity.verifyJwt(secret, jwtToken);
+      Response authFailedResponse = DeviceServiceSecurity.verifyJwt(projectDevicesSettings, jwtToken);
       if (authFailedResponse != null) {
         return authFailedResponse;
       }
@@ -380,11 +325,11 @@ public class DeviceService {
       JSONArray records = json.getJSONArray(RECORDS);
 
       // Retrieves the project secret
-      ProjectSecret secret = getProjectSecret(projectId);
+      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(projectId);
 
       // Verifies jwtToken
       String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      Response authFailedResponse = DeviceServiceSecurity.verifyJwt(secret, jwtToken);
+      Response authFailedResponse = DeviceServiceSecurity.verifyJwt(projectDevicesSettings, jwtToken);
       if (authFailedResponse != null) {
         return authFailedResponse;
       }
@@ -392,7 +337,7 @@ public class DeviceService {
       // The device is authenticated at this point.
 
       // Extracts deviceUuid from jwtToken
-      DecodedJWT decodedJwt = DeviceServiceSecurity.getDecodedJwt(secret, jwtToken);
+      DecodedJWT decodedJwt = DeviceServiceSecurity.getDecodedJwt(projectDevicesSettings, jwtToken);
       String deviceUuid = decodedJwt.getClaim(DEVICE_UUID).asString();
 
       // Extracts the default device-user from the database
@@ -459,5 +404,3 @@ public class DeviceService {
   }
 
 }
-
-

@@ -15,6 +15,8 @@ angular.module('hopsWorksApp')
             self.projectId = $routeParams.projectID;
             self.topics = [];
             self.devices = [];
+
+            self.deviceStates = ["PENDING", "APPROVED", "BLOCKED"];
             self.sharedTopics = [];
             self.topicDetails = {};
             self.maxNumTopics = 10;
@@ -385,7 +387,7 @@ angular.module('hopsWorksApp')
               self.showSchemas = -1;
               self.showTopics = -1;
               self.showDevices = 1;
-              //self.listDevices();
+              self.listDevices();
             };
               
           }]);

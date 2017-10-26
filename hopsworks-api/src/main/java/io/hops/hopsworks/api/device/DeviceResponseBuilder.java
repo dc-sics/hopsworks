@@ -8,6 +8,9 @@ public class DeviceResponseBuilder {
   public static final Response  DEVICES_FEATURE_NOT_ACTIVE = failedJsonResponse(Response.Status.FORBIDDEN,
           "The devices feature for this project is not activated.");
 
+  public static final Response  DEVICE_NOT_REGISTERED = failedJsonResponse(Response.Status.FORBIDDEN,
+    "The device is not registered.");
+
   public static final Response  PROJECT_USER_PASS_FOR_KS_TS_NOT_FOUND = failedJsonResponse(
     Response.Status.INTERNAL_SERVER_ERROR,
     "The passwords for the key store and the trust store that is used to produce to Kafka were not found.");

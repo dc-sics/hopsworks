@@ -13,16 +13,16 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @Entity
-@Table(name = "hopsworks.project_secrets")
+@Table(name = "hopsworks.project_devices_settings")
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(
-      name = "ProjectSecret.findAll",
-      query = "SELECT ps FROM ProjectSecret ps"),
+      name = "ProjectDevicesSettings.findAll",
+      query = "SELECT pds FROM ProjectDevicesSettings pds"),
   @NamedQuery(
-      name = "ProjectSecret.findByProjectId",
-      query= "SELECT ps FROM ProjectSecret ps WHERE ps.projectId = :projectId")})
-public class ProjectSecret implements Serializable{
+      name = "ProjectDevicesSettings.findByProjectId",
+      query= "SELECT pds FROM ProjectDevicesSettings pds WHERE pds.projectId = :projectId")})
+public class ProjectDevicesSettings implements Serializable{
 
   private static final long serialVersionUID = 1L;
 
@@ -41,11 +41,11 @@ public class ProjectSecret implements Serializable{
   @Column(name = "jwt_token_duration")
   private Integer jwtTokenDuration;
   
-  public ProjectSecret(){
+  public ProjectDevicesSettings(){
   }
 
-  public ProjectSecret(Integer projectId, String jwtSecret,
-      Integer jwtTokenDuration) {
+  public ProjectDevicesSettings(Integer projectId, String jwtSecret,
+                                Integer jwtTokenDuration) {
     this.projectId = projectId;
     this.jwtSecret = jwtSecret;
     this.jwtTokenDuration = jwtTokenDuration;
@@ -84,16 +84,16 @@ public class ProjectSecret implements Serializable{
 
   @Override
   public boolean equals(Object object) {
-    if (!(object instanceof ProjectSecret)) {
+    if (!(object instanceof ProjectDevicesSettings)) {
       return false;
     }
-    ProjectSecret other = (ProjectSecret) object;
+    ProjectDevicesSettings other = (ProjectDevicesSettings) object;
     return this.projectId != other.projectId;
   }
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.device.ProjectSecret[" +
+    return "io.hops.hopsworks.common.dao.device.ProjectDevicesSettings[" +
         "projectId=" + this.projectId + " ]";
   }
 

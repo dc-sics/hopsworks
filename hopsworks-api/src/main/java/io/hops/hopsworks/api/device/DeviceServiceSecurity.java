@@ -6,7 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
-import io.hops.hopsworks.common.dao.device.ProjectSecret;
+import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
 
 import javax.ws.rs.core.Response;
 import java.util.Calendar;
@@ -20,21 +20,21 @@ class DeviceServiceSecurity {
 
 
   /***
-   * This method generates a jwt token (RFC 7519) which is unencrypted but signed with the given projectSecret.
+   * This method generates a jwt token (RFC 7519) which is unencrypted but signed with the given projectDevicesSettings.
    *
-   * @param projectSecret Contains the secret which is used to sign the jwt token.
+   * @param projectDevicesSettings Contains the secret which is used to sign the jwt token.
    * @param projectDevice Contains the device identification information for the project.
    * @return Returns the jwt token.
    */
-  static String generateJwt(ProjectSecret projectSecret, ProjectDevice projectDevice) {
+  static String generateJwt(ProjectDevicesSettings projectDevicesSettings, ProjectDevice projectDevice) {
 
     Calendar cal = Calendar.getInstance();
     cal.setTime(new Date());
-    cal.add(Calendar.HOUR_OF_DAY, projectSecret.getJwtTokenDuration());
+    cal.add(Calendar.HOUR_OF_DAY, projectDevicesSettings.getJwtTokenDuration());
     Date expirationDate = cal.getTime();
 
     try {
-      Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
+      Algorithm algorithm = Algorithm.HMAC256(projectDevicesSettings.getJwtSecret());
       return JWT.create()
         .withExpiresAt(expirationDate)
         .withClaim(PROJECT_ID, projectDevice.getProjectDevicePK().getProjectId())
@@ -48,15 +48,15 @@ class DeviceServiceSecurity {
 
   /***
    * This method verifies the validity of a jwt token (RFC 7519) by checking the signature of the token
-   * against the provided projectSecret.
+   * against the provided projectDevicesSettings.
    *
-   * @param projectSecret Contains the secret which is used to verify the jwt token.
+   * @param projectDevicesSettings Contains the secret which is used to verify the jwt token.
    * @param jwtToken The jwt token
    * @return Returns null if the token is verified or an Unauthorized Response with the reason for the failure.
    */
-  static Response verifyJwt(ProjectSecret projectSecret, String jwtToken) {
+  static Response verifyJwt(ProjectDevicesSettings projectDevicesSettings, String jwtToken) {
     try {
-      Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
+      Algorithm algorithm = Algorithm.HMAC256(projectDevicesSettings.getJwtSecret());
       JWTVerifier verifier = JWT.require(algorithm).build();
       verifier.verify(jwtToken);
       return null;
@@ -72,13 +72,13 @@ class DeviceServiceSecurity {
   /***
    * This method decodes the jwt token (RFC 7519). Must be used only after the jwt token has been verified.
    *
-   * @param projectSecret Contains the secret which is used to decode the jwt token.
+   * @param projectDevicesSettings Contains the secret which is used to decode the jwt token.
    * @param jwtToken The jwt token
    * @return Returns a DecodedJWT object or null if the token could not be decoded.
    */
-  static DecodedJWT getDecodedJwt(ProjectSecret projectSecret, String jwtToken){
+  static DecodedJWT getDecodedJwt(ProjectDevicesSettings projectDevicesSettings, String jwtToken){
     try {
-      Algorithm algorithm = Algorithm.HMAC256(projectSecret.getJwtSecret());
+      Algorithm algorithm = Algorithm.HMAC256(projectDevicesSettings.getJwtSecret());
       JWTVerifier verifier = JWT.require(algorithm).build();
       return verifier.verify(jwtToken);
     }catch (Exception e){

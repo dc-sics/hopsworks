@@ -2,7 +2,7 @@ package io.hops.hopsworks.api.device;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.device.DeviceFacade2;
+import io.hops.hopsworks.common.dao.device.DeviceFacade3;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
@@ -17,11 +17,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
@@ -48,7 +44,7 @@ public class DeviceManagementService {
   private ProjectController projectController;
 
   @EJB
-  private DeviceFacade2 deviceFacade;
+  private DeviceFacade3 deviceFacade;
 
   private Integer projectId;
 
@@ -56,8 +52,8 @@ public class DeviceManagementService {
 
   private static final String JWT_DURATION_IN_HOURS = "jwtTokenDurationInHours";
 
-  private static final String STATE = "state";
-
+  private static final String UUID_V4_REGEX =
+    "/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i";
 
   public DeviceManagementService() {
   }
@@ -110,7 +106,7 @@ public class DeviceManagementService {
       String projectSecret = UUID.randomUUID().toString();
 
       // Saves Project Secret
-      deviceFacade.addProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade.createProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
@@ -152,31 +148,48 @@ public class DeviceManagementService {
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response getDevicesEndpoint(@Context HttpServletRequest req) throws AppException {
+  public Response getDevicesEndpoint( @QueryParam("state") String state, @Context HttpServletRequest req) throws AppException {
     checkForProjectId();
 
-    String state = req.getParameter(STATE);
     List<ProjectDeviceDTO> listDevices;
     if (state != null){
-      listDevices = deviceFacade.getProjectDevices(projectId, Integer.valueOf(state));
+      listDevices = deviceFacade.readProjectDevices(projectId, Integer.valueOf(state));
     }else{
-      listDevices = deviceFacade.getProjectDevices(projectId);
+      listDevices = deviceFacade.readProjectDevices(projectId);
     }
     GenericEntity<List<ProjectDeviceDTO>> projectDevices = new GenericEntity<List<ProjectDeviceDTO>>(listDevices){};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(projectDevices).build();
 
   }
 
-  @POST
-  @Path("/devices")
+  @PUT
+  @Path("/{deviceUuid}")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response postDevicesEndpoint(
-    @Context HttpServletRequest req, List<ProjectDeviceDTO> listDevices) throws AppException {
+  public Response updateDevice(@PathParam("deviceUuid") String deviceUuid, @Context HttpServletRequest req,
+                                      ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    deviceFacade.updateDevicesState(listDevices);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    if (deviceUuid != null && deviceUuid.matches(UUID_V4_REGEX) && deviceUuid.equals(device.getDeviceUuid())){
+      deviceFacade.updateDeviceState(device);
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
+  }
+
+  @DELETE
+  @Path("/{deviceUuid}")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  public Response deleteDevice(@PathParam("deviceUuid") String deviceUuid, @Context HttpServletRequest req,
+                               ProjectDeviceDTO device) throws AppException {
+    checkForProjectId();
+    if (deviceUuid != null && deviceUuid.matches(UUID_V4_REGEX) && deviceUuid.equals(device.getDeviceUuid())){
+      deviceFacade.re
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
   }
 
 }

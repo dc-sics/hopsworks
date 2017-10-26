@@ -62,15 +62,6 @@
               </div>
 
               <div ng-show="kafkaCtrl.showDevices === 1">
-                <br>
-                <div class="col-sm-2">
-                  <button  id="enforceSecurityPolicyBtn" type="button"
-                           ng-click="kafkaCtrl.enforceScurityPolicy()"
-                           class="btn btn-default btn-success control-label">
-                    Enforce security policy<i style="margin-left: 10px" class="glyphicon">
-                  </i>
-                  </button>
-                </div>
               </div>
             </div>
           </form>
@@ -357,9 +348,11 @@
               </tbody>
             </table>
           </div>
-          <div ng-show="kafkaCtrl.showDevices == 1">
+          <div ng-show="kafkaCtrl.showDevices === 1">
             <br>
-            <table st-table="rowCollection" class="table table-striped" ng-show="kafkaCtrl.schemas.length > 0">
+            <div ng-show="kafkaCtrl.devices.length == 0">No devices found! If you have not activated the devices feature yet you can do so from the <b>Settings > Device Settings.</b></div>
+            <br>
+            <table st-table="rowCollection" class="table table-striped" ng-show="kafkaCtrl.devices.length > 0">
               <thead>
                 <tr>
                   <th class="col-sm-4">Device UUID</th>
@@ -367,25 +360,32 @@
                   <th class="col-sm-2">Created At</th>
                   <th class="col-sm-2">Last Logged In</th>
                   <th class="col-sm-2">State</th>
+                  <th class="col-sm-2">Edit</th>
                   <th class="col-sm-2">Remove</th>
                 </tr>
               </thead>
               <tbody>
                 <tr st-select-row="row" st-select-mode="single" ng-repeat="row in kafkaCtrl.devices track by $index">
-                  <td class="col-sm-4">
-                    <div class="row" style="margin-left: 10px;">{{row.name}}</div>
+                  <td class="col-sm-2">
+                    <div class="row" style="margin-left: 10px;">{{row.deviceUuid}}</div>
                   </td>
-                  <td class="col-sm-4">
+                  <td class="col-sm-2">
                     <div class="row" style="margin-left: 10px;">{{row.alias}}</div>
                   </td>
-                  <td class="col-sm-4">
-                    <div class="row" style="margin-left: 10px;">{{row.created_at}}</div>
+                  <td class="col-sm-2">
+                    <div class="row" style="margin-left: 10px;">{{row.createdAt}}</div>
                   </td>
-                  <td class="col-sm-4">
-                    <div class="row" style="margin-left: 10px;">{{row.logged_in}}</div>
+                  <td class="col-sm-2">
+                    <div class="row" style="margin-left: 10px;">{{row.lastLoggedIn}}</div>
                   </td>
-                  <td class="col-sm-4">
+                  <td class="col-sm-2">
                     <div class="row" style="margin-left: 10px;">{{row.state}}</div>
+                  </td>
+                  <td class="col-sm-2">
+                    <button type="button"
+                        ng-click="kafkaCtrl.editDevice(row)" class="btn btn-sm btn-primary">
+                        Edit<i style="margin-left: 10px"></i>
+                    </button>
                   </td>
                   <td class="col-sm-2">
                     <button  type="button" ng-click="kafkaCtrl.deleteDevice(row.name, $index)" class="btn btn-sm btn-danger">

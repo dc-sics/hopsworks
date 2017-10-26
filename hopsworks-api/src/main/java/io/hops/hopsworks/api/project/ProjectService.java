@@ -820,7 +820,7 @@ public class ProjectService {
     return this.kafka;
   }
   
-  @Path("{id}/device")
+  @Path("{id}/devices")
   public DeviceManagementService device(
       @PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
