@@ -30,7 +30,7 @@ public class ClusterCertificate implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
-    max = 20)
+    max = 129)
   @Column(name = "cluster_name")
   private String clusterName;
   @Lob
