@@ -14,7 +14,7 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @Entity
-@Table(name = "dela_cluster_certs",
+@Table(name = "hopssite_cluster_certs",
   catalog = "hopsworks",
   schema = "")
 @XmlRootElement
