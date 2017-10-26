@@ -13,6 +13,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -1752,6 +1753,8 @@ public class Settings implements Serializable {
 
   private void populateDelaCache() {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
+    HOPSSITE_CLUSTER_NAME = setVar(VARIABLE_HOPSSITE_CLUSTER_NAME, HOPSSITE_CLUSTER_NAME);
+    HOPSSITE_CLUSTER_CERT_PSWD = setVar(VARIABLE_HOPSSITE_CLUSTER_CERT_PSWD, HOPSSITE_CLUSTER_CERT_PSWD);
     HOPSSITE_HOST = setVar(VARIABLE_HOPSSITE_BASE_URI_HOST, HOPSSITE_HOST);
     HOPSSITE = setVar(VARIABLE_HOPSSITE_BASE_URI, HOPSSITE);
     HOPSSITE_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL, HOPSSITE_HEARTBEAT_INTERVAL);
@@ -1889,15 +1892,67 @@ public class Settings implements Serializable {
   }
 
   //************************************************CERTIFICATES********************************************************
-  private static final String HOPS_SITE_CA_DIR = CA_DIR + "/hops-site-certs";
+  private static final String HOPS_SITE_CA_DIR = CERTS_DIR + "/hops-site-certs";
   public final static String HOPS_SITE_CERTFILE = "/pub.pem";
   public final static String HOPS_SITE_CA_CERTFILE = "/ca_pub.pem";
   public final static String HOPS_SITE_KEY_STORE = "/keystores/keystore.jks";
   public final static String HOPS_SITE_TRUST_STORE = "/keystores/truststore.jks";
+  
+  private static final String VARIABLE_HOPSSITE_CLUSTER_NAME = "hops_site_cluster_name";
+  private static final String VARIABLE_HOPSSITE_CLUSTER_CERT_PSWD = "hops_site_cluster_cert_pswd";
+  
+  private String HOPSSITE_CLUSTER_NAME = null;
+  private String HOPSSITE_CLUSTER_CERT_PSWD = null;
 
+  public synchronized Optional<String> getHopsSiteClusterName() {
+    checkCache();
+    return Optional.ofNullable(HOPSSITE_CLUSTER_NAME);
+  }
+  
+  public synchronized void setHopsSiteClusterName(String clusterName) {
+    if (getHopsSiteClusterName().isPresent()) {
+      em.merge(new Variables(VARIABLE_HOPSSITE_CLUSTER_NAME, clusterName));
+    } else {
+      em.persist(new Variables(VARIABLE_HOPSSITE_CLUSTER_NAME, clusterName));
+    }
+    HOPSSITE_CLUSTER_NAME = clusterName;
+  }
+  
+  public synchronized void deleteHopsSiteClusterName() {
+    if(getHopsSiteClusterName().isPresent()) {
+      em.remove(new Variables(VARIABLE_HOPSSITE_CLUSTER_NAME));
+      HOPSSITE_CLUSTER_NAME = null;
+    }
+  }
+  
+  public synchronized Optional<String> getHopsSiteClusterCertPswd() {
+    checkCache();
+    return Optional.ofNullable(HOPSSITE_CLUSTER_CERT_PSWD);
+  }
+  
   public synchronized String getHopsSiteCaDir() {
     checkCache();
     return getCertsDir() + Settings.HOPS_SITE_CA_DIR;
+  }
+  
+  public synchronized String getHopsSiteCaScript() {
+    return getHopsworksInstallDir() + File.separator + "ca-keystore.sh";
+  }
+  
+  public synchronized String getHopsSiteCert() {
+    return getHopsSiteCaDir() + HOPS_SITE_CERTFILE;
+  }
+  
+  public synchronized String getHopsSiteCaCert() {
+    return getHopsSiteCaDir() + HOPS_SITE_CA_CERTFILE;
+  }
+  
+  public synchronized String getHopsSiteKeyStorePath() {
+    return getHopsSiteCaDir() + HOPS_SITE_KEY_STORE;
+  }
+  
+  public synchronized String getHopsSiteTrustStorePath() {
+    return getHopsSiteCaDir() + HOPS_SITE_TRUST_STORE;
   }
   //Dela END
 }
