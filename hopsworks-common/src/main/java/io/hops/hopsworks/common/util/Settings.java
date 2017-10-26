@@ -1754,7 +1754,7 @@ public class Settings implements Serializable {
   private void populateDelaCache() {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
     HOPSSITE_CLUSTER_NAME = setVar(VARIABLE_HOPSSITE_CLUSTER_NAME, HOPSSITE_CLUSTER_NAME);
-    HOPSSITE_CLUSTER_CERT_PSWD = setVar(VARIABLE_HOPSSITE_CLUSTER_CERT_PSWD, HOPSSITE_CLUSTER_CERT_PSWD);
+    HOPSSITE_CLUSTER_PSWD = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD, HOPSSITE_CLUSTER_PSWD);
     HOPSSITE_HOST = setVar(VARIABLE_HOPSSITE_BASE_URI_HOST, HOPSSITE_HOST);
     HOPSSITE = setVar(VARIABLE_HOPSSITE_BASE_URI, HOPSSITE);
     HOPSSITE_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL, HOPSSITE_HEARTBEAT_INTERVAL);
@@ -1899,10 +1899,10 @@ public class Settings implements Serializable {
   public final static String HOPS_SITE_TRUST_STORE = "/keystores/truststore.jks";
   
   private static final String VARIABLE_HOPSSITE_CLUSTER_NAME = "hops_site_cluster_name";
-  private static final String VARIABLE_HOPSSITE_CLUSTER_CERT_PSWD = "hops_site_cluster_cert_pswd";
+  private static final String VARIABLE_HOPSSITE_CLUSTER_PSWD = "hops_site_cluster_pswd";
   
   private String HOPSSITE_CLUSTER_NAME = null;
-  private String HOPSSITE_CLUSTER_CERT_PSWD = null;
+  private String HOPSSITE_CLUSTER_PSWD = null;
 
   public synchronized Optional<String> getHopsSiteClusterName() {
     checkCache();
@@ -1925,9 +1925,18 @@ public class Settings implements Serializable {
     }
   }
   
-  public synchronized Optional<String> getHopsSiteClusterCertPswd() {
+  public synchronized Optional<String> getHopsSiteClusterPswd() {
     checkCache();
-    return Optional.ofNullable(HOPSSITE_CLUSTER_CERT_PSWD);
+    return Optional.ofNullable(HOPSSITE_CLUSTER_PSWD);
+  }
+  
+  public synchronized void setHopsSiteClusterPswd(String pswd) {
+    if (getHopsSiteClusterPswd().isPresent()) {
+      em.merge(new Variables(VARIABLE_HOPSSITE_CLUSTER_PSWD, pswd));
+    } else {
+      em.persist(new Variables(VARIABLE_HOPSSITE_CLUSTER_PSWD, pswd));
+    }
+    HOPSSITE_CLUSTER_PSWD = pswd;
   }
   
   public synchronized String getHopsSiteCaDir() {
