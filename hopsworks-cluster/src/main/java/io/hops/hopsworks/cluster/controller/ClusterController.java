@@ -14,8 +14,7 @@ import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
-import io.hops.hopsworks.common.util.PKIUtils;
-import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.common.util.PKIUtils;import io.hops.hopsworks.common.util.Settings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -210,6 +209,9 @@ public class ClusterController {
 
   public void cleanupUnverifiedUsers() {
     BbcGroup group = groupFacade.findByGroupName(CLUSTER_GROUP);
+    if(group == null) {
+      return;
+    }
     List<Integer> usersInGroup = userBean.findAllInGroup(group.getGid());
     Users u;
     for (Integer uid : usersInGroup) {

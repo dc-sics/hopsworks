@@ -1,7 +1,6 @@
 package io.hops.hopsworks.common.dao.user.cluster;
 
 import io.hops.hopsworks.common.dao.AbstractFacade;
-import io.hops.hopsworks.common.dao.user.Users;
 import java.util.List;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
