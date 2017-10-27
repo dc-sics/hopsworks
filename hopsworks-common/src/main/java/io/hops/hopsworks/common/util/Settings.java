@@ -1920,7 +1920,8 @@ public class Settings implements Serializable {
   
   public synchronized void deleteHopsSiteClusterName() {
     if(getHopsSiteClusterName().isPresent()) {
-      em.remove(new Variables(VARIABLE_HOPSSITE_CLUSTER_NAME));
+      Variables v = findById(VARIABLE_HOPSSITE_CLUSTER_NAME);
+      em.remove(v);
       HOPSSITE_CLUSTER_NAME = null;
     }
   }

@@ -119,12 +119,12 @@ public class CertificateHelper {
   }
 
   private static boolean isCertSigned(File certFile, File caCertFile) throws IllegalStateException {
-    String hopsRootCA;
     X509Certificate cert = getX509Cert(certFile);
     X509Certificate caCert = getX509Cert(caCertFile);
-    hopsRootCA = caCert.getIssuerDN().getName();
-    String issuerdn = cert.getIssuerDN().getName();
-    return issuerdn.equals(hopsRootCA);
+    String caIssuerDN = caCert.getIssuerDN().getName();
+    String issuerDN = cert.getIssuerDN().getName();
+    LOG.log(Level.INFO, "sign check: {0} {1}", new Object[]{issuerDN, caIssuerDN});
+    return issuerDN.equals(caIssuerDN);
   }
 
   private static File readFile(String certPath) throws IllegalStateException {
