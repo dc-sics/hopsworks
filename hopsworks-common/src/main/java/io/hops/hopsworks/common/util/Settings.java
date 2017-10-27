@@ -1892,7 +1892,7 @@ public class Settings implements Serializable {
   }
 
   //************************************************CERTIFICATES********************************************************
-  private static final String HOPS_SITE_CA_DIR = CERTS_DIR + "/hops-site-certs";
+  private static final String HOPS_SITE_CA_DIR = "hops-site-certs";
   public final static String HOPS_SITE_CERTFILE = "/pub.pem";
   public final static String HOPS_SITE_CA_CERTFILE = "/ca_pub.pem";
   public final static String HOPS_SITE_KEY_STORE = "/keystores/keystore.jks";
@@ -1940,8 +1940,7 @@ public class Settings implements Serializable {
   }
   
   public synchronized String getHopsSiteCaDir() {
-    checkCache();
-    return getCertsDir() + Settings.HOPS_SITE_CA_DIR;
+    return getCertsDir() + File.separator + HOPS_SITE_CA_DIR;
   }
   
   public synchronized String getHopsSiteCaScript() {

@@ -57,7 +57,7 @@ public class CertificateHelper {
       return Optional.of(Triplet.with(keystore, truststore, certPswd));
     } catch (Exception ex) {
       settings.deleteHopsSiteClusterName();
-      LOG.log(Level.SEVERE, "keystore ex. {0}", ex);
+      LOG.log(Level.SEVERE, "keystore ex. {0}", ex.getMessage());
       return Optional.empty();
     } finally {
       FileUtils.deleteQuietly(new File(keystorePath));
