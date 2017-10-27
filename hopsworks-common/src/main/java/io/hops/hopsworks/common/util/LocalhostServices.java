@@ -253,7 +253,7 @@ public class LocalhostServices {
       stdout = commandExecutor.getStandardOutputFromCommand();
       stderr = commandExecutor.getStandardErrorFromCommand();
       if (result != 0) {
-        throw new IOException(stderr);
+        throw new IOException("stdout:" + stdout + "\nstderr:" + stderr);
       }
     } catch (InterruptedException e) {
       throw new IOException("Interrupted. Could not generate the certificates: " + stderr);
