@@ -5,6 +5,7 @@ import io.hops.hopsworks.common.dao.user.Users;
 import java.util.List;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
@@ -23,16 +24,30 @@ public class ClusterCertFacade extends AbstractFacade<ClusterCert> {
     super(ClusterCert.class);
   }
 
-  public ClusterCert getByOrgUnitNameAndOrgName(String orgName, String UnitName) {
-    return null;
+  public ClusterCert getByOrgUnitNameAndOrgName(String orgName, String orgUnitName) {
+    TypedQuery<ClusterCert> query = em.createNamedQuery("ClusterCert.findByOrgUnitNameAndOrgName", ClusterCert.class).
+        setParameter("organizationName", orgName).
+        setParameter("organizationalUnitName", orgUnitName);
+    try {
+      return query.getSingleResult();
+    } catch (NoResultException e) {
+      return null;
+    }
   }
 
   public ClusterCert getBySerialNumber(Integer serialNum) {
-    return null;
+    TypedQuery<ClusterCert> query = em.createNamedQuery("ClusterCert.findBySerialNumber", ClusterCert.class).
+        setParameter("serialNumber", serialNum);
+    try {
+      return query.getSingleResult();
+    } catch (NoResultException e) {
+      return null;
+    }
   }
 
-  public List<ClusterCert> getByAgent() {
-    TypedQuery<ClusterCert> query = em.createNamedQuery("ClusterCert.findAll", ClusterCert.class);
+  public List<ClusterCert> getByAgent(Users agent) {
+    TypedQuery<ClusterCert> query = em.createNamedQuery("ClusterCert.findByAgent", ClusterCert.class).
+        setParameter("agentId", agent);
     return query.getResultList();
   }
 }

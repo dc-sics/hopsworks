@@ -238,4 +238,70 @@ public class PKIUtils {
     logger.info("Done cert check.");
     return lines.toString();
   }
+
+  public static String getSubjectFromCSR(String csr) throws IOException, InterruptedException {
+    File csrFile = File.createTempFile(System.getProperty("java.io.tmpdir"), ".csr");
+    FileUtils.writeStringToFile(csrFile, csr);
+    List<String> cmds = new ArrayList<>();
+    //openssl req -in certs-dir/hops-site-certs/csr.pem -noout -subject
+    cmds.add("openssl");
+    cmds.add("req");
+    cmds.add("-in");
+    cmds.add(csrFile.getAbsolutePath());
+    cmds.add("-noout");
+    cmds.add("-subject");
+
+    StringBuilder sb = new StringBuilder("/usr/bin/ ");
+    for (String s : cmds) {
+      sb.append(s).append(" ");
+    }
+    logger.info(sb.toString());
+    Process process = new ProcessBuilder(cmds).directory(new File("/usr/bin/")).redirectErrorStream(true).start();
+    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF8")));
+    String line;
+    StringBuilder lines = new StringBuilder("");
+    while ((line = br.readLine()) != null) {
+      logger.info(line);
+      lines.append(line);
+    }
+    process.waitFor();
+    int exitValue = process.exitValue();
+    if (exitValue != 0) {
+      throw new RuntimeException("Failed to get subject. Exit value: " + exitValue);
+    }
+    return lines.toString();
+  }
+
+  public static String getSerialNumberFromCert(String cert) throws IOException, InterruptedException {
+    File csrFile = File.createTempFile(System.getProperty("java.io.tmpdir"), ".pem");
+    FileUtils.writeStringToFile(csrFile, cert);
+    List<String> cmds = new ArrayList<>();
+    //openssl x509 -in certs-dir/hops-site-certs/pub.pem -noout -serial
+    cmds.add("openssl");
+    cmds.add("x509");
+    cmds.add("-in");
+    cmds.add(csrFile.getAbsolutePath());
+    cmds.add("-noout");
+    cmds.add("-serial");
+
+    StringBuilder sb = new StringBuilder("/usr/bin/ ");
+    for (String s : cmds) {
+      sb.append(s).append(" ");
+    }
+    logger.info(sb.toString());
+    Process process = new ProcessBuilder(cmds).directory(new File("/usr/bin/")).redirectErrorStream(true).start();
+    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF8")));
+    String line;
+    StringBuilder lines = new StringBuilder("");
+    while ((line = br.readLine()) != null) {
+      logger.info(line);
+      lines.append(line);
+    }
+    process.waitFor();
+    int exitValue = process.exitValue();
+    if (exitValue != 0) {
+      throw new RuntimeException("Failed to get Serial Number. Exit value: " + exitValue);
+    }
+    return lines.toString();
+  }
 }

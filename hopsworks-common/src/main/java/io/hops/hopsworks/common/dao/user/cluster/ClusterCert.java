@@ -21,6 +21,8 @@ import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 @Entity
 @Table(name = "cluster_cert",
@@ -59,6 +61,10 @@ import javax.xml.bind.annotation.XmlRootElement;
       query
       = "SELECT c FROM ClusterCert c WHERE c.registrationStatus = :registrationStatus")
   ,
+    @NamedQuery(name = "ClusterCert.findByAgent",
+      query
+      = "SELECT c FROM ClusterCert c WHERE c.agentId = :agentId")
+  ,
     @NamedQuery(name = "ClusterCert.findByValidationKeyDate",
       query
       = "SELECT c FROM ClusterCert c WHERE c.validationKeyDate = :validationKeyDate")})
@@ -73,19 +79,19 @@ public class ClusterCert implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
-      max = 45)
+      max = 64) //RFC3280 Naming attributes of type X520CommonName
   @Column(name = "common_name")
   private String commonName;
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
-      max = 45)
+      max = 64)
   @Column(name = "organization_name")
   private String organizationName;
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
-      max = 45)
+      max = 64)
   @Column(name = "organizational_unit_name")
   private String organizationalUnitName;
   @Column(name = "serial_number")
@@ -93,13 +99,20 @@ public class ClusterCert implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
-      max = 10)
+      max = 45)
   @Enumerated(EnumType.STRING)
   @Column(name = "registration_status")
   private RegistrationStatusEnum registrationStatus;
+  @Size(min = 1,
+      max = 128)
+  @Column(name = "validation_key")
+  private String validationKey;
   @Column(name = "validation_key_date")
   @Temporal(TemporalType.TIMESTAMP)
   private Date validationKeyDate;
+  @Column(name = "registration_date")
+  @Temporal(TemporalType.TIMESTAMP)
+  private Date registrationDate;
   @JoinColumn(name = "agent_id",
       referencedColumnName = "uid")
   @ManyToOne(optional = false)
@@ -113,11 +126,12 @@ public class ClusterCert implements Serializable {
   }
 
   public ClusterCert(String commonName, String organizationName, String organizationalUnitName,
-      RegistrationStatusEnum registrationStatus) {
+      RegistrationStatusEnum registrationStatus, Users agentId) {
     this.commonName = commonName;
     this.organizationName = organizationName;
     this.organizationalUnitName = organizationalUnitName;
     this.registrationStatus = registrationStatus;
+    this.agentId = agentId;
   }
 
   public Integer getId() {
@@ -168,6 +182,16 @@ public class ClusterCert implements Serializable {
     this.registrationStatus = registrationStatus;
   }
 
+  @XmlTransient
+  @JsonIgnore
+  public String getValidationKey() {
+    return validationKey;
+  }
+
+  public void setValidationKey(String validationKey) {
+    this.validationKey = validationKey;
+  }
+
   public Date getValidationKeyDate() {
     return validationKeyDate;
   }
@@ -176,6 +200,16 @@ public class ClusterCert implements Serializable {
     this.validationKeyDate = validationKeyDate;
   }
 
+  public Date getRegistrationDate() {
+    return registrationDate;
+  }
+
+  public void setRegistrationDate(Date registrationDate) {
+    this.registrationDate = registrationDate;
+  }
+
+  @XmlTransient
+  @JsonIgnore
   public Users getAgentId() {
     return agentId;
   }
