@@ -79,7 +79,6 @@ public class DeviceManagementService {
   @Path("/activate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public Response postActivateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
     checkForProjectId();
@@ -106,7 +105,7 @@ public class DeviceManagementService {
       String projectSecret = UUID.randomUUID().toString();
 
       // Saves Project Secret
-      deviceFacade.createProjectSecret(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade.createProjectDevicesSettings(projectId, projectSecret, projectTokenDurationInHours);
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
@@ -118,7 +117,6 @@ public class DeviceManagementService {
   @Path("/deactivate")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public Response postDeactivateEndpoint(
     @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
@@ -130,13 +128,12 @@ public class DeviceManagementService {
       String userEmail = sc.getUserPrincipal().getName();
 
       try {
-        projectController.removeMemberFromTeam(
-          project, userEmail, DEFAULT_DEVICE_USER_EMAIL, sessionId);
+        projectController.removeMemberFromTeam(project, userEmail, DEFAULT_DEVICE_USER_EMAIL, sessionId);
       } catch (Exception e) {
         e.printStackTrace();
       }
       // Deletes Project Secret
-      deviceFacade.removeProjectSecret(projectId);
+      deviceFacade.deleteProjectDevicesSettings(projectId);
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
@@ -147,8 +144,8 @@ public class DeviceManagementService {
   @GET
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response getDevicesEndpoint( @QueryParam("state") String state, @Context HttpServletRequest req) throws AppException {
+  public Response getDevicesEndpoint(
+    @QueryParam("state") String state, @Context HttpServletRequest req) throws AppException {
     checkForProjectId();
 
     List<ProjectDeviceDTO> listDevices;
@@ -166,12 +163,11 @@ public class DeviceManagementService {
   @Path("/{deviceUuid}")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response updateDevice(@PathParam("deviceUuid") String deviceUuid, @Context HttpServletRequest req,
                                       ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
     if (deviceUuid != null && deviceUuid.matches(UUID_V4_REGEX) && deviceUuid.equals(device.getDeviceUuid())){
-      deviceFacade.updateDeviceState(device);
+      deviceFacade.updateProjectDevice(device);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
     return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
@@ -181,12 +177,11 @@ public class DeviceManagementService {
   @Path("/{deviceUuid}")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response deleteDevice(@PathParam("deviceUuid") String deviceUuid, @Context HttpServletRequest req,
                                ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
     if (deviceUuid != null && deviceUuid.matches(UUID_V4_REGEX) && deviceUuid.equals(device.getDeviceUuid())){
-      deviceFacade.re
+      deviceFacade.deleteProjectDevice(device);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
     return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();

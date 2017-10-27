@@ -47,7 +47,7 @@ public class DeviceFacade3 {
     }
   }
 
-  public void createProjectDevice(ProjectDevice projectDevice) {
+  public void createProjectDevice(ProjectDevice2 projectDevice) {
     if (projectDevice != null){
       em.persist(projectDevice);
     }
@@ -56,25 +56,25 @@ public class DeviceFacade3 {
   public void createProjectDevice(AuthProjectDeviceDTO authDTO) {
     if (authDTO != null){
       ProjectDevicePK pdKey = new ProjectDevicePK(authDTO.getProjectId(), authDTO.getDeviceUuid());
-      em.persist(new ProjectDevice(pdKey, authDTO.getPassword(), ProjectDevice.State.Pending, authDTO.getAlias()));
+      em.persist(new ProjectDevice2(pdKey, authDTO.getPassword(), ProjectDevice2.State.Pending, authDTO.getAlias()));
     }
   }
 
-  public ProjectDevice readProjectDevice(Integer projectId, String deviceUuid) {
+  public ProjectDevice2 readProjectDevice(Integer projectId, String deviceUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    TypedQuery<ProjectDevice> query = em.createNamedQuery(
-      "ProjectDevice.findByProjectDevicePK", ProjectDevice.class);
+    TypedQuery<ProjectDevice2> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectDevicePK", ProjectDevice2.class);
     query.setParameter("projectDevicePK", pdKey);
     return query.getSingleResult();
   }
 
   public List<ProjectDeviceDTO> readProjectDevices(Integer projectId) {
-    TypedQuery<ProjectDevice> query = em.createNamedQuery(
-      "ProjectDevice.findByProjectId", ProjectDevice.class);
+    TypedQuery<ProjectDevice2> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectId", ProjectDevice2.class);
     query.setParameter("projectId", projectId);
-    List<ProjectDevice> devices =  query.getResultList();
+    List<ProjectDevice2> devices =  query.getResultList();
     List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
-    for(ProjectDevice device: devices){
+    for(ProjectDevice2 device: devices){
       devicesDTO.add(new ProjectDeviceDTO(
               device.getProjectDevicePK().getProjectId(),
               device.getProjectDevicePK().getDeviceUuid(),
@@ -87,13 +87,13 @@ public class DeviceFacade3 {
   }
 
   public List<ProjectDeviceDTO> readProjectDevices(Integer projectId, Integer state) {
-    TypedQuery<ProjectDevice> query = em.createNamedQuery(
-      "ProjectDevice.findByProjectIdAndState", ProjectDevice.class);
+    TypedQuery<ProjectDevice2> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectIdAndState", ProjectDevice2.class);
     query.setParameter("projectId", projectId);
     query.setParameter("state", state);
-    List<ProjectDevice> devices =  query.getResultList();
+    List<ProjectDevice2> devices =  query.getResultList();
     List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
-    for(ProjectDevice device: devices){
+    for(ProjectDevice2 device: devices){
       devicesDTO.add(new ProjectDeviceDTO(
         device.getProjectDevicePK().getProjectId(),
         device.getProjectDevicePK().getDeviceUuid(),
@@ -106,14 +106,14 @@ public class DeviceFacade3 {
   }
 
   public void updateProjectDevice(ProjectDeviceDTO projectDeviceDTO) {
-    ProjectDevice projectDevice = em.find(ProjectDevice.class,
+    ProjectDevice2 projectDevice = em.find(ProjectDevice2.class,
       new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
-    projectDevice.setState(ProjectDevice.State.valueOf(projectDeviceDTO.getState()));
+    projectDevice.setState(ProjectDevice2.State.valueOf(projectDeviceDTO.getState()));
     projectDevice.setAlias(projectDeviceDTO.getAlias());
     em.persist(projectDevice);
   }
 
-  public void updateProjectDeviceLastLoggedIn(ProjectDevice projectDevice) {
+  public void updateProjectDeviceLastLoggedIn(ProjectDevice2 projectDevice) {
     projectDevice.setLastLoggedIn(new Date());
     em.persist(projectDevice);
   }
@@ -126,7 +126,7 @@ public class DeviceFacade3 {
 
   public void deleteProjectDevice(ProjectDeviceDTO projectDeviceDTO) {
     if (projectDeviceDTO!= null){
-      ProjectDevice projectDevice = readProjectDevice(
+      ProjectDevice2 projectDevice = readProjectDevice(
         projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid());
       if (projectDevice != null){
         em.remove(projectDevice);

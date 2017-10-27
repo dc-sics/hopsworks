@@ -22,17 +22,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 @NamedQueries({
   @NamedQuery(
       name = "ProjectDevice.findAll",
-      query = "SELECT pd FROM ProjectDevice pd"),
+      query = "SELECT pd FROM ProjectDevice2 pd"),
   @NamedQuery(
       name = "ProjectDevice.findByProjectId",
-      query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId"),
+      query = "SELECT pd FROM ProjectDevice2 pd WHERE pd.projectDevicePK.projectId = :projectId"),
   @NamedQuery(
     name = "ProjectDevice.findByProjectIdAndState",
-    query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.state = :state"),
+    query = "SELECT pd FROM ProjectDevice2 pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.state = :state"),
   @NamedQuery(
       name = "ProjectDevice.findByProjectDevicePK",
-      query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
-public class ProjectDevice implements Serializable{
+      query= "SELECT pd FROM ProjectDevice2 pd WHERE pd.projectDevicePK = :projectDevicePK")})
+public class ProjectDevice2 implements Serializable{
 
   private static final long serialVersionUID = 1L;
 
@@ -69,15 +69,15 @@ public class ProjectDevice implements Serializable{
   @Column(name = "last_logged_in")
   private Date lastLoggedIn;
 
-  public static enum State{
+  public enum State{
     Pending,
-    Enabled,
+    Approved,
     Disabled
   }
   
-  public ProjectDevice() {}
+  public ProjectDevice2() {}
 
-  public ProjectDevice(ProjectDevicePK projectDevicePK, String password, State deviceState, String alias) {
+  public ProjectDevice2(ProjectDevicePK projectDevicePK, String password, State deviceState, String alias) {
     this.projectDevicePK = projectDevicePK;
     this.password = password;
     this.state = deviceState.ordinal();
@@ -142,11 +142,11 @@ public class ProjectDevice implements Serializable{
 
   @Override
   public boolean equals(Object object) {
-    if (!(object instanceof ProjectDevice)) {
+    if (!(object instanceof ProjectDevice2)) {
       return false;
     }
 
-    ProjectDevice other = (ProjectDevice) object;
+    ProjectDevice2 other = (ProjectDevice2) object;
 
     return !((this.projectDevicePK == null && other.projectDevicePK != null)
         || (this.projectDevicePK != null
