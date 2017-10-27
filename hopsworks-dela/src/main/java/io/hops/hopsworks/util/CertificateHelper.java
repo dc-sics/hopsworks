@@ -81,7 +81,7 @@ public class CertificateHelper {
       }
       return Optional.of(Triplet.with(keystore, truststore, certPswd));
     } catch (Exception ex) {
-      LOG.log(Level.SEVERE, "keystore ex. {0}", ex);
+      LOG.log(Level.SEVERE, "keystore ex. {0}", ex.getMessage());
       return Optional.empty();
     }
   }
@@ -94,8 +94,8 @@ public class CertificateHelper {
     try {
       LocalhostServices.generateHopsSiteKeystore(settings, certPswd);
     } catch (IOException ex) {
-      LOG.log(Level.SEVERE, "Could not generate keystore");
-      throw new IllegalStateException("Could not generate keystore");
+      LOG.log(Level.SEVERE, "keystore generate ex. {0}", ex.getMessage());
+      throw new IllegalStateException("keystore generate ex", ex);
     }
   }
 
@@ -121,10 +121,10 @@ public class CertificateHelper {
   private static boolean isCertSigned(File certFile, File caCertFile) throws IllegalStateException {
     X509Certificate cert = getX509Cert(certFile);
     X509Certificate caCert = getX509Cert(caCertFile);
-    String caIssuerDN = caCert.getIssuerDN().getName();
+    String caSubjectDN = caCert.getSubjectDN().getName();
     String issuerDN = cert.getIssuerDN().getName();
-    LOG.log(Level.INFO, "sign check: {0} {1}", new Object[]{issuerDN, caIssuerDN});
-    return issuerDN.equals(caIssuerDN);
+    LOG.log(Level.INFO, "sign check: {0} {1}", new Object[]{issuerDN, caSubjectDN});
+    return issuerDN.equals(caSubjectDN);
   }
 
   private static File readFile(String certPath) throws IllegalStateException {
