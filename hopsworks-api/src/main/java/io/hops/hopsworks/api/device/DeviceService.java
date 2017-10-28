@@ -235,7 +235,7 @@ public class DeviceService {
       InputValidator.validate(authDTO);
       ProjectDevice2 device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
       if (device.getPassword().equals(DigestUtils.sha256Hex(authDTO.getPassword()))) {
-        deviceFacade.updateProjectDeviceLastLoggedIn(device);
+        deviceFacade.updateProjectDeviceLastLoggedIn(authDTO);
         return DeviceResponseBuilder.successfulJsonResponse(
           Status.OK, DeviceServiceSecurity.generateJwt(devicesSettings, device));
       }
