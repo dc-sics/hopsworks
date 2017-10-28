@@ -56,8 +56,6 @@ public class DeviceManagementService {
 
   private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
 
-  private static final String UUID_V4_REGEX =
-    "/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i";
 
   public DeviceManagementService() {
   }
@@ -189,7 +187,7 @@ public class DeviceManagementService {
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response putDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    if (device != null && device.getDeviceUuid().matches(UUID_V4_REGEX) && device.getProjectId() == projectId){
+    if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
       deviceFacade.updateProjectDevice(device);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
@@ -204,7 +202,7 @@ public class DeviceManagementService {
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response deleteDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    if (device != null && device.getDeviceUuid().matches(UUID_V4_REGEX) && device.getProjectId() == projectId){
+    if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
       deviceFacade.deleteProjectDevice(device);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
