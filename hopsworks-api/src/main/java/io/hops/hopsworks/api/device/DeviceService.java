@@ -27,7 +27,10 @@ import javax.ws.rs.core.Response.Status;
 
 import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
-import io.hops.hopsworks.common.dao.device.*;
+import io.hops.hopsworks.common.dao.device.ProjectDevice2;
+import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
+import io.hops.hopsworks.common.dao.device.AuthProjectDeviceDTO;
+import io.hops.hopsworks.common.dao.device.DeviceFacade4;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
@@ -101,7 +104,7 @@ public class DeviceService {
   private ProjectFacade projectFacade;
 
   @EJB
-  private DeviceFacade3 deviceFacade;
+  private DeviceFacade4 deviceFacade;
   
   @EJB
   private KafkaFacade2 kafkaFacade;

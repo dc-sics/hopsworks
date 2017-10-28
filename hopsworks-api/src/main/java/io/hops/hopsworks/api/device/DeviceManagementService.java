@@ -2,7 +2,7 @@ package io.hops.hopsworks.api.device;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.device.DeviceFacade3;
+import io.hops.hopsworks.common.dao.device.DeviceFacade4;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettingsDTO;
@@ -50,7 +50,7 @@ public class DeviceManagementService {
   private ProjectController projectController;
 
   @EJB
-  private DeviceFacade3 deviceFacade;
+  private DeviceFacade4 deviceFacade;
 
   private Integer projectId;
 
@@ -116,7 +116,8 @@ public class DeviceManagementService {
       projectId, projectSecret, settingsDTO.getJwtTokenDurationInHours()));
   }
 
-  private void deleteDevicesSettings(Integer projectId, SecurityContext sc, HttpServletRequest req) throws AppException {
+  private void deleteDevicesSettings(
+    Integer projectId, SecurityContext sc, HttpServletRequest req) throws AppException {
     Project project = projectController.findProjectById(projectId);
     try {
       projectController.removeMemberFromTeam(
@@ -145,8 +146,8 @@ public class DeviceManagementService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response postDevicesSettings(
-    @Context SecurityContext sc, @Context HttpServletRequest req, ProjectDevicesSettingsDTO settingsDTO) throws AppException {
+  public Response postDevicesSettings(@Context SecurityContext sc, @Context HttpServletRequest req,
+                                      ProjectDevicesSettingsDTO settingsDTO) throws AppException {
     checkForProjectId();
     ProjectDevicesSettingsDTO oldSettingsDTO = readDevicesSettings(projectId);
     if(oldSettingsDTO.getEnabled() == 0 && settingsDTO.getEnabled() == 1){
@@ -154,7 +155,7 @@ public class DeviceManagementService {
     }else if(oldSettingsDTO.getEnabled() == 1 && settingsDTO.getEnabled() == 0){
       deleteDevicesSettings(projectId, sc, req);
     }else if(oldSettingsDTO.getEnabled() == 1 && settingsDTO.getEnabled() == 1){
-     updateDevicesSettings(projectId, settingsDTO);
+      updateDevicesSettings(projectId, settingsDTO);
     }
     return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
   }

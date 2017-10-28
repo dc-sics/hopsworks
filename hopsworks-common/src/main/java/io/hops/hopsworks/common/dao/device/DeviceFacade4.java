@@ -10,9 +10,9 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
 @Stateless
-public class DeviceFacade3 {
+public class DeviceFacade4 {
 
-  private final static Logger logger = Logger.getLogger(DeviceFacade3.class.getName());
+  private final static Logger logger = Logger.getLogger(DeviceFacade4.class.getName());
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
