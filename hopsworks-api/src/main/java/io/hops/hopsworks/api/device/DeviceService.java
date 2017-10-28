@@ -211,6 +211,7 @@ public class DeviceService {
   public Response postRegisterEndpoint(
     @Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
     try {
+      InputValidator.validate(authDTO);
       getProjectDevicesSettings(authDTO.getProjectId());
       try {
         authDTO.setPassword(DigestUtils.sha256Hex(authDTO.getPassword()));

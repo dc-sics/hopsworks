@@ -61,4 +61,5 @@ public class AuthProjectDeviceDTO implements Serializable{
   public void setAlias(String alias) {
     this.alias = alias;
   }
+
 }
