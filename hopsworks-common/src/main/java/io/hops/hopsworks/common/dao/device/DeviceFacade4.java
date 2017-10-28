@@ -110,7 +110,9 @@ public class DeviceFacade4 {
     em.persist(projectDevice);
   }
 
-  public void updateProjectDeviceLastLoggedIn(ProjectDevice2 projectDevice) {
+  public void updateProjectDeviceLastLoggedIn(AuthProjectDeviceDTO projectDeviceDTO) {
+    ProjectDevice2 projectDevice = em.find(ProjectDevice2.class,
+      new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
     projectDevice.setLastLoggedIn(new Date());
     em.persist(projectDevice);
   }
