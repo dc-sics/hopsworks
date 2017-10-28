@@ -178,13 +178,14 @@ public class DeviceService {
       list.add(pt);
 
       Project project = projectController.findProjectById(projectId);
-      List<String>  failed = projectController.addMembers(project, project.getOwner().getEmail(), list);
+      projectController.addMembers(project, project.getOwner().getEmail(), list);
 
       // Generates a random UUID to serve as the project secret.
       String projectSecret = UUID.randomUUID().toString();
 
       // Saves Project Secret
-      deviceFacade.createProjectDevicesSettings(projectId, projectSecret, projectTokenDurationInHours);
+      deviceFacade.createProjectDevicesSettings(
+        new ProjectDevicesSettings(projectId, projectSecret, projectTokenDurationInHours));
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
       return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(

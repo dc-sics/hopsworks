@@ -23,11 +23,6 @@ public class DeviceFacade3 {
     }
   }
 
-  public void createProjectDevicesSettings(
-    Integer projectId, String projectSecret, Integer projectTokenDurationInHours) {
-    em.persist(new ProjectDevicesSettings(projectId, projectSecret, projectTokenDurationInHours));
-  }
-
   public ProjectDevicesSettings readProjectDevicesSettings(Integer projectId) {
     TypedQuery<ProjectDevicesSettings> query = em.createNamedQuery(
       "ProjectDevicesSettings.findByProjectId", ProjectDevicesSettings.class);
@@ -35,9 +30,11 @@ public class DeviceFacade3 {
     return query.getSingleResult();
   }
 
-  public void updateProjectDevicesSettings(
-    Integer projectId, String projectSecret, Integer projectTokenDurationInHours) {
-    //TODO: Implementation
+  public void updateProjectDevicesSettings(ProjectDevicesSettings projectDevicesSettings) {
+    ProjectDevicesSettings settings = em.find(ProjectDevicesSettings.class, projectDevicesSettings.getProjectId());
+    settings.setJwtSecret(projectDevicesSettings.getJwtSecret());
+    settings.setJwtTokenDuration(projectDevicesSettings.getJwtTokenDuration());
+    em.persist(settings);
   }
 
   public void deleteProjectDevicesSettings(Integer projectId) {
@@ -86,11 +83,11 @@ public class DeviceFacade3 {
     return devicesDTO;
   }
 
-  public List<ProjectDeviceDTO> readProjectDevices(Integer projectId, Integer state) {
+  public List<ProjectDeviceDTO> readProjectDevices(Integer projectId, String state) {
     TypedQuery<ProjectDevice2> query = em.createNamedQuery(
       "ProjectDevice.findByProjectIdAndState", ProjectDevice2.class);
     query.setParameter("projectId", projectId);
-    query.setParameter("state", state);
+    query.setParameter("state", ProjectDevice2.State.valueOf(state).ordinal());
     List<ProjectDevice2> devices =  query.getResultList();
     List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
     for(ProjectDevice2 device: devices){

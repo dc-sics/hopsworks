@@ -4,27 +4,33 @@ import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.device.DeviceFacade3;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
+import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
+import io.hops.hopsworks.common.dao.device.ProjectDevicesSettingsDTO;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.project.ProjectController;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.Path;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.SecurityContext;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -50,8 +56,6 @@ public class DeviceManagementService {
 
   private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
 
-  private static final String JWT_DURATION_IN_HOURS = "jwtTokenDurationInHours";
-
   private static final String UUID_V4_REGEX =
     "/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i";
 
@@ -64,93 +68,108 @@ public class DeviceManagementService {
 
   private void checkForProjectId() throws AppException {
     if (projectId == null) {
-      throw new AppException(Status.BAD_REQUEST.getStatusCode(),
-          "Incomplete request! Project id not present!");
+      throw new AppException(Status.BAD_REQUEST.getStatusCode(), "Incomplete request! Project id not present!");
     }
   }
 
-  /**
-   * This endpoint activates the "devices" feature for the project associated with the project_id.
-   * This endpoint adds the default device-user to the project as a Data Owner so that approved devices can produce to
-   * the project's kafka topics using the device-user's certificates.
-   * This endpoint creates the project secret that is necessary for signing jwt tokens and for authenticating them.
-   */
-  @POST
-  @Path("/activate")
-  @Consumes(MediaType.APPLICATION_JSON)
+  private void createDevicesSettings(Integer projectId, ProjectDevicesSettingsDTO settingsDTO) throws AppException{
+    // Adds the device-user to the project as a Data Owner
+    List<ProjectTeam> list = new ArrayList<>();
+    ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
+    pt.setTeamRole(AllowedRoles.DATA_OWNER);
+    pt.setTimestamp(new Date());
+    list.add(pt);
+
+    Project project = projectController.findProjectById(projectId);
+    List<String>  failed = projectController.addMembers(project, project.getOwner().getEmail(), list);
+    if (failed != null && failed.size() > 0){
+      LOGGER.severe("Failure for user: " + failed.get(0));
+      throw new AppException(Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+        "Default Devices User could not be added to the project.");
+    }
+
+    // Generates a random UUID to serve as the project's jwt secret.
+    String jwtSecret = UUID.randomUUID().toString();
+
+    deviceFacade.createProjectDevicesSettings(
+      new ProjectDevicesSettings(projectId, jwtSecret, settingsDTO.getJwtTokenDurationInHours()));
+  }
+
+  private ProjectDevicesSettingsDTO readDevicesSettings(Integer projectId){
+    ProjectDevicesSettingsDTO settingsDTO;
+    try {
+      ProjectDevicesSettings projectDevicesSettings = deviceFacade.readProjectDevicesSettings(projectId);
+      settingsDTO = new ProjectDevicesSettingsDTO(1, projectDevicesSettings.getJwtTokenDuration());
+    }catch (Exception e){
+      settingsDTO = new ProjectDevicesSettingsDTO(0, 24 * 30);
+    }
+    return settingsDTO;
+  }
+
+  private void updateDevicesSettings(Integer projectId, ProjectDevicesSettingsDTO settingsDTO) {
+
+    // Generates a random UUID to serve as the project secret.
+    String projectSecret = UUID.randomUUID().toString();
+
+    // Saves Project Secret
+    deviceFacade.updateProjectDevicesSettings(new ProjectDevicesSettings(
+      projectId, projectSecret, settingsDTO.getJwtTokenDurationInHours()));
+  }
+
+  private void deleteDevicesSettings(Integer projectId, SecurityContext sc, HttpServletRequest req) throws AppException {
+    Project project = projectController.findProjectById(projectId);
+    try {
+      projectController.removeMemberFromTeam(
+        project, sc.getUserPrincipal().getName(), DEFAULT_DEVICE_USER_EMAIL, req.getSession().getId());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    deviceFacade.deleteProjectDevicesSettings(projectId);
+  }
+
+
+  @GET
+  @Path("/devicesSettings")
   @Produces(MediaType.APPLICATION_JSON)
-  @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response postActivateEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response getDevicesSettings(@Context HttpServletRequest req) throws AppException {
     checkForProjectId();
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      Integer projectTokenDurationInHours = json.getInt(JWT_DURATION_IN_HOURS);
-
-      // Adds the device-user to the project as a Data Owner
-      List<ProjectTeam> list = new ArrayList<>();
-      ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
-      pt.setTeamRole(AllowedRoles.DATA_OWNER);
-      pt.setTimestamp(new Date());
-      list.add(pt);
-
-      Project project = projectController.findProjectById(projectId);
-      List<String>  failed = projectController.addMembers(project, project.getOwner().getEmail(), list);
-      if (failed != null && failed.size() > 0){
-        LOGGER.severe("Failure for user: " + failed.get(0));
-        throw new AppException(Status.INTERNAL_SERVER_ERROR.getStatusCode(),
-          "Default Devices User could not be added to the project.");
-      }
-
-      // Generates a random UUID to serve as the project secret.
-      String projectSecret = UUID.randomUUID().toString();
-
-      // Saves Project Secret
-      deviceFacade.createProjectDevicesSettings(projectId, projectSecret, projectTokenDurationInHours);
-      return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
-    } catch (JSONException e) {
-      return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-        "Json request is malformed! Required properties are [{0}]", JWT_DURATION_IN_HOURS));
-    }
+    ProjectDevicesSettingsDTO settingsDTO = readDevicesSettings(projectId);
+    GenericEntity<ProjectDevicesSettingsDTO> devicesSettings =
+      new GenericEntity<ProjectDevicesSettingsDTO>(settingsDTO){};
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(devicesSettings).build();
   }
 
+
   @POST
-  @Path("/deactivate")
+  @Path("/devicesSettings")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response postDeactivateEndpoint(
-    @Context SecurityContext sc, @Context HttpServletRequest req, String jsonString) throws AppException {
-
-    try {
-      checkForProjectId();
-      Project project = projectController.findProjectById(projectId);
-      String sessionId = req.getSession().getId();
-      String userEmail = sc.getUserPrincipal().getName();
-
-      try {
-        projectController.removeMemberFromTeam(project, userEmail, DEFAULT_DEVICE_USER_EMAIL, sessionId);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-      // Deletes Project Secret
-      deviceFacade.deleteProjectDevicesSettings(projectId);
-      return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
-    } catch (JSONException e) {
-      return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-        "Json request is malformed! Required properties are [{0}]", JWT_DURATION_IN_HOURS));
+  public Response postDevicesSettings(
+    @Context SecurityContext sc, @Context HttpServletRequest req, ProjectDevicesSettingsDTO settingsDTO) throws AppException {
+    checkForProjectId();
+    ProjectDevicesSettingsDTO oldSettingsDTO = readDevicesSettings(projectId);
+    if(oldSettingsDTO.getEnabled() == 0 && settingsDTO.getEnabled() == 1){
+      createDevicesSettings(projectId, settingsDTO);
+    }else if(oldSettingsDTO.getEnabled() == 1 && settingsDTO.getEnabled() == 0){
+      deleteDevicesSettings(projectId, sc, req);
+    }else if(oldSettingsDTO.getEnabled() == 1 && settingsDTO.getEnabled() == 1){
+     updateDevicesSettings(projectId, settingsDTO);
     }
+    return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
   }
+
 
   @GET
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getDevicesEndpoint(
+  public Response getDevices(
     @QueryParam("state") String state, @Context HttpServletRequest req) throws AppException {
     checkForProjectId();
 
     List<ProjectDeviceDTO> listDevices;
     if (state != null){
-      listDevices = deviceFacade.readProjectDevices(projectId, Integer.valueOf(state));
+      listDevices = deviceFacade.readProjectDevices(projectId, state);
     }else{
       listDevices = deviceFacade.readProjectDevices(projectId);
     }
@@ -160,27 +179,26 @@ public class DeviceManagementService {
   }
 
   @PUT
-  @Path("/{deviceUuid}")
+  @Path("/device")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response updateDevice(@PathParam("deviceUuid") String deviceUuid, @Context HttpServletRequest req,
-                                      ProjectDeviceDTO device) throws AppException {
+  public Response putDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    if (deviceUuid != null && deviceUuid.matches(UUID_V4_REGEX) && deviceUuid.equals(device.getDeviceUuid())){
+    if (device != null && device.getDeviceUuid().matches(UUID_V4_REGEX) && device.getProjectId() == projectId){
       deviceFacade.updateProjectDevice(device);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
     return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
   }
 
+
   @DELETE
-  @Path("/{deviceUuid}")
+  @Path("/device")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response deleteDevice(@PathParam("deviceUuid") String deviceUuid, @Context HttpServletRequest req,
-                               ProjectDeviceDTO device) throws AppException {
+  public Response deleteDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    if (deviceUuid != null && deviceUuid.matches(UUID_V4_REGEX) && deviceUuid.equals(device.getDeviceUuid())){
+    if (device != null && device.getDeviceUuid().matches(UUID_V4_REGEX) && device.getProjectId() == projectId){
       deviceFacade.deleteProjectDevice(device);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
     }
@@ -188,5 +206,3 @@ public class DeviceManagementService {
   }
 
 }
-
-

@@ -16,7 +16,7 @@ angular.module('hopsWorksApp')
             self.topics = [];
             self.devices = [];
 
-            self.deviceStates = ["PENDING", "APPROVED", "BLOCKED"];
+            self.deviceStates = ["Pending", "Approved", "Disabled"];
             self.sharedTopics = [];
             self.topicDetails = {};
             self.maxNumTopics = 10;
@@ -33,7 +33,7 @@ angular.module('hopsWorksApp')
             self.operation_type = "Read";
             self.host = "*";
             self.role = "*";
-           // self.activeId = -1;
+            // self.activeId = -1;
             self.selectedProjectName="";
             
             self.users =[];
@@ -44,7 +44,7 @@ angular.module('hopsWorksApp')
             self.showDevices = -1;
             self.schemas = [];
             self.schemaVersions = [];
-           self.tourService = TourService;
+            self.tourService = TourService;
 
             self.selectAcl = function (acl, topicName) {
               if (self.activeId === acl.id) { 
