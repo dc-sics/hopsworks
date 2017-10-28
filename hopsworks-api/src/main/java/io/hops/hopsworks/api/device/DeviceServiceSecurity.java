@@ -40,7 +40,7 @@ class DeviceServiceSecurity {
         .withClaim(DEVICE_UUID, projectDevice.getProjectDevicePK().getDeviceUuid())
         .sign(algorithm);
     } catch (Exception e) {
-      throw new DeviceServiceException(DeviceResponseBuilder.JWT_GENERATION_FAILED);
+      throw new DeviceServiceException(new DeviceResponseBuilder().JWT_GENERATION_FAILED);
     }
   }
 
@@ -60,11 +60,11 @@ class DeviceServiceSecurity {
       JWTVerifier verifier = JWT.require(algorithm).build();
       return verifier.verify(jwtToken);
     }catch (TokenExpiredException exception){
-      throw new DeviceServiceException(DeviceResponseBuilder.JWT_EXPIRED);
+      throw new DeviceServiceException(new DeviceResponseBuilder().JWT_EXPIRED);
     }catch (JWTVerificationException exception){
-      throw new DeviceServiceException(DeviceResponseBuilder.JWT_INVALID_TOKEN);
+      throw new DeviceServiceException(new DeviceResponseBuilder().JWT_INVALID_TOKEN);
     }catch (Exception exception){
-      throw new DeviceServiceException(DeviceResponseBuilder.JWT_VALIDATION_FAILED);
+      throw new DeviceServiceException(new DeviceResponseBuilder().JWT_VALIDATION_FAILED);
     }
   }
 }
