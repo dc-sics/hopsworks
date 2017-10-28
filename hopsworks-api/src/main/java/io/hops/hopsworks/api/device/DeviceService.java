@@ -79,9 +79,6 @@ public class DeviceService {
 
   private static final String JWT_DURATION_IN_HOURS = "jwtTokenDurationInHours";
 
-  private static final String UUID_V4_REGEX =
-    "/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i";
-
   @EJB
   private CertsFacade userCerts;
 
@@ -211,8 +208,8 @@ public class DeviceService {
   public Response postRegisterEndpoint(
     @Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
     try {
-      InputValidator.validate(authDTO);
       getProjectDevicesSettings(authDTO.getProjectId());
+      InputValidator.validate(authDTO);
       try {
         authDTO.setPassword(DigestUtils.sha256Hex(authDTO.getPassword()));
         deviceFacade.createProjectDevice(authDTO);
@@ -235,6 +232,7 @@ public class DeviceService {
   public Response postLoginEndpoint(@Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
     try {
       ProjectDevicesSettings devicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
+      InputValidator.validate(authDTO);
       ProjectDevice2 device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
       if (device.getPassword().equals(DigestUtils.sha256Hex(authDTO.getPassword()))) {
         deviceFacade.updateProjectDeviceLastLoggedIn(device);
@@ -268,8 +266,8 @@ public class DeviceService {
 
       return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
     } catch (JSONException e) {
-      return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST, MessageFormat.format(
-        "GET Request is malformed! Required params are [{0}]", PROJECT_ID));
+      return DeviceResponseBuilder.failedJsonResponse(Status.BAD_REQUEST,
+        "GET Request is malformed! Required params are: project_id");
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }

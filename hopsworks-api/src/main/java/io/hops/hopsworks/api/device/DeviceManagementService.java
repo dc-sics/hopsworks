@@ -132,6 +132,7 @@ public class DeviceManagementService {
   @GET
   @Path("/devicesSettings")
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response getDevicesSettings(@Context HttpServletRequest req) throws AppException {
     checkForProjectId();
     ProjectDevicesSettingsDTO settingsDTO = readDevicesSettings(projectId);
@@ -146,6 +147,7 @@ public class DeviceManagementService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @TransactionAttribute(TransactionAttributeType.NEVER)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response postDevicesSettings(@Context SecurityContext sc, @Context HttpServletRequest req,
                                       ProjectDevicesSettingsDTO settingsDTO) throws AppException {
     checkForProjectId();
@@ -164,6 +166,7 @@ public class DeviceManagementService {
   @GET
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response getDevices(
     @QueryParam("state") String state, @Context HttpServletRequest req) throws AppException {
     checkForProjectId();
@@ -183,6 +186,7 @@ public class DeviceManagementService {
   @Path("/device")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response putDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
     if (device != null && device.getDeviceUuid().matches(UUID_V4_REGEX) && device.getProjectId() == projectId){
@@ -197,6 +201,7 @@ public class DeviceManagementService {
   @Path("/device")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response deleteDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
     if (device != null && device.getDeviceUuid().matches(UUID_V4_REGEX) && device.getProjectId() == projectId){
