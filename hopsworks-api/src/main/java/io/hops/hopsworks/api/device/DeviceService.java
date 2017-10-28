@@ -128,7 +128,7 @@ public class DeviceService {
     try {
       return deviceFacade.readProjectDevicesSettings(projectId);
     }catch (Exception e) {
-      throw new DeviceServiceException(DeviceResponseBuilder.DEVICES_FEATURE_NOT_ACTIVE);
+      throw new DeviceServiceException(new DeviceResponseBuilder().DEVICES_FEATURE_NOT_ACTIVE);
     }
   }
 
@@ -137,16 +137,16 @@ public class DeviceService {
     try {
       device = deviceFacade.readProjectDevice(projectId, deviceUuid);
     }catch (Exception e) {
-      throw new DeviceServiceException(DeviceResponseBuilder.DEVICE_NOT_REGISTERED);
+      throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_NOT_REGISTERED);
     }
     if (device.getState() != ProjectDevice2.State.Approved){
       if (device.getState() == ProjectDevice2.State.Disabled){
-        throw new DeviceServiceException(DeviceResponseBuilder.DEVICE_DISABLED);
+        throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_DISABLED);
       }
       if (device.getState() == ProjectDevice2.State.Pending){
-        throw new DeviceServiceException(DeviceResponseBuilder.DEVICE_PENDING);
+        throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_PENDING);
       }
-      throw new DeviceServiceException(DeviceResponseBuilder.DEVICE_UNKNOWN_STATE);
+      throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_UNKNOWN_STATE);
     }
     return device;
   }
@@ -217,7 +217,7 @@ public class DeviceService {
         deviceFacade.createProjectDevice(authDTO);
         return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
       }catch (Exception e) {
-        throw new DeviceServiceException(DeviceResponseBuilder.DEVICE_ALREADY_REGISTERED);
+        throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_ALREADY_REGISTERED);
       }
     }catch(DeviceServiceException e) {
       return e.getResponse();
@@ -240,7 +240,7 @@ public class DeviceService {
         return DeviceResponseBuilder.successfulJsonResponse(
           Status.OK, DeviceServiceSecurity.generateJwt(devicesSettings, device));
       }
-      return DeviceResponseBuilder.DEVICE_LOGIN_FAILED;
+      return new DeviceResponseBuilder().DEVICE_LOGIN_FAILED;
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }
@@ -344,7 +344,7 @@ public class DeviceService {
         certPwDTO = projectController.getProjectSpecificCertPw(
           user, project.getName(), base64EncodedKeyStore);
       } catch (Exception e) {
-        return DeviceResponseBuilder.PROJECT_USER_PASS_FOR_KS_TS_NOT_FOUND;
+        return new DeviceResponseBuilder().PROJECT_USER_PASS_FOR_KS_TS_NOT_FOUND;
       }
 
       // Extracts the Avro Schema contents from the database
