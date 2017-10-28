@@ -8,7 +8,7 @@ import javax.ws.rs.core.Response;
 public class InputValidator {
 
   private static final String UUID_V4_REGEX =
-    "/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[4][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/i";
+    "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[4][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}";
 
   public static void validate(AuthProjectDeviceDTO authProjectDeviceDTO) throws DeviceServiceException {
     if (authProjectDeviceDTO == null || authProjectDeviceDTO.getProjectId() == null ||
