@@ -5,9 +5,6 @@ import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -77,18 +74,17 @@ public class RequestAuthFilter implements ContainerRequestFilter {
       log.log(Level.FINEST, "Filtering project request path: {0}", project.
               getName());
 
-      if (!method.isAnnotationPresent(AllowedRoles.class)) {
+      if (!method.isAnnotationPresent(ProjectPermission.class)) {
         //Should throw exception if there is a method that is not annotated in this path.
         requestContext.abortWith(Response.
                 status(Response.Status.SERVICE_UNAVAILABLE).build());
         return;
       }
-      AllowedRoles rolesAnnotation = method.getAnnotation(AllowedRoles.class);
-      Set<String> rolesSet;
-      rolesSet = new HashSet<>(Arrays.asList(rolesAnnotation.roles()));
+      ProjectPermission rolesAnnotation = method.getAnnotation(ProjectPermission.class);
+      ProjectPermissionLevel accessLevel = rolesAnnotation.value();
 
       //If the resource is allowed for all roles continue with the request. 
-      if (rolesSet.contains(AllowedRoles.ALL)) {
+      if (accessLevel == ProjectPermissionLevel.ANYONE) {
         log.log(Level.FINEST, "Accessing resource that is allowed for all");
         return;
       }
@@ -114,10 +110,10 @@ public class RequestAuthFilter implements ContainerRequestFilter {
                 .status(Response.Status.FORBIDDEN)
                 .entity(json)
                 .build());
-      } else if (!rolesSet.contains(userRole)) {
+      } else if (accessLevel.toString().equals(userRole)) {
         log.log(Level.INFO,
                 "Trying to access resource that is only allowed for: {0}, But you are a: {1}",
-                new Object[]{rolesSet, userRole});
+                new Object[]{accessLevel, userRole});
         json.setStatusCode(Response.Status.FORBIDDEN.getStatusCode());
         json.setErrorMsg(
                 "Your role in this project is not authorized to perform this action.");

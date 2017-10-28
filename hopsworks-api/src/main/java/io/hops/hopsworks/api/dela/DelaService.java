@@ -2,8 +2,9 @@ package io.hops.hopsworks.api.dela;
 
 import com.google.gson.Gson;
 import io.hops.hopsworks.api.dela.dto.BootstrapDTO;
-import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermission;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetHelper;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
@@ -82,7 +83,7 @@ public class DelaService {
   
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response getPublicDatasets(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
     List<Dataset> clusterDatasets = datasetCtrl.getLocalPublicDatasets();
     List<LocalDatasetDTO> localDS = LocalDatasetHelper.parse(inodes, clusterDatasets);
@@ -93,8 +94,7 @@ public class DelaService {
   @GET
   @Path("/search")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response publicSearch(@ApiParam(required=true) @QueryParam("query") String query)
-    throws ThirdPartyException {
+  public Response publicSearch(@ApiParam(required=true) @QueryParam("query") String query) throws ThirdPartyException {
     LOG.log(Settings.DELA_DEBUG, "dela:search");
     searchSanityCheck(query);
     SearchServiceDTO.SearchResult searchResult = hopsSite.search(query);

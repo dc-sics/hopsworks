@@ -24,11 +24,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.api.metadata.wscomm.ResponseBuilder;
 import io.hops.hopsworks.api.metadata.wscomm.message.UploadedTemplateMessage;
 import io.hops.hopsworks.api.project.util.DsPath;
@@ -172,7 +173,7 @@ public class UploadService {
   @GET
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response testMethod(
           @Context HttpServletRequest request)
           throws AppException, IOException, AccessControlException {
@@ -201,7 +202,7 @@ public class UploadService {
         try {
           //If the user has a role in the owning project of the Dataset and that is Data Owner
           //perform operation as superuser
-          if (!Strings.isNullOrEmpty(role) && role.equals(AllowedRoles.DATA_OWNER)) {
+          if (!Strings.isNullOrEmpty(role) && role.equals(ProjectPermissionLevel.DATA_OWNER.toString())) {
             udfso = dfs.getDfsOps();
           } else {
             udfso = dfs.getDfsOps(username);
@@ -232,7 +233,7 @@ public class UploadService {
   @POST
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response uploadMethod(
           @FormDataParam("file") InputStream uploadedInputStream,
           @FormDataParam("file") FormDataContentDisposition fileDetail,
@@ -323,7 +324,7 @@ public class UploadService {
         
         //If the user has a role in the owning project of the Dataset and that is Data Owner
         //perform operation as superuser
-        if (!Strings.isNullOrEmpty(role) && role.equals(AllowedRoles.DATA_OWNER)) {
+        if (!Strings.isNullOrEmpty(role) && role.equals(ProjectPermissionLevel.DATA_OWNER.toString())) {
           dfsOps = dfs.getDfsOps();
         } else {
           dfsOps = dfs.getDfsOps(username);

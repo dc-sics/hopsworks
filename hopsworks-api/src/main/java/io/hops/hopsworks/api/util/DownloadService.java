@@ -15,10 +15,11 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 
+import io.hops.hopsworks.api.filter.ProjectPermission;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
-import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.project.util.DsPath;
 import io.hops.hopsworks.api.project.util.PathValidator;
@@ -104,7 +105,7 @@ public class DownloadService {
   @GET
   @javax.ws.rs.Path("/{path: .+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response downloadFromHDFS(@PathParam("path") String path, @Context SecurityContext sc) throws AppException,
       AccessControlException {
 
@@ -143,7 +144,7 @@ public class DownloadService {
   @GET
   @javax.ws.rs.Path("/certs/{path: .+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response downloadCerts(@PathParam("path") String path, @Context SecurityContext sc) throws AppException,
       AccessControlException {
     if(user.getEmail().equals(Settings.SITE_EMAIL) || user.getEmail().equals(Settings.AGENT_EMAIL)){

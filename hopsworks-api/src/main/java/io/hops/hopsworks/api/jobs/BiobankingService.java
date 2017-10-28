@@ -20,7 +20,8 @@ import javax.ws.rs.core.SecurityContext;
 import java.util.ArrayList;
 import javax.ws.rs.POST;
 import javax.ws.rs.core.GenericEntity;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
@@ -76,7 +77,7 @@ public class BiobankingService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getConsentForms(@Context SecurityContext sc,
           @Context HttpServletRequest req)
           throws AppException {
@@ -153,7 +154,7 @@ public class BiobankingService {
 
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response registerConsentForms(@Context SecurityContext sc,
           @Context HttpServletRequest req, ConsentDTOs consents)
           throws AppException {

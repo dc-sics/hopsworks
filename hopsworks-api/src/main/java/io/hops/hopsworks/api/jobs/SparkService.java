@@ -22,8 +22,10 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import org.apache.hadoop.security.AccessControlException;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -87,7 +89,7 @@ public class SparkService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response findAllSparkJobs(@Context SecurityContext sc,
       @Context HttpServletRequest req)
       throws AppException {
@@ -113,7 +115,7 @@ public class SparkService {
   @GET
   @Path("/inspect/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response inspectJar(@PathParam("path") String path,
       @Context SecurityContext sc, @Context HttpServletRequest req) throws
       AppException, AccessControlException {
@@ -160,7 +162,7 @@ public class SparkService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response createJob(SparkJobConfiguration config,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {

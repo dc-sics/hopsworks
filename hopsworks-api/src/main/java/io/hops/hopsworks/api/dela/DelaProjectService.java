@@ -1,8 +1,9 @@
 package io.hops.hopsworks.api.dela;
 
 import io.hops.hopsworks.api.dela.dto.InodeIdDTO;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
@@ -100,7 +101,7 @@ public class DelaProjectService {
   @GET
   @Path("/transfers")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getProjectContents(@Context SecurityContext sc) throws ThirdPartyException {
 
     List<Integer> projectIds = new LinkedList<>();
@@ -117,7 +118,7 @@ public class DelaProjectService {
   @POST
   @Path("/uploads")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response publish(@Context SecurityContext sc, InodeIdDTO inodeId) throws ThirdPartyException {
     Inode inode = getInode(inodeId.getId());
     Dataset dataset = getDatasetByInode(inode);
@@ -132,9 +133,9 @@ public class DelaProjectService {
   @Path("/transfers/{publicDSId}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getExtendedDetails(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId)
-    throws ThirdPartyException {
+      throws ThirdPartyException {
 
     TorrentId torrentId = new TorrentId(publicDSId);
     TorrentExtendedStatusJSON resp = delaTransferCtrl.details(torrentId);
@@ -144,7 +145,7 @@ public class DelaProjectService {
   @POST
   @Path("/transfers/{publicDSId}/cancel")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response removePublic(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId,
     @ApiParam(value="delete dataset", required = true) @QueryParam("clean") boolean clean) throws ThirdPartyException {
     Dataset dataset = getDatasetByPublicId(publicDSId);
@@ -163,7 +164,7 @@ public class DelaProjectService {
   @Path("/downloads/{publicDSId}/manifest")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response startDownload(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId,
     HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
     Users user = getUser(sc.getUserPrincipal().getName());
@@ -177,7 +178,7 @@ public class DelaProjectService {
   @Path("/downloads/{publicDSId}/hdfs")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response downloadDatasetHdfs(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId,
     HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
     Users user = getUser(sc.getUserPrincipal().getName());
@@ -191,7 +192,7 @@ public class DelaProjectService {
   @Path("/downloads/{publicDSId}/kafka")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response downloadDatasetKafka(@Context SecurityContext sc, @Context HttpServletRequest req,
     @PathParam("publicDSId") String publicDSId, HopsworksTransferDTO.Download downloadDTO) throws ThirdPartyException {
     Users user = getUser(sc.getUserPrincipal().getName());
@@ -213,9 +214,9 @@ public class DelaProjectService {
   @GET
   @Path("/transfers/{publicDSId}/manifest/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response showManifest(@Context SecurityContext sc, @PathParam("publicDSId") String publicDSId)
-    throws ThirdPartyException {
+      throws ThirdPartyException {
     JsonResponse json = new JsonResponse();
     Dataset dataset = getDatasetByPublicId(publicDSId);
     Users user = getUser(sc.getUserPrincipal().getName());

@@ -1,7 +1,8 @@
 package io.hops.hopsworks.api.util;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.maintenance.Maintenance;
 import io.hops.hopsworks.common.maintenance.MaintenanceController;
@@ -38,7 +39,7 @@ public class BannerService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @ProjectPermission(ProjectPermissionLevel.ANYONE)
   public Response findBanner(
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {

@@ -1,7 +1,8 @@
 package io.hops.hopsworks.api.project;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.ProjectPermission;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.filter.ProjectPermissionLevel;
 import io.hops.hopsworks.api.project.util.DsDTOValidator;
 import io.hops.hopsworks.api.project.util.DsPath;
 import io.hops.hopsworks.api.project.util.PathValidator;
@@ -151,7 +152,7 @@ public class DataSetService {
   @GET
   @Path("unzip/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response unzip(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
@@ -228,7 +229,7 @@ public class DataSetService {
   @GET
   @Path("/getContent/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response findDataSetsInProjectID(
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
@@ -267,7 +268,7 @@ public class DataSetService {
   @GET
   @Path("/getContent/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getDirContent(
           @PathParam("path") String path,
           @Context SecurityContext sc,
@@ -302,7 +303,7 @@ public class DataSetService {
   @GET
   @Path("/getFile/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response getFile(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
@@ -331,7 +332,7 @@ public class DataSetService {
   @POST
   @Path("/shareDataSet")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response shareDataSet(
           DataSetDTO dataSet,
           @Context SecurityContext sc,
@@ -363,7 +364,7 @@ public class DataSetService {
     // set status to pending. 
     DatasetRequest dsReq = datasetRequest.findByProjectAndDataset(proj, ds);
     if (dsReq == null || dsReq.getProjectTeam().getTeamRole().equals(
-            AllowedRoles.DATA_SCIENTIST)) {
+            ProjectPermissionLevel.DATA_SCIENTIST.toString())) {
       newDS.setStatus(Dataset.PENDING);
     } else {
       hdfsUsersBean.shareDataset(proj, ds);
@@ -386,7 +387,7 @@ public class DataSetService {
   @POST
   @Path("/unshareDataSet")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response unshareDataSet(
           DataSetDTO dataSet,
           @Context SecurityContext sc,
@@ -424,7 +425,7 @@ public class DataSetService {
   @POST
   @Path("/projectsSharedWith")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response getProjectSharedWith(
           DataSetDTO dataSet,
           @Context SecurityContext sc,
@@ -444,7 +445,7 @@ public class DataSetService {
   @POST
   @Path("/makeEditable")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response makeEditable(
           DataSetDTO dataSet,
           @Context SecurityContext sc,
@@ -485,7 +486,7 @@ public class DataSetService {
   @POST
   @Path("/removeEditable")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response removeEditable(
           DataSetDTO dataSet,
           @Context SecurityContext sc,
@@ -527,7 +528,7 @@ public class DataSetService {
   @GET
   @Path("/accept/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response acceptRequest(@PathParam("inodeId") Integer inodeId,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
@@ -558,7 +559,7 @@ public class DataSetService {
   @GET
   @Path("/reject/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response rejectRequest(@PathParam("inodeId") Integer inodeId,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
@@ -589,7 +590,7 @@ public class DataSetService {
   @POST
   @Path("/createTopLevelDataSet")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response createTopLevelDataSet(
           DataSetDTO dataSet,
           @Context SecurityContext sc,
@@ -635,7 +636,7 @@ public class DataSetService {
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response createDataSetDir(
           DataSetDTO dataSetName,
           @Context SecurityContext sc,
@@ -699,7 +700,7 @@ public class DataSetService {
   @DELETE
   @Path("/{fileName}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response removedataSetdir(
           @PathParam("fileName") String fileName,
           @Context SecurityContext sc,
@@ -731,8 +732,8 @@ public class DataSetService {
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(ds);
       boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
-      if (isMember && projectTeamFacade.findCurrentRole(owning, user).equals(AllowedRoles.DATA_OWNER) && owning.equals(
-          project)) {
+      if (isMember && projectTeamFacade.findCurrentRole(owning, user)
+          .equals(ProjectPermissionLevel.DATA_OWNER.toString()) && owning.equals(project)) {
         dfso = dfs.getDfsOps();// do it as super user
       } else {
         dfso = dfs.getDfsOps(username);// do it as project user
@@ -782,7 +783,7 @@ public class DataSetService {
   @DELETE
   @Path("corrupted/{fileName: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response removeCorrupted(
       @PathParam("fileName") String fileName,
       @Context SecurityContext sc,
@@ -853,7 +854,7 @@ public class DataSetService {
   @DELETE
   @Path("file/{fileName: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response removefile(
           @PathParam("fileName") String fileName,
           @Context SecurityContext sc,
@@ -883,8 +884,8 @@ public class DataSetService {
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(ds);
       boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
-      if (isMember && projectTeamFacade.findCurrentRole(owning, user).equals(AllowedRoles.DATA_OWNER) && owning.equals(
-          project)) {
+      if (isMember && projectTeamFacade.findCurrentRole(owning, user)
+          .equals(ProjectPermissionLevel.DATA_OWNER.toString()) && owning.equals(project)) {
         dfso = dfs.getDfsOps();// do it as super user
       } else {
         dfso = dfs.getDfsOps(username);// do it as project user
@@ -924,7 +925,7 @@ public class DataSetService {
   @Path("move")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response moveFile(
           @Context SecurityContext sc, @Context HttpServletRequest req,
           MoveDTO dto) throws
@@ -964,8 +965,8 @@ public class DataSetService {
       //Find project of dataset as it might be shared
       Project owning = datasetController.getOwningProject(sourceDataset);
       boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
-      if (isMember && projectTeamFacade.findCurrentRole(owning, user).equals(AllowedRoles.DATA_OWNER) && owning.equals(
-          project)) {
+      if (isMember && projectTeamFacade.findCurrentRole(owning, user)
+          .equals(ProjectPermissionLevel.DATA_OWNER.toString()) && owning.equals(project)) {
         udfso = dfs.getDfsOps();// do it as super user
       } else {
         udfso = dfs.getDfsOps(username);// do it as project user
@@ -1022,7 +1023,7 @@ public class DataSetService {
   @Path("copy")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response copyFile(
           @Context SecurityContext sc, @Context HttpServletRequest req,
           MoveDTO dto) throws
@@ -1093,7 +1094,7 @@ public class DataSetService {
   @GET
   @Path("fileExists/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response checkFileExists(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
@@ -1137,7 +1138,7 @@ public class DataSetService {
   @GET
   @Path("checkFileForDownload/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response checkFileForDownload(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
@@ -1158,7 +1159,7 @@ public class DataSetService {
   @GET
   @Path("filePreview/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response filePreview(@PathParam("path") String path,
           @QueryParam("mode") String mode,
           @Context SecurityContext sc) throws
@@ -1264,7 +1265,7 @@ public class DataSetService {
   @GET
   @Path("isDir/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response isDir(@PathParam("path") String path) throws
           AppException {
 
@@ -1285,7 +1286,7 @@ public class DataSetService {
   @GET
   @Path("countFileBlocks/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public Response countFileBlocks(@PathParam("path") String path) throws
           AppException {
 
@@ -1312,7 +1313,7 @@ public class DataSetService {
   }
 
   @Path("fileDownload")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_SCIENTIST)
   public DownloadService downloadDS(@Context SecurityContext sc) throws
       AppException {
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
@@ -1323,7 +1324,7 @@ public class DataSetService {
   }
   
   @Path("compressFile/{path: .+}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response compressFile(@PathParam("path") String path,
           @Context SecurityContext context) throws
           AppException {
@@ -1369,7 +1370,7 @@ public class DataSetService {
   }
 
   @Path("upload/{path: .+}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public UploadService upload(
           @PathParam("path") String path, @Context SecurityContext sc,
           @QueryParam("templateId") int templateId) throws AppException {
@@ -1397,7 +1398,7 @@ public class DataSetService {
   @POST
   @Path("/attachTemplate")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @ProjectPermission(ProjectPermissionLevel.DATA_OWNER)
   public Response attachTemplate(FileTemplateDTO filetemplateData) throws
           AppException {
 

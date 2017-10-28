@@ -14,29 +14,12 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface AllowedRoles {
-
-  /**
-   * Allowed for everyone. This does not mean both roles it means literally
-   * everyone
-   */
-  public static final String ALL = "ALL";
-  /**
-   * Allowed only to the owner
-   */
-  public static final String DATA_OWNER = "Data owner";
-  /**
-   * Allowed to contributers or members of the project. There is no hierarchy if
-   * only this annotation is used only members will be granted access. So to
-   * allow
-   * owners and members use both.
-   */
-  public static final String DATA_SCIENTIST = "Data scientist";
-
+public @interface ProjectPermission {
+  
   /**
    * Used to annotate methods that work with project resources
    * <p/>
    * @return allowed roles
    */
-  public String[] roles() default {AllowedRoles.DATA_OWNER};
+  ProjectPermissionLevel value() default ProjectPermissionLevel.DATA_OWNER;
 }
