@@ -244,7 +244,6 @@ public class ProjectsManagementBean {
         this.hdfsquota);
   }
 
-  
   private void convertHdfsQuotaString() {
     if (this.hdfsquotastring.endsWith("TB")) {
       Long value = Long.parseLong(this.hdfsquotastring.substring(0, this.hdfsquotastring.length() - 2));
@@ -264,9 +263,8 @@ public class ProjectsManagementBean {
   public void onRowCancel(RowEditEvent event) {
   }
 
-  
   public String getCondaCommands(String projectname) {
-      StringBuffer sb = new StringBuffer();
+    StringBuffer sb = new StringBuffer();
     try {
       List<OpStatus> ops = projectsManagementController.getCondaCommands(projectname);
       for (OpStatus op : ops) {
@@ -276,6 +274,6 @@ public class ProjectsManagementBean {
       Logger.getLogger(ProjectsManagementBean.class.getName()).log(Level.SEVERE, null, ex);
       sb.append("Error getting ops. Report a bug.");
     }
-    
+    return sb.toString();
   }
 }
