@@ -292,6 +292,8 @@ public class DeviceService {
       // Device is authenticated at this point.
 
       SchemaDTO schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
+
+      //TODO: Topic does not exist
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
 
     }catch(JSONException e) {

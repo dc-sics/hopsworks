@@ -187,11 +187,11 @@ public class DeviceManagementService {
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response putDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
-      deviceFacade.updateProjectDevice(device);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-    }
-    return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
+    //if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
+    deviceFacade.updateProjectDevice(device);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    //}
+    //return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
   }
 
 
@@ -202,11 +202,11 @@ public class DeviceManagementService {
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
   public Response deleteDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
-    if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
-      deviceFacade.deleteProjectDevice(device);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-    }
-    return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
+    //if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
+    deviceFacade.deleteProjectDevice(device);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    //}
+    //return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
   }
 
 }
