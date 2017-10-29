@@ -77,6 +77,23 @@ public class OpStatus {
   }
 
   @Override
+  public String toString() {
+    StringBuffer sb = new StringBuffer("[");
+    sb.append(channelUrl)
+        .append(",").append(lib)
+        .append(",").append(version)
+        .append(",").append(op)
+        .append(",").append(status)
+        .append(",(");
+    hosts.forEach((h) -> {
+      sb.append(h.toString());
+    });    
+    sb.append(")]");
+    return sb.toString(); 
+  }
+
+  
+  @Override
   public boolean equals(Object o) {
     if (o instanceof OpStatus) {
       OpStatus pd = (OpStatus) o;

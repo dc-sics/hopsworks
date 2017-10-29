@@ -546,6 +546,7 @@ public class PeopleAdministration implements Serializable {
             + activationKey));
     user.setValidationKey(activationKey);
     userManager.updatePeople(user);
+    MessagesController.addInfoMessage("Account verification Email Successfully Resent");
 
   }
 

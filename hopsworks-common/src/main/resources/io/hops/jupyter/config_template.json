@@ -47,9 +47,9 @@
     "proxyUser": "%%hdfs_user%%",
     "name": "remotesparkmagics-jupyter-%%mode%%",
     "queue": "%%yarn_queue%%",
-    "archives": [%%archives%%],
-    "jars": [%%jars%%],
-    "pyFiles": [%%pyFiles%%],
+    "archives": ["%%archives%%"],
+    "jars": ["%%jars%%"],
+    "pyFiles": ["%%pyFiles%%"],
     "conf": {
       "spark.executorEnv.PATH": "%%anaconda_env%%/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "spark.yarn.appMasterEnv.PYSPARK_PYTHON": "%%pyspark_bin%%",
