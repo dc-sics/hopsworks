@@ -123,18 +123,11 @@ public class DeviceFacade4 {
     }
   }
 
-  public void deleteProjectDevice(ProjectDeviceDTO projectDeviceDTO) {
-    if (projectDeviceDTO!= null){
-      ProjectDevice2 projectDevice = readProjectDevice(
-        projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid());
-      if (projectDevice != null){
-        em.remove(projectDevice);
-      }
+  public void deleteProjectDevice(Integer projectId, String deviceUuid) {
+    ProjectDevice2 projectDevice = readProjectDevice(projectId, deviceUuid);
+    if (projectDevice != null){
+      em.remove(projectDevice);
     }
   }
-
-
-
-
 
 }

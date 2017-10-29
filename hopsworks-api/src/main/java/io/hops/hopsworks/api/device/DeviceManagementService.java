@@ -17,14 +17,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.Path;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
@@ -196,17 +189,15 @@ public class DeviceManagementService {
 
 
   @DELETE
-  @Path("/device")
+  @Path("/device/{deviceUuid}/remove")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
-  public Response deleteDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
+  public Response deleteDevice(
+    @Context HttpServletRequest req, @PathParam("deviceUuid") String  deviceUuid) throws AppException {
     checkForProjectId();
-    //if (device != null && device.getDeviceUuid() != null && device.getProjectId() == projectId){
-    deviceFacade.deleteProjectDevice(device);
+    deviceFacade.deleteProjectDevice(projectId, deviceUuid);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-    //}
-    //return noCacheResponse.getNoCacheResponseBuilder(Status.BAD_REQUEST).build();
   }
 
 }
