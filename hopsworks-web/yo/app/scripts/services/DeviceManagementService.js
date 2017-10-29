@@ -27,16 +27,8 @@ angular.module('hopsWorksApp')
                 return $http(req);
             },
 
-            deleteDevice: function (projectId, device) {
-                var req = {
-                    method: 'DELETE',
-                    url: '/api/project/' + projectId + '/deviceManagement/device',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    data: device
-                };
-                return $http(req);
+            deleteDevice: function (projectId, deviceUuid) {
+                return  $http.delete('/api/project/' + projectId + '/deviceManagement/device/' + deviceUuid + '/remove');
             },
 
             getDevicesSettings: function (projectId) {
