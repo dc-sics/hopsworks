@@ -528,6 +528,7 @@ This will make all its files available for any cluster user to share and process
                         function (success) {
                           var fileDetails = JSON.parse(success.data.data);
                           var content = fileDetails.filePreviewDTO[0].content;
+                          $showdownProvider.loadExtension('gist');
                           $scope.readme = $showdown.makeHtml(content);
                         }, function (error) {
                   //To hide README from UI
