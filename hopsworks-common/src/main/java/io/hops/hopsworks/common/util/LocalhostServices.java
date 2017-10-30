@@ -242,7 +242,6 @@ public class LocalhostServices {
     List<String> commands = new ArrayList<>();
     commands.add("/usr/bin/sudo");
     commands.add(settings.getHopsSiteCaScript());
-    commands.add(settings.getHopsSiteCaDir());
     commands.add(userKeyPwd);
     
     SystemCommandExecutor commandExecutor = new SystemCommandExecutor(commands);
