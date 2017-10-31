@@ -49,11 +49,12 @@ public class CertificateHelper {
         FileInputStream truststoreIS = new FileInputStream(truststoreFile)) {
         keystore = keystore(keystoreIS, certPswd);
         truststore = keystore(truststoreIS, certPswd);
+      }
+      try (FileInputStream keystoreIS = new FileInputStream(keystoreFile);
+        FileInputStream truststoreIS = new FileInputStream(truststoreFile)) {
         certFacade.saveClusterCerts(clusterName, ByteStreams.toByteArray(keystoreIS),
           ByteStreams.toByteArray(truststoreIS), encryptedCertPswd);
       }
-      FileUtils.deleteQuietly(new File(certPath));
-      FileUtils.deleteQuietly(new File(caCertPath));
       return Optional.of(Triplet.with(keystore, truststore, certPswd));
     } catch (Exception ex) {
       settings.deleteHopsSiteClusterName();
