@@ -13,7 +13,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.util.LivyService;
 import io.hops.hopsworks.api.zeppelin.util.LivyMsg;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
@@ -115,7 +115,7 @@ public class JupyterService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response getAllNotebookServersInProject(
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -145,7 +145,7 @@ public class JupyterService {
   @GET
   @Path("/livy/sessions")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response livySessions(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     String loggedinemail = sc.getUserPrincipal().getName();
@@ -166,7 +166,7 @@ public class JupyterService {
   @GET
   @Path("/settings")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response settings(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
@@ -187,7 +187,7 @@ public class JupyterService {
   @GET
   @Path("/running")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response isRunning(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
@@ -230,7 +230,7 @@ public class JupyterService {
   @Path("/start")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response startNotebookServer(JupyterSettings jupyterSettings,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -330,7 +330,7 @@ public class JupyterService {
   @GET
   @Path("/stopDataOwner")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response stopDataOwner(@PathParam("hdfsUsername") String hdfsUsername,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -341,7 +341,7 @@ public class JupyterService {
   @GET
   @Path("/stop")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response stopNotebookServer(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     String hdfsUsername = getHdfsUser(sc);
@@ -387,7 +387,7 @@ public class JupyterService {
 
   @GET
   @Path("/convertIPythonNotebook/{path: .+}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response convertIPythonNotebook(@PathParam("path") String path,
       @Context SecurityContext sc) throws AppException {
     String hdfsUsername = getHdfsUser(sc);

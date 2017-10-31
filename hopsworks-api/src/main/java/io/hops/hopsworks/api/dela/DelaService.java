@@ -2,7 +2,7 @@ package io.hops.hopsworks.api.dela;
 
 import com.google.gson.Gson;
 import io.hops.hopsworks.api.dela.dto.BootstrapDTO;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
 import io.hops.hopsworks.api.hopssite.dto.LocalDatasetHelper;
@@ -82,7 +82,7 @@ public class DelaService {
   
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getPublicDatasets(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
     List<Dataset> clusterDatasets = datasetCtrl.getLocalPublicDatasets();
     List<LocalDatasetDTO> localDS = LocalDatasetHelper.parse(inodes, clusterDatasets);
