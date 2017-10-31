@@ -209,7 +209,7 @@ public class ClusterController {
       return;
     }
     LOGGER.log(Level.INFO, "Removing user: {0}", clusterCert.getAgentId().getEmail());
-    userBean.remove(clusterCert.getAgentId());
+    userBean.removeByEmail(clusterCert.getAgentId().getEmail());
   }
 
   public void cleanupUnverifiedUsers() {

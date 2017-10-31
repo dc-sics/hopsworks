@@ -117,6 +117,7 @@ public class CertSigningService {
     JSONObject json = new JSONObject(jsonString);
     String pubAgentCert = "no certificate";
     String caPubCert = "no certificate";
+    String intermediateCaPubCert = "no certificate";
     Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
     ClusterCert clusterCert;
     if (json.has("csr")) {
@@ -124,8 +125,9 @@ public class CertSigningService {
       clusterCert = checkCSR(user, csr);
       try {
         pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
-        caPubCert = Files.toString(new File(settings.getIntermediateCaDir() + "/certs/intermediate.cert.pem"),
-            Charsets.UTF_8);
+        caPubCert = Files.toString(new File(settings.getCertsDir() + "/certs/ca.cert.pem"), Charsets.UTF_8);
+        intermediateCaPubCert = Files.toString(
+            new File(settings.getIntermediateCaDir() + "/certs/intermediate.cert.pem"), Charsets.UTF_8);
         clusterCert.setSerialNumber(getSerialNumFromCert(pubAgentCert));
         clusterCertFacade.update(clusterCert);
       } catch (IOException | InterruptedException ex) {
@@ -134,7 +136,7 @@ public class CertSigningService {
       }
     }
 
-    CsrDTO dto = new CsrDTO(caPubCert, pubAgentCert, settings.getHadoopVersionedDir());
+    CsrDTO dto = new CsrDTO(caPubCert, intermediateCaPubCert, pubAgentCert, settings.getHadoopVersionedDir());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(dto).build();
   }
 
@@ -184,18 +186,6 @@ public class CertSigningService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(status).build();
   }
 
-//  @POST
-//  @Path("/addUserToProject")
-//  @Consumes(MediaType.APPLICATION_JSON)
-//  @Produces(MediaType.APPLICATION_JSON)
-//  public Response addUserToProject(@Context HttpServletRequest req,
-//          UserCertCreationReqDTO userCert)
-//          throws AppException {
-//
-//    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-//            entity(
-//                    dto).build();
-//  }
   private ClusterCert checkCSR(Users user, String csr) throws IOException, InterruptedException {
     if (user == null || user.getEmail() == null || csr == null || csr.isEmpty()) {
       throw new IllegalArgumentException("User or csr not set.");
@@ -226,7 +216,7 @@ public class CertSigningService {
       throw new IllegalArgumentException(
           "No cluster registerd with the given organization name and organizational unit.");
     }
-    if (clusterCert.getSerialNumber() != null) {
+    if (clusterCert.getSerialNumber() != null && !clusterCert.getSerialNumber().isEmpty()) {
       throw new IllegalArgumentException("Cluster already have a signed certificate.");
     }
     if (!clusterCert.getCommonName().equals(commonName)) {
