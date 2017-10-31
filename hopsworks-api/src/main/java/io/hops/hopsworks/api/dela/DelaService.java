@@ -94,7 +94,7 @@ public class DelaService {
     try {
       localDS = LocalDatasetHelper.parse(datasetCtrl, dfso, clusterDatasets);
     } finally {
-      dfso.close();
+      dfs.closeDfsClient(dfso);
     }
     GenericEntity<List<LocalDatasetDTO>> datasets = new GenericEntity<List<LocalDatasetDTO>>(localDS) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasets).build();
