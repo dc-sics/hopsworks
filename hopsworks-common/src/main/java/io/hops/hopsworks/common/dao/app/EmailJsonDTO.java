@@ -1,17 +1,13 @@
 package io.hops.hopsworks.common.dao.app;
 
-import javax.xml.bind.annotation.XmlRootElement;
-import org.apache.commons.codec.binary.Base64;
+public class EmailJsonDTO extends KeystoreDTO {
 
-@XmlRootElement
-public class EmailJsonDTO {
   private String dest;
   private String subject;
   private String message;
-  private String keyStore;
-  private String keyStorePwd;
-  
-  public EmailJsonDTO(){}
+
+  public EmailJsonDTO() {
+  }
 
   public String getDest() {
     return dest;
@@ -37,26 +33,4 @@ public class EmailJsonDTO {
     this.message = message;
   }
 
-  public byte[] getKeyStoreBytes() {
-    return Base64.decodeBase64(keyStore);
-  }
-
-  public String getKeyStore() {
-    return keyStore;
-  }
-
-  public void setKeyStore(String keyStore) {
-    this.keyStore = keyStore;
-  }
-
-  public String getKeyStorePwd() {
-    return keyStorePwd;
-  }
-
-  public void setKeyStorePwd(String keyStorepw) {
-    this.keyStorePwd = keyStorepw;
-  }
-  
-  
-  
 }

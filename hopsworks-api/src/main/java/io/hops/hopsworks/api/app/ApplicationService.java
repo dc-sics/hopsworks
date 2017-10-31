@@ -16,9 +16,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import io.hops.hopsworks.common.dao.app.EmailJsonDTO;
+import io.hops.hopsworks.common.dao.app.KeystoreDTO;
 import io.hops.hopsworks.common.dao.app.TopicJsonDTO;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.certificates.UserCerts;
+import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
+import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
@@ -27,10 +30,14 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.jobs.JobController;
+import io.hops.hopsworks.common.jobs.execution.ExecutionController;
 import io.hops.hopsworks.common.project.CertificatesController;
 import io.hops.hopsworks.common.project.ProjectController;
+import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.swagger.annotations.Api;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 import javax.ejb.TransactionAttribute;
@@ -38,6 +45,7 @@ import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.ws.rs.GET;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.SecurityContext;
@@ -50,7 +58,7 @@ public class ApplicationService {
 
   final static Logger LOGGER = Logger.getLogger(ApplicationService.class.
       getName());
-  
+
   private final Pattern projectUserPattern = Pattern.compile("\\w*__\\w*");
 
   @EJB
@@ -72,7 +80,15 @@ public class ApplicationService {
   @EJB
   protected UserManager userManager;
   @EJB
+  private UsersController usersController;
+  @EJB
   private CertificatesController certificatesController;
+  @EJB
+  private ExecutionController executionController;
+  @EJB
+  private JobController jobController;
+  @EJB
+  private JobFacade jobFacade;
 
   @POST
   @Path("mail")
@@ -136,7 +152,7 @@ public class ApplicationService {
   public Response getCertPw(@QueryParam("keyStore") String keyStore, @QueryParam("projectUser") String projectUser,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) {
-    
+
     try {
       CertPwDTO respDTO;
       Users user;
@@ -153,15 +169,41 @@ public class ApplicationService {
         respDTO = projectController.getProjectWideCertPw(user,
             projectUser, keyStore);
       }
-    
+
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(respDTO).build();
     } catch (Exception ex) {
-      LOGGER.log(Level.SEVERE, "Could not retrieve certificate passwords for " +
-          "user:" + projectUser, ex);
+      LOGGER.log(Level.SEVERE, "Could not retrieve certificate passwords for " + "user:" + projectUser, ex);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.EXPECTATION_FAILED).build();
     }
   }
 
+  /////////////////////////////////////////////////
+  //Endpoints that act as access point of HopsUtil or other services to create job workflows
+  @POST
+  @Path("jobs/{jobId}/executions")
+  public Response startJob(@Context SecurityContext sc,
+      @Context HttpServletRequest req, @PathParam("jobId") String jobId,
+      KeystoreDTO keystoreDTO) throws
+      AppException {
+    String projectUser = checkAndGetProjectUser(keystoreDTO.
+        getKeyStoreBytes(), keystoreDTO.getKeyStorePwd().toCharArray());
+
+    assertAdmin(projectUser);
+    Users user = userFacade.findByUsername(hdfsUserBean.getUserName(projectUser));
+    Jobs job = jobFacade.findById(Integer.parseInt(jobId));
+    try {
+      executionController.start(job, user, "nosession");
+    } catch (IOException ex) {
+      Logger.getLogger(ApplicationService.class.getName()).log(Level.SEVERE, null,
+          ex);
+      return noCacheResponse.getNoCacheResponseBuilder(
+          Response.Status.INTERNAL_SERVER_ERROR).build();
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
+        build();
+  }
+
+  /////////////////////////////////////////////////
   /**
    * Returns the project user from the keystore and verifies it.
    *
@@ -172,12 +214,11 @@ public class ApplicationService {
    */
   private String checkAndGetProjectUser(byte[] keyStore, char[] keyStorePwd)
       throws AppException {
-    String commonName = certificatesController.extractCNFromCertificate
-        (keyStore, keyStorePwd);
-  
+    String commonName = certificatesController.extractCNFromCertificate(keyStore, keyStorePwd);
+
     UserCerts userCert = certificateBean.findUserCert(hdfsUserBean.
         getProjectName(commonName), hdfsUserBean.getUserName(commonName));
-  
+
     if (!Arrays.equals(userCert.getUserKey(), keyStore)) {
       throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
           "Certificate error!");
