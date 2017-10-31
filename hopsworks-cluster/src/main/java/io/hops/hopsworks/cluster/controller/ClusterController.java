@@ -14,7 +14,8 @@ import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
-import io.hops.hopsworks.common.util.PKIUtils;import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.common.util.PKIUtils;
+import io.hops.hopsworks.common.util.Settings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -202,14 +203,17 @@ public class ClusterController {
     List<ClusterCert> clusterCerts = clusterCertFacade.getByAgent(clusterCert.getAgentId());
     if (clusterCerts.size() > 1) {
       clusterCertFacade.remove(clusterCert);
+      LOGGER.log(Level.INFO, "Removed cluster {0} for user: {1}", new Object[]{clusterCert.getCommonName(), clusterCert.
+        getAgentId().getEmail()});
       return;
     }
+    LOGGER.log(Level.INFO, "Removing user: {0}", clusterCert.getAgentId().getEmail());
     userBean.remove(clusterCert.getAgentId());
   }
 
   public void cleanupUnverifiedUsers() {
     BbcGroup group = groupFacade.findByGroupName(CLUSTER_GROUP);
-    if(group == null) {
+    if (group == null) {
       return;
     }
     List<Integer> usersInGroup = userBean.findAllInGroup(group.getGid());

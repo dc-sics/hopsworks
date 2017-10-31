@@ -95,7 +95,7 @@ public class ClusterCert implements Serializable {
   @Column(name = "organizational_unit_name")
   private String organizationalUnitName;
   @Column(name = "serial_number")
-  private Integer serialNumber;
+  private String serialNumber;
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
@@ -166,11 +166,11 @@ public class ClusterCert implements Serializable {
     this.organizationalUnitName = organizationalUnitName;
   }
 
-  public Integer getSerialNumber() {
+  public String getSerialNumber() {
     return serialNumber;
   }
 
-  public void setSerialNumber(Integer serialNumber) {
+  public void setSerialNumber(String serialNumber) {
     this.serialNumber = serialNumber;
   }
 

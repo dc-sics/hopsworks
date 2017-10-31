@@ -75,7 +75,6 @@ public class CertSigningService {
     if (json.has("csr")) {
       String csr = json.getString("csr");
       try {
-
         pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
         logger.info("Signed host certificate.");
         caPubCert = Files.toString(new File(settings.getIntermediateCaDir()
@@ -256,18 +255,12 @@ public class CertSigningService {
     return keyValStore;
   }
 
-  private Integer getSerialNumFromCert(String pubAgentCert) throws IOException, InterruptedException {
+  private String getSerialNumFromCert(String pubAgentCert) throws IOException, InterruptedException {
     String serialNum = PKIUtils.getSerialNumberFromCert(pubAgentCert);
     String[] parts = serialNum.split("=");
     if (parts.length < 2) {
       throw new IllegalStateException("Failed to get serial number from cert.");
     }
-    Integer serial;
-    try {
-      serial = Integer.parseInt(parts[1]);
-    } catch (NumberFormatException e) {
-      throw new IllegalStateException("Failed to get serial number from cert." + e.getMessage());
-    }
-    return serial;
+    return parts[1];
   }
 }
