@@ -10,6 +10,7 @@ import io.hops.hopsworks.common.dao.user.cluster.ClusterCertFacade;
 import io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusEnum;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.util.AuditUtil;
@@ -81,8 +82,8 @@ public class ClusterController {
     clusterAgent.setFname(cluster.getCommonName());
     clusterAgent.setLname(CLUSTER_NAME_PREFIX);
     clusterAgent.setTitle("Mrs");
-    clusterAgent.setStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT.getValue());
-    clusterAgent.setMode(PeopleAccountStatus.M_ACCOUNT_TYPE.getValue());
+    clusterAgent.setStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT);
+    clusterAgent.setMode(PeopleAccountType.M_ACCOUNT_TYPE);
     clusterAgent.setPassword(DigestUtils.sha256Hex(cluster.getChosenPassword()));
     clusterAgent.setMaxNumProjects(0);
 
@@ -185,8 +186,8 @@ public class ClusterController {
     }
     if (type.equals(OP_TYPE.REGISTER) && clusterCert.getRegistrationStatus().equals(
         RegistrationStatusEnum.REGISTRATION_PENDING)) {
-      if (agent.getStatus() == PeopleAccountStatus.NEW_MOBILE_ACCOUNT.getValue()) {
-        agent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT.getValue());
+      if (agent.getStatus() == PeopleAccountStatus.NEW_MOBILE_ACCOUNT) {
+        agent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT);
         userBean.update(agent);
       }
       clusterCert.setValidationKey(null);
