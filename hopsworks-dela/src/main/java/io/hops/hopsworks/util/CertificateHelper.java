@@ -31,17 +31,17 @@ public class CertificateHelper {
   public static Optional<Triplet<KeyStore, KeyStore, String>> loadKeystoreFromFile(String masterPswd, Settings settings,
     ClusterCertificateFacade certFacade) {
     String certPath = settings.getHopsSiteCert();
-    String caCertPath = settings.getHopsSiteCaCert();
+    String intermediateCertPath = settings.getHopsSiteIntermediateCert();
     String keystorePath = settings.getHopsSiteKeyStorePath();
     String truststorePath = settings.getHopsSiteTrustStorePath();
     try {
       String certPswd = HopsUtils.randomString(64);
       String encryptedCertPswd = HopsUtils.encrypt(masterPswd, "", certPswd);
       File certFile = readFile(certPath);
-      File caCertFile = readFile(caCertPath);
+      File intermediateCertFile = readFile(intermediateCertPath);
       String clusterName = getClusterName(certFile);
       settings.setHopsSiteClusterName(clusterName);
-      generateKeystore(certFile, caCertFile, certPswd, settings);
+      generateKeystore(certFile, intermediateCertFile, certPswd, settings);
       File keystoreFile = readFile(keystorePath);
       File truststoreFile = readFile(truststorePath);
       KeyStore keystore, truststore;
@@ -87,9 +87,9 @@ public class CertificateHelper {
     }
   }
 
-  private static void generateKeystore(File cert, File caCert, String certPswd, Settings settings)
+  private static void generateKeystore(File cert, File intermediateCert, String certPswd, Settings settings)
     throws IllegalStateException {
-    if (!isCertSigned(cert, caCert)) {
+    if (!isCertSigned(cert, intermediateCert)) {
       throw new IllegalStateException("Certificate is not signed");
     }
     try {
@@ -119,13 +119,13 @@ public class CertificateHelper {
     }
   }
 
-  private static boolean isCertSigned(File certFile, File caCertFile) throws IllegalStateException {
+  private static boolean isCertSigned(File certFile, File intermediateCertFile) throws IllegalStateException {
     X509Certificate cert = getX509Cert(certFile);
-    X509Certificate caCert = getX509Cert(caCertFile);
-    String caSubjectDN = caCert.getSubjectDN().getName();
+    X509Certificate caCert = getX509Cert(intermediateCertFile);
+    String intermediateSubjectDN = caCert.getSubjectDN().getName();
     String issuerDN = cert.getIssuerDN().getName();
-    LOG.log(Level.INFO, "sign check: {0} {1}", new Object[]{issuerDN, caSubjectDN});
-    return issuerDN.equals(caSubjectDN);
+    LOG.log(Level.INFO, "sign check: {0} {1}", new Object[]{issuerDN, intermediateSubjectDN});
+    return issuerDN.equals(intermediateSubjectDN);
   }
 
   private static File readFile(String certPath) throws IllegalStateException {
