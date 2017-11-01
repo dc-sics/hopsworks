@@ -18,7 +18,7 @@ public enum RegistrationStatusEnum {
 
   public static RegistrationStatusEnum fromString(String shortName) {
     switch (shortName) {
-      case "Registerd":
+      case "Registered":
         return RegistrationStatusEnum.REGISTERED;
       case "Registration pending":
         return RegistrationStatusEnum.REGISTRATION_PENDING;
