@@ -1,5 +1,8 @@
 package io.hops.hopsworks.common.dao.app;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class TopicJsonDTO extends KeystoreDTO {
 
   String topicName;
