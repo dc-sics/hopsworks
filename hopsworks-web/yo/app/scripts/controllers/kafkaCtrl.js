@@ -342,11 +342,11 @@ angular.module('hopsWorksApp')
                     });
             };
 
-            self.deleteDevice = function(device){
-                 ModalService.confirm("sm", "Delete device with uuid (" + device.deviceUuid + ")",
+            self.deleteDevice = function(deviceUuid){
+                 ModalService.confirm("sm", "Delete device with uuid (" + deviceUuid + ")",
                       "Do you really want to delete this device? This action cannot be undone.")
                       .then(function (success) {
-                          DeviceManagementService.deleteDevice(self.projectId, device).then(
+                          DeviceManagementService.deleteDevice(self.projectId, deviceUuid).then(
                             function (success) {
                               self.listDevices();
                             }, function (error) {
@@ -355,6 +355,18 @@ angular.module('hopsWorksApp')
                       }, function (error) {
                           growl.info("Delete aborted", {title: 'Info', ttl: 2000});
                       });
+            };
+
+            self.editDevice = function (device) {
+              ModalService.editDevice("sm", self.projectId, device)
+              .then(
+                  function (success) {
+                      growl.success("The device has been updated successfully", {title: 'Device updated', ttl: 2000});
+                      self.listDevices();
+                  }, function (error) {
+                    //The user changed their mind (had a mind transplant).
+                  });
+              self.getAllTopics();
             };
 
             self.init = function(){
