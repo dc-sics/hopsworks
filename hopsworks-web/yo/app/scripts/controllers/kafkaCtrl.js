@@ -16,7 +16,6 @@ angular.module('hopsWorksApp')
             self.topics = [];
             self.devices = [];
 
-            self.deviceStates = ["Pending", "Approved", "Disabled"];
             self.sharedTopics = [];
             self.topicDetails = {};
             self.maxNumTopics = 10;
@@ -361,7 +360,7 @@ angular.module('hopsWorksApp')
               ModalService.editDevice("sm", self.projectId, device)
               .then(
                   function (success) {
-                      growl.success("The device has been updated successfully", {title: 'Device updated', ttl: 2000});
+                      growl.success("The device has been updated successfully.", {title: 'Device updated', ttl: 2000});
                       self.listDevices();
                   }, function (error) {
                     //The user changed their mind (had a mind transplant).
@@ -408,9 +407,6 @@ angular.module('hopsWorksApp')
             };
 
             self.showDevice = function(){
-              if (self.projectIsGuide) {
-                  self.tourService.currentStep_TourThree = 1;
-              }
               self.showSchemas = -1;
               self.showTopics = -1;
               self.showDevices = 1;

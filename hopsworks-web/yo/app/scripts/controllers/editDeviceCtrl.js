@@ -29,8 +29,8 @@ angular.module('hopsWorksApp')
                         self.working = false;
                         $uibModalInstance.close(success);
                       }, function (error) {
-                        growl.error(error.data.errorMsg, {title: 'Failed to edit device.', ttl: 5000});
                         self.working = false;
+                        growl.error(error.data.errorMsg, {title: 'Failed to edit device.', ttl: 5000});
                       });      
             };
 
