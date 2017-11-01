@@ -1913,6 +1913,7 @@ public class Settings implements Serializable {
   private static final String HOPS_SITE_CA_DIR = "hops-site-certs";
   public final static String HOPS_SITE_CERTFILE = "/pub.pem";
   public final static String HOPS_SITE_CA_CERTFILE = "/ca_pub.pem";
+  public final static String HOPS_SITE_INTERMEDIATE_CERTFILE = "/intermediate_ca_pub.pem";
   public final static String HOPS_SITE_KEY_STORE = "/keystores/keystore.jks";
   public final static String HOPS_SITE_TRUST_STORE = "/keystores/truststore.jks";
   
@@ -1975,6 +1976,10 @@ public class Settings implements Serializable {
   
   public synchronized String getHopsSiteCaCert() {
     return getHopsSiteCaDir() + HOPS_SITE_CA_CERTFILE;
+  }
+  
+  public synchronized String getHopsSiteIntermediateCert() {
+    return getHopsSiteCaDir() + HOPS_SITE_INTERMEDIATE_CERTFILE;
   }
   
   public synchronized String getHopsSiteKeyStorePath() {
