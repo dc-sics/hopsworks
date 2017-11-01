@@ -1,8 +1,13 @@
 package io.hops.hopsworks.common.dao.user.cluster;
 
+import javax.xml.bind.annotation.XmlEnumValue;
+
 public enum RegistrationStatusEnum {
-  REGISTERD("Registerd"),
+  @XmlEnumValue("Registered")
+  REGISTERED("Registered"),
+  @XmlEnumValue("Registration pending")
   REGISTRATION_PENDING("Registration pending"),
+  @XmlEnumValue("Unregistration pending")
   UNREGISTRATION_PENDING("Unregistration pending");
 
   private final String readable;
@@ -14,7 +19,7 @@ public enum RegistrationStatusEnum {
   public static RegistrationStatusEnum fromString(String shortName) {
     switch (shortName) {
       case "Registerd":
-        return RegistrationStatusEnum.REGISTERD;
+        return RegistrationStatusEnum.REGISTERED;
       case "Registration pending":
         return RegistrationStatusEnum.REGISTRATION_PENDING;
       case "Unregistration pending":

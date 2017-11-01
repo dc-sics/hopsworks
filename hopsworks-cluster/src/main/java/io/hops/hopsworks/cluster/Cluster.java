@@ -13,12 +13,12 @@ import javax.mail.MessagingException;
 import javax.security.cert.CertificateException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
@@ -40,7 +40,7 @@ public class Cluster {
   @Path("register")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response register(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
-    LOGGER.log(Level.INFO, "Registering : {0}", cluster);
+    LOGGER.log(Level.INFO, "Registering : {0}", cluster.getEmail());
     clusterController.register(cluster, req);
     JsonResponse res = new JsonResponse();
     res.setStatusCode(Response.Status.OK.getStatusCode());
@@ -48,12 +48,12 @@ public class Cluster {
         + ClusterController.VALIDATION_KEY_EXPIRY_DATE + " hours before installing your new cluster.");
     return Response.ok().entity(res).build();
   }
-  
+
   @POST
   @Path("register/existing")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response registerExisting(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
-    LOGGER.log(Level.INFO, "Registering : {0}", cluster);
+    LOGGER.log(Level.INFO, "Registering : {0}", cluster.getEmail());
     clusterController.registerCluster(cluster, req);
     JsonResponse res = new JsonResponse();
     res.setStatusCode(Response.Status.OK.getStatusCode());
@@ -66,7 +66,7 @@ public class Cluster {
   @Path("unregister")
   @Consumes(MediaType.APPLICATION_JSON)
   public Response unregister(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
-    LOGGER.log(Level.INFO, "Unregistering : {0}", cluster);
+    LOGGER.log(Level.INFO, "Unregistering : {0}", cluster.getEmail());
     clusterController.unregister(cluster, req);
     JsonResponse res = new JsonResponse();
     res.setStatusCode(Response.Status.OK.getStatusCode());
@@ -109,29 +109,33 @@ public class Cluster {
     return Response.ok().entity(res).build();
   }
 
-  @GET
+  @POST
   @Path("all")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getRegisterdClusters(@QueryParam("email") String email, @QueryParam("pwd") String pwd) {
+  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  public Response getRegisterdClusters(@FormParam("email") String email, @FormParam("pwd") String pwd,
+      @Context HttpServletRequest req) throws MessagingException {
     ClusterDTO cluster = new ClusterDTO();
     cluster.setEmail(email);
     cluster.setChosenPassword(pwd);
-    List<ClusterCert> clusters = clusterController.getAllClusters(cluster);
+    List<ClusterCert> clusters = clusterController.getAllClusters(cluster, req);
     GenericEntity<List<ClusterCert>> clustersEntity = new GenericEntity<List<ClusterCert>>(clusters) {
     };
     return Response.ok().entity(clustersEntity).build();
   }
 
-  @GET
+  @POST
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getRegisterdCluster(@QueryParam("email") String email, @QueryParam("pwd") String pwd, @QueryParam(
-      "orgName") String organizationName, @QueryParam("orgUnitName") String organizationalUnitName) {
+  @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+  public Response getRegisterdCluster(@FormParam("email") String email, @FormParam("pwd") String pwd, @FormParam(
+      "orgName") String organizationName, @FormParam("orgUnitName") String organizationalUnitName,
+      @Context HttpServletRequest req) throws MessagingException {
     ClusterDTO cluster = new ClusterDTO();
     cluster.setEmail(email);
     cluster.setChosenPassword(pwd);
     cluster.setOrganizationName(organizationName);
     cluster.setOrganizationalUnitName(organizationalUnitName);
-    ClusterCert clusters = clusterController.getCluster(cluster);
+    ClusterCert clusters = clusterController.getCluster(cluster, req);
     return Response.ok().entity(clusters).build();
   }
 }

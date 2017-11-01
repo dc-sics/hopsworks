@@ -2,7 +2,8 @@
 
 var services = angular.module("services", []);
 
-services.factory("ClusterService", ['$http', function ($http) {
+services.factory("ClusterService", ['$http', '$httpParamSerializerJQLike', 
+  function ($http, $httpParamSerializerJQLike) {
     var baseURL = getApiLocationBase();
     var service = {
       register: function (cluster) {
@@ -54,16 +55,31 @@ services.factory("ClusterService", ['$http', function ($http) {
       },
       getAllClusters: function (cluster) {
         var regReq = {
-          method: 'GET',
-          url: baseURL + '/cluster/all?email=' + cluster.email + '&pwd=' + cluster.chosenPassword
+          method: 'POST',
+          url: baseURL + '/cluster/all',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+          },
+          data: $httpParamSerializerJQLike ({
+            email: cluster.email,
+            pwd: cluster.chosenPassword
+          })
         };
         return $http(regReq);
       },
       getCluster: function (cluster) {
         var regReq = {
-          method: 'GET',
-          url: baseURL + '/cluster/?email=' + cluster.email + '&pwd=' +
-               cluster.chosenPassword + '&orgName=' + cluster.organizationName + '&orgUnitName=' + cluster.organizationalUnitName
+          method: 'POST',
+          url: baseURL + '/cluster',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'
+          },
+          data: $httpParamSerializerJQLike ({
+            email: cluster.email,
+            pwd: cluster.chosenPassword,
+            orgName: cluster.organizationName,
+            orgUnitName: cluster.organizationalUnitName
+          })
         };
         return $http(regReq);
       }

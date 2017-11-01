@@ -9,10 +9,15 @@ import io.hops.hopsworks.common.dao.user.cluster.ClusterCert;
 import io.hops.hopsworks.common.dao.user.cluster.ClusterCertFacade;
 import io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusEnum;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
+import io.hops.hopsworks.common.dao.user.security.audit.AuditManager;
+import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
+import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.user.UserStatusValidator;
+import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.PKIUtils;
@@ -62,6 +67,12 @@ public class ClusterController {
   private EmailBean emailBean;
   @EJB
   private Settings settings;
+  @EJB
+  private AuditManager am;
+  @EJB
+  private UsersController userController;
+  @EJB
+  private UserStatusValidator statusValidator;
 
   public void register(ClusterDTO cluster, HttpServletRequest req) throws MessagingException {
     isValidNewCluster(cluster);
@@ -123,7 +134,7 @@ public class ClusterController {
     if (clusterAgent == null) {
       throw new IllegalArgumentException("User not registerd.");
     }
-    checkPW(cluster, clusterAgent);
+    checkUserPasswordAndStatus(cluster, clusterAgent, req);
     clusterCert = new ClusterCert(cluster.getCommonName(), cluster.getOrganizationName(), cluster.
         getOrganizationalUnitName(), RegistrationStatusEnum.REGISTRATION_PENDING, clusterAgent);
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
@@ -154,7 +165,7 @@ public class ClusterController {
     if (!isOnlyClusterAgent(clusterAgent)) {
       throw new IllegalArgumentException("Not a cluster agent.");
     }
-    checkPW(cluster, clusterAgent);
+    checkUserPasswordAndStatus(cluster, clusterAgent, req);
 
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
     clusterCert.setRegistrationStatus(RegistrationStatusEnum.UNREGISTRATION_PENDING);
@@ -192,7 +203,7 @@ public class ClusterController {
       }
       clusterCert.setValidationKey(null);
       clusterCert.setValidationKeyDate(null);
-      clusterCert.setRegistrationStatus(RegistrationStatusEnum.REGISTERD);
+      clusterCert.setRegistrationStatus(RegistrationStatusEnum.REGISTERED);
       clusterCertFacade.update(clusterCert);
     } else if (clusterCert.getRegistrationStatus().equals(RegistrationStatusEnum.UNREGISTRATION_PENDING)) {
       revokeCert(clusterCert, true);
@@ -225,7 +236,7 @@ public class ClusterController {
     }
   }
 
-  public List<ClusterCert> getAllClusters(ClusterDTO cluster) {
+  public List<ClusterCert> getAllClusters(ClusterDTO cluster, HttpServletRequest req) throws MessagingException {
     if (cluster == null) {
       throw new NullPointerException("Cluster not assigned.");
     }
@@ -239,17 +250,17 @@ public class ClusterController {
     if (clusterAgent == null) {
       throw new IllegalArgumentException("No registerd cluster found for user.");
     }
-    checkPW(cluster, clusterAgent);
+    checkUserPasswordAndStatus(cluster, clusterAgent, req);
     return clusterCertFacade.getByAgent(clusterAgent);
   }
 
-  public ClusterCert getCluster(ClusterDTO cluster) {
+  public ClusterCert getCluster(ClusterDTO cluster, HttpServletRequest req) throws MessagingException {
     isValidCluster(cluster);
     Users clusterAgent = userBean.findByEmail(cluster.getEmail());
     if (clusterAgent == null) {
       throw new IllegalArgumentException("Cluster not registerd.");
     }
-    checkPW(cluster, clusterAgent);
+    checkUserPasswordAndStatus(cluster, clusterAgent, req);
     ClusterCert clusterCert = clusterCertFacade.getByOrgUnitNameAndOrgName(cluster.getOrganizationName(), cluster.
         getOrganizationalUnitName());
     if (clusterCert == null) {
@@ -258,11 +269,26 @@ public class ClusterController {
     return clusterCert;
   }
 
-  private void checkPW(ClusterDTO cluster, Users clusterAgent) {
+  private void checkUserPasswordAndStatus(ClusterDTO cluster, Users clusterAgent, HttpServletRequest req) throws
+      MessagingException {
     String password = DigestUtils.sha256Hex(cluster.getChosenPassword());
     if (!password.equals(clusterAgent.getPassword())) {
+      userController.registerFalseLogin(clusterAgent);//will set status if false login > allowed
+      am.registerLoginInfo(clusterAgent, UserAuditActions.LOGIN.name(), UserAuditActions.FAILED.name(), req);
       throw new SecurityException("Incorrect password.");
     }
+    try {
+      statusValidator.checkStatus(clusterAgent.getStatus());
+    } catch (AppException ex) {
+      LOGGER.log(Level.WARNING, "User {0} with state {1} trying to login.", new Object[]{clusterAgent.getEmail(),
+        clusterAgent.getStatus()});
+      throw new SecurityException(ex.getMessage());
+    }
+    BbcGroup group = groupFacade.findByGroupName(CLUSTER_GROUP);
+    if (!clusterAgent.getBbcGroupCollection().contains(group)) {
+      throw new SecurityException("User not allowed to register clusters.");
+    }
+    userController.resetFalseLogin(clusterAgent);
   }
 
   private void removeUserIfNotValidated(Users u) {
@@ -283,7 +309,7 @@ public class ClusterController {
         clusterCertFacade.remove(clusterCert);
       } else if (diff > VALIDATION_KEY_EXPIRY_DATE && clusterCert.getRegistrationStatus().equals(
           RegistrationStatusEnum.UNREGISTRATION_PENDING)) {
-        clusterCert.setRegistrationStatus(RegistrationStatusEnum.REGISTERD);
+        clusterCert.setRegistrationStatus(RegistrationStatusEnum.REGISTERED);
         clusterCert.setValidationKeyDate(null);
         clusterCertFacade.update(clusterCert);
       }
