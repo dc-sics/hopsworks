@@ -293,20 +293,40 @@ public class JupyterConfig {
           .append("\"hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
           .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
           .append("__tstore.jks#").append(Settings.T_CERTIFICATE).append("\",")
-          .append("\""+Settings.getSparkLog4JPath(settings.getSparkUser()) + "\"");
+          .append("\"" + Settings.getSparkLog4JPath(settings.getSparkUser()) + "\"");
 
-      if(!js.getFiles().equals("")) {
+      if (!js.getFiles().equals("")) {
         sparkFiles.append("," + js.getFiles());
       }
+
+      String sparkProps = js.getSparkParams();
+      if (sparkProps != null && !sparkProps.isEmpty()) {
+        String lines[] = sparkProps.split("\\r?\\n");
+        StringBuffer sb = new StringBuffer();
+        for (String l : lines) {
+          String props[] = l.split("=");
+          for (int x = 0; x < props.length; x++) {
+            if (x == 0) {
+              sb.append("\"").append(props[x]).append("\":");
+            } else {
+              sb.append("\"").append(props[x]).append("\",").append(System.lineSeparator());
+              x = props.length; // ignore any more properties on the same line
+            }
+          }
+        }
+        sparkProps = sb.toString();
+      }
+      LOGGER.info("SparkProps are: " + System.lineSeparator() + sparkProps);
 
       boolean isTensorflow = js.getMode().toLowerCase().contains("tensorflow");
       boolean isHorovod = js.getMode().toLowerCase().contains("horovod");
       boolean isDynamic = js.getMode().compareToIgnoreCase("sparkDynamic") == 0;
-      String extraJavaOptions = "-Dhopsworks.logstash.job.info="+project.getName()+",jupyter,notebook,?";
+      String extraJavaOptions = "-Dhopsworks.logstash.job.info=" + project.getName() + ",jupyter,notebook,?";
       StringBuilder sparkmagic_sb
           = ConfigFileGenerator.
               instantiateFromTemplate(
                   ConfigFileGenerator.SPARKMAGIC_CONFIG_TEMPLATE,
+                  "spark_params", sparkProps,
                   "livy_ip", settings.getLivyIp(),
                   "hdfs_user", this.hdfsUser,
                   "driver_cores", Integer.toString(js.getAppmasterCores()),
@@ -324,9 +344,9 @@ public class JupyterConfig {
                   "pyFiles", js.getPyFiles(),
                   "yarn_queue", "default",
                   "num_ps", (js.getMode().compareToIgnoreCase("distributedtensorflow") == 0)
-                              ? Integer.toString(js.getNumTfPs()) : "0",
-                  "num_gpus", (isTensorflow) ? Integer.toString(js.getNumTfGpus()):
-                              (isHorovod) ? Integer.toString(js.getNumMpiNp()*js.getNumTfGpus()): "0",
+                  ? Integer.toString(js.getNumTfPs()) : "0",
+                  "num_gpus", (isTensorflow) ? Integer.toString(js.getNumTfGpus()) : (isHorovod) ? Integer.toString(js.
+                      getNumMpiNp() * js.getNumTfGpus()) : "0",
                   "mpi_np", (isHorovod) ? Integer.toString(js.getNumMpiNp()) : "",
                   "tensorflow", Boolean.toString(isTensorflow || isHorovod),
                   "jupyter_home", this.confDirPath,
