@@ -1774,6 +1774,7 @@ public class Settings implements Serializable {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
     HOPSSITE_CLUSTER_NAME = setVar(VARIABLE_HOPSSITE_CLUSTER_NAME, HOPSSITE_CLUSTER_NAME);
     HOPSSITE_CLUSTER_PSWD = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD, HOPSSITE_CLUSTER_PSWD);
+    HOPSSITE_CLUSTER_PSWD_AUX = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD_AUX, HOPSSITE_CLUSTER_PSWD_AUX);
     HOPSSITE_HOST = setVar(VARIABLE_HOPSSITE_BASE_URI_HOST, HOPSSITE_HOST);
     HOPSSITE = setVar(VARIABLE_HOPSSITE_BASE_URI, HOPSSITE);
     HOPSSITE_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL, HOPSSITE_HEARTBEAT_INTERVAL);
@@ -1920,9 +1921,11 @@ public class Settings implements Serializable {
   
   private static final String VARIABLE_HOPSSITE_CLUSTER_NAME = "hops_site_cluster_name";
   private static final String VARIABLE_HOPSSITE_CLUSTER_PSWD = "hops_site_cluster_pswd";
+  private static final String VARIABLE_HOPSSITE_CLUSTER_PSWD_AUX = "hops_site_cluster_pswd_aux";
   
   private String HOPSSITE_CLUSTER_NAME = null;
   private String HOPSSITE_CLUSTER_PSWD = null;
+  private String HOPSSITE_CLUSTER_PSWD_AUX = "1234";
 
   public synchronized Optional<String> getHopsSiteClusterName() {
     checkCache();
@@ -1945,7 +1948,12 @@ public class Settings implements Serializable {
       HOPSSITE_CLUSTER_NAME = null;
     }
   }
-  
+
+  public synchronized String getHopsSiteClusterPswdAux() {
+    checkCache();
+    return HOPSSITE_CLUSTER_PSWD_AUX;
+  }
+    
   public synchronized Optional<String> getHopsSiteClusterPswd() {
     checkCache();
     return Optional.ofNullable(HOPSSITE_CLUSTER_PSWD);

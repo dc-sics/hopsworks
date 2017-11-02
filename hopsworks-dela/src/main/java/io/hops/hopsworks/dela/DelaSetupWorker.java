@@ -102,7 +102,7 @@ public class DelaSetupWorker {
     Optional<String> masterPswd = settings.getHopsSiteClusterPswd();
     if (!masterPswd.isPresent()) {
       //TODO Alex - use the registration pswd hash once the admin UI is ready
-      String pswd = DigestUtils.sha256Hex("1234");
+      String pswd = DigestUtils.sha256Hex(settings.getHopsSiteClusterPswdAux());
       settings.setHopsSiteClusterPswd(pswd);
       masterPswd = settings.getHopsSiteClusterPswd();
     }
