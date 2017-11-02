@@ -1,8 +1,11 @@
 package io.hops.hopsworks.common.util;
 
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
+import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
+import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.dela.AddressJSON;
+import io.hops.hopsworks.common.exception.AppException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -14,19 +17,26 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
+import javax.ws.rs.core.Response;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
@@ -38,6 +48,17 @@ public class Settings implements Serializable {
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
+  @PostConstruct
+  private void init() {
+    try {
+      logger.log(Level.INFO, "Trying-zk-init");
+      setKafkaBrokers(getBrokerEndpoints());
+    } catch (AppException ex) {
+      logger.log(Level.SEVERE, null, ex);
+    }
+  }
+  
+  
   public static String AGENT_EMAIL = "kagent@hops.io";
   public static final String SITE_EMAIL = "admin@kth.se";
   /**
@@ -1951,6 +1972,51 @@ public class Settings implements Serializable {
   public synchronized void setKafkaBrokers(Set<String> kafkaBrokers) {
     this.kafkaBrokers.clear();
     this.kafkaBrokers.addAll(kafkaBrokers);
+  }
+  
+  public Set<String> getBrokerEndpoints() throws AppException {
+
+    Set<String> brokerList = new HashSet<>();
+    ZooKeeper zk = null;
+    try {
+      zk = new ZooKeeper(getZkConnectStr(),
+          Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, new ZookeeperWatcher());
+
+      List<String> ids = zk.getChildren("/brokers/ids", false);
+      for (String id : ids) {
+        String brokerInfo = new String(zk.getData("/brokers/ids/" + id,
+            false, null));
+        String[] tokens = brokerInfo.split(DLIMITER);
+        for (String str : tokens) {
+          if (str.contains(SLASH_SEPARATOR)) {
+            brokerList.add(str);
+          }
+        }
+      }
+    } catch (IOException ex) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
+          "Unable to find the zookeeper server: " + ex);
+    } catch (KeeperException | InterruptedException ex) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
+          "Unable to retrieve seed brokers from the kafka cluster: " + ex);
+    } finally {
+      if (zk != null) {
+        try {
+          zk.close();
+        } catch (InterruptedException ex) {
+          logger.log(Level.SEVERE, null, ex.getMessage());
+        }
+      }
+    }
+
+    return brokerList;
+  }
+
+  public class ZookeeperWatcher implements Watcher {
+
+    @Override
+    public void process(WatchedEvent we) {
+    }
   }
   //Kafka END
 }

@@ -62,7 +62,6 @@ public class SparkYarnRunnerBuilder {
   private final Map<String, String> sysProps = new HashMap<>();
   private String classPath;
   private ServiceProperties serviceProps;
-  private String sessionId;
   final private Set<String> blacklistedProps = new HashSet<>();
 
   public SparkYarnRunnerBuilder(Jobs job) {
@@ -439,22 +438,16 @@ public class SparkYarnRunnerBuilder {
           append(" -D" + Settings.HOPSWORKS_TRUSTSTORE_PROPERTY + "=").append(Settings.TRUSTSTORE_VAL_ENV_VAR).
           append(" -D" + Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY + "=").append(
           serviceProps.getElastic().getRestEndpoint()).
-          append(" -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=").append(
-          serviceProps.getProjectId()).
-          append(" -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=").append(
-          serviceProps.getProjectName()).
-          append(" -D" + Settings.HOPSWORKS_JOBNAME_PROPERTY + "=").append(
-          serviceProps.getJobName()).
-          append(" -D" + Settings.HOPSWORKS_JOBTYPE_PROPERTY + "=").append(
-          jobType.getName()).
-          append(" -D" + Settings.HOPSWORKS_SESSIONID_PROPERTY + "=").append(sessionId).
+          append(" -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=").append(serviceProps.getProjectId()).
+          append(" -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=").append(serviceProps.getProjectName()).
+          append(" -D" + Settings.HOPSWORKS_JOBNAME_PROPERTY + "=").append(serviceProps.getJobName()).
+          append(" -D" + Settings.HOPSWORKS_JOBTYPE_PROPERTY + "=").append(jobType.getName()).
           append(" -D" + Settings.HOPSWORKS_PROJECTUSER_PROPERTY + "=").append(jobUser);
 
       //Handle Kafka properties
       if (serviceProps.getKafka() != null) {
         addSystemProperty(Settings.KAFKA_BROKERADDR_ENV_VAR, serviceProps.getKafka().getBrokerAddresses());
         addSystemProperty(Settings.KAFKA_JOB_TOPICS_ENV_VAR, serviceProps.getKafka().getTopics());
-        addSystemProperty(Settings.HOPSWORKS_SESSIONID_PROPERTY, sessionId);
         addSystemProperty(Settings.KAFKA_CONSUMER_GROUPS, serviceProps.getKafka().getConsumerGroups());
         builder.
             addJavaOption(" -D" + Settings.KAFKA_CONSUMER_GROUPS + "=" + serviceProps.getKafka().getConsumerGroups());
@@ -748,10 +741,6 @@ public class SparkYarnRunnerBuilder {
       classPath = classPath + ":" + s;
     }
     return this;
-  }
-
-  public void setSessionId(String sessionId) {
-    this.sessionId = sessionId;
   }
 
 }

@@ -3,13 +3,11 @@ package io.hops.hopsworks.common.dao.kafka;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.Project;
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +30,6 @@ import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
 import kafka.common.TopicAlreadyMarkedForDeletionException;
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
 import org.I0Itec.zkclient.ZkConnection;
@@ -48,8 +44,6 @@ import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.errors.TopicExistsException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -86,7 +80,6 @@ public class KafkaFacade {
   public static final String DLIMITER = "[\"]";
   public String CLIENT_ID = "list_topics";
   public final int BUFFER_SIZE = 20 * 1000;
-  public Set<String> brokers;
   public Set<String> topicList;
 
   protected EntityManager getEntityManager() {
@@ -224,7 +217,7 @@ public class KafkaFacade {
 
     //check if the replication factor is not greater than the 
     //number of running borkers
-    Set<String> brokerEndpoints = getBrokerEndpoints();
+    Set<String> brokerEndpoints = settings.getBrokerEndpoints();
     if (brokerEndpoints.size() < topicDto.getNumOfReplicas()) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           "Topic replication factor can be a maximum of" + brokerEndpoints.
@@ -382,7 +375,7 @@ public class KafkaFacade {
 
   public TopicDefaultValueDTO topicDefaultValues() throws AppException {
 
-    Set<String> brokers = getBrokerEndpoints();
+    Set<String> brokers = settings.getBrokerEndpoints();
 
     TopicDefaultValueDTO valueDto = new TopicDefaultValueDTO(
         settings.getKafkaDefaultNumReplicas(),
@@ -861,49 +854,13 @@ public class KafkaFacade {
     }
   }
 
-  public Set<String> getBrokerEndpoints() throws AppException {
-
-    Set<String> brokerList = new HashSet<>();
-    ZooKeeper zk = null;
-    try {
-      zk = new ZooKeeper(settings.getZkConnectStr(),
-          Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, new ZookeeperWatcher());
-
-      List<String> ids = zk.getChildren("/brokers/ids", false);
-      for (String id : ids) {
-        String brokerInfo = new String(zk.getData("/brokers/ids/" + id,
-            false, null));
-        String[] tokens = brokerInfo.split(DLIMITER);
-        for (String str : tokens) {
-          if (str.contains(SLASH_SEPARATOR)) {
-            brokerList.add(str);
-          }
-        }
-      }
-    } catch (IOException ex) {
-      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-          "Unable to find the zookeeper server: " + ex);
-    } catch (KeeperException | InterruptedException ex) {
-      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-          "Unable to retrieve seed brokers from the kafka cluster: " + ex);
-    } finally {
-      if (zk != null) {
-        try {
-          zk.close();
-        } catch (InterruptedException ex) {
-          LOG.log(Level.SEVERE, null, ex.getMessage());
-        }
-      }
-    }
-
-    return brokerList;
-  }
+  
 
   private List<PartitionDetailsDTO> getTopicDetailsfromKafkaCluster(
       Project project, Users user, String topicName) throws Exception {
 
     CLIENT_ID = "topic_detail";
-    brokers = settings.getKafkaBrokers();
+    Set<String> brokers = settings.getKafkaBrokers();
     Map<Integer, List<String>> replicas = new HashMap<>();
     Map<Integer, List<String>> inSyncReplicas = new HashMap<>();
     Map<Integer, String> leaders = new HashMap<>();
@@ -950,7 +907,9 @@ public class KafkaFacade {
             certPassword);
         props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
             certPassword);
-        try (KafkaConsumer<Integer, String> consumer = new KafkaConsumer<>(props)) {
+        KafkaConsumer<Integer, String> consumer = null;
+        try {
+          consumer = new KafkaConsumer<>(props);
           List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
           for (PartitionInfo partition : partitions) {
             int id = partition.partition();
@@ -973,9 +932,14 @@ public class KafkaFacade {
                 replicas.get(id), replicas.get(id)));
           }
         } catch (Exception ex) {
+          LOG.log(Level.SEVERE, null, ex);
           throw new Exception(
               "Error while retrieving topic metadata from broker: "
               + brokerAddress, ex);
+        } finally {
+          if (consumer != null) {
+            consumer.close();
+          }
         }
       }
     } finally {
@@ -985,10 +949,5 @@ public class KafkaFacade {
     return partitionDetailsDto;
   }
 
-  public class ZookeeperWatcher implements Watcher {
-
-    @Override
-    public void process(WatchedEvent we) {
-    }
-  }
+  
 }
