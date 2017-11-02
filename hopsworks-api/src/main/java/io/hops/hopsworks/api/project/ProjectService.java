@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -68,6 +69,7 @@ import javax.xml.rpc.ServiceException;
 import org.apache.hadoop.security.AccessControlException;
 
 @Path("/project")
+@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Project Service", description = "Project Service")
 @Produces(MediaType.APPLICATION_JSON)
 @Stateless
