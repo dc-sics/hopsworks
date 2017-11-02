@@ -30,33 +30,6 @@ glassfish-resources.xml
 nb-configuration.xml
 nbactions.xml
 
-### Eclipse ###
-.DS_Store
-.project
-.settings/
-hopsworks-admin/.classpath
-hopsworks-admin/.metadata/
-hopsworks-admin/.project
-hopsworks-admin/.settings/
-hopsworks-api/.classpath
-hopsworks-api/.project
-hopsworks-api/.settings/
-hopsworks-ca/.classpath
-hopsworks-ca/.project
-hopsworks-ca/.settings/
-hopsworks-common/.classpath
-hopsworks-common/.project
-hopsworks-common/.settings/
-hopsworks-ear/.project
-hopsworks-ear/.settings/
-hopsworks-kmon/.classpath
-hopsworks-kmon/.metadata/
-hopsworks-kmon/.project
-hopsworks-kmon/.settings/
-hopsworks-web/.classpath
-hopsworks-web/.project
-hopsworks-web/.settings/
-
 ### Intellj ###
 hopsworks-web/overlays/
 hopsworks-web/overlays/
