@@ -15,21 +15,22 @@ public class ProjectDeviceDTO implements Serializable{
 
   private Date createdAt;
 
-  private Integer state;
+  private String state;
+
+  private Date lastLoggedIn;
 
   public ProjectDeviceDTO(){}
 
   public ProjectDeviceDTO(
-    Integer projectId, String deviceUuid, String alias, Date createdAt, Integer state, Date lastProduced) {
+    Integer projectId, String deviceUuid, String alias, Date createdAt, String state, Date lastLoggedIn) {
     this.projectId = projectId;
     this.deviceUuid = deviceUuid;
     this.alias = alias;
     this.createdAt = createdAt;
     this.state = state;
-    this.lastProduced = lastProduced;
+    this.lastLoggedIn = lastLoggedIn;
   }
 
-  private Date lastProduced;
 
   public Integer getProjectId() {
     return projectId;
@@ -55,20 +56,20 @@ public class ProjectDeviceDTO implements Serializable{
     this.createdAt = createdAt;
   }
 
-  public Integer getState() {
+  public String getState() {
     return state;
   }
 
-  public void setState(Integer state) {
+  public void setState(String state) {
     this.state = state;
   }
 
-  public Date getLastProduced() {
-    return lastProduced;
+  public Date getLastLoggedIn() {
+    return lastLoggedIn;
   }
 
-  public void setLastProduced(Date lastProduced) {
-    this.lastProduced = lastProduced;
+  public void setLastLoggedIn(Date lastLoggedIn) {
+    this.lastLoggedIn = lastLoggedIn;
   }
 
   public String getAlias() {

@@ -22,17 +22,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 @NamedQueries({
   @NamedQuery(
       name = "ProjectDevice.findAll",
-      query = "SELECT pd FROM ProjectDevice pd"),
+      query = "SELECT pd FROM ProjectDevice2 pd"),
   @NamedQuery(
       name = "ProjectDevice.findByProjectId",
-      query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId"),
+      query = "SELECT pd FROM ProjectDevice2 pd WHERE pd.projectDevicePK.projectId = :projectId"),
   @NamedQuery(
     name = "ProjectDevice.findByProjectIdAndState",
-    query = "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.state = :state"),
+    query = "SELECT pd FROM ProjectDevice2 pd WHERE pd.projectDevicePK.projectId = :projectId AND pd.state = :state"),
   @NamedQuery(
       name = "ProjectDevice.findByProjectDevicePK",
-      query= "SELECT pd FROM ProjectDevice pd WHERE pd.projectDevicePK = :projectDevicePK")})
-public class ProjectDevice implements Serializable{
+      query= "SELECT pd FROM ProjectDevice2 pd WHERE pd.projectDevicePK = :projectDevicePK")})
+public class ProjectDevice2 implements Serializable{
 
   private static final long serialVersionUID = 1L;
 
@@ -41,9 +41,9 @@ public class ProjectDevice implements Serializable{
 
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1, max = 36)
-  @Column(name = "pass_uuid")
-  private String passUuid;
+  @Size(min = 1, max = 64)
+  @Column(name = "password")
+  private String password;
 
   @Size(min = 1, max = 80)
   @Column(name = "alias")
@@ -53,25 +53,33 @@ public class ProjectDevice implements Serializable{
   @Column(name = "created_at")
   private Date createdAt;
 
+  /**
+   * The state can take the following integer values that are directly linked with the enum State that is
+   * defined within this class. The index of the elements within the enum State controls its corresponding value.
+   *  0 -> Pending
+   *  1 -> Enabled
+   *  2 -> Disabled
+   *
+   */
   @Basic(optional = false)
   @Column(name = "state")
   private Integer state;
   
   @Temporal(TemporalType.TIMESTAMP)
-  @Column(name = "last_produced")
-  private Date lastProduced;
+  @Column(name = "last_logged_in")
+  private Date lastLoggedIn;
 
-  public static enum State{
-    PENDING,
-    ENABLED,
-    DISABLED
+  public enum State{
+    Pending,
+    Approved,
+    Disabled
   }
   
-  public ProjectDevice() {}
+  public ProjectDevice2() {}
 
-  public ProjectDevice( ProjectDevicePK projectDevicePK, String passUuid, State deviceState, String alias) {
+  public ProjectDevice2(ProjectDevicePK projectDevicePK, String password, State deviceState, String alias) {
     this.projectDevicePK = projectDevicePK;
-    this.passUuid = passUuid;
+    this.password = password;
     this.state = deviceState.ordinal();
     this.alias = alias;
   }
@@ -84,12 +92,12 @@ public class ProjectDevice implements Serializable{
     this.projectDevicePK = projectDevicePK;
   }
 
-  public String getPassUuid() {
-    return passUuid;
+  public String getPassword() {
+    return password;
   }
 
-  public void setPassUuid(String passUuid) {
-    this.passUuid = passUuid;
+  public void setPassword(String passUuid) {
+    this.password = passUuid;
   }
 
   public String getAlias() {
@@ -108,20 +116,20 @@ public class ProjectDevice implements Serializable{
     this.createdAt = createdAt;
   }
 
-  public Integer getState() {
-    return state;
+  public State getState(){
+    return State.values()[state];
   }
 
-  public void setState(Integer state) {
-    this.state = state;
+  public void setState(State state) {
+    this.state = state.ordinal();
   }
 
-  public Date getLastProduced() {
-    return lastProduced;
+  public Date getLastLoggedIn() {
+    return lastLoggedIn;
   }
 
-  public void setLastProduced(Date lastProduced) {
-    this.lastProduced = lastProduced;
+  public void setLastLoggedIn(Date lastProduced) {
+    this.lastLoggedIn = lastProduced;
   }
 
   @Override
@@ -134,11 +142,11 @@ public class ProjectDevice implements Serializable{
 
   @Override
   public boolean equals(Object object) {
-    if (!(object instanceof ProjectDevice)) {
+    if (!(object instanceof ProjectDevice2)) {
       return false;
     }
 
-    ProjectDevice other = (ProjectDevice) object;
+    ProjectDevice2 other = (ProjectDevice2) object;
 
     return !((this.projectDevicePK == null && other.projectDevicePK != null)
         || (this.projectDevicePK != null
