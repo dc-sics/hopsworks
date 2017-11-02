@@ -1,10 +1,10 @@
 angular.module('hopsWorksApp')
         .controller('ViewSearchResultCtrl', ['$scope', '$uibModalInstance',
           'RequestService', 'DataSetService', 'growl', 'response',
-          'result', 'projects', '$showdown', 'DelaProjectService', 'DelaService', 'HopssiteService',
+          'result', 'projects', 'showdown', 'DelaProjectService', 'DelaService', 'HopssiteService',
           'ProjectService', 'ModalService', '$routeParams', '$location', '$rootScope',
           function ($scope, $uibModalInstance, RequestService, DataSetService,
-                  growl, response, result, projects, $showdown, DelaProjectService, DelaService, HopssiteService,
+                  growl, response, result, projects, showdown, DelaProjectService, DelaService, HopssiteService,
                   ProjectService, ModalService, $routeParams, $location, $rootScope) {
             var self = this;
             self.request = {'inodeId': "", 'projectId': "", 'message': ""};
@@ -86,8 +86,8 @@ angular.module('hopsWorksApp')
                   if (error.data && error.data.details) {
                     growl.error(error.data.details, {title: 'Error', ttl: 1000});
                   }
-                  self.delaService = new DelaProjectService(self.request.projectId);
-                  self.delaService.cancel(result.publicId, false).then(function (success) {
+                  self.delaHopsService = new DelaProjectService(self.request.projectId);
+                  self.delaHopsService.unshareFromHops(result.publicId, false).then(function (success) {
                     growl.info("Download cancelled.", {title: 'Info', ttl: 1000});
                   }, function (error) {
                     growl.warning(error, {title: 'Warning', ttl: 1000});
@@ -115,7 +115,8 @@ angular.module('hopsWorksApp')
                   function (success) {
                     var content = success.data.content;
                     self.spinner = false;
-                    $scope.readme = $showdown.makeHtml(content);
+                    var conv = new showdown.Converter({parseImgDimensions: true});
+                    $scope.readme = conv.makeHtml(content);
                   }, function (error) {
                     //To hide README from UI
                     self.spinner = false;
@@ -127,7 +128,8 @@ angular.module('hopsWorksApp')
                 DelaService.getReadme(self.content.publicId, self.content.bootstrap).then(function (success) {
                   self.spinner = false;
                   var content = success.data.content;
-                  $scope.readme = $showdown.makeHtml(content);
+                  var conv = new showdown.Converter({parseImgDimensions: true});
+                  $scope.readme = conv.makeHtml(content);
                 }, function (error) {
                   self.spinner = false;
                   growl.error(error.data.errorMsg, {title:'Error retrieving README file', ttl: 5000, referenceId: 3});

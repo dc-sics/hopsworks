@@ -1,9 +1,9 @@
 /**
  * Created by stig on 2015-07-27.
  * Controller for the jobs creation page.
- * 
- * As it stands, self controller contains a lot of logic concerning all different 
- * job types. It would be nicer to have these as Mixins in a different file. 
+ *
+ * As it stands, self controller contains a lot of logic concerning all different
+ * job types. It would be nicer to have these as Mixins in a different file.
  * Guess that's a TODO.a
  */
 
@@ -12,11 +12,11 @@
 angular.module('hopsWorksApp')
         .controller('NewJobCtrl', ['$routeParams', 'growl', 'JobService',
           '$location', 'ModalService', 'StorageService', '$scope', 'SparkService',
-          'AdamService', 'FlinkService', 'TensorFlowService', 'TourService', 
+          'AdamService', 'FlinkService', 'TensorFlowService', 'TourService',
           'HistoryService', 'KafkaService', 'ProjectService', '$timeout',
           function ($routeParams, growl, JobService,
                   $location, ModalService, StorageService, $scope, SparkService,
-                  AdamService, FlinkService, TensorFlowService, TourService, 
+                  AdamService, FlinkService, TensorFlowService, TourService,
                   HistoryService, KafkaService, ProjectService, $timeout) {
 
             var self = this;
@@ -42,11 +42,11 @@ angular.module('hopsWorksApp')
             self.tfOnSpark = false;
             self.getAllTopics = function () {
               if (self.kafkaSelected) {
-                if (typeof self.runConfig.kafka !== "undefined" && 
+                if (typeof self.runConfig.kafka !== "undefined" &&
                         typeof self.runConfig.kafka.topics !== "undefined") {
                   self.selectedTopics = self.runConfig.kafka.topics;
                 }
-                
+
                 return KafkaService.getProjectAndSharedTopics(self.projectId)
                 .then(
                         function (success) {
@@ -236,7 +236,7 @@ angular.module('hopsWorksApp')
                 "flinkState": self.flinkState,
                 "tensorflowState" : self.tensorflowState,
                 "adamState": self.adamState,
-                "accordions": [self.accordion1, self.accordion2, self.accordion3, self.accordion4, self.accordion5, self.accordion6],
+                "accordions": [self.accordion1, self.accordion2, self.accordion3, self.accordion4, self.accordion5, self.accordion6]
               };
               self.undoneState = state;
               self.undoable = true;
@@ -330,6 +330,55 @@ angular.module('hopsWorksApp')
               }
             };
 
+
+
+
+            var handleFileSelect = function (evt) {
+              console.log(evt.target.files[0]);
+              var file = evt.target.files[0]; // FileList object
+
+              var fileType = file.type;
+              if (!angular.equals(fileType, "application/json")) {
+                growl.error("Not a valid file type", {title: 'File not JSON', ttl: 7000})
+                return;
+              }
+              // files is a FileList of File objects. List some properties.
+              var reader = new FileReader();
+
+              reader.onerror = function () {
+                console.log("Error reading file: " + reader.error.code);
+                growl.error("Error reading file", {title: reader.error.code, ttl: 7000})
+              };
+
+              reader.onload = (function(theFile) {
+                return function(e) {
+                  // Render thumbnail.
+                  var content = e.target.result;
+                  jobConfigFileImported(content);
+                };
+              })(file);
+
+              reader.readAsText(file);
+            }
+            document.getElementById('jobConfigFile').addEventListener('change', handleFileSelect, false);
+
+            var jobConfigFileImported = function (config) {
+              try {
+                var jobConfig = angular.fromJson(config);
+                JobService.createNewJob(self.projectId, jobConfig.type, jobConfig.config).then(
+                  function (success) {
+                    $location.path('project/' + self.projectId + '/jobs');
+                    self.removed = true;
+                  }, function (error) {
+                    growl.error(error.data.errorMsg, {title: 'Error parsing job configuration file', ttl: 7000});
+                  });
+              } catch (e) {
+                growl.error("Error parsing JSON file", {title: 'Error parsing job configuration file', ttl: 7000});
+              }
+            };
+
+
+
             /**
              * Create the job.
              * @returns {undefined}
@@ -410,7 +459,7 @@ angular.module('hopsWorksApp')
             };
 
             /**
-             * Callback method for when the user filled in a job name. Will then 
+             * Callback method for when the user filled in a job name. Will then
              * display the type selection.
              * @returns {undefined}
              */
@@ -452,7 +501,7 @@ angular.module('hopsWorksApp')
             };
 
             /**
-             * Callback method for when the user selected a job type. Will then 
+             * Callback method for when the user selected a job type. Will then
              * display the file selection.
              * @returns {undefined}
              */
@@ -540,6 +589,7 @@ angular.module('hopsWorksApp')
 
             /**
              * Used by tour.
+             * @param {type} jobType
              * @returns {undefined}
              */
             self.setTourJobType = function (jobType) {
@@ -652,8 +702,8 @@ angular.module('hopsWorksApp')
                                 self.jobtype = 1;
                               }
                             }
-                            //Update the min/max spark executors based on 
-                            //backend configuration 
+                            //Update the min/max spark executors based on
+                            //backend configuration
                             if (typeof self.runConfig !== 'undefined') {
                               self.sliderOptions.options['floor'] = self.runConfig.
                                       minExecutors;
@@ -682,7 +732,7 @@ angular.module('hopsWorksApp')
                   var libType = 'file';
                   if(path.endsWith(".zip") || path.endsWith(".tar") || path.endsWith(".gz")){
                     libType = 'archive';
-                  } 
+                  }
                   self.localResources.push({
                     'name': filename,
                     'path': path,
@@ -693,7 +743,7 @@ angular.module('hopsWorksApp')
                   break;
                 case "ADAM":
                   self.adamState.processparameter.value = path;
-                  if (typeof runConfig != 'undefined') {
+                  if (typeof runConfig !== 'undefined') {
                     self.sliderOptions.options['floor'] = self.runConfig.minExecutors;
                     self.sliderOptions.options['ceil'] = self.runConfig.
                             maxExecutors;
@@ -788,7 +838,7 @@ angular.module('hopsWorksApp')
 
             /**
              * Remove the given entry from the localResources list.
-             * @param {type} lib
+             * @param {type} name
              * @returns {undefined}
              */
             this.removeLibrary = function (name) {
@@ -842,15 +892,31 @@ angular.module('hopsWorksApp')
                 }
                 self.jobname = stored.jobname;
                 self.localResources = stored.runConfig.localResources;
+                if(typeof self.localResources === "undefined"){
+                  self.localResources = [];
+                }
+
                 self.phase = stored.phase;
                 self.runConfig = stored.runConfig;
                 if (self.runConfig) {
                   self.topics = [];
                   self.runConfig.schedule = null;
-                  self.sliderOptions.options['floor'] = self.runConfig.minExecutors;
-                  self.sliderOptions.options['ceil'] = self.runConfig.maxExecutors;
-                  self.sliderOptions.min = self.runConfig.selectedMinExecutors;
-                  self.sliderOptions.max = self.runConfig.selectedMaxExecutors;
+                  if(typeof self.runConfig.minExecutors !== "undefined") {
+                    self.sliderOptions.options['floor'] = self.runConfig.minExecutors;
+                  }
+                  if(typeof self.sliderOptions.options['ceil'] !== "undefined") {
+                    self.runConfig.maxExecutors;
+                  }
+                  if (typeof self.runConfig.selectedMinExecutors === "undefined") {
+                    self.runConfig.selectedMinExecutors = self.sliderOptions.min;
+                  } else {
+                    self.sliderOptions.min = self.runConfig.selectedMinExecutors;
+                  }
+                  if (typeof self.runConfig.selectedMaxExecutors === "undefined") {
+                    self.runConfig.selectedMaxExecutors = self.sliderOptions.max;
+                  } else {
+                    self.sliderOptions.max = self.runConfig.selectedMaxExecutors;
+                  }
                   //Load Kafka properties
                   if (typeof self.runConfig.kafka !== "undefined" && self.runConfig.kafka.topics.length > 0) {
                     self.kafkaSelected = true;
@@ -923,7 +989,7 @@ angular.module('hopsWorksApp')
 
             init(); //Call upon create;
             /**
-             * Select an ADAM command by sending the name to the server, gets an 
+             * Select an ADAM command by sending the name to the server, gets an
              * AdamJobConfiguration back.
              * @param {string} command
              * @returns {undefined}
@@ -940,9 +1006,10 @@ angular.module('hopsWorksApp')
             };
 
             /**
-             * Creates a jobDetails object with the arguments typed by the user and send  
-             * these attributes to the server. The server responds with the results from the 
+             * Creates a jobDetails object with the arguments typed by the user and send
+             * these attributes to the server. The server responds with the results from the
              * heuristic search.
+             * @param {type} filterValue
              * @returns {undefined}
              */
             this.autoConfig = function (filterValue) {
@@ -987,7 +1054,7 @@ angular.module('hopsWorksApp')
             };
 
             /**
-             * When the user changes configutaion (using the radio button) the 
+             * When the user changes configutaion (using the radio button) the
              * runConfig values change.
              * @param {type} value
              * @returns {undefined}
@@ -1007,5 +1074,3 @@ angular.module('hopsWorksApp')
             };
 
           }]);
-
-

@@ -2,11 +2,20 @@ package io.hops.hopsworks.api.dela;
 
 import com.google.gson.Gson;
 import io.hops.hopsworks.api.dela.dto.BootstrapDTO;
+import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.hopssite.dto.LocalDatasetDTO;
+import io.hops.hopsworks.api.hopssite.dto.LocalDatasetHelper;
+import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+import io.hops.hopsworks.common.dataset.DatasetController;
 import io.hops.hopsworks.common.dataset.FilePreviewDTO;
+import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
+import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.dela.DelaDatasetController;
 import io.hops.hopsworks.dela.RemoteDelaController;
 import io.hops.hopsworks.dela.TransferDelaController;
 import io.hops.hopsworks.dela.dto.common.ClusterAddressDTO;
@@ -31,6 +40,7 @@ import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -66,8 +76,29 @@ public class DelaService {
   private TransferDelaController delaTransferCtrl;
   @EJB
   private RemoteDelaController remoteDelaCtrl;
+  @EJB
+  private DelaDatasetController delaDatasetCtrl;
   
-
+  @EJB
+  private DatasetController datasetCtrl;
+  @EJB
+  private DistributedFsService dfs;
+  
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedRoles(roles = {AllowedRoles.ALL})
+  public Response getPublicDatasets(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
+    List<Dataset> clusterDatasets = delaDatasetCtrl.getLocalPublicDatasets();
+    DistributedFileSystemOps dfso = dfs.getDfsOps();
+    List<LocalDatasetDTO> localDS;
+    try {
+      localDS = LocalDatasetHelper.parse(datasetCtrl, dfso, clusterDatasets);
+    } finally {
+      dfs.closeDfsClient(dfso);
+    }
+    GenericEntity<List<LocalDatasetDTO>> datasets = new GenericEntity<List<LocalDatasetDTO>>(localDS) {};
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(datasets).build();
+  }
   //********************************************************************************************************************
   @GET
   @Path("/search")

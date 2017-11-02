@@ -3,10 +3,10 @@
 angular.module('hopsWorksApp')
         .controller('DatasetsCtrl', ['$scope', '$q', '$mdSidenav', '$mdUtil', '$log',
           'DataSetService', 'JupyterService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
-          'MetadataHelperService', '$showdown', '$rootScope', 'DelaProjectService',
+          'MetadataHelperService', '$rootScope', 'DelaProjectService', 'DelaClusterProjectService',
           function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, JupyterService, $routeParams,
                   $route, ModalService, growl, $location, MetadataHelperService,
-                  $showdown, $rootScope, DelaProjectService) {
+                  $rootScope, DelaProjectService, DelaClusterProjectService) {
 
             var self = this;
             self.itemsPerPage = 14;
@@ -26,7 +26,8 @@ angular.module('hopsWorksApp')
             self.routeParamArray = [];
             $scope.readme = null;
             var dataSetService = DataSetService(self.projectId); //The datasetservice for the current project.
-            var delaService = DelaProjectService(self.projectId);
+            var delaHopsService = DelaProjectService(self.projectId);
+            var delaClusterService = DelaClusterProjectService(self.projectId);
             
             $scope.all_selected = false;
             self.selectedFiles = {}; //Selected files
@@ -334,12 +335,12 @@ angular.module('hopsWorksApp')
              * Makes the dataset public for anybody within the local cluster or any outside cluster.
              * @param id inodeId
              */
-            self.makePublic = function (id) {
+            self.shareWithHops = function (id) {
 
               ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet public? \n\
 This will make all its files available for any registered user to download and process.').then(
                       function (success) {
-                        delaService.publishByInodeId(id).then(
+                        delaHopsService.shareWithHopsByInodeId(id).then(
                                 function (success) {
                                   growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Hops Site).', ttl: 1500});
                                   getDirContents();
@@ -351,8 +352,29 @@ This will make all its files available for any registered user to download and p
               );
             };
             
+            /**
+             * Makes the dataset public for anybody within the local cluster
+             * @param id inodeId
+             */
+            self.shareWithCluster = function (id) {
+
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet public? \n\
+This will make all its files available for any cluster user to share and process.').then(
+                      function (success) {
+                        delaClusterService.shareWithClusterByInodeId(id).then(
+                                function (success) {
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is now Public(Cluster).', ttl: 1500});
+                                  getDirContents();
+                                }, function (error) {
+                                  growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
+                        });
+
+                      }
+              );
+            };
+            
             self.showManifest = function(publicDSId){
-                delaService.getManifest(publicDSId).then(function(success){
+                delaHopsService.getManifest(publicDSId).then(function(success){
                     var manifest = success.data;
                     ModalService.json('md','Manifest', manifest).then(function(){
                         
@@ -360,13 +382,29 @@ This will make all its files available for any registered user to download and p
                 });
             };
 
-            self.removePublic = function (publicDSId) {
+            self.unshareFromHops = function (publicDSId) {
 
-              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet internet_private? ').then(
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? ').then(
                       function (success) {
-                        delaService.cancel(publicDSId, false).then(
+                        delaHopsService.unshareFromHops(publicDSId, false).then(
                                 function (success) {
-                                  growl.success(success.data.successMessage, {title: 'The DataSet is not internet_public(internet) anymore.', ttl: 1500});
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not Public(internet) anymore.', ttl: 1500});
+                                  getDirContents();
+                                }, function (error) {
+                          growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
+                        });
+
+                      }
+              );
+            };
+            
+            self.unshareFromCluster = function (inodeId) {
+
+              ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet private? ').then(
+                      function (success) {
+                        delaClusterService.unshareFromCluster(inodeId).then(
+                                function (success) {
+                                  growl.success(success.data.successMessage, {title: 'The DataSet is not Public(cluster) anymore.', ttl: 1500});
                                   getDirContents();
                                 }, function (error) {
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000, referenceId: 4});
@@ -490,7 +528,8 @@ This will make all its files available for any registered user to download and p
                         function (success) {
                           var fileDetails = JSON.parse(success.data.data);
                           var content = fileDetails.filePreviewDTO[0].content;
-                          $scope.readme = $showdown.makeHtml(content);
+                          var conv = new showdown.Converter({parseImgDimensions: true});
+                          $scope.readme = conv.makeHtml(content);
                         }, function (error) {
                   //To hide README from UI
                   growl.error(error.data.errorMsg, {title: 'Error retrieving README file', ttl: 5000, referenceId: 4});
@@ -775,6 +814,7 @@ This will make all its files available for any registered user to download and p
 
             /**
              * Opens a modal dialog to make dataset editable
+             * @param {type} name
              * @returns {undefined}
              */
             self.makeEditable = function (name) {
@@ -788,6 +828,7 @@ This will make all its files available for any registered user to download and p
 
             /**
              * Opens a modal dialog to remove editable from the dataset 
+             * @param {type} name
              * @returns {undefined}
              */
             self.removeEditable = function (name) {
@@ -801,6 +842,7 @@ This will make all its files available for any registered user to download and p
 
             /**
              * Opens a modal dialog for unsharing.
+             * @param {type} name
              * @returns {undefined}
              */
             self.unshare = function (name) {
@@ -879,6 +921,7 @@ This will make all its files available for any registered user to download and p
              * Select an inode; updates details panel.
              * @param {type} selectedIndex
              * @param {type} file
+             * @param {type} event
              * @returns {undefined}
              */
             self.select = function (selectedIndex, file, event) {

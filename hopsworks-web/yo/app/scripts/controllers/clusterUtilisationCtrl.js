@@ -16,6 +16,13 @@ angular.module('hopsWorksApp')
             self.progressBarClass = 'progress-bar-success';
             self.gpuBarClass = 'progress-bar-success';
             
+            self.HdfsBan = false;
+            self.HdfsWarn = false;
+            self.YarnBan = false;
+            self.YarnWarn = false;
+            self.KafkaBan = false;
+            self.KafkaWarn = false;
+            
             var getClusterUtilisation = function () {
               ClusterUtilService.getYarnmultiplicator().then(
                       function (success) {
@@ -47,7 +54,7 @@ angular.module('hopsWorksApp')
                         } else {
                           self.gpuBarClass = 'progress-bar-danger';
                         }
-                        self.gpusPercent = (self.allocatedGPUs/totalGpus);
+                        self.gpusPercent = (self.allocatedGPUs/totalGpus)*100;
 
                       }, function (error) {
                         console.log("Problem getting GPU utilization");
@@ -55,11 +62,115 @@ angular.module('hopsWorksApp')
               
             };
             
+            var getHdfsStatus = function () {
+              ClusterUtilService.getHdfsStatus().then(
+                      function (success) {
+                        var nbDataNodes = 0;
+                        var nbRunningDataNodes = 0;
+                        var nbNameNodes = 0;
+                        var nbRunningNameNodes = 0;
+                        success.data.forEach(function (status) {
+                          if (status.role === "datanode") {
+                            nbDataNodes++;
+                            if (status.status === "Started") {
+                              nbRunningDataNodes++;
+                            }
+                          }
+                          if (status.role === "namenode") {
+                            nbNameNodes++;
+                            if (status.status === "Started") {
+                              nbRunningNameNodes++;
+                            }
+                          }
+                        });
+                        if (nbRunningDataNodes > nbDataNodes * 2 / 3 && nbRunningNameNodes > nbNameNodes / 2) {
+                          self.HdfsBan = false;
+                          self.HdfsWarn = false;
+                        } else if (nbRunningDataNodes > nbDataNodes * 1 / 3 && nbRunningNameNodes >= 1) {
+                          self.HdfsBan = false;
+                          self.HdfsWarn = true;
+                        } else {
+                          self.HdfsBan = true;
+                          self.HdfsWarn = false;
+                        }
+
+                      }, function (error) {
+                console.log("problem getting HDFS status");
+              });
+            };
+
+            var getYarnStatus = function () {
+              ClusterUtilService.getYarnStatus().then(
+                      function (success) {
+                        var nbNodeManagers = 0;
+                        var nbRunningNodeManagers = 0;
+                        var nbRMs = 0;
+                        var nbRunningRMs = 0;
+                        success.data.forEach(function (status) {
+                          if (status.role === "nodemanager") {
+                            nbNodeManagers++;
+                            if (status.status === "Started") {
+                              nbRunningNodeManagers++;
+                            }
+                          }
+                          if (status.role === "resourcemanager") {
+                            nbRMs++;
+                            if (status.status === "Started") {
+                              nbRunningRMs++;
+                            }
+                          }
+                        });
+                        if (nbRunningNodeManagers > nbNodeManagers * 2 / 3 && nbRunningRMs > nbRMs / 2) {
+                          self.YarnBan = false;
+                          self.YarnWarn = false;
+                        } else if (nbRunningNodeManagers > nbNodeManagers * 1 / 3 && nbRunningRMs >= 1) {
+                          self.YarnBan = false;
+                          self.YarnWarn = true;
+                        } else {
+                          self.YarnBan = true;
+                          self.YarnWarn = false;
+                        }
+
+                      }, function (error) {
+                console.log("problem getting HDFS status");
+              });
+            };
+
+            var getKafkaStatus = function () {
+              ClusterUtilService.getKafkaStatus().then(
+                      function (success) {
+                        var nbInstances = 0;
+                        var nbRunningInstances = 0;
+                        success.data.forEach(function (status) {
+                          nbInstances++;
+                          if (status.status === "Started") {
+                            nbRunningInstances++;
+                          }
+                        });
+                        if (nbRunningInstances > nbInstances * 2 / 3) {
+                          self.KafkaBan = false;
+                          self.KafkaWarn = false;
+                        } else if (nbRunningInstances > nbInstances * 1 / 3) {
+                          self.KafkaBan = false;
+                          self.KafkaWarn = true;
+                        } else {
+                          self.KafkaBan = true;
+                          self.KafkaWarn = false;
+                        }
+
+                      }, function (error) {
+                console.log("problem getting HDFS status");
+              });
+            };
+            
             var getClusterUtilisationInterval = $interval(function () {
               getClusterUtilisation();
             }, 10000);
             getClusterUtilisation();
             getGpuUtilization();
+            getHdfsStatus();
+            getYarnStatus();
+            getKafkaStatus();
             $scope.$on("$destroy", function () {
               $interval.cancel(getClusterUtilisationInterval);
             });

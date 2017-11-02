@@ -40,14 +40,15 @@ angular.module('hopsWorksApp')
               {id: 5, name: 'ERROR'}
             ];
             self.logLevelSelected;
+
             self.job = {'type': '',
-                        'name': '',
-                        'id': '',
-                        'project': 
-                                  { 'name': '',
-                                    'id': self.projectId
-                                  }
-                      };
+              'name': '',
+              'id': '',
+              'project':
+                      {'name': '',
+                        'id': self.projectId
+                      }
+            };
 
 
 
@@ -67,6 +68,17 @@ angular.module('hopsWorksApp')
               self.livySessions(self.projectId);
             };
 
+
+            $scope.autoExpand = function (e) {
+              var element = typeof e === 'object' ? e.target : document.getElementById(e);
+              var scrollHeight = element.scrollHeight; // replace 60 by the sum of padding-top and padding-bottom
+              element.style.height = scrollHeight + "px";
+            };
+
+            function expand() {
+              $scope.autoExpand('TextArea');
+            }
+
             self.livySessions = function (projectId) {
               JupyterService.livySessions(projectId).then(
                       function (success) {
@@ -82,7 +94,7 @@ angular.module('hopsWorksApp')
               self.job.type = "TENSORFLOW";
               self.job.appId = appId;
               StorageService.store(self.projectId + "_jobui_TENSORFLOW", self.job);
-              $location.path('project/' + self.projectId + '/jobMonitor-app/' + appId + "/true");
+              $location.path('project/' + self.projectId + '/jobMonitor-app/' + appId + "/true/jupyter");
 
             };
 
@@ -131,14 +143,16 @@ angular.module('hopsWorksApp')
             self.selectFileRegexes = {
               "JAR": /.jar\b/,
               "PY": /.py\b/,
-              "*": /[^]*/,
+              "FILES": /[^]*/,
               "ZIP": /.zip\b/,
+              "TGZ": /.zip\b/
             };
             self.selectFileErrorMsgs = {
               "JAR": "Please select a JAR file.",
               "PY": "Please select a Python file.",
-              "ZIP": "Please select a file.",
-              "*": "Please select a folder."
+              "ZIP": "Please select a zip file.",
+              "TGZ": "Please select a tgz file.",
+              "FILES": "Please select a file."
             };
 
 
@@ -162,67 +176,55 @@ angular.module('hopsWorksApp')
              */
             self.onFileSelected = function (reason, path) {
               var re = /(?:\.([^.]+))?$/;
-              var ext = re.exec(path)[1];
-//              switch (reason.toUpperCase()) {
-              switch (ext.toUpperCase()) {
-                case "JAR":
-                  if (reason.toUpperCase() !== ".JAR") {
-                    growl.error("Invalid file type selected. Expecting " + reason + " - Found: " + ext);
+              var extension = re.exec(path)[1];
+              switch (reason.toUpperCase()) {
+                case "PYFILES":
+                  if (extension.toUpperCase() === "PY" ||
+                          extension.toUpperCase() === "ZIP" ||
+                          extension.toUpperCase() === "EGG") {
+                    if (self.val.pyFiles === "") {
+                      self.val.pyFiles = "\"" + path + "\"";
+                    } else {
+                      self.val.pyFiles = self.val.pyFiles.concat(",").concat(" \"" + path + "\"");
+                    }
                   } else {
+                    growl.error("Invalid file type selected. Expecting .py, .zip or .egg - Found: " + extension, {ttl: 10000});
+                  }
+                  break;
+                case "JARS":
+                  if (extension.toUpperCase() === "JAR") {
                     if (self.val.jars === "") {
-                      self.val.jars = path;
+                      self.val.jars = "\"" + path + "\"";
                     } else {
-                      self.val.jars = self.val.jars.concat(",").concat(path);
+                      self.val.jars = self.val.jars.concat(",").concat(" \"" + path + "\"");
                     }
+                  } else {
+                    growl.error("Invalid file type selected. Expecting .jar - Found: " + extension, {ttl: 10000});
                   }
                   break;
-                case "PY":
-                  if (reason.toUpperCase() !== ".ZIP") {
-                    growl.error("Invalid file type selected. Expecting " + reason + " - Found: " + ext);
-                  } else {
-                    if (self.val.pyFiles === "") {
-                      self.val.pyFiles = path;
-                    } else {
-                      self.val.pyFiles = self.val.pyFiles.concat(",").concat(path);
-                    }
-                  }
-                  break;
-                case "ZIP":
-                  if (reason.toUpperCase() === ".PY") {
-                    if (self.val.pyFiles === "") {
-                      self.val.pyFiles = path;
-                    } else {
-                      self.val.pyFiles = self.val.pyFiles.concat(",").concat(path);
-                    }
-                    break;
-                  }
-                case "TGZ":
-                case "TAR.GZ":
-                case "GZ":
-                case "BZIP":
-                  if (reason.toUpperCase() !== ".ZIP") {
-                    growl.error("Invalid file type selected. Found: " + ext);
-                  } else {
+                case "ARCHIVES":
+                  if (extension.toUpperCase() === "ZIP" || extension.toUpperCase() === "TGZ") {
                     if (self.val.archives === "") {
-                      self.val.archives = path;
+                      self.val.archives = "\"" + path + "\"";
                     } else {
-                      self.val.archives = self.val.archives.concat(",").concat(path);
+                      self.val.archives = self.val.archives.concat(",").concat(" \"" + path + "\"");
                     }
+                  } else {
+                    growl.error("Invalid file type selected. Expecting .zip Found: " + extension, {ttl: 10000});
                   }
                   break;
-                case "*":
+                case "FILES":
                   if (self.val.files === "") {
-                    self.val.files = path;
+                    self.val.files = " \"" + path + "\"";
                   } else {
-                    self.val.files = self.val.files.concat(",").concat(path);
+                    self.val.files = self.val.files.concat(",").concat(" \"" + path + "\"");
                   }
                   break;
                 default:
-                  growl.error("Invalid file type selected: " + reason);
+                  growl.error("Invalid file type selected: " + reason, {ttl: 10000});
                   break;
               }
             };
-
 
             $window.uploadDone = function () {
               stopLoading();
@@ -324,6 +326,7 @@ angular.module('hopsWorksApp')
 
 
             var startLoading = function (label) {
+              self.advanced = false;
               self.loading = true;
               self.loadingText = label;
             };
@@ -368,6 +371,7 @@ angular.module('hopsWorksApp')
             };
             self.stopAdmin = function (hdfsUsername) {
               startLoading("Stopping Jupyter...");
+              self.advanced = true;
               JupyterService.stopAdmin(self.projectId, hdfsUsername).then(
                       function (success) {
                         self.ui = ""

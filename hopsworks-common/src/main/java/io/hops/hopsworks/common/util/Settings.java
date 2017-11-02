@@ -49,6 +49,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_HOPSWORKS_PORT = "hopsworks_port";
   private static final String VARIABLE_KIBANA_IP = "kibana_ip";
   private static final String VARIABLE_LIVY_IP = "livy_ip";
+  private static final String VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT = "livy_zeppelin_session_timeout";
   private static final String VARIABLE_JHS_IP = "jhs_ip";
   private static final String VARIABLE_RM_IP = "rm_ip";
   private static final String VARIABLE_RM_PORT = "rm_port";
@@ -135,7 +136,9 @@ public class Settings implements Serializable {
   private static final String VARIABLE_CERT_MATER_DELAY = "cert_mater_delay";
   private static final String VARIABLE_WHITELIST_USERS_LOGIN =
       "whitelist_users";
-
+  private static final String VARIABLE_RECOVERY_PATH = "recovery_endpoint";
+  private static final String VARIABLE_VERIFICATION_PATH = "verification_endpoint";
+  
   private String setVar(String varName, String defaultValue) {
     Variables userName = findById(varName);
     if (userName != null && userName.getValue() != null && (userName.getValue().
@@ -282,6 +285,7 @@ public class Settings implements Serializable {
       LOGSTASH_PORT = setIntVar(VARIABLE_LOGSTASH_PORT, LOGSTASH_PORT);
       JHS_IP = setIpVar(VARIABLE_JHS_IP, JHS_IP);
       LIVY_IP = setIpVar(VARIABLE_LIVY_IP, LIVY_IP);
+      LIVY_ZEPPELIN_SESSION_TIMEOUT = setVar(VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT, LIVY_ZEPPELIN_SESSION_TIMEOUT);
       OOZIE_IP = setIpVar(VARIABLE_OOZIE_IP, OOZIE_IP);
       SPARK_HISTORY_SERVER_IP = setIpVar(VARIABLE_SPARK_HISTORY_SERVER_IP,
         SPARK_HISTORY_SERVER_IP);
@@ -338,6 +342,8 @@ public class Settings implements Serializable {
           CERTIFICATE_MATERIALIZER_DELAY);
       WHITELIST_USERS_LOGIN = setStrVar(VARIABLE_WHITELIST_USERS_LOGIN,
           WHITELIST_USERS_LOGIN);
+      RECOVERY_PATH = setStrVar(VARIABLE_RECOVERY_PATH, RECOVERY_PATH);
+      VERIFICATION_PATH = setStrVar(VARIABLE_VERIFICATION_PATH, VERIFICATION_PATH);
       populateDelaCache();
 
       cached = true;
@@ -1049,7 +1055,8 @@ public class Settings implements Serializable {
   // Livy Server`
   private String LIVY_IP = "127.0.0.1";
   private final String LIVY_YARN_MODE = "yarn";
-
+  private String LIVY_ZEPPELIN_SESSION_TIMEOUT = "3600";
+  
   public synchronized String getLivyIp() {
     checkCache();
     return LIVY_IP;
@@ -1063,7 +1070,12 @@ public class Settings implements Serializable {
     checkCache();
     return LIVY_YARN_MODE;
   }
-
+  
+  public synchronized String getLivyZeppelinSessionTimeout() {
+    checkCache();
+    return LIVY_ZEPPELIN_SESSION_TIMEOUT;
+  }
+  
   public static final int ZK_PORT = 2181;
 
   // Kibana
@@ -1334,6 +1346,7 @@ public class Settings implements Serializable {
   public static final String KAFKA_DEFAULT_CONSUMER_GROUP = "default";
   public static final String K_CERTIFICATE = "k_certificate";
   public static final String T_CERTIFICATE = "t_certificate";
+  public static final String CRYPTO_MATERIAL_PASSWORD = "material_passwd";
 
   //Used to retrieve schema by HopsUtil
   public static final String HOPSWORKS_PROJECTID_PROPERTY
@@ -1703,6 +1716,20 @@ public class Settings implements Serializable {
     return "hops-spark.jar";
 
   }
+  
+  private String RECOVERY_PATH = "hopsworks-api/api/auth/recover";
+
+  public synchronized String getRecoveryEndpoint() {
+    checkCache();
+    return  HOPSWORKS_IP + ":" + HOPSWORKS_PORT + "/" + RECOVERY_PATH;
+  }
+
+  private String VERIFICATION_PATH = "hopsworks-api/api/auth/verify";
+
+  public synchronized String getVerificationEndpoint() {
+    checkCache();
+    return HOPSWORKS_IP + ":" + HOPSWORKS_PORT + "/" + VERIFICATION_PATH;
+  }
 
   //Dela START
   private static final String VARIABLE_HOPSSITE_BASE_URI = "hops_site_endpoint";
@@ -1880,10 +1907,6 @@ public class Settings implements Serializable {
     return null;
   }
 
-  public static String getPublicDatasetId(String clusterId, String projectName,
-    String datasetName) {
-    return clusterId + "_" + projectName + "_" + datasetName;
-  }
   //************************************************CERTIFICATES********************************************************
   private static final String HOPS_SITE_CA_DIR = CA_DIR + "/hops-site-certs";
   public final static String HOPS_SITE_CERTFILE = "/pub.pem";

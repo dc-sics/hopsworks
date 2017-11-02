@@ -55,8 +55,8 @@ angular.module('hopsWorksApp')
                * @param {type} projectId 
                * @param {type} type
                * @param {type} schedule
-               * @param {type} jobid.
-               * @returns {undefined}.
+               * @param {type} jobId
+               * @returns {undefined}
                */
               updateSchedule: function (projectId, type, schedule, jobId) {
                 var req = {
@@ -139,7 +139,8 @@ angular.module('hopsWorksApp')
               /**
                * Get the job ui of the given job.
                * @param {type} projectId
-               * @param {type} jobId
+               * @param {type} appId
+               * @param {type} isLivy
                * @returns {unresolved} The address of the job ui.
                */
               getExecutionUI: function (projectId, appId, isLivy) {
@@ -158,7 +159,7 @@ angular.module('hopsWorksApp')
               /**
                * Get the yarn ui of the given job.
                * @param {type} projectId
-               * @param {type} jobId
+               * @param {type} appId
                * @returns {unresolved} The address of the job ui.
                */
               getYarnUI: function (projectId, appId) {
@@ -167,7 +168,7 @@ angular.module('hopsWorksApp')
               /**
                * Get the app infos.
                * @param {type} projectId
-               * @param {type} jobId
+               * @param {type} appId
                * @returns {unresolved} The app info.
                */
               getAppInfo: function (projectId, appId) {
@@ -214,7 +215,8 @@ angular.module('hopsWorksApp')
               /**
                * Retrieve the logs associated to a certain job.
                * @param {type} projectId
-               * @param {type} jobId
+               * @param {type} appId
+               * @param {type} type
                * @returns {undefined} Log infrormation json.
                */
               retryLog: function (projectId, appId, type) {

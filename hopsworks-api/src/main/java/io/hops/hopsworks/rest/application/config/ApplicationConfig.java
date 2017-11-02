@@ -60,10 +60,13 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.zeppelin.rest.ZeppelinRestApi.class);
     register(io.hops.hopsworks.api.app.ApplicationService.class);
     register(io.hops.hopsworks.api.cluster.Monitor.class);
-
+    register(io.hops.hopsworks.api.admin.UsersAdmin.class);
+    
     register(org.glassfish.jersey.media.multipart.MultiPartFeature.class);
     
     //dela
+    register(io.hops.hopsworks.api.dela.DelaClusterService.class);
+    register(io.hops.hopsworks.api.dela.DelaClusterProjectService.class);
     register(io.hops.hopsworks.api.dela.DelaService.class);
     register(io.hops.hopsworks.api.dela.DelaProjectService.class);
     register(io.hops.hopsworks.api.dela.RemoteDelaService.class);
