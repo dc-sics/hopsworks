@@ -228,7 +228,7 @@ public class SparkYarnRunnerBuilder {
     builder.addLocalResource(new LocalResourceDTO(
         settings.getHopsUtilFilename(), settings.getHopsUtilHdfsPath(
         sparkUser),
-        LocalResourceVisibility.APPLICATION.toString(),
+        LocalResourceVisibility.PRIVATE.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,

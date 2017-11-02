@@ -53,9 +53,9 @@ public class ZookeeprTopicCleanerTimer {
   ZkConnection zkConnection = null;
   ZooKeeper zk = null;
 
-  // Run once per 10 minutes
+  // Run once per hour 
   @Schedule(persistent = false,
-      minute = "*/10",
+      minute = "0",
       hour = "*")
   public void execute(Timer timer) {
 
@@ -125,12 +125,6 @@ public class ZookeeprTopicCleanerTimer {
         }
       }
 
-      /**
-       * Get kafka broker endpoints and update them in Settings.
-       * These topics are used for passing broker endpoints to HopsUtil and to KafkaFacade.
-       */
-      settings.setKafkaBrokers(settings.getBrokerEndpoints());
-
     } catch (AppException ex) {
       LOGGER.log(Level.SEVERE, "Unable to get zookeeper ip address ", ex.
           toString());
@@ -145,6 +139,21 @@ public class ZookeeprTopicCleanerTimer {
       } catch (InterruptedException ex) {
         LOGGER.log(Level.SEVERE, null, ex);
       }
+    }
+  }
+
+  /**
+   * Get kafka broker endpoints and update them in Settings.
+   * These topics are used for passing broker endpoints to HopsUtil and to KafkaFacade.
+   */
+  @Schedule(persistent = false,
+      minute = "*/1",
+      hour = "*")
+  public void getBrokers() {
+    try {
+      settings.setKafkaBrokers(settings.getBrokerEndpoints());
+    } catch (AppException ex) {
+      LOGGER.log(Level.SEVERE, null, ex);
     }
   }
 
