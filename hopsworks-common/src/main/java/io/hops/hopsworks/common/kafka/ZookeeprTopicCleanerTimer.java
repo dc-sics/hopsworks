@@ -1,7 +1,7 @@
 package io.hops.hopsworks.common.kafka;
 
 import io.hops.hopsworks.common.dao.kafka.ProjectTopics;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import java.io.IOException;
 import java.util.HashSet;
@@ -44,7 +44,7 @@ public class ZookeeprTopicCleanerTimer {
   Settings settings;
 
   @EJB
-  KafkaFacade2 kafkaFacade;
+  KafkaFacade kafkaFacade;
 
   ZkClient zkClient = null;
 

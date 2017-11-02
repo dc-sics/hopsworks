@@ -22,7 +22,7 @@ import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.kafka.AclDTO;
 import io.hops.hopsworks.common.dao.kafka.AclUserDTO;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.PartitionDetailsDTO;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import io.hops.hopsworks.common.dao.kafka.SharedProjectDTO;
@@ -52,7 +52,7 @@ public class KafkaService {
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
-  private KafkaFacade2 kafkaFacade;
+  private KafkaFacade kafkaFacade;
   @EJB
   private UserManager userManager;
 

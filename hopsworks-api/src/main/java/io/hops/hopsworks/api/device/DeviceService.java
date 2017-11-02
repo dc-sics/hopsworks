@@ -24,10 +24,10 @@ import javax.ws.rs.core.Response.Status;
 
 import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
-import io.hops.hopsworks.common.dao.device.ProjectDevice2;
+import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
 import io.hops.hopsworks.common.dao.device.AuthProjectDeviceDTO;
-import io.hops.hopsworks.common.dao.device.DeviceFacade4;
+import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
@@ -52,7 +52,7 @@ import org.json.JSONObject;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
@@ -80,13 +80,13 @@ public class DeviceService {
   private static final String RECORDS = "records";
 
   @EJB
-  private DeviceFacade4 deviceFacade;
+  private DeviceFacade deviceFacade;
 
   @EJB
   private NoCacheResponse noCacheResponse;
 
   @EJB
-  private KafkaFacade2 kafkaFacade;
+  private KafkaFacade kafkaFacade;
 
   @EJB
   private CertsFacade userCerts; // Only used for the produce endpoint
@@ -156,18 +156,18 @@ public class DeviceService {
    * @throws DeviceServiceException  It is thrown when there is no such record in the database and as such the device
    * is not yet registered in this project or there is such a record but the device is not in the Approved state.
    */
-  private ProjectDevice2 getProjectDevice(Integer projectId, String deviceUuid) throws DeviceServiceException{
-    ProjectDevice2 device;
+  private ProjectDevice getProjectDevice(Integer projectId, String deviceUuid) throws DeviceServiceException{
+    ProjectDevice device;
     try {
       device = deviceFacade.readProjectDevice(projectId, deviceUuid);
     }catch (Exception e) {
       throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_NOT_REGISTERED);
     }
-    if (device.getState() != ProjectDevice2.State.Approved){
-      if (device.getState() == ProjectDevice2.State.Disabled){
+    if (device.getState() != ProjectDevice.State.Approved){
+      if (device.getState() == ProjectDevice.State.Disabled){
         throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_DISABLED);
       }
-      if (device.getState() == ProjectDevice2.State.Pending){
+      if (device.getState() == ProjectDevice.State.Pending){
         throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_PENDING);
       }
       throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_UNKNOWN_STATE);
@@ -270,7 +270,7 @@ public class DeviceService {
     try {
       ProjectDevicesSettings devicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
       validate(authDTO);
-      ProjectDevice2 device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
+      ProjectDevice device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
       if (device.getPassword().equals(DigestUtils.sha256Hex(authDTO.getPassword()))) {
         deviceFacade.updateProjectDeviceLastLoggedIn(authDTO);
         return DeviceResponseBuilder.successfulJsonResponse(

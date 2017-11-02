@@ -2,7 +2,7 @@ package io.hops.hopsworks.api.device;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.device.DeviceFacade4;
+import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettingsDTO;
@@ -51,7 +51,7 @@ public class DeviceManagementService {
   private ProjectController projectController;
 
   @EJB
-  private DeviceFacade4 deviceFacade;
+  private DeviceFacade deviceFacade;
 
   private Integer projectId;
 

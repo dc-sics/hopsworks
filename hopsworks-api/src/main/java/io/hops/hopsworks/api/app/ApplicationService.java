@@ -2,7 +2,7 @@ package io.hops.hopsworks.api.app;
 
 import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.common.dao.kafka.KafkaFacade2;
+import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,7 +64,7 @@ public class ApplicationService {
   @EJB
   private EmailBean email;
   @EJB
-  private KafkaFacade2 kafka;
+  private KafkaFacade kafka;
   @EJB
   private CertsFacade certificateBean;
   @EJB
