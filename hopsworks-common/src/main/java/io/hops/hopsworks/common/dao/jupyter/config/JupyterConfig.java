@@ -304,10 +304,13 @@ public class JupyterConfig {
         String lines[] = sparkProps.split("\\r?\\n");
         StringBuffer sb = new StringBuffer();
         for (String l : lines) {
-          String props[] = l.split("=");
+          // Trim white-spaces on the left and the right of each line
+          String leftRemoved = l.replaceAll("^\\s+", "");
+          String trimmedLine = leftRemoved.replaceAll("\\s+$", "");
+          String[] props = trimmedLine.split(" +");
           for (int x = 0; x < props.length; x++) {
             if (x == 0) {
-              sb.append("\"").append(props[x]).append("\":");
+              sb.append("\"").append(props[x]).append("\": ");
             } else {
               sb.append("\"").append(props[x]).append("\",").append(System.lineSeparator());
               x = props.length; // ignore any more properties on the same line
