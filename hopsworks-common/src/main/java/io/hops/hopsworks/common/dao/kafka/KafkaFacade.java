@@ -67,34 +67,27 @@ public class KafkaFacade {
 
   @EJB
   Settings settings;
-
   @EJB
   private CertsFacade userCerts;
-
   @EJB
   private ProjectFacade projectsFacade;
-  
   @EJB
   private CertificateMaterializer certificateMaterializer;
-  
   @EJB
   private BaseHadoopClientsService baseHadoopService;
-  
   @EJB
   private HdfsUsersController hdfsUsersController;
 
   public static final String COLON_SEPARATOR = ":";
   public static final String SLASH_SEPARATOR = "//";
-  public static final String SECURITY_PROTOCOL = "SSL";
-  public static final String PLAINTEXT_PROTOCOL = "PLAINTEXT";
+  public static final String KAFKA_SECURITY_PROTOCOL = "SSL";
+  public static final String KAFKA_BROKER_EXTERNAL_PROTOCOL = "EXTERNAL";
   public static final String PROJECT_DELIMITER = "__";
   public static final String DLIMITER = "[\"]";
   public String CLIENT_ID = "list_topics";
-  public final int connectionTimeout = 30 * 1000;// 30 seconds
   public final int BUFFER_SIZE = 20 * 1000;
   public Set<String> brokers;
   public Set<String> topicList;
-  public int sessionTimeoutMs = 30 * 1000;//30 seconds
 
   protected EntityManager getEntityManager() {
     return em;
@@ -241,7 +234,7 @@ public class KafkaFacade {
     // create the topic in kafka 
     ZkClient zkClient = new ZkClient(getIp(settings.getZkConnectStr()).
         getHostName(),
-        sessionTimeoutMs, connectionTimeout, ZKStringSerializer$.MODULE$);
+        Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, Settings.ZOOKEEPER_CONNECTION_TIMEOUT_MS, ZKStringSerializer$.MODULE$);
     ZkConnection zkConnection = new ZkConnection(settings.getZkConnectStr());
     ZkUtils zkUtils = new ZkUtils(zkClient, zkConnection, false);
 
@@ -324,7 +317,7 @@ public class KafkaFacade {
     //remove from zookeeper
     ZkClient zkClient = new ZkClient(getIp(settings.getZkConnectStr()).
         getHostName(),
-        sessionTimeoutMs, connectionTimeout, ZKStringSerializer$.MODULE$);
+        Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, Settings.ZOOKEEPER_CONNECTION_TIMEOUT_MS, ZKStringSerializer$.MODULE$);
     ZkConnection zkConnection = new ZkConnection(settings.getZkConnectStr());
     ZkUtils zkUtils = new ZkUtils(zkClient, zkConnection, false);
 
@@ -361,7 +354,7 @@ public class KafkaFacade {
 
     try {
       zkClient = new ZkClient(getIp(settings.getZkConnectStr()).getHostName(),
-          sessionTimeoutMs, connectionTimeout, ZKStringSerializer$.MODULE$);
+          Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, Settings.ZOOKEEPER_CONNECTION_TIMEOUT_MS, ZKStringSerializer$.MODULE$);
       zkConnection = new ZkConnection(settings.getZkConnectStr());
       for (ProjectTopics topic : topics) {
         //remove from database
@@ -874,7 +867,7 @@ public class KafkaFacade {
     ZooKeeper zk = null;
     try {
       zk = new ZooKeeper(settings.getZkConnectStr(),
-          sessionTimeoutMs, new ZookeeperWatcher());
+          Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, new ZookeeperWatcher());
 
       List<String> ids = zk.getChildren("/brokers/ids", false);
       for (String id : ids) {
@@ -910,33 +903,29 @@ public class KafkaFacade {
       Project project, Users user, String topicName) throws Exception {
 
     CLIENT_ID = "topic_detail";
-
-    brokers = getBrokerEndpoints();
-    
+    brokers = settings.getKafkaBrokers();
     Map<Integer, List<String>> replicas = new HashMap<>();
     Map<Integer, List<String>> inSyncReplicas = new HashMap<>();
     Map<Integer, String> leaders = new HashMap<>();
     List<PartitionDetailsDTO> partitionDetailsDto = new ArrayList<>();
 
-    //SimpleConsumer cannot connect to a secured kafka cluster,
-    //try connnecting only to plaintext endpoints
+    //Keep only INTERNAL protocol brokers
     Iterator<String> iter = brokers.iterator();
     while (iter.hasNext()) {
       String seed = iter.next();
-      if (seed.split(COLON_SEPARATOR)[0].equalsIgnoreCase(PLAINTEXT_PROTOCOL)) {
+      if (seed.split(COLON_SEPARATOR)[0].equalsIgnoreCase(KAFKA_BROKER_EXTERNAL_PROTOCOL)) {
         iter.remove();
       }
     }
     try {
       HopsUtils.copyUserKafkaCerts(userCerts, project, user.getUsername(),
-              settings.getHopsworksTmpCertDir(), null,
+          settings.getHopsworksTmpCertDir(), null,
           certificateMaterializer);
-  
+
       String projectSpecificUser = hdfsUsersController.getHdfsUserName(project,
           user);
-      String certPassword = baseHadoopService.getProjectSpecificUserCertPassword
-          (projectSpecificUser);
-      
+      String certPassword = baseHadoopService.getProjectSpecificUserCertPassword(projectSpecificUser);
+
       for (String brokerAddress : brokers) {
         brokerAddress = brokerAddress.split("://")[1];
         Properties props = new Properties();
@@ -947,7 +936,7 @@ public class KafkaFacade {
             "org.apache.kafka.common.serialization.StringDeserializer");
 
         //configure the ssl parameters
-        props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
+        props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, KAFKA_SECURITY_PROTOCOL);
         props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
             settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
             getProjectTruststoreName(project.getName(), user.
@@ -962,13 +951,7 @@ public class KafkaFacade {
             certPassword);
         props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
             certPassword);
-        KafkaConsumer<Integer, String> consumer = null;
-        try {
-          consumer = new KafkaConsumer<>(props);
-//          ConsumerGroupCommand.ConsumerGroupCommandOptions opts
-//                  = new ConsumerGroupCommand.ConsumerGroupCommandOptions(null);
-//          ConsumerGroupCommand.KafkaConsumerGroupService k
-//                  = new ConsumerGroupCommand.KafkaConsumerGroupService(opts);
+        try (KafkaConsumer<Integer, String> consumer = new KafkaConsumer<>(props)) {
           List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
           for (PartitionInfo partition : partitions) {
             int id = partition.partition();
@@ -994,10 +977,6 @@ public class KafkaFacade {
           throw new Exception(
               "Error while retrieving topic metadata from broker: "
               + brokerAddress, ex);
-        } finally {
-          if (consumer != null) {
-            consumer.close();
-          }
         }
       }
     } finally {

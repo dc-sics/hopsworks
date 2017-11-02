@@ -13,6 +13,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -296,7 +297,6 @@ public class Settings implements Serializable {
       DRELEPHANT_PORT = setIntVar(VARIABLE_DRELEPHANT_PORT, DRELEPHANT_PORT);
       DRELEPHANT_DB = setDbVar(VARIABLE_DRELEPHANT_DB, DRELEPHANT_DB);
       KIBANA_IP = setIpVar(VARIABLE_KIBANA_IP, KIBANA_IP);
-      KAFKA_IP = setIpVar(VARIABLE_KAFKA_IP, KAFKA_IP);
       KAFKA_USER = setVar(VARIABLE_KAFKA_USER, KAFKA_USER);
       KAFKA_DIR = setDirVar(VARIABLE_KAFKA_DIR, KAFKA_DIR);
       KAFKA_DEFAULT_NUM_PARTITIONS = setDirVar(VARIABLE_KAFKA_NUM_PARTITIONS,
@@ -1148,20 +1148,6 @@ public class Settings implements Serializable {
     return JUPYTER_DIR;
   }
 
-  // Kafka
-  private String KAFKA_IP = "10.0.2.15";
-  public static final int KAFKA_PORT = 9091;
-
-  public synchronized String getKafkaRestEndpoint() {
-    checkCache();
-    return "http://" + KAFKA_IP + ":" + REST_PORT;
-  }
-
-  public synchronized String getKafkaConnectStr() {
-    checkCache();
-    return KAFKA_IP + ":" + KAFKA_PORT;
-  }
-
   private String KAFKA_USER = "kafka";
 
   public synchronized String getKafkaUser() {
@@ -1342,8 +1328,6 @@ public class Settings implements Serializable {
   public static final String SHARED_FILE_SEPARATOR = "::";
   public static final String DOUBLE_UNDERSCORE = "__";
 
-  public static final String KAFKA_ACL_WILDCARD = "*";
-  public static final String KAFKA_DEFAULT_CONSUMER_GROUP = "default";
   public static final String K_CERTIFICATE = "k_certificate";
   public static final String T_CERTIFICATE = "t_certificate";
 
@@ -1918,4 +1902,54 @@ public class Settings implements Serializable {
     return getCertsDir() + Settings.HOPS_SITE_CA_DIR;
   }
   //Dela END
+  
+  
+  //************************************************ZOOKEEPER********************************************************
+  public static final int ZOOKEEPER_SESSION_TIMEOUT_MS = 30 * 1000;//30 seconds
+  public static final int ZOOKEEPER_CONNECTION_TIMEOUT_MS = 30 * 1000;// 30 seconds
+  //Zookeeper END
+
+  //************************************************KAFKA********************************************************
+  public static final String KAFKA_ACL_WILDCARD = "*";
+  public static final String KAFKA_DEFAULT_CONSUMER_GROUP = "default";
+  //These brokers are updated periodically by ZookeeperTimerThread
+  public Set<String> kafkaBrokers = new HashSet<>();
+
+  public synchronized Set<String> getKafkaBrokers() {
+    return kafkaBrokers;
+  }
+
+  /**
+   * Used when the application does not want all the brokers but mearly one to connect. 
+   * 
+   * @return 
+   */
+  public synchronized String getRandomKafkaBroker() {
+    Iterator<String> it = this.kafkaBrokers.iterator(); 
+    if(it.hasNext()){
+      return it.next();
+    }
+    return null;
+  }
+  
+  /**
+   *
+   * @return
+   */
+  public synchronized String getKafkaBrokersStr() {
+    if (!kafkaBrokers.isEmpty()) {
+      StringBuilder sb = new StringBuilder();
+      for (String addr : kafkaBrokers) {
+        sb.append(addr).append(",");
+      }
+      return sb.substring(0, sb.length() - 1);
+    }
+    return null;
+  }
+
+  public synchronized void setKafkaBrokers(Set<String> kafkaBrokers) {
+    this.kafkaBrokers.clear();
+    this.kafkaBrokers.addAll(kafkaBrokers);
+  }
+  //Kafka END
 }
