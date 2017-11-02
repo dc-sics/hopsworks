@@ -25,7 +25,6 @@ import io.hops.hopsworks.common.util.Settings;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -175,7 +174,7 @@ public class ClusterController {
     LOGGER.log(Level.INFO, "Unregistering cluster with email: {0}", clusterAgent.getEmail());
   }
 
-  public void validateRequest(String key, HttpServletRequest req, OP_TYPE type) throws ParseException, IOException,
+  public void validateRequest(String key, HttpServletRequest req, OP_TYPE type) throws IOException,
       FileNotFoundException, InterruptedException, CertificateException {
     Integer clusterCertId = extractClusterCertId(key);
     ClusterCert clusterCert = clusterCertFacade.find(clusterCertId);
@@ -422,6 +421,9 @@ public class ClusterController {
     }
     String agentP = intermediate ? settings.getIntermediateCaDir() : settings.getCertsDir();
     File agentPem = new File(agentP + "/newcerts/" + clusterCert.getSerialNumber() + ".pem");
+    if (!agentPem.exists()) {
+      LOGGER.log(Level.WARNING, "Could not find cert to be revoked at path: {0}", agentPem.getPath());
+    }
     PKIUtils.revokeCert(settings, agentPem.getPath(), intermediate);
   }
 

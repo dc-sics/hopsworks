@@ -4,7 +4,6 @@ import io.hops.hopsworks.cluster.controller.ClusterController;
 import io.hops.hopsworks.common.dao.user.cluster.ClusterCert;
 import io.swagger.annotations.Api;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -81,7 +80,7 @@ public class Cluster {
     JsonResponse res = new JsonResponse();
     try {
       clusterController.validateRequest(validationKey, req, ClusterController.OP_TYPE.REGISTER);
-    } catch (ParseException | IOException | InterruptedException | CertificateException ex) {
+    } catch (IOException | InterruptedException | CertificateException ex) {
       LOGGER.log(Level.SEVERE, null, ex);
       res.setStatusCode(Response.Status.BAD_REQUEST.getStatusCode());
       res.setSuccessMessage("Could not validate registration.");
@@ -98,11 +97,11 @@ public class Cluster {
     JsonResponse res = new JsonResponse();
     try {
       clusterController.validateRequest(validationKey, req, ClusterController.OP_TYPE.UNREGISTER);
-    } catch (ParseException | IOException | InterruptedException | CertificateException ex) {
+    } catch (IOException | InterruptedException | CertificateException ex) {
       LOGGER.log(Level.SEVERE, null, ex);
       res.setStatusCode(Response.Status.BAD_REQUEST.getStatusCode());
       res.setSuccessMessage("Could not validate unregistration.");
-      return Response.ok("Could not validate unregistration.").build();
+      return Response.ok().entity(res).build();
     }
     res.setStatusCode(Response.Status.OK.getStatusCode());
     res.setSuccessMessage("Cluster unregistration validated.");
