@@ -100,7 +100,8 @@ public class DeviceManagementService {
       ProjectDevicesSettings projectDevicesSettings = deviceFacade.readProjectDevicesSettings(projectId);
       settingsDTO = new ProjectDevicesSettingsDTO(1, projectDevicesSettings.getJwtTokenDuration());
     }catch (Exception e){
-      settingsDTO = new ProjectDevicesSettingsDTO(0, 24 * 30);
+      // Default values for the project devices settings are defined here.
+      settingsDTO = new ProjectDevicesSettingsDTO(0, 24 * 7);
     }
     return settingsDTO;
   }
@@ -158,7 +159,7 @@ public class DeviceManagementService {
     }else if(oldSettingsDTO.getEnabled() == 1 && settingsDTO.getEnabled() == 1){
       updateDevicesSettings(projectId, settingsDTO);
     }
-    return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
 

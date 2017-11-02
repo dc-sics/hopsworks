@@ -38,9 +38,42 @@ public class DeviceResponseBuilder {
   public Response  JWT_VALIDATION_FAILED = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
     "The process to validate the authorization jwt token failed.");
 
-  public Response  PROJECT_USER_PASS_FOR_KS_TS_NOT_FOUND = failedJsonResponse(
-    Response.Status.INTERNAL_SERVER_ERROR,
+  public Response  PROJECT_USER_PASS_FOR_KS_TS_NOT_FOUND = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
     "The passwords for the key store and the trust store that is used to produce to Kafka were not found.");
+
+  public Response  PROJECT_TOPIC_NOT_FOUND = failedJsonResponse(Response.Status.NOT_FOUND,
+    "There is no topic found with the provided topic name under the project.");
+
+  public Response  GET_TOPIC_SCHEMA_BAD_REQ = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "Json request is malformed! Required properties are: projectId, topic .");
+
+  public Response  JWT_VERIFY_TOKEN_BAD_REQ = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "GET Request is malformed! Required params are: project_id");
+
+  public Response  PRODUCE_FAILED = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
+    "Produce failed.");
+
+  public Response  AUTH_BAD_REQ = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "One or more of the mandatory params is missing: projectId, deviceUuid, password .");
+
+  public Response  AUTH_UUID4_BAD_REQ = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "The deviceUuid param must be a valid UUID version 4.");
+
+  public Response  AUTH_HEADER_MISSING = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "The Authorization header is missing.");
+
+  public Response  AUTH_HEADER_BEARER_MISSING = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "The 'Bearer ' in Authorization header is missing.");
+
+  public Response  PRODUCE_BAD_REQ = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "Json request is malformed! Required properties are: projectId, topic, records .");
+
+  public Response  PRODUCE_KEYSTORE_FILE_NOT_FOUND = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
+    "Keystore File not found, when producing.");
+
+  public Response  PRODUCE_KEYSTORE_IO_EXCEPTION = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
+    "Keystore File to Byte IO exception.");
+
 
   public static Response failedJsonResponse(Response.Status status, String errorMessage) {
     Response.ResponseBuilder rb = Response.status(status);
