@@ -6,7 +6,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import io.hops.hopsworks.common.dao.device.ProjectDevice2;
+import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
 
 import java.util.Calendar;
@@ -27,7 +27,7 @@ class DeviceServiceSecurity {
    * @return Returns the jwt token.
    */
   static String generateJwt(
-    ProjectDevicesSettings projectDevicesSettings, ProjectDevice2 projectDevice) throws DeviceServiceException{
+    ProjectDevicesSettings projectDevicesSettings, ProjectDevice projectDevice) throws DeviceServiceException{
     try {
       Calendar cal = Calendar.getInstance();
       cal.setTime(new Date());

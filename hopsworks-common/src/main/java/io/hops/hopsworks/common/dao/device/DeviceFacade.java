@@ -10,9 +10,9 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
 @Stateless
-public class DeviceFacade4 {
+public class DeviceFacade {
 
-  private final static Logger logger = Logger.getLogger(DeviceFacade4.class.getName());
+  private final static Logger logger = Logger.getLogger(DeviceFacade.class.getName());
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -44,7 +44,7 @@ public class DeviceFacade4 {
     }
   }
 
-  public void createProjectDevice(ProjectDevice2 projectDevice) {
+  public void createProjectDevice(ProjectDevice projectDevice) {
     if (projectDevice != null){
       em.persist(projectDevice);
     }
@@ -53,25 +53,25 @@ public class DeviceFacade4 {
   public void createProjectDevice(AuthProjectDeviceDTO authDTO) {
     if (authDTO != null){
       ProjectDevicePK pdKey = new ProjectDevicePK(authDTO.getProjectId(), authDTO.getDeviceUuid());
-      em.persist(new ProjectDevice2(pdKey, authDTO.getPassword(), ProjectDevice2.State.Pending, authDTO.getAlias()));
+      em.persist(new ProjectDevice(pdKey, authDTO.getPassword(), ProjectDevice.State.Pending, authDTO.getAlias()));
     }
   }
 
-  public ProjectDevice2 readProjectDevice(Integer projectId, String deviceUuid) {
+  public ProjectDevice readProjectDevice(Integer projectId, String deviceUuid) {
     ProjectDevicePK pdKey = new ProjectDevicePK(projectId, deviceUuid);
-    TypedQuery<ProjectDevice2> query = em.createNamedQuery(
-      "ProjectDevice.findByProjectDevicePK", ProjectDevice2.class);
+    TypedQuery<ProjectDevice> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectDevicePK", ProjectDevice.class);
     query.setParameter("projectDevicePK", pdKey);
     return query.getSingleResult();
   }
 
   public List<ProjectDeviceDTO> readProjectDevices(Integer projectId) {
-    TypedQuery<ProjectDevice2> query = em.createNamedQuery(
-      "ProjectDevice.findByProjectId", ProjectDevice2.class);
+    TypedQuery<ProjectDevice> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectId", ProjectDevice.class);
     query.setParameter("projectId", projectId);
-    List<ProjectDevice2> devices =  query.getResultList();
+    List<ProjectDevice> devices =  query.getResultList();
     List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
-    for(ProjectDevice2 device: devices){
+    for(ProjectDevice device: devices){
       devicesDTO.add(new ProjectDeviceDTO(
               device.getProjectDevicePK().getProjectId(),
               device.getProjectDevicePK().getDeviceUuid(),
@@ -84,13 +84,13 @@ public class DeviceFacade4 {
   }
 
   public List<ProjectDeviceDTO> readProjectDevices(Integer projectId, String state) {
-    TypedQuery<ProjectDevice2> query = em.createNamedQuery(
-      "ProjectDevice.findByProjectIdAndState", ProjectDevice2.class);
+    TypedQuery<ProjectDevice> query = em.createNamedQuery(
+      "ProjectDevice.findByProjectIdAndState", ProjectDevice.class);
     query.setParameter("projectId", projectId);
-    query.setParameter("state", ProjectDevice2.State.valueOf(state).ordinal());
-    List<ProjectDevice2> devices =  query.getResultList();
+    query.setParameter("state", ProjectDevice.State.valueOf(state).ordinal());
+    List<ProjectDevice> devices =  query.getResultList();
     List<ProjectDeviceDTO> devicesDTO = new ArrayList<>();
-    for(ProjectDevice2 device: devices){
+    for(ProjectDevice device: devices){
       devicesDTO.add(new ProjectDeviceDTO(
         device.getProjectDevicePK().getProjectId(),
         device.getProjectDevicePK().getDeviceUuid(),
@@ -103,15 +103,15 @@ public class DeviceFacade4 {
   }
 
   public void updateProjectDevice(ProjectDeviceDTO projectDeviceDTO) {
-    ProjectDevice2 projectDevice = em.find(ProjectDevice2.class,
+    ProjectDevice projectDevice = em.find(ProjectDevice.class,
       new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
-    projectDevice.setState(ProjectDevice2.State.valueOf(projectDeviceDTO.getState()));
+    projectDevice.setState(ProjectDevice.State.valueOf(projectDeviceDTO.getState()));
     projectDevice.setAlias(projectDeviceDTO.getAlias());
     em.persist(projectDevice);
   }
 
   public void updateProjectDeviceLastLoggedIn(AuthProjectDeviceDTO projectDeviceDTO) {
-    ProjectDevice2 projectDevice = em.find(ProjectDevice2.class,
+    ProjectDevice projectDevice = em.find(ProjectDevice.class,
       new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
     projectDevice.setLastLoggedIn(new Date());
     em.persist(projectDevice);
@@ -124,7 +124,7 @@ public class DeviceFacade4 {
   }
 
   public void deleteProjectDevice(Integer projectId, String deviceUuid) {
-    ProjectDevice2 projectDevice = readProjectDevice(projectId, deviceUuid);
+    ProjectDevice projectDevice = readProjectDevice(projectId, deviceUuid);
     if (projectDevice != null){
       em.remove(projectDevice);
     }
