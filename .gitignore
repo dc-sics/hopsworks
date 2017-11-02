@@ -32,7 +32,6 @@ nbactions.xml
 
 ### Intellj ###
 hopsworks-web/overlays/
-hopsworks-web/overlays/
 out/
 
 ### Java ###
