@@ -378,8 +378,8 @@ public class DeviceService {
 
       Project project = projectFacade.find(projectId);
 
-      HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(),
-        settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(), certificateMaterializer);
+      HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(), settings.getHopsworksTmpCertDir(),
+        settings.getHdfsTmpCertDir(), certificateMaterializer, settings.getHopsRpcTls());
 
       String keyStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
         HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername());
