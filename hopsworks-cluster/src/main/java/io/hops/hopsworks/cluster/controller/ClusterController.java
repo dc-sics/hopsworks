@@ -301,7 +301,11 @@ public class ClusterController {
     long diff;
     int countExpired = 0;
     for (ClusterCert clusterCert : clusterCerts) {
-      diff = getDateDiffHours(clusterCert.getValidationKeyDate());
+      Date validationKeyDate = clusterCert.getValidationKeyDate();
+      if(validationKeyDate == null) {
+        continue;
+      }
+      diff = getDateDiffHours(validationKeyDate);
       if (diff > VALIDATION_KEY_EXPIRY_DATE && clusterCert.getRegistrationStatus().equals(
           RegistrationStatusEnum.REGISTRATION_PENDING)) {
         countExpired++;
