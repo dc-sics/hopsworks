@@ -53,10 +53,10 @@
             <div class="col-sm-8 col-md-8 col-lg-8" layout-align="center center" style='margin-top:20px; margin-left: 0px;'>
 
               <!-- STYLE THIS (TENSORFLOW : SPARK) -->
-              <div class="row" ng-show="jupyterCtrl.advanced === true">
+              <div class="row" ng-if="jupyterCtrl.advanced === true">
                 <div class="col-md-2"></div>
                 <div class="col-md-8 pull-left" style="margin-left: 43px;">
-                  <div class="btn-group blocks" style="padding: " data-toggle="buttons" ng-show="jupyterCtrl.ui === ''">
+                  <div class="btn-group blocks" style="padding: " data-toggle="buttons" ng-if="jupyterCtrl.ui === ''">
                     <label class="btn btn-primary" ng-class="{active: jupyterCtrl.val.mode === 'tensorflow', focus: jupyterCtrl.val.mode === 'tensorflow'}"
                            ng-click="jupyterCtrl.val.mode = 'tensorflow'">
                       <input type="radio" name="tensorflow" id="tensorflow" autocomplete="off"> TensorFlow
@@ -81,12 +81,13 @@
                   <br>
                 </div>
               </div>
-
-              <div class="row top-buffer" ng-show="jupyterCtrl.advanced === true">
+              <div class="row top-buffer" ng-if="jupyterCtrl.advanced === true">
                 <div class="row">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6"> Base Directory <i class="fa fa-info-circle"
-                                                                        uib-tooltip="Root Directory for Jupyter Notebooks. If your Notebook is not stored in the '/Jupyter' Dataset, choose '/'." style="margin-left: 10px"></i>
+                                                                        uib-tooltip="Root Directory for Jupyter Notebooks. If your Notebook is not stored in the '/Jupyter' Dataset, choose '/'." 
+                                                                        tooltip-placement="bottom" style="margin-left: 10px">
+                      </i>
                     </div>
                     <div class="col-md-2 jupyter-left">
 
@@ -209,10 +210,17 @@
                   </div>
                 </div>
 
-                <div class="row" ng-if="jupyterCtrl.val.mode !== 'sparkDynamic' && jupyterCtrl.val.mode !== 'horovod'">
+                <div class="row" ng-if="jupyterCtrl.val.mode !== 'sparkDynamic' && jupyterCtrl.val.mode !== 'horovod' && jupyterCtrl.val.mode !== 'tensorflow'">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">Number of executors <i class="fa fa-info-circle"
                                                                             uib-tooltip="The number of executors that should be requested for this job." style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left"><input type="number" ng-model="jupyterCtrl.val.numExecutors" ng-init="1" min="1" value="1" class="form-control"></div>
+                  </div>
+                </div>
+                <div class="row" ng-if="jupyterCtrl.val.mode === 'tensorflow'">
+                  <div class="row clusterparams">
+                    <div class="text-right col-md-6">Max parallel executions <i class="fa fa-info-circle" uib-tooltip="The maximum number of parallel tflauncher executions. If this configuration is less than the number of tflauncher jobs, the remaining jobs will be queued and executed once a previous job is finished." style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left"><input type="number" ng-model="jupyterCtrl.val.numExecutors" ng-init="1" min="1" value="1" class="form-control"></div>
                   </div>
@@ -231,7 +239,7 @@
                 <div class="row" ng-if="jupyterCtrl.val.mode === 'tensorflow'">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">Executor GPUs<i class="fa fa-info-circle"
-                                                                     uib-tooltip="The number of GPUs accessible for each Spark executor in this job."
+                                                                     uib-tooltip="The number of GPUs allocated for each Spark executor in this job."
                                                                      style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left"><input type="number" ng-init="0"  ng-model="jupyterCtrl.val.numTfGpus" min="0" class="form-control"></div>
@@ -241,7 +249,7 @@
 
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">GPUs per worker<i class="fa fa-info-circle"
-                                                                       uib-tooltip="The number of GPUs accessible for each worker. Parameter servers do not have access to a GPU."
+                                                                       uib-tooltip="The number of GPUs allocated for each worker. Parameter servers do not have access to a GPU."
                                                                        style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left">
@@ -313,7 +321,7 @@
                   </div>
                 </div>
 
-                <div class="row clusterparams" ng-show="jupyterCtrl.advanced === true">
+                <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
                   <div class="text-right col-md-6">Log Level <i class="fa fa-info-circle"
                                                                 uib-tooltip="Log4j log level for this job." 
                                                                 style="margin-left: 10px"></i>
@@ -329,15 +337,61 @@
                       </ui-select-choices>
                     </ui-select>
                   </div>
-                </div>                
+                </div>
               </div>
+
+              <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
+                <div class="text-right col-md-6">More Spark Properties <i class="fa fa-info-circle"
+                      uib-tooltip="Enter additional line-separated Spark properties here. Use spaces to separate parameters from values." 
+                      style="margin-left: 10px"></i>
+                </div>
+                <div class="col-md-5 jupyter-left">
+                  <textarea style="width: 100%;" id="TextArea" ng-model="jupyterCtrl.val.sparkParams" 
+                            ng-keyup="autoExpand($event)" 
+                            placeholder="spark.yarn.am.port  12242">
+                  </textarea>
+                </div>
+
+                <!--                <div class="col-md-2 jupyter-left">
+                                                  <fieldset  data-ng-repeat="jupyterCtrl.sparkParamsSelected in sparkParams">
+                                    <select>
+                                      <option>spark.yarn.</option>
+                                      <option>Office</option>
+                                      <option>Home</option>
+                                    </select>
+                                    <input type="text" ng-model="jupyterCtrl.sparkParamsSelected.name" name="" 
+                                           placeholder="Additional Spark Parameters">
+                                    <button class="remove" ng-show="$last" ng-click="jupyterCtrl.removeSparkParam()">-</button>
+                                  </fieldset>
+                                  <button class="addfields" ng-click="jupyterCtrl.addSparkParam()">Add fields</button>
+                
+                                  <div id="choicesDisplay">
+                                    {{ sparkParams}}
+                                  </div>                      
+                
+                                  <ui-select ng-model="jupyterCtrl.sparkParamsSelected" theme="bootstrap"
+                                             on-select="jupyterCtrl.changeSparkParam()">
+                                    <ui-select-match >
+                                      <span ng-bind="jupyterCtrl.logLevelSelected.name"></span>
+                                    </ui-select-match>
+                                    <ui-select-choices repeat="level in (jupyterCtrl.log_levels | filter: $select.search) track by level.name">
+                                      <span ng-bind="level.name | highlight: $select.search"></span>
+                                    </ui-select-choices>
+                                  </ui-select>
+                                </div>
+                              </div>-->
+              </div>
+
+
+>>>>>>> a6924515f277c59b172a31973161d959c8f05ba9
             </div>
           </div>
         </div>
 
+        <div class="row top-buffer" ng-if="jupyterCtrl.ui !== ''">
 
-        <div class="top-buffer" ng-show="jupyterCtrl.ui !== ''">
-          <div class="panel panel-default" style="width: 65%; margin-left: 30px;">
+          <div class="col-md-1"></div> 
+          <div class="col-md-8 panel panel-default shift-left">
             <div class="panel-heading" >
               <div>
                 <span style="font-weight: bold;">Jupyter Notebook Server Details</span>
@@ -370,7 +424,7 @@
           </div>
         </div>
         <!--, top-buffer: jupyterCtrl.ui !== ''-->
-        <div class="ds-sidenav" ng-class="{open: jupyterCtrl.tgState}" ng-show="jupyterCtrl.ui !== ''">
+        <div class="ds-sidenav" ng-class="{open: jupyterCtrl.tgState}" ng-if="jupyterCtrl.ui !== ''">
           <div class="ibox float-e-margins" style="margin-bottom:-25px; height: 95%;">
             <div class="file-manager">
               <div>
@@ -383,8 +437,8 @@
                             <tr>
                               <td>Open Jupyter in a new Tab</td>
                               <td style="text-align: right">                                      
-                                <button tooltip-placement='bottom'
-                                        uib-tooltip="Open a new Browser Tab to connect to the running Jupyter Notebook Server" 
+                                <button uib-tooltip="Open a new Browser Tab to connect to the running Jupyter Notebook Server" 
+                                        tooltip-placement="auto left"
                                         ng-click="jupyterCtrl.openWindow()" 
                                         type="button" class="btn btn-info btn-sm">
                                   <span class="glyphicon glyphicon-eye-open" ></span>
@@ -396,6 +450,7 @@
                               <td style="text-align: right">                                      
                                 <button
                                   uib-tooltip="Open the Spark UI for a Livy Session" 
+                                  tooltip-placement="auto left"
                                   ng-click="jupyterCtrl.showLivyUI(session.appId)"
                                   type="button" class="btn btn-info btn-sm" >
                                   <span class="glyphicon glyphicon-eye-open" ></span>
@@ -417,8 +472,10 @@
                             <tr>
                               <td>Shutdown Notebook Server</td>
                               <td style="text-align: right">                                      			  
-                                <button tooltip-placement='bottom'
-                                        uib-tooltip="Shutdown Jupyter Notebook Server." ng-click="jupyterCtrl.stop()" 
+                                <button tooltip-placement="auto left"
+                                        uib-tooltip="Shutdown Jupyter Notebook Server and stop applications." 
+                                        tooltip-placement="auto left"
+                                        ng-click="jupyterCtrl.stop()" 
                                         type="button" class="btn btn-danger btn-sm" >
                                   <span class="glyphicon glyphicon-off" ></span>
                                 </button>
