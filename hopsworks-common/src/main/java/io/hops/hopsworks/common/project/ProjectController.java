@@ -1883,15 +1883,15 @@ public class ProjectController {
     }
   }
 
-  public YarnPriceMultiplicator getYarnMultiplicator() {
-    YarnPriceMultiplicator multiplicator = yarnProjectsQuotaFacade.
-        getMultiplicator();
-    if (multiplicator == null) {
-      multiplicator = new YarnPriceMultiplicator();
+  public List<YarnPriceMultiplicator> getYarnMultiplicators() {
+    List<YarnPriceMultiplicator> multiplicators = yarnProjectsQuotaFacade.getMultiplicators();
+    if (multiplicators == null || multiplicators.isEmpty()) {
+      YarnPriceMultiplicator multiplicator = new YarnPriceMultiplicator();
       multiplicator.setMultiplicator(Settings.DEFAULT_YARN_MULTIPLICATOR);
       multiplicator.setId("-1");
+      multiplicators.add(multiplicator);
     }
-    return multiplicator;
+    return multiplicators;
   }
 
   public void logProject(Project project, OperationType type) {
