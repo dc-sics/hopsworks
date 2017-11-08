@@ -511,6 +511,7 @@ public class InterpreterRestApi {
       interpreterDTOs.put(interpreter.getName(), interpreterDTO);
       if (interpreter.getName().contains("livy")) {
         interpreterDTO.setSessions(livyService.getZeppelinLivySessions(project));
+        interpreterDTO.setDefaultInterpreter(true);
       }
     }
     return interpreterDTOs;
