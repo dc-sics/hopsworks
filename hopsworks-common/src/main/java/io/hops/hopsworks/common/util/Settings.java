@@ -1204,7 +1204,7 @@ public class Settings implements Serializable {
   // Zeppelin
   public static String HOPSHIVE_INT_GROUP = "2CRSX9NDY";
   public static String HOPSHIVE_INT_NAME = "hopshive";
-
+  public static String ZEPPELIN_DEFAULT_INTERPRETER = "livy";
   private String ZEPPELIN_DIR = "/srv/hops/zeppelin";
 
   public synchronized String getZeppelinDir() {
