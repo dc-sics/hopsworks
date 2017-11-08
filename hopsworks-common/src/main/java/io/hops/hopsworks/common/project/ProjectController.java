@@ -39,6 +39,7 @@ import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLog;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLogFacade;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
@@ -477,7 +478,7 @@ public class ProjectController {
     }
     //Create a new project object
     Date now = new Date();
-    Project project = new Project(projectName, user, now);
+    Project project = new Project(projectName, user, now, PaymentType.PREPAID);
     project.setDescription(projectDescription);
 
     // make ethical status pending
@@ -1471,6 +1472,15 @@ public class ProjectController {
         diskspaceQuotaInMB);
   }
 
+  public void setPaymentType(String projectname, PaymentType paymentType){
+    Project project = projectFacade.findByName(projectname);
+    if (project != null) {
+      project.setPaymentType(paymentType);
+      this.projectFacade.mergeProject(project);
+      this.projectFacade.flushEm();
+    }
+  }
+  
   public HdfsInodeAttributes getHdfsQuotas(int inodeId) throws AppException {
 
     HdfsInodeAttributes res = em.find(HdfsInodeAttributes.class, inodeId);
