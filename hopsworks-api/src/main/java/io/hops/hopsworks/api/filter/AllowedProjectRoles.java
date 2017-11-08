@@ -1,5 +1,7 @@
 package io.hops.hopsworks.api.filter;
 
+import io.hops.hopsworks.common.constants.auth.AllowedRoles;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -20,18 +22,18 @@ public @interface AllowedProjectRoles {
    * Allowed for everyone. This does not mean both roles it means literally
    * everyone
    */
-  String ANYONE = "ALL";
+  String ANYONE = AllowedRoles.ALL;
   /**
    * Allowed only to the owner
    */
-  String DATA_OWNER = "Data owner";
+  String DATA_OWNER = AllowedRoles.DATA_OWNER;
   /**
    * Allowed to contributors or members of the project. There is no hierarchy if
    * only this annotation is used only members will be granted access. So to
    * allow
    * owners and members use both.
    */
-  String DATA_SCIENTIST = "Data scientist";
+  String DATA_SCIENTIST = AllowedRoles.DATA_SCIENTIST;
 
   /**
    * Used to annotate methods that work with project resources
