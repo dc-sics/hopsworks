@@ -2,7 +2,7 @@ package io.hops.hopsworks.api.project;
 
 import io.hops.hopsworks.api.dela.DelaClusterProjectService;
 import io.hops.hopsworks.api.dela.DelaProjectService;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.jobs.BiobankingService;
 import io.hops.hopsworks.api.jobs.JobService;
@@ -15,7 +15,6 @@ import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.DataSetDTO;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
-import io.hops.hopsworks.common.dao.hdfs.HdfsInodeAttributes;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator;
@@ -127,7 +126,7 @@ public class ProjectService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response findAllByUser(@Context SecurityContext sc,
       @Context HttpServletRequest req) {
 
@@ -144,7 +143,7 @@ public class ProjectService {
   @GET
   @Path("/getAll")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getAllProjects(@Context SecurityContext sc,
       @Context HttpServletRequest req) {
 
@@ -158,12 +157,13 @@ public class ProjectService {
   @GET
   @Path("/getProjectInfo/{projectName}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getProjectByName(@PathParam("projectName") String projectName,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
     ProjectDTO proj = projectController.getProjectByName(projectName);
+    
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         proj).build();
@@ -176,13 +176,28 @@ public class ProjectService {
       @PathParam("id") Integer id) throws AppException {
     MoreInfoDTO info = null;
     if (id != null) {
+      String errorMsg;
       switch (type){
         case "proj":
           Project proj = projectFacade.find(id);
+          if (proj == null) {
+            errorMsg = "Project with id <" + id
+                + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                errorMsg);
+          }
           info = new MoreInfoDTO(proj);
           break;
         case "ds":
           info = datasetInfo(id);
+          if (info == null) {
+            errorMsg = "Dataset with id <" + id
+              + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                errorMsg);
+          }
           break;
       }
     }
@@ -193,19 +208,34 @@ public class ProjectService {
   @GET
   @Path("{id}/getMoreInfo/{type}/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getMoreInfo(@PathParam("id") Integer projectId, @PathParam("type") String type,
       @PathParam("inodeId") Integer id) throws AppException {
     MoreInfoDTO info = null;
     if (id != null) {
+      String errorMsg;
       switch (type){
         case "proj":
           Project proj = projectFacade.find(id);
+          if (proj == null) {
+            errorMsg = "Project with id <" + id
+                + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                "Project with id <" + id + "> could not be found");
+          }
           info = new MoreInfoDTO(proj);
           break;
         case "ds":
         case "inode":
           info = inodeInfo(id, projectId);
+          if (info == null) {
+            errorMsg = "Dataset/INode with id <" + id
+                + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                errorMsg);
+          }
           break;
       }
     }
@@ -282,7 +312,7 @@ public class ProjectService {
   @GET
   @Path("getDatasetInfo/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getDatasetInfo(
       @PathParam("inodeId") Integer inodeId,
       @Context SecurityContext sc,
@@ -317,7 +347,7 @@ public class ProjectService {
   @GET
   @Path("{id}/getInodeInfo/{inodeId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getDatasetInfo(
       @PathParam("id") Integer projectId,
       @PathParam("inodeId") Integer inodeId,
@@ -343,7 +373,7 @@ public class ProjectService {
   @GET
   @Path("{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response findByProjectID(
       @PathParam("id") Integer id,
       @Context SecurityContext sc,
@@ -361,7 +391,7 @@ public class ProjectService {
   @Path("{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response updateProject(
       ProjectDTO projectDTO,
       @PathParam("id") Integer id,
@@ -420,6 +450,9 @@ public class ProjectService {
             case JUPYTER:
               error = ResponseMessages.JUPYTER_ADD_FAILURE + Settings.ServiceDataset.JUPYTER.getName();
               break;
+            case HIVE:
+              error = ResponseMessages.HIVE_ADD_FAILURE;
+              break;
             default:
               error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
           }
@@ -454,7 +487,7 @@ public class ProjectService {
   @POST
   @Path("starterProject/{type}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response starterProject(
       @PathParam("type") String type,
       @Context SecurityContext sc,
@@ -540,7 +573,7 @@ public class ProjectService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response createProject(
           ProjectDTO projectDTO,
           @Context SecurityContext sc,
@@ -572,7 +605,7 @@ public class ProjectService {
   @POST
   @Path("{id}/delete")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response removeProjectAndFiles(
           @PathParam("id") Integer id,
           @Context SecurityContext sc,
@@ -607,7 +640,7 @@ public class ProjectService {
 
 
   @Path("{id}/projectMembers")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public ProjectMembersService projectMembers(
       @PathParam("id") Integer id) throws AppException {
     this.projectMembers.setProjectId(id);
@@ -616,7 +649,7 @@ public class ProjectService {
   }
 
   @Path("{id}/dataset")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public DataSetService datasets(
       @PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
@@ -630,7 +663,7 @@ public class ProjectService {
   }
 
   @Path("{id}/localfs")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public LocalFsService localFs(
       @PathParam("id") Integer id) throws AppException {
     this.localFs.setProjectId(id);
@@ -639,7 +672,7 @@ public class ProjectService {
   }
 
   @Path("{projectId}/jobs")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public JobService jobs(@PathParam("projectId") Integer projectId) throws
       AppException {
     Project project = projectController.findProjectById(projectId);
@@ -651,7 +684,7 @@ public class ProjectService {
   }
 
   @Path("{projectId}/biobanking")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public BiobankingService biobanking(@PathParam("projectId") Integer projectId)
       throws
       AppException {
@@ -660,7 +693,7 @@ public class ProjectService {
   }
   
   @Path("{projectId}/certs")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public CertService certs(@PathParam("projectId") Integer projectId) throws
       AppException {
     Project project = projectController.findProjectById(projectId);
@@ -674,24 +707,13 @@ public class ProjectService {
   @GET
   @Path("{id}/quotas")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response quotasByProjectID(
       @PathParam("id") Integer id,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
-    ProjectDTO proj = projectController.getProjectByID(id);
-    String yarnQuota = projectController.getYarnQuota(proj.getProjectName());
-    HdfsInodeAttributes inodeAttrs = projectController.getHdfsQuotas(proj.
-        getInodeid());
-
-    Long hdfsQuota = inodeAttrs.getDsquota().longValue();
-    Long hdfsUsage = inodeAttrs.getDiskspace().longValue();
-    Long hdfsNsQuota = inodeAttrs.getNsquota().longValue();
-    Long hdfsNsCount = inodeAttrs.getNscount().longValue();
-    QuotasDTO quotas = new QuotasDTO(yarnQuota, hdfsQuota, hdfsUsage,
-        hdfsNsQuota, hdfsNsCount);
-
+    QuotasDTO quotas = projectController.getQuotas(id);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         quotas).build();
   }
@@ -699,7 +721,7 @@ public class ProjectService {
   @GET
   @Path("{id}/multiplicator")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getCurrentMultiplicator(
       @PathParam("id") Integer id,
       @Context SecurityContext sc,
@@ -714,7 +736,7 @@ public class ProjectService {
 
   @GET
   @Path("{id}/importPublicDataset/{projectName}/{inodeId}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response quotasByProjectID(
       @PathParam("id") Integer id,
       @PathParam("projectName") String projectName,
@@ -769,7 +791,7 @@ public class ProjectService {
   @POST
   @Path("{id}/logs/enable")
   @Produces(MediaType.TEXT_PLAIN)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response enableLogs(@PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
     if (!project.getLogs()) {
@@ -786,7 +808,7 @@ public class ProjectService {
   }
 
   @Path("{id}/kafka")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public KafkaService kafka(
       @PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
@@ -800,7 +822,7 @@ public class ProjectService {
   }
   
   @Path("{id}/jupyter")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public JupyterService jupyter(
       @PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
@@ -814,7 +836,7 @@ public class ProjectService {
   }
 
   @Path("{id}/pythonDeps")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public PythonDepsService pysparkDeps(@PathParam("id") Integer id) throws
       AppException {
     Project project = projectController.findProjectById(id);
@@ -827,7 +849,7 @@ public class ProjectService {
   }
 
   @Path("{id}/dela")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public DelaProjectService dela(@PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
     if (project == null) {
@@ -840,7 +862,7 @@ public class ProjectService {
   }
   
   @Path("{id}/delacluster")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public DelaClusterProjectService delacluster(@PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);
     if (project == null) {

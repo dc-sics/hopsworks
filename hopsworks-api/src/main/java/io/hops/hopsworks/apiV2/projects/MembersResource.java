@@ -1,6 +1,6 @@
 package io.hops.hopsworks.apiV2.projects;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.project.ProjectMembersService;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
@@ -66,7 +66,7 @@ public class MembersResource {
   @GET
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response getAll(@Context SecurityContext sc){
     List<ProjectTeam> membersByProject = projectTeamFacade.findMembersByProject(projectFacade.find(projectId));
     List<MemberView> result = new ArrayList<>();
@@ -80,7 +80,7 @@ public class MembersResource {
   @ApiOperation("Remove member from project")
   @DELETE
   @Path("/{userId}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response deleteMember(@PathParam("id") Integer userId, @Context SecurityContext sc, @Context
       HttpServletRequest req) throws Exception {
     Users user = userFacade.find(userId);
@@ -92,7 +92,7 @@ public class MembersResource {
   @GET
   @Path("/{userId}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getMember(@PathParam("id") Integer userId, @Context SecurityContext sc) throws AppException {
     for (ProjectTeam member : projectTeamFacade.findMembersByProject(projectFacade.find(projectId))){
       if (userId.equals(member.getUser().getUid())){
@@ -106,7 +106,7 @@ public class MembersResource {
   @ApiOperation("Add member to project")
   @PUT
   @Path("/{userId}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response addMember(@PathParam("id") Integer userId, @Context SecurityContext sc, @Context HttpServletRequest
       req) throws AppException {
     MembersDTO toAdd = new MembersDTO();

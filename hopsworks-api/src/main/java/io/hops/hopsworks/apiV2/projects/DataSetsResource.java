@@ -1,7 +1,7 @@
 package io.hops.hopsworks.apiV2.projects;
 
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.project.DataSetService;
 import io.hops.hopsworks.api.util.JsonResponse;
@@ -24,6 +24,7 @@ import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.hdfs.MoveDTO;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -99,6 +100,7 @@ public class DataSetsResource {
   public void setProjectId(Integer projectId) {
     this.projectId = projectId;
     this.project = this.projectFacade.find(projectId);
+    this.dataSetService.setProjectId(projectId);
   }
 
   public Integer getProjectId() {
@@ -109,7 +111,7 @@ public class DataSetsResource {
   @GET
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getDataSets( @Context SecurityContext sc){
     
     List<DataSetView> dsViews = new ArrayList<>();
@@ -125,7 +127,7 @@ public class DataSetsResource {
   @POST
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response createDataSet(DataSetDTO dataSetDTO,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -175,7 +177,7 @@ public class DataSetsResource {
   @GET
   @Path("/{name}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getDataSet(@PathParam("name") String name, @Context
       SecurityContext sc) throws AppException {
     
@@ -195,13 +197,14 @@ public class DataSetsResource {
     return byNameAndProjectId;
   }
   
-  @ApiOperation("Update data set metadata")
-  @POST
-  @Path("/{name}")
-  public Response updateDataSet(@PathParam("name") String name, DataSetDTO update, @Context SecurityContext sc)
-      throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
-  }
+  //@ApiOperation("Update data set metadata")
+  //@POST
+  //@Path("/{name}")
+  //public Response updateDataSet(@PathParam("name") String name, DataSetDTO update, @Context SecurityContext sc)
+  //    throws AppException {
+  //
+  //  throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
+  //}
   
   /**
    * This function is used only for deletion of dataset directories
@@ -217,7 +220,7 @@ public class DataSetsResource {
   @DELETE
   @Path("/{name}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response deleteDataSet(
       @PathParam("name") String name,
       @Context
@@ -253,7 +256,7 @@ public class DataSetsResource {
       Project owning = datasetController.getOwningProject(dataset);
       boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
       if (isMember && projectTeamFacade.findCurrentRole(owning, user)
-          .equals(AllowedRoles.DATA_OWNER)
+          .equals(AllowedProjectRoles.DATA_OWNER)
           && owning.equals(project)) {
         dfso = dfs.getDfsOps();// do it as super user
       } else {
@@ -290,12 +293,13 @@ public class DataSetsResource {
     return Response.ok(json, MediaType.APPLICATION_JSON_TYPE).build();
   }
   
-  @ApiOperation(value = "Get data set README-file with meta data")
+  @ApiOperation(value = "Get data set README-file")
   @GET
   @Path("/{name}/readme")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getReadme(@PathParam("name") String datasetName, @Context SecurityContext sc) throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet.");
+  public Response getReadme(@PathParam("name") String datasetName, @Context SecurityContext sc)
+      throws AppException, AccessControlException {
+    return getFileOrDir(datasetName, "README.md", sc);
   }
   
   @ApiOperation("Get a list of projects that share this data set")
@@ -320,16 +324,13 @@ public class DataSetsResource {
   @GET
   @Path("/{name}/readonly")
   public Response isReadonly(@PathParam("name") String name, @Context SecurityContext sc) throws AppException {
+    Dataset ds = getDataSet(name);
     
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
-    //if readonly, return no-content
-//    boolean isReadonly = false; //TODO: add logic..
-//
-//    if (isReadonly){
-//      return Response.noContent().build();
-//    } else {
-//      throw new AppException(Response.Status.NOT_FOUND, "Data set editable");
-//    }
+    if (ds.isEditable()){
+      throw new AppException(Response.Status.NOT_FOUND, "Dataset not readonly");
+    } else {
+      return Response.noContent().build();
+    }
   }
   
   @ApiOperation("Make data set readonly")
@@ -402,13 +403,12 @@ public class DataSetsResource {
   @GET
   @Path("/{name}/files")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getDatasetRoot(@PathParam("name") String name, @Context SecurityContext sc) throws AppException {
     Dataset dataset = getDataSet(name);
     DataSetPath path = new DataSetPath(dataset, "/");
   
     String fullPath = pathValidator.getFullPath(path).toString();
-    logger.info("XXX: FULL PATH: " + fullPath);
   
     Inode inode = pathValidator.exists(path, inodes, true);
   
@@ -421,7 +421,7 @@ public class DataSetsResource {
   @GET
   @Path("/{name}/files/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getFileOrDir(@PathParam("name") String name,
       @PathParam ("path") String relativePath,
       @Context SecurityContext sc ) throws
@@ -430,7 +430,6 @@ public class DataSetsResource {
     Dataset dataSet = getDataSet(name);
     DataSetPath path = new DataSetPath(dataSet, relativePath);
     String fullPath = pathValidator.getFullPath(path).toString();
-    logger.info("XXX: FULL PATH GET FILE OR DIR: " + fullPath);
     
     Inode inode = pathValidator.exists(path, inodes, null);
     
@@ -456,41 +455,59 @@ public class DataSetsResource {
       "specified in the src parameter. All operations are data set scoped. ")
   @PUT
   @Path("/{name}/files/{target: .+}")
-  public Response copyMovePutZipUnzip(@PathParam("name") String dataSetName, @PathParam("target") String target,
+  public Response copyMoveZipUnzip(@PathParam("name") String dataSetName, @PathParam("target") String target,
       @ApiParam(allowableValues = "copy,move,zip,unzip") @QueryParam("op") String operation, @QueryParam("src")
-      String sourcePath ) throws AppException {
+      String sourcePath, @Context SecurityContext sc, @Context HttpServletRequest req)
+      throws AppException, AccessControlException {
     if (operation == null){
       throw new AppException(Response.Status.BAD_REQUEST, "?op= parameter required, possible options: " +
           "copy|move|zip|unzip");
     }
     switch(operation){
       case "copy":
-        return copy(dataSetName, target, sourcePath);
+        return copy(dataSetName, target, sourcePath, sc, req);
       case "move":
-        return move(dataSetName, target, sourcePath);
+        return move(dataSetName, target, sourcePath, sc, req);
       case "zip":
-        return zip(dataSetName, target, sourcePath);
+        return zip(dataSetName, target, sc);
       case "unzip":
-        return unzip(dataSetName, target, sourcePath);
+        return unzip(dataSetName, target, sc);
       default:
         throw new AppException(Response.Status.BAD_REQUEST, "?op= parameter should be one of: copy|move|zip|unzip");
     }
   }
   
-  private Response copy(String dataSet, String targetPath, String sourcePath) throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
+  private Response copy(String dataSet, String targetPath, String sourcePath, SecurityContext sc,
+      HttpServletRequest req ) throws AppException, AccessControlException {
+    Dataset ds = getDataSet(dataSet);
+    DataSetPath srcPath = new DataSetPath(ds, sourcePath);
+    Inode inodeAtPath = inodes.getInodeAtPath(pathValidator.getFullPath(srcPath).toString());
+    MoveDTO moveDto = new MoveDTO();
+    moveDto.setInodeId(inodeAtPath.getId());
+    DataSetPath destPath = new DataSetPath(ds, targetPath);
+    moveDto.setDestPath(pathValidator.getFullPath(destPath).toString());
+    return dataSetService.copyFile(sc, req,moveDto);
   }
   
-  private Response move(String dataSet, String targetPath, String sourcePath) throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
+  private Response move(String dataSet, String targetPath, String sourcePath, SecurityContext sc, HttpServletRequest
+      req) throws AppException, AccessControlException {
+    Dataset ds = getDataSet(dataSet);
+    DataSetPath srcPath = new DataSetPath(ds, sourcePath);
+    Inode inodeAtPath = inodes.getInodeAtPath(pathValidator.getFullPath(srcPath).toString());
+    MoveDTO moveDto = new MoveDTO();
+    moveDto.setInodeId(inodeAtPath.getId());
+    DataSetPath destPath = new DataSetPath(ds, targetPath);
+    moveDto.setDestPath(pathValidator.getFullPath(destPath).toString());
+    return dataSetService.moveFile(sc, req, moveDto);
   }
   
-  private Response zip(String dataSet, String targetPath, String sourcePath) throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
+  private Response zip(String dataSet, String targetPath, SecurityContext sc) throws AppException {
+    return dataSetService.compressFile(dataSet + "/" + targetPath, sc);
   }
   
-  private Response unzip(String dataSet, String targetPath, String sourcePath) throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Not implemented yet.");
+  private Response unzip(String dataSet, String targetPath, SecurityContext sc)
+      throws AppException, AccessControlException {
+    return dataSetService.unzip(dataSet + "/" + targetPath, sc);
   }
   
   @Path("/{name}/blobs")

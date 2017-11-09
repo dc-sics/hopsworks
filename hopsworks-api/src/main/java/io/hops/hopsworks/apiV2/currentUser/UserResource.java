@@ -1,6 +1,6 @@
 package io.hops.hopsworks.apiV2.currentUser;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.apiV2.Util;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
@@ -203,7 +203,7 @@ public class UserResource {
   @Path("/sshKeys")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response addSshkey(SshKeyDTO sshkey,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
@@ -217,7 +217,7 @@ public class UserResource {
   @DELETE
   @Path("/sshKeys/{name}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response removeSshkey(@PathParam("name") String name,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
@@ -233,7 +233,7 @@ public class UserResource {
   @GET
   @Path("/sshKeys")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getSshkeys(@Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     Users user = userBean.findByEmail(sc.getUserPrincipal().getName());

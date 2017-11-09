@@ -36,7 +36,7 @@ public interface Message {
   /**
    * Creates a json object as a string with the corresponding message values.
    * <p/>
-   * @return the jsonCreated json object as a string
+   * @return the created json object as a string
    */
   public String encode();
 
@@ -45,7 +45,7 @@ public interface Message {
    * metadata template carries, based on the incoming JSON message. It's the
    * opposite of buildSchema().
    * <p/>
-   * @return the jsonCreated schema
+   * @return the created schema
    */
   public List<EntityIntf> parseSchema();
 

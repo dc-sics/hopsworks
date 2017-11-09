@@ -2,6 +2,7 @@ package io.hops.hopsworks.common.jobs.spark;
 
 import com.google.common.base.Strings;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
+import io.hops.hopsworks.common.exception.CryptoPasswordNotFoundException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
@@ -61,7 +62,6 @@ public class SparkYarnRunnerBuilder {
   private final Map<String, String> sysProps = new HashMap<>();
   private String classPath;
   private ServiceProperties serviceProps;
-  private String sessionId;
   final private Set<String> blacklistedProps = new HashSet<>();
 
   public SparkYarnRunnerBuilder(Jobs job) {
@@ -122,20 +122,23 @@ public class SparkYarnRunnerBuilder {
     builder.setYarnClient(yarnClient);
     builder.setDfsClient(dfsClient);
     builder.setJobUser(jobUser);
-    try {
-      String password = services.getBaseHadoopClientsService()
-          .getProjectSpecificUserCertPassword(jobUser);
-      builder.setKeyStorePassword(password);
-      builder.setTrustStorePassword(password);
-    } catch (Exception ex) {
-      throw new IOException(ex);
+    if (settings.getHopsRpcTls()) {
+      try {
+        String password = services.getBaseHadoopClientsService()
+            .getProjectSpecificUserCertPassword(jobUser);
+        builder.setKeyStorePassword(password);
+        builder.setTrustStorePassword(password);
+      } catch (CryptoPasswordNotFoundException ex) {
+        LOG.log(Level.SEVERE, ex.getMessage(), ex);
+        throw new IOException(ex);
+      }
     }
 
     String stagingPath = "/Projects/" + project + "/"
-        + Settings.PROJECT_STAGING_DIR + "/.sparkjobstaging-"+YarnRunner.APPID_PLACEHOLDER;
+        + Settings.PROJECT_STAGING_DIR + "/.sparkjobstaging-" + YarnRunner.APPID_PLACEHOLDER;
     builder.localResourcesBasePath(stagingPath);
     //Add hdfs prefix so the monitor knows it should find it there
-    builder.addFileToRemove("hdfs://"+stagingPath);
+    builder.addFileToRemove("hdfs://" + stagingPath);
     builder.addLocalResource(new LocalResourceDTO(
         Settings.SPARK_LOCALIZED_LIB_DIR, hdfsSparkJarPath,
         LocalResourceVisibility.PRIVATE.toString(),
@@ -221,19 +224,17 @@ public class SparkYarnRunnerBuilder {
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH, "$PWD");
     StringBuilder extraClassPathFiles = new StringBuilder();
     StringBuilder secondaryJars = new StringBuilder();
-    //Add hops-util.jar if it is a Kafka job
-    if (serviceProps.isKafkaEnabled()) {
-      builder.addLocalResource(new LocalResourceDTO(
-          settings.getHopsUtilFilename(), settings.getHopsUtilHdfsPath(
-          sparkUser),
-          LocalResourceVisibility.APPLICATION.toString(),
-          LocalResourceType.FILE.toString(), null), false);
+    //Add hops-util.jar 
+    builder.addLocalResource(new LocalResourceDTO(
+        settings.getHopsUtilFilename(), settings.getHopsUtilHdfsPath(
+        sparkUser),
+        LocalResourceVisibility.PRIVATE.toString(),
+        LocalResourceType.FILE.toString(), null), false);
 
-      builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
-          settings.getHopsUtilFilename());
-      extraClassPathFiles.append(settings.getHopsUtilFilename()).append(
-          File.pathSeparator);
-    }
+    builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
+        settings.getHopsUtilFilename());
+    extraClassPathFiles.append(settings.getHopsUtilFilename()).append(
+        File.pathSeparator);
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
         "$PWD/" + Settings.SPARK_LOCALIZED_CONF_DIR + File.pathSeparator
         + Settings.SPARK_LOCALIZED_CONF_DIR
@@ -244,8 +245,9 @@ public class SparkYarnRunnerBuilder {
 
     //Add extra files to local resources, use filename as key
     for (LocalResourceDTO dto : extraFiles) {
-      if (dto.getName().equals(Settings.K_CERTIFICATE) || dto.getName().equals(
-          Settings.T_CERTIFICATE)) {
+      if (dto.getName().equals(Settings.K_CERTIFICATE)
+          || dto.getName().equals(Settings.T_CERTIFICATE)
+          || dto.getName().equals(Settings.CRYPTO_MATERIAL_PASSWORD)) {
         //Set deletion to true so that certs are removed
         builder.addLocalResource(dto, true);
       } else {
@@ -426,6 +428,8 @@ public class SparkYarnRunnerBuilder {
           getJobName());
       addSystemProperty(Settings.HOPSWORKS_JOBTYPE_PROPERTY, jobType.getName());
       addSystemProperty(Settings.HOPSWORKS_PROJECTUSER_PROPERTY, jobUser);
+      addSystemProperty(Settings.HOPSWORKS_PROJECTID_PROPERTY, Integer.toString(serviceProps.getProjectId()));
+      addSystemProperty(Settings.HOPSWORKS_PROJECTNAME_PROPERTY, serviceProps.getProjectName());
 
       extraJavaOptions.append(" -D" + Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY
           + "=").
@@ -434,33 +438,19 @@ public class SparkYarnRunnerBuilder {
           append(" -D" + Settings.HOPSWORKS_TRUSTSTORE_PROPERTY + "=").append(Settings.TRUSTSTORE_VAL_ENV_VAR).
           append(" -D" + Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY + "=").append(
           serviceProps.getElastic().getRestEndpoint()).
-          append(" -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=").append(
-          serviceProps.getProjectId()).
-          append(" -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=").append(
-          serviceProps.getProjectName()).
-          append(" -D" + Settings.HOPSWORKS_JOBNAME_PROPERTY + "=").append(
-          serviceProps.getJobName()).
-          append(" -D" + Settings.HOPSWORKS_JOBTYPE_PROPERTY + "=").append(
-          jobType.getName()).
-          append(" -D" + Settings.HOPSWORKS_SESSIONID_PROPERTY + "=").append(sessionId).
+          append(" -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=").append(serviceProps.getProjectId()).
+          append(" -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=").append(serviceProps.getProjectName()).
+          append(" -D" + Settings.HOPSWORKS_JOBNAME_PROPERTY + "=").append(serviceProps.getJobName()).
+          append(" -D" + Settings.HOPSWORKS_JOBTYPE_PROPERTY + "=").append(jobType.getName()).
           append(" -D" + Settings.HOPSWORKS_PROJECTUSER_PROPERTY + "=").append(jobUser);
+
       //Handle Kafka properties
       if (serviceProps.getKafka() != null) {
-        addSystemProperty(Settings.KAFKA_BROKERADDR_ENV_VAR, serviceProps.
-            getKafka().getBrokerAddresses());
-        addSystemProperty(Settings.KAFKA_JOB_TOPICS_ENV_VAR, serviceProps.
-            getKafka().getTopics());
-        addSystemProperty(Settings.HOPSWORKS_PROJECTID_PROPERTY, Integer.toString(
-            serviceProps.getProjectId()));
-        addSystemProperty(Settings.HOPSWORKS_PROJECTNAME_PROPERTY, serviceProps.
-            getProjectName());
-        addSystemProperty(Settings.HOPSWORKS_SESSIONID_PROPERTY, sessionId);
-
-        addSystemProperty(Settings.KAFKA_CONSUMER_GROUPS, serviceProps.
-            getKafka().getConsumerGroups());
+        addSystemProperty(Settings.KAFKA_BROKERADDR_ENV_VAR, serviceProps.getKafka().getBrokerAddresses());
+        addSystemProperty(Settings.KAFKA_JOB_TOPICS_ENV_VAR, serviceProps.getKafka().getTopics());
+        addSystemProperty(Settings.KAFKA_CONSUMER_GROUPS, serviceProps.getKafka().getConsumerGroups());
         builder.
-            addJavaOption(" -D" + Settings.KAFKA_CONSUMER_GROUPS + "="
-                + serviceProps.getKafka().getConsumerGroups());
+            addJavaOption(" -D" + Settings.KAFKA_CONSUMER_GROUPS + "=" + serviceProps.getKafka().getConsumerGroups());
         extraJavaOptions.
             append(" -D" + Settings.KAFKA_BROKERADDR_ENV_VAR + "=").
             append(serviceProps.getKafka().getBrokerAddresses()).
@@ -751,10 +741,6 @@ public class SparkYarnRunnerBuilder {
       classPath = classPath + ":" + s;
     }
     return this;
-  }
-
-  public void setSessionId(String sessionId) {
-    this.sessionId = sessionId;
   }
 
 }

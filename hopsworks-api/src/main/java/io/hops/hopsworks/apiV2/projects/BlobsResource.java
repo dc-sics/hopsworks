@@ -17,7 +17,7 @@
  */
 package io.hops.hopsworks.apiV2.projects;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.util.UploadService;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
@@ -98,7 +98,7 @@ public class BlobsResource {
   @ApiOperation("Download a file")
   @GET
   @Path("/{path: .+}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response downloadFile(@PathParam("path") String path,
       @Context SecurityContext sc) throws AppException, AccessControlException {
     if(ds == null){
@@ -118,21 +118,21 @@ public class BlobsResource {
     return downloadFromHdfs(hdfsUserName, fullPath);
   }
   
-  @ApiOperation(value="Upload a file", notes = "File size must be <2GB.")
-  @PUT
-  @Path("/{path: .+}")
-  @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-  public Response putFile(@PathParam("path") String filePath, InputStream
-      fileInputStream) throws AppException {
-    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet.");
-  }
+  //@ApiOperation(value="Upload a file", notes = "File size must be <2GB.")
+  //@PUT
+  //@Path("/{path: .+}")
+  //@Consumes(MediaType.APPLICATION_OCTET_STREAM)
+  //public Response putFile(@PathParam("path") String filePath, InputStream
+  //    fileInputStream) throws AppException {
+  //  throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet.");
+  //}
   
   @ApiOperation(value="Upload a large file in parts")
   @POST
   @Path("/{path: .+}")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response uploadMethod(@Context SecurityContext sc, @PathParam("path") String relativePath,
       @FormDataParam("file") InputStream uploadedInputStream,
       @FormDataParam("file")

@@ -1,7 +1,7 @@
 package io.hops.hopsworks.apiV2.projects;
 
 import io.hops.hopsworks.api.dela.DelaProjectService;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -90,7 +90,7 @@ public class ProjectsResource {
   @GET
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getProjects(@Context SecurityContext sc, @Context
       HttpServletRequest req){
     
@@ -120,7 +120,7 @@ public class ProjectsResource {
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response createProject(
       ProjectDTO projectDTO,
       @Context SecurityContext sc,
@@ -252,7 +252,7 @@ public class ProjectsResource {
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getProject(@PathParam("id") Integer id, @Context SecurityContext sc) throws AppException {
     Project project = projectController.findProjectById(id);
     return Response.ok(project,MediaType.APPLICATION_JSON_TYPE).build();
@@ -343,7 +343,7 @@ public class ProjectsResource {
   @ApiOperation(value= "Delete project")
   @DELETE
   @Path("/{id}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response deleteProject(@PathParam("id") Integer id,
       @Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
     String userMail = sc.getUserPrincipal().getName();
@@ -355,7 +355,7 @@ public class ProjectsResource {
   }
   
   @Path("/{id}/datasets")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public DataSetsResource getDataSets(@PathParam("id") Integer id, @Context SecurityContext sc) throws AppException {
     Project project = projectController.findProjectById(id);
     dataSets.setProjectId(project.getId());
@@ -364,7 +364,7 @@ public class ProjectsResource {
   
   @ApiOperation(value = "Members sub-resource", tags = {"V2 Members"})
   @Path("/{id}/members")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public MembersResource getMembers(@PathParam("id") Integer id, @Context SecurityContext sc) throws AppException {
     Project project = projectController.findProjectById(id);
     members.setProjectId(project.getId());
@@ -372,7 +372,7 @@ public class ProjectsResource {
   }
   
   @Path("/{id}/activity")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getActivityForProject(@PathParam("id") Integer projectId, @Context SecurityContext sc)
       throws AppException {
     List<Activity> activities = new ArrayList<>();
@@ -389,7 +389,7 @@ public class ProjectsResource {
   
   
   @Path("{id}/dela")
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public DelaProjectService dela(
       @PathParam("id") Integer id) throws AppException {
     Project project = projectController.findProjectById(id);

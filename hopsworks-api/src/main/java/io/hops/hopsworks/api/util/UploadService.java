@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.AccessControlException;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.metadata.wscomm.ResponseBuilder;
 import io.hops.hopsworks.api.metadata.wscomm.message.UploadedTemplateMessage;
 import io.hops.hopsworks.api.project.util.DsPath;
@@ -96,7 +96,7 @@ public class UploadService {
    * @param username the username of the user uploading the file
    * @param templateId the template to associate the the uploaded file
    * @param role
-   * @throws AppException if new directories need to be jsonCreated and the name
+   * @throws AppException if new directories need to be created and the name
    * is not valid
    */
   public void confFileUpload(DsPath dsPath, String username,
@@ -167,7 +167,7 @@ public class UploadService {
       }
     } catch (IOException e) {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
-              "Uploads directory could not be jsonCreated in the file system");
+              "Uploads directory could not be created in the file system");
     } finally {
       if (dfso != null) {
         dfso.close();
@@ -181,7 +181,7 @@ public class UploadService {
   @GET
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response testMethod(
           @Context HttpServletRequest request)
           throws AppException, IOException, AccessControlException {
@@ -210,7 +210,7 @@ public class UploadService {
         try {
           //If the user has a role in the owning project of the Dataset and that is Data Owner
           //perform operation as superuser
-          if (!Strings.isNullOrEmpty(role) && role.equals(AllowedRoles.DATA_OWNER)) {
+          if (!Strings.isNullOrEmpty(role) && role.equals(AllowedProjectRoles.DATA_OWNER)) {
             udfso = dfs.getDfsOps();
           } else {
             udfso = dfs.getDfsOps(username);
@@ -241,7 +241,7 @@ public class UploadService {
   @POST
   @Consumes(MediaType.MULTIPART_FORM_DATA)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response uploadMethod(
           @FormDataParam("file") InputStream uploadedInputStream,
           @FormDataParam("file") FormDataContentDisposition fileDetail,
@@ -332,7 +332,7 @@ public class UploadService {
         
         //If the user has a role in the owning project of the Dataset and that is Data Owner
         //perform operation as superuser
-        if (!Strings.isNullOrEmpty(role) && role.equals(AllowedRoles.DATA_OWNER)) {
+        if (!Strings.isNullOrEmpty(role) && role.equals(AllowedProjectRoles.DATA_OWNER)) {
           dfsOps = dfs.getDfsOps();
         } else {
           dfsOps = dfs.getDfsOps(username);

@@ -1,6 +1,6 @@
 package io.hops.hopsworks.apiV2.currentUser;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.dataset.DatasetRequest;
@@ -62,7 +62,7 @@ public class MessagesResource {
   @ApiOperation(value = "Get all messages in the user's inbox", response = Message.class, responseContainer = "List",
       notes =  "Get all messages in the user's inbox")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getInbox(@Context SecurityContext sc) throws AppException {
     String email = sc.getUserPrincipal().getName();
     List<Message> list = msgFacade.getInbox(getByEmail(email));
@@ -77,7 +77,7 @@ public class MessagesResource {
   @GET
   @Path("/inbox")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getInboxFiltered(@Context SecurityContext sc,
       @QueryParam("filter") String filter) throws AppException {
     Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
@@ -101,7 +101,7 @@ public class MessagesResource {
   @GET
   @Path("/inbox/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getInboxMessage(@PathParam("id") Integer id, @Context
       SecurityContext sc) throws AppException {
     
@@ -139,7 +139,7 @@ public class MessagesResource {
   @GET
   @Path("/trash/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getTrashMessage(@PathParam("id") Integer id, @Context
       SecurityContext sc){
     List<Message> trash = getUserTrash(sc.getUserPrincipal().getName());

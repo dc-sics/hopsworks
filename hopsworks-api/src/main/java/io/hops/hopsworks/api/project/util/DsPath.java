@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.Path;
 import javax.ws.rs.core.Response;
 
 /**
- * This class is returned from the PathValidatorV2 which parses the PATHs
+ * This class is returned from the PathValidator which parses the PATHs
  * received from the DatasetService.java
  * It contains information related to the dataset involved in the REST call,
  * the full path of the file or directory involved

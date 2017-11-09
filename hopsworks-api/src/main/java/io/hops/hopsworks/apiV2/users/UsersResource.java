@@ -17,7 +17,7 @@
  */
 package io.hops.hopsworks.apiV2.users;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.apiV2.Util;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -53,7 +53,7 @@ public class UsersResource {
   @GET
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response findAll(@Context SecurityContext sc) {
 
     List<Users> users = userBean.findAllUsers();
