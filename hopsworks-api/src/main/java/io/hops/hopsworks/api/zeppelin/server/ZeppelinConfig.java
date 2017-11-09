@@ -455,7 +455,8 @@ public class ZeppelinConfig {
               "livy_url", settings.getLivyUrl(),
               "livy_master", settings.getLivyYarnMode(),
               "zeppelin_home_dir", home,
-              "zeppelin_notebook_dir", notebookDir);
+              "zeppelin_notebook_dir", notebookDir,
+              "zeppelin_interpreters", settings.getZeppelinInterpreters());
       createdXml = ConfigFileGenerator.createConfigFile(zeppelin_site_xml_file,
           zeppelin_site_xml.
               toString());

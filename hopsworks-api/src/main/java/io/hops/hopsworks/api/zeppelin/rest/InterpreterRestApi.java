@@ -513,7 +513,7 @@ public class InterpreterRestApi {
       if (interpreter.getName().contains("livy")) {
         interpreterDTO.setSessions(livyService.getZeppelinLivySessions(project));
       }
-      if (interpreter.getName().equalsIgnoreCase(Settings.ZEPPELIN_DEFAULT_INTERPRETER)) {
+      if (interpreter.getName().equalsIgnoreCase(settings.getZeppelinDefaultInterpreter())) {
         interpreterDTO.setDefaultInterpreter(true);
       }
     }
