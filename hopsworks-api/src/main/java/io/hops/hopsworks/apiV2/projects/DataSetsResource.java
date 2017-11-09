@@ -1,7 +1,7 @@
 package io.hops.hopsworks.apiV2.projects;
 
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.project.DataSetService;
 import io.hops.hopsworks.api.util.JsonResponse;
@@ -109,7 +109,7 @@ public class DataSetsResource {
   @GET
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getDataSets( @Context SecurityContext sc){
     
     List<DataSetView> dsViews = new ArrayList<>();
@@ -125,7 +125,7 @@ public class DataSetsResource {
   @POST
   @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response createDataSet(DataSetDTO dataSetDTO,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -175,7 +175,7 @@ public class DataSetsResource {
   @GET
   @Path("/{name}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getDataSet(@PathParam("name") String name, @Context
       SecurityContext sc) throws AppException {
     
@@ -217,7 +217,7 @@ public class DataSetsResource {
   @DELETE
   @Path("/{name}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response deleteDataSet(
       @PathParam("name") String name,
       @Context
@@ -253,7 +253,7 @@ public class DataSetsResource {
       Project owning = datasetController.getOwningProject(dataset);
       boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
       if (isMember && projectTeamFacade.findCurrentRole(owning, user)
-          .equals(AllowedRoles.DATA_OWNER)
+          .equals(AllowedProjectRoles.DATA_OWNER)
           && owning.equals(project)) {
         dfso = dfs.getDfsOps();// do it as super user
       } else {
@@ -402,13 +402,12 @@ public class DataSetsResource {
   @GET
   @Path("/{name}/files")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getDatasetRoot(@PathParam("name") String name, @Context SecurityContext sc) throws AppException {
     Dataset dataset = getDataSet(name);
     DataSetPath path = new DataSetPath(dataset, "/");
   
     String fullPath = pathValidator.getFullPath(path).toString();
-    logger.info("XXX: FULL PATH: " + fullPath);
   
     Inode inode = pathValidator.exists(path, inodes, true);
   
@@ -421,7 +420,7 @@ public class DataSetsResource {
   @GET
   @Path("/{name}/files/{path: .+}")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_SCIENTIST, AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getFileOrDir(@PathParam("name") String name,
       @PathParam ("path") String relativePath,
       @Context SecurityContext sc ) throws
@@ -430,7 +429,6 @@ public class DataSetsResource {
     Dataset dataSet = getDataSet(name);
     DataSetPath path = new DataSetPath(dataSet, relativePath);
     String fullPath = pathValidator.getFullPath(path).toString();
-    logger.info("XXX: FULL PATH GET FILE OR DIR: " + fullPath);
     
     Inode inode = pathValidator.exists(path, inodes, null);
     

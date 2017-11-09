@@ -34,8 +34,6 @@ public class PathValidatorV2 {
       toReturn = new Path(datasetPath, relativePath);
     }
     
-    LOGGER.info("XXX: Parent: " + datasetPath + " child: " + relativePath + " combined: " + toReturn);
-      
     return toReturn;
   }
   

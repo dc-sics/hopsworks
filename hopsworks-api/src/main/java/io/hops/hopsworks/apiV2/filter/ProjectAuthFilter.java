@@ -17,7 +17,7 @@
  */
 package io.hops.hopsworks.apiV2.filter;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.apiV2.projects.ProjectsResource;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
@@ -73,7 +73,7 @@ public class ProjectAuthFilter extends ApiV2FilterBase {
         }
   
         Method method = resourceInfo.getResourceMethod();
-        if (!method.isAnnotationPresent(AllowedRoles.class)) {
+        if (!method.isAnnotationPresent(AllowedProjectRoles.class)) {
           //All project specific endpoints should have allowed-roles annotation
           log.severe("Method missing AllowedRoles-annotation: " + method.getName());
           requestContext.abortWith(Response.
@@ -81,10 +81,10 @@ public class ProjectAuthFilter extends ApiV2FilterBase {
           return;
         }
   
-        AllowedRoles rolesAnnotation = method.getAnnotation(AllowedRoles.class);
-        Set<String> rolesSet = new HashSet<>(Arrays.asList(rolesAnnotation.roles()));
+        AllowedProjectRoles rolesAnnotation = method.getAnnotation(AllowedProjectRoles.class);
+        Set<String> rolesSet = new HashSet<>(Arrays.asList(rolesAnnotation.value()));
   
-        if (rolesSet.contains(AllowedRoles.ALL)) {
+        if (rolesSet.contains(AllowedProjectRoles.ANYONE)) {
           //Any Hops-user is allowed, let the request through.
           return;
         }

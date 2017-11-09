@@ -109,7 +109,7 @@ public class ZeppelinConfig {
       createSymLinks();//interpreter and lib
       createVisCacheSymlink();//create a symlink to node and npm tar cache.
       newFile = createZeppelinConfFiles(interpreterConf);//create project specific configurations for zeppelin 
-      this.conf = loadConfig();//load the newly jsonCreated zeppelin-site.xml
+      this.conf = loadConfig();//load the newly created zeppelin-site.xml
       this.depResolver = new DependencyResolver(conf.getString(
           ZeppelinConfiguration.ConfVars.ZEPPELIN_INTERPRETER_LOCALREPO));
       InterpreterOutput.limit = conf.getInt(
@@ -141,9 +141,9 @@ public class ZeppelinConfig {
         setNotebookServer(nbs);
       }
     } catch (IOException |RepositoryException|TaskRunnerException e) {
-      if (newDir) { // if the folder was newly jsonCreated delete it
+      if (newDir) { // if the folder was newly created delete it
         removeProjectDirRecursive();
-      } else if (newFile) { // if the conf files were newly jsonCreated delete them
+      } else if (newFile) { // if the conf files were newly created delete them
         removeProjectConfFiles();
       }
       LOGGER.log(Level.SEVERE, "Error in initializing ZeppelinConfig for project: {0}. {1}",
@@ -344,7 +344,7 @@ public class ZeppelinConfig {
     return credentials;
   }
 
-  //returns true if the project dir was jsonCreated
+  //returns true if the project dir was created
   private boolean createZeppelinDirs() {
     File projectDir = new File(projectDirPath);
     boolean newProjectDir = projectDir.mkdirs();
@@ -401,7 +401,7 @@ public class ZeppelinConfig {
     }
   }
 
-  // returns true if one of the conf files were jsonCreated anew
+  // returns true if one of the conf files were created anew
   private boolean createZeppelinConfFiles(String interpreterConf) throws IOException {
     File zeppelin_env_file = new File(confDirPath + ZEPPELIN_ENV_SH);
     File zeppelin_site_xml_file = new File(confDirPath + ZEPPELIN_SITE_XML);
@@ -483,38 +483,44 @@ public class ZeppelinConfig {
         + logstashID + restEndpointProp + keystorePwProp + truststorePwProp + elasticEndpointProp + projectIdProp
         + projectNameProp + userProp;
     String hdfsResourceDir = "hdfs://" + resourceDir + File.separator;
-    // Comma-separated files to be added as local resources to Spark interpreter
-    StringBuilder sparkDistFiles = new StringBuilder();
-    sparkDistFiles
+    // Comma-separated files to be added as local resources to Spark/Livy interpreter
+
+    StringBuilder distFiles = new StringBuilder();
+    distFiles
         // KeyStore
         .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator)
-        .append(this.projectName).append("__kstore.jks#")
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append(File.separator)
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append("__kstore.jks#")
         .append(Settings.K_CERTIFICATE).append(",")
         // TrustStore
         .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator)
-        .append(this.projectName).append("__tstore.jks#")
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append(File.separator)
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append("__tstore.jks#")
         .append(Settings.T_CERTIFICATE);
-
-    StringBuilder keyStoreSB = new StringBuilder();
-    keyStoreSB
-        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator).append(this.projectName)
-        .append("__kstore.jks#").append(Settings.K_CERTIFICATE);
-    StringBuilder trustStoreSB = new StringBuilder();
-    trustStoreSB
-        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator).append(this.projectName)
-        .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
-        
-    // Comma-separated files to be added as local resources to Livy interpreter
-    StringBuilder livySparkDistFiles = new StringBuilder();
-    livySparkDistFiles
-        // KeyStore
-        .append(keyStoreSB).append(",")
-        // TrustStore
-        .append(trustStoreSB);
+  
+    // If RPC TLS is enabled, password file would be injected by the
+    // NodeManagers. We don't need to add it as LocalResource
+    if (!settings.getHopsRpcTls()) {
+      distFiles
+          // File with crypto material password
+          .append(",")
+          .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+          .append(projectName)
+          .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+          .append(File.separator)
+          .append(projectName)
+          .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+          .append("__cert.key#")
+          .append(Settings.CRYPTO_MATERIAL_PASSWORD);
+    }
 
     if (interpreterConf == null) {
       StringBuilder interpreter_json = ConfigFileGenerator.
@@ -525,7 +531,7 @@ public class ZeppelinConfig {
               "hdfs_user", this.projectName,
               "hadoop_home", settings.getHadoopSymbolicLinkDir(),
               "livy_url", settings.getLivyUrl(),
-              "metrics-properties_path", log4jPath + "," + livySparkDistFiles.toString(),
+              "metrics-properties_path", log4jPath + "," + distFiles.toString(),
               "extra_spark_java_options", extraSparkJavaOptions,
               "spark.sql.warehouse.dir", hdfsResourceDir + "spark-warehouse",
               "spark.yarn.stagingDir", hdfsResourceDir,
@@ -533,8 +539,10 @@ public class ZeppelinConfig {
               "livy.spark.yarn.stagingDir", hdfsResourceDir,
               "hadoop_version", settings.getHadoopVersion(),
               "zeppelin.python_conda_path", zeppelinPythonPath,
-              "spark.yarn.dist.files", sparkDistFiles.toString(),
-              "livy_session_timeout", settings.getLivyZeppelinSessionTimeout()
+              "livy_session_timeout", settings.getLivyZeppelinSessionTimeout(),
+              "spark.yarn.dist.files", distFiles.toString(),
+              "hive.server", settings.getHiveServerHostName(false),
+              "hive.db", this.projectName
           );
       interpreterConf = interpreter_json.toString();
     } 

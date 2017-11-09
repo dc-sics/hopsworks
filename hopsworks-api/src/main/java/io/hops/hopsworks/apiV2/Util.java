@@ -21,7 +21,6 @@ import io.hops.hopsworks.common.exception.AppException;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.net.URI;
 
 public class Util {
   
@@ -32,9 +31,5 @@ public class Util {
   
   public static Response jsonOk(Object entity){
     return Response.ok(entity).type(MediaType.APPLICATION_JSON_TYPE).build();
-  }
-  
-  public static Response jsonCreated(URI location, Object entity){
-    return Response.created(location).entity(entity).type(MediaType.APPLICATION_JSON_TYPE).build();
   }
 }

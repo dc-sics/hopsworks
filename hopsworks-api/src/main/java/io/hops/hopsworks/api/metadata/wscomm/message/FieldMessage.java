@@ -63,7 +63,7 @@ public class FieldMessage extends ContentMessage {
    * based on the contents of the JSON incoming message. It's the opposite of
    * buildSchema()
    *
-   * @return the jsonCreated schema
+   * @return the created schema
    */
   @Override
   public List<EntityIntf> parseSchema() {

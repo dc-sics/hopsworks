@@ -2,7 +2,6 @@ package io.hops.hopsworks.common.dao.dataset;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
@@ -12,7 +11,6 @@ import io.hops.hopsworks.common.dao.user.UserCardDTO;
 public class DataSetDTO {
 
   private Integer inodeId;
-  @XmlElement(required=true)
   private String name;
   private String description;
   private boolean isPublic;
