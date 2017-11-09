@@ -1,5 +1,7 @@
 package io.hops.hopsworks.rest.application.config;
 
+import io.hops.hopsworks.apiV2.projects.PathValidatorV2;
+import io.hops.hopsworks.apiV2.users.UsersResource;
 import io.swagger.annotations.Api;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -71,10 +73,28 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.hopssite.HopssiteService.class);
     register(io.hops.hopsworks.api.hopssite.CommentService.class);
     register(io.hops.hopsworks.api.hopssite.RatingService.class);
-    //
     
     //swagger
     register(io.swagger.jaxrs.listing.ApiListingResource.class);
     register(io.swagger.jaxrs.listing.SwaggerSerializers.class);
+    
+    //API V2
+    //Projects & Datasets
+    register(io.hops.hopsworks.apiV2.filter.ProjectAuthFilter.class);
+    register(io.hops.hopsworks.apiV2.projects.ProjectsResource.class);
+    register(io.hops.hopsworks.apiV2.projects.DataSetsResource.class);
+    register(io.hops.hopsworks.apiV2.projects.MembersResource.class);
+    register(io.hops.hopsworks.apiV2.projects.BlobsResource.class);
+    register(PathValidatorV2.class);
+    
+    
+    //Hopsworks-Users
+    register(UsersResource.class);
+  
+    //Current-user
+    //register(io.hops.hopsworks.apiV2.currentUser.UserResource.class);
+    //register(AuthResource.class);
+    //register(io.hops.hopsworks.apiV2.currentUser.MessagesResource.class);
+    
   }
 }

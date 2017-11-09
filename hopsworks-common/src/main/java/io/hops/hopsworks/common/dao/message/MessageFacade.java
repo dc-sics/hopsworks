@@ -34,6 +34,25 @@ public class MessageFacade extends AbstractFacade<Message> {
     return em.find(Message.class, id);
   }
 
+  public List<Message> getInbox(Users user){
+    TypedQuery<Message> query = em.
+        createNamedQuery("Message.findByToAndDeleted",
+            Message.class)
+        .setParameter("to", user)
+        .setParameter("deleted", false);
+    return query.getResultList();
+  }
+  
+  public List<Message> getInboxByUnread(Users user, boolean unread){
+    TypedQuery<Message> query = em.
+        createNamedQuery("Message.findByToAndDeletedAndUnread",
+            Message.class)
+        .setParameter("to", user)
+        .setParameter("deleted", false)
+        .setParameter("unread", unread);
+    return query.getResultList();
+  }
+  
   /**
    * Get all messages to a user
    *

@@ -1,5 +1,7 @@
 package io.hops.hopsworks.common.exception;
 
+import javax.ws.rs.core.Response;
+
 public class AppException extends Exception {
 
   /**
@@ -8,6 +10,10 @@ public class AppException extends Exception {
    */
   Integer status;
 
+  public AppException(Response.Status status, String msg){
+    super(msg);
+    this.status = status.getStatusCode();
+  }
   /**
    * Constructs an instance of <code>AppException</code> with the specified
    * detail message.

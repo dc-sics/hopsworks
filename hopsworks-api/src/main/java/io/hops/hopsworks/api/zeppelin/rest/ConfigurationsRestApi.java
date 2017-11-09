@@ -49,7 +49,7 @@ import javax.ws.rs.core.Context;
 @Stateless
 @Produces("application/json")
 @Api(value = "Zeppelin configurations",
-        description = "Zeppelin configurations")
+        description = "Zeppelin configurations", hidden = true)
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 public class ConfigurationsRestApi {
 

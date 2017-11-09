@@ -45,6 +45,8 @@
     <glassfish.port>8080</glassfish.port>
     <glassfish.admin_port>4848</glassfish.admin_port>
     <glassfish.domain>domain1</glassfish.domain>
+
+    <swagger.version>1.5.16</swagger.version>
   </properties>
 
   <dependencies>

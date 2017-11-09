@@ -53,6 +53,11 @@ import io.hops.hopsworks.common.dao.user.Users;
           query
           = "SELECT m FROM Message m WHERE m.to = :to AND m.deleted = :deleted  "
                   + "ORDER BY m.unread DESC, m.dateSent DESC"),
+  @NamedQuery(name = "Message.findByToAndDeletedAndUnread",
+          query
+          = "SELECT m FROM Message m WHERE m.to = :to AND m.deleted = " +
+              ":deleted AND m.unread = :unread "
+            + "ORDER BY m.dateSent DESC"),
   @NamedQuery(name = "Message.emptyToAndDeleted",
           query
           = "DELETE FROM Message m WHERE m.to = :to AND m.deleted = :deleted"),

@@ -1,103 +1,92 @@
-package io.hops.hopsworks.api.user;
+package io.hops.hopsworks.apiV2.currentUser;
 
-import io.hops.hopsworks.api.filter.NoCacheResponse;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
+import io.hops.hopsworks.api.util.JsonResponse;
+import io.hops.hopsworks.apiV2.Util;
+import io.hops.hopsworks.common.constants.message.ResponseMessages;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+import io.hops.hopsworks.common.dao.user.UserDTO;
+import io.hops.hopsworks.common.dao.user.UserFacade;
+import io.hops.hopsworks.common.dao.user.UserProjectDTO;
+import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.activity.Activity;
+import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
+import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
+import io.hops.hopsworks.common.dao.user.sshkey.SshKeyDTO;
+import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.project.ProjectController;
+import io.hops.hopsworks.common.user.UsersController;
+import io.swagger.annotations.Api;
+import org.apache.commons.codec.binary.Base64;
+
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import org.apache.commons.codec.binary.Base64;
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.util.JsonResponse;
-import io.hops.hopsworks.common.constants.message.ResponseMessages;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
-import io.hops.hopsworks.common.dao.user.UserCardDTO;
-import io.hops.hopsworks.common.dao.user.UserDTO;
-import io.hops.hopsworks.common.dao.user.UserFacade;
-import io.hops.hopsworks.common.dao.user.UserProjectDTO;
-import io.hops.hopsworks.common.dao.user.Users;
-import io.hops.hopsworks.common.dao.user.sshkey.SshKeyDTO;
-import io.hops.hopsworks.common.exception.AppException;
-import io.hops.hopsworks.common.project.ProjectController;
-import io.hops.hopsworks.common.user.UsersController;
-import io.swagger.annotations.Api;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@Path("/user")
+import static io.hops.hopsworks.apiV2.Util.except;
+
+@Path("/v2/user")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
+@Api(value = "V2 User", description = "Current User Resources")
 @Stateless
-@Api(value = "User", description = "User service")
 @TransactionAttribute(TransactionAttributeType.NEVER)
-public class UserService {
+public class UserResource {
 
-  private final static Logger logger = Logger.getLogger(UserService.class.
+  private final static Logger logger = Logger.getLogger(
+      UserResource.class.
           getName());
 
   @EJB
   private UserFacade userBean;
   @EJB
+  private UserManager userManager;
+  @EJB
   private UsersController userController;
   @EJB
-  private NoCacheResponse noCacheResponse;
-  @EJB
   private ProjectController projectController;
+  @EJB
+  private ActivityFacade activityFacade;
+  @Inject
+  private MessagesResource messages;
+  
 
   @GET
-  @Path("allcards")
+  @Path("/profile")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
-  public Response findAllByUser(@Context SecurityContext sc,
-          @Context HttpServletRequest req) {
-
-    List<Users> users = userBean.findAllUsers();
-    List<UserCardDTO> userCardDTOs = new ArrayList<>();
-
-    for (Users user : users) {
-      UserCardDTO userCardDTO = new UserCardDTO(user);
-      userCardDTOs.add(userCardDTO);
-    }
-    GenericEntity<List<UserCardDTO>> userCards
-            = new GenericEntity<List<UserCardDTO>>(userCardDTOs) {};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            userCards).build();
-  }
-
-  @GET
-  @Path("profile")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getUserProfile(@Context SecurityContext sc) throws
-          AppException {
+  public Response getUserProfile(@Context SecurityContext sc) throws AppException {
     Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
 
     if (user == null) {
-      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-              ResponseMessages.USER_WAS_NOT_FOUND);
+      except(Response.Status.NOT_FOUND, ResponseMessages.USER_WAS_NOT_FOUND);
     }
 
     UserDTO userDTO = new UserDTO(user);
 
-    //userDTO = new UserDTO();
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            userDTO).build();
+    return Util.jsonOk(userDTO);
   }
 
   @POST
-  @Path("updateProfile")
+  @Path("/profile")
   @Produces(MediaType.APPLICATION_JSON)
   public Response updateProfile(@FormParam("firstName") String firstName,
           @FormParam("lastName") String lastName,
@@ -114,12 +103,11 @@ public class UserService {
     json.setSuccessMessage(ResponseMessages.PROFILE_UPDATED);
     json.setData(userDTO);
 
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            userDTO).build();
+    return Util.jsonOk(userDTO);
   }
 
   @POST
-  @Path("changeLoginCredentials")
+  @Path("credentials")
   @Produces(MediaType.APPLICATION_JSON)
   public Response changeLoginCredentials(
           @FormParam("oldPassword") String oldPassword,
@@ -135,12 +123,11 @@ public class UserService {
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.PASSWORD_CHANGED);
 
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+    return Util.jsonOk(json);
   }
 
   @POST
-  @Path("changeSecurityQA")
+  @Path("securityQA")
   @Produces(MediaType.APPLICATION_JSON)
   public Response changeSecurityQA(@FormParam("oldPassword") String oldPassword,
           @FormParam("securityQuestion") String securityQuestion,
@@ -154,12 +141,11 @@ public class UserService {
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.SEC_QA_CHANGED);
 
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+    return Util.jsonOk(json);
   }
 
   @POST
-  @Path("changeTwoFactor")
+  @Path("twoFactor")
   @Produces(MediaType.APPLICATION_JSON)
   public Response changeTwoFactor(@FormParam("password") String password,
           @FormParam("twoFactor") boolean twoFactor,
@@ -172,8 +158,7 @@ public class UserService {
     if (user.getTwoFactor() == twoFactor) {
       json.setSuccessMessage("No change made.");
       json.setStatus("OK");
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-              entity(json).build();
+      return Util.jsonOk(json);
     }
 
     qrCode = userController.changeTwoFactor(user, password, req);
@@ -183,12 +168,11 @@ public class UserService {
       json.setSuccessMessage("Tow factor authentication disabled.");
     }
     json.setStatus("OK");
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-            entity(json).build();
+    return Util.jsonOk(json);
   }
 
   @POST
-  @Path("getQRCode")
+  @Path("QRCode")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getQRCode(@FormParam("password") String password,
           @Context SecurityContext sc,
@@ -212,12 +196,11 @@ public class UserService {
               "Two factor disabled.");
     }
     json.setStatus("OK");
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-            entity(json).build();
+    return Util.jsonOk(json);
   }
 
   @POST
-  @Path("addSshKey")
+  @Path("/sshKeys")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
@@ -228,15 +211,14 @@ public class UserService {
     int id = user.getUid();
     SshKeyDTO dto = userController.addSshKey(id, sshkey.getName(), sshkey.
             getPublicKey());
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            dto).build();
+    return Util.jsonOk(dto);
   }
 
-  @POST
-  @Path("removeSshKey")
+  @DELETE
+  @Path("/sshKeys/{name}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response removeSshkey(@FormParam("name") String name,
+  public Response removeSshkey(@PathParam("name") String name,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
@@ -245,12 +227,11 @@ public class UserService {
     userController.removeSshKey(id, name);
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.SSH_KEY_REMOVED);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+    return Util.jsonOk(json);
   }
 
   @GET
-  @Path("getSshKeys")
+  @Path("/sshKeys")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response getSshkeys(@Context SecurityContext sc,
@@ -261,15 +242,14 @@ public class UserService {
 
     GenericEntity<List<SshKeyDTO>> sshKeyViews
             = new GenericEntity<List<SshKeyDTO>>(sshKeys) {};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            sshKeyViews).build();
+    return Util.jsonOk(sshKeyViews);
 
   }
 
-  @POST
-  @Path("getRole")
+  @GET
+  @Path("/projects/{id}/role")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getRole(@FormParam("projectId") int projectId,
+  public Response getRole(@PathParam("id") int projectId,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     String email = sc.getUserPrincipal().getName();
@@ -289,8 +269,22 @@ public class UserService {
       }
     }
 
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            userDTO).build();
+    return Util.jsonOk(userDTO);
   }
-
+  
+  @Path("/messages")
+  @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
+  public MessagesResource getMessages(){
+    return messages;
+  }
+  
+  @Path("/activity")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getUserActivity(@Context SecurityContext sc, @Context HttpServletRequest req){
+    Users user = userManager.getUserByEmail(sc.getUserPrincipal().getName());
+    List<Activity> activityDetails = activityFacade.getAllActivityByUser(user);
+    GenericEntity<List<Activity>> projectActivities
+        = new GenericEntity<List<Activity>>(activityDetails) {};
+    return Util.jsonOk(projectActivities);
+  }
 }

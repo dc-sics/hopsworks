@@ -51,7 +51,7 @@ import javax.annotation.security.RolesAllowed;
 @Produces("application/json")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "NotebookRepo Rest Api",
-        description = "NotebookRepo Rest Api")
+        description = "NotebookRepo Rest Api", hidden = true)
 public class NotebookRepoRestApi {
 
   private static final Logger LOG = LoggerFactory.getLogger(

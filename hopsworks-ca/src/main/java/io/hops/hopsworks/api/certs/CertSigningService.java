@@ -76,7 +76,7 @@ public class CertSigningService {
       try {
         
         pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
-        logger.info("Signed host certificate.");        
+        logger.info("Signed host certificate.");
         caPubCert = Files.toString(new File(settings.getIntermediateCaDir()
             + "/certs/ca-chain.cert.pem"), Charsets.UTF_8);
       } catch (IOException | InterruptedException ex) {

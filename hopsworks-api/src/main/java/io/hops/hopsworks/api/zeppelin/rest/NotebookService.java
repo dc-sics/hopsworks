@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 @Produces("application/json")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Zeppelin notebook",
-        description = "Zeppelin notebook")
+        description = "Zeppelin notebook", hidden = true)
 public class NotebookService {
 
   Logger logger = LoggerFactory.getLogger(NotebookService.class);
