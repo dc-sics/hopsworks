@@ -15,7 +15,6 @@ import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.DataSetDTO;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.dataset.DatasetFacade;
-import io.hops.hopsworks.common.dao.hdfs.HdfsInodeAttributes;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator;
@@ -164,6 +163,7 @@ public class ProjectService {
       @Context HttpServletRequest req) throws AppException {
 
     ProjectDTO proj = projectController.getProjectByName(projectName);
+    
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         proj).build();
@@ -176,13 +176,28 @@ public class ProjectService {
       @PathParam("id") Integer id) throws AppException {
     MoreInfoDTO info = null;
     if (id != null) {
+      String errorMsg;
       switch (type){
         case "proj":
           Project proj = projectFacade.find(id);
+          if (proj == null) {
+            errorMsg = "Project with id <" + id
+                + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                errorMsg);
+          }
           info = new MoreInfoDTO(proj);
           break;
         case "ds":
           info = datasetInfo(id);
+          if (info == null) {
+            errorMsg = "Dataset with id <" + id
+              + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                errorMsg);
+          }
           break;
       }
     }
@@ -198,14 +213,29 @@ public class ProjectService {
       @PathParam("inodeId") Integer id) throws AppException {
     MoreInfoDTO info = null;
     if (id != null) {
+      String errorMsg;
       switch (type){
         case "proj":
           Project proj = projectFacade.find(id);
+          if (proj == null) {
+            errorMsg = "Project with id <" + id
+                + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                "Project with id <" + id + "> could not be found");
+          }
           info = new MoreInfoDTO(proj);
           break;
         case "ds":
         case "inode":
           info = inodeInfo(id, projectId);
+          if (info == null) {
+            errorMsg = "Dataset/INode with id <" + id
+                + "> could not be found";
+            logger.log(Level.WARNING, errorMsg);
+            throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+                errorMsg);
+          }
           break;
       }
     }
@@ -419,6 +449,9 @@ public class ProjectService {
               break;
             case JUPYTER:
               error = ResponseMessages.JUPYTER_ADD_FAILURE + Settings.ServiceDataset.JUPYTER.getName();
+              break;
+            case HIVE:
+              error = ResponseMessages.HIVE_ADD_FAILURE;
               break;
             default:
               error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
@@ -680,18 +713,7 @@ public class ProjectService {
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
-    ProjectDTO proj = projectController.getProjectByID(id);
-    String yarnQuota = projectController.getYarnQuota(proj.getProjectName());
-    HdfsInodeAttributes inodeAttrs = projectController.getHdfsQuotas(proj.
-        getInodeid());
-
-    Long hdfsQuota = inodeAttrs.getDsquota().longValue();
-    Long hdfsUsage = inodeAttrs.getDiskspace().longValue();
-    Long hdfsNsQuota = inodeAttrs.getNsquota().longValue();
-    Long hdfsNsCount = inodeAttrs.getNscount().longValue();
-    QuotasDTO quotas = new QuotasDTO(yarnQuota, hdfsQuota, hdfsUsage,
-        hdfsNsQuota, hdfsNsCount);
-
+    QuotasDTO quotas = projectController.getQuotas(id);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         quotas).build();
   }
