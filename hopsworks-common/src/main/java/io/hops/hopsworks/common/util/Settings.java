@@ -30,6 +30,8 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.ws.rs.core.Response;
+
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -72,6 +74,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_KIBANA_IP = "kibana_ip";
   private static final String VARIABLE_LIVY_IP = "livy_ip";
   private static final String VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT = "livy_zeppelin_session_timeout";
+  private static final String VARIABLE_ZEPPELIN_INTERPRETERS = "zeppelin_interpreters";
   private static final String VARIABLE_JHS_IP = "jhs_ip";
   private static final String VARIABLE_RM_IP = "rm_ip";
   private static final String VARIABLE_RM_PORT = "rm_port";
@@ -105,7 +108,21 @@ public class Settings implements Serializable {
   private static final String VARIABLE_YARN_DEFAULT_QUOTA = "yarn_default_quota";
   private static final String VARIABLE_HDFS_DEFAULT_QUOTA = "hdfs_default_quota";
   private static final String VARIABLE_MAX_NUM_PROJ_PER_USER
-    = "max_num_proj_per_user";
+          = "max_num_proj_per_user";
+
+  // HIVE configuration variables
+  private static final String VARIABLE_HIVE_SERVER_HOSTNAME = "hiveserver_ssl_hostname";
+  private static final String VARIABLE_HIVE_SERVER_HOSTNAME_EXT
+      = "hiveserver_ext_hostname";
+  private static final String VARIABLE_HIVE_SUPERUSER = "hive_superuser";
+  private static final String VARIABLE_HIVE_WAREHOUSE = "hive_warehouse";
+  private static final String VARIABLE_HIVE_SCRATCHDIR = "hive_scratchdir";
+  private static final String VARIABLE_HIVE_DEFAULT_QUOTA = "hive_default_quota";
+  private static final String VARIABLE_HIVE_LLAP_SLIDER_DIR = "hive_llap_slider_dir";
+  private static final String VARIABLE_HIVE_LLAP_LOCAL_DIR = "hive_llap_local_dir";
+  public static final String VARIABLE_LLAP_APP_ID = "hive_llap_app_id";
+  public static final String VARIABLE_LLAP_START_PROC = "hive_llap_start_proc";
+
   private static final String VARIABLE_ADAM_USER = "adam_user";
   private static final String VARIABLE_ADAM_DIR = "adam_dir";
   private static final String VARIABLE_TWOFACTOR_AUTH = "twofactor_auth";
@@ -279,6 +296,16 @@ public class Settings implements Serializable {
       FLINK_DIR = setDirVar(VARIABLE_FLINK_DIR, FLINK_DIR);
       STAGING_DIR = setDirVar(VARIABLE_STAGING_DIR, STAGING_DIR);
       HOPSUTIL_VERSION = setVar(VARIABLE_HOPSUTIL_VERSION, HOPSUTIL_VERSION);
+      HIVE_SERVER_HOSTNAME = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME,
+              HIVE_SERVER_HOSTNAME);
+      HIVE_SERVER_HOSTNAME_EXT = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME_EXT,
+          HIVE_SERVER_HOSTNAME_EXT);
+      HIVE_SUPERUSER = setStrVar(VARIABLE_HIVE_SUPERUSER, HIVE_SUPERUSER);
+      HIVE_WAREHOUSE = setStrVar(VARIABLE_HIVE_WAREHOUSE, HIVE_WAREHOUSE);
+      HIVE_LLAP_SLIDER_DIR = setStrVar(VARIABLE_HIVE_LLAP_SLIDER_DIR, HIVE_LLAP_SLIDER_DIR);
+      HIVE_LLAP_LOCAL_FS_DIR= setStrVar(VARIABLE_HIVE_LLAP_LOCAL_DIR, HIVE_LLAP_LOCAL_FS_DIR);
+      HIVE_SCRATCHDIR= setStrVar(VARIABLE_HIVE_SCRATCHDIR, HIVE_SCRATCHDIR);
+      HIVE_DB_DEFAULT_QUOTA= setStrVar(VARIABLE_HIVE_DEFAULT_QUOTA, HIVE_DB_DEFAULT_QUOTA);
       ZEPPELIN_USER = setVar(VARIABLE_ZEPPELIN_USER, ZEPPELIN_USER);
       ZEPPELIN_DIR = setDirVar(VARIABLE_ZEPPELIN_DIR, ZEPPELIN_DIR);
       ZEPPELIN_PROJECTS_DIR = setDirVar(VARIABLE_ZEPPELIN_PROJECTS_DIR,
@@ -308,6 +335,7 @@ public class Settings implements Serializable {
       JHS_IP = setIpVar(VARIABLE_JHS_IP, JHS_IP);
       LIVY_IP = setIpVar(VARIABLE_LIVY_IP, LIVY_IP);
       LIVY_ZEPPELIN_SESSION_TIMEOUT = setVar(VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT, LIVY_ZEPPELIN_SESSION_TIMEOUT);
+      ZEPPELIN_INTERPRETERS = setVar(VARIABLE_ZEPPELIN_INTERPRETERS, ZEPPELIN_INTERPRETERS);
       OOZIE_IP = setIpVar(VARIABLE_OOZIE_IP, OOZIE_IP);
       SPARK_HISTORY_SERVER_IP = setIpVar(VARIABLE_SPARK_HISTORY_SERVER_IP,
         SPARK_HISTORY_SERVER_IP);
@@ -366,7 +394,8 @@ public class Settings implements Serializable {
       RECOVERY_PATH = setStrVar(VARIABLE_RECOVERY_PATH, RECOVERY_PATH);
       VERIFICATION_PATH = setStrVar(VARIABLE_VERIFICATION_PATH, VERIFICATION_PATH);
       populateDelaCache();
-
+      //Set Zeppelin Default Interpreter
+      zeppelinDefaultInterpreter = getZeppelinDefaultInterpreter(ZEPPELIN_INTERPRETERS);
       cached = true;
     }
   }
@@ -568,6 +597,52 @@ public class Settings implements Serializable {
   public synchronized String getHadoopVersionedDir() {
     checkCache();
     return HADOOP_DIR + "-" + getHadoopVersion();
+  }
+
+  private String HIVE_SERVER_HOSTNAME = "127.0.0.1:9085";
+  private String HIVE_SERVER_HOSTNAME_EXT = "127.0.0.1:9084";
+  public synchronized String getHiveServerHostName(boolean ext) {
+    checkCache();
+    if (ext) {
+      return HIVE_SERVER_HOSTNAME_EXT;
+    }
+    return HIVE_SERVER_HOSTNAME;
+  }
+
+  private String HIVE_SUPERUSER = "hive";
+  public synchronized String getHiveSuperUser() {
+    checkCache();
+    return HIVE_SUPERUSER;
+  }
+
+  private String HIVE_WAREHOUSE = "/apps/hive/warehouse";
+  public synchronized String getHiveWarehouse() {
+    checkCache();
+    return HIVE_WAREHOUSE;
+  }
+
+  private String HIVE_LLAP_SLIDER_DIR = "/home/hive/.slider";
+  public synchronized String getHiveLlapSliderDir() {
+    checkCache();
+    return HIVE_LLAP_SLIDER_DIR;
+  }
+
+  private String HIVE_LLAP_LOCAL_FS_DIR = "/srv/hops/apache-hive/bin/llap";
+  public synchronized String getHiveLlapLocalDir() {
+    checkCache();
+    return HIVE_LLAP_LOCAL_FS_DIR;
+  }
+
+  private String HIVE_SCRATCHDIR = "/tmp/hive";
+  public synchronized String getHiveScratchdir() {
+    checkCache();
+    return HIVE_SCRATCHDIR;
+  }
+
+  private String HIVE_DB_DEFAULT_QUOTA = "50000";
+  public synchronized Long getHiveDbDefaultQuota() {
+    checkCache();
+    return Long.parseLong(HIVE_DB_DEFAULT_QUOTA);
   }
 
   private String HOPSWORKS_EXTERNAL_IP = "127.0.0.1";
@@ -1138,7 +1213,47 @@ public class Settings implements Serializable {
   }
   
   // Zeppelin
+  public static final String HOPSHIVE_INT_GROUP = "2CRSX9NDY";
+  public static final String HOPSHIVE_INT_NAME = "hopshive";
   private String ZEPPELIN_DIR = "/srv/hops/zeppelin";
+  private String ZEPPELIN_INTERPRETERS
+      = "org.apache.zeppelin.livy.LivySparkInterpreter,org.apache.zeppelin.livy.LivyPySparkInterpreter,"
+      + "org.apache.zeppelin.livy.LivySparkRInterpreter,org.apache.zeppelin.livy.LivySparkSQLInterpreter,"
+      + "org.apache.zeppelin.spark.SparkInterpreter,org.apache.zeppelin.spark.PySparkInterpreter,"
+      + "org.apache.zeppelin.rinterpreter.RRepl,org.apache.zeppelin.rinterpreter.KnitR,"
+      + "org.apache.zeppelin.spark.SparkRInterpreter,org.apache.zeppelin.spark.SparkSqlInterpreter,"
+      + "org.apache.zeppelin.spark.DepInterpreter,org.apache.zeppelin.markdown.Markdown,"
+      + "org.apache.zeppelin.angular.AngularInterpreter,org.apache.zeppelin.flink.FlinkInterpreter";
+  
+  private String zeppelinDefaultInterpreter;
+  
+  /**
+   * 
+   * @return 
+   */
+  public synchronized String getZeppelinInterpreters() {
+    checkCache();
+    return ZEPPELIN_INTERPRETERS;
+  }
+  
+  /**
+   * 
+   * @return 
+   */
+  public synchronized String getZeppelinDefaultInterpreter() {
+    return zeppelinDefaultInterpreter;
+  }
+  
+  /**
+   * Extract default interpreter from zeppelin interpreters.
+   *
+   * @return
+   */
+  private String getZeppelinDefaultInterpreter(String interpreters) {
+    //Split interpreters
+    return interpreters.split(",")[0].split("\\.")[3];
+  }
+  
 
   public synchronized String getZeppelinDir() {
     checkCache();
@@ -1914,6 +2029,10 @@ public class Settings implements Serializable {
     }
     return null;
   }
+
+
+  public final static String PROJECT_GENERIC_USER_SUFFIX =
+      HdfsUsersController.USER_NAME_DELIMITER + "PROJECTGENERICUSER";
 
   //************************************************CERTIFICATES********************************************************
   private static final String HOPS_SITE_CA_DIR = "hops-site-certs";

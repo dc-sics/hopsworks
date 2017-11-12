@@ -32,7 +32,7 @@ import org.apache.zeppelin.notebook.Note;
 import org.apache.zeppelin.notebook.Paragraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.common.collect.Sets;
@@ -610,16 +610,14 @@ public class NotebookRestApi {
           String username = hdfsUsersController.getUserName(hdfsUserName);
           if (certificateMaterializer.openedInterpreter(project.getId(), interpreterGroup)) {
             try {
-              HopsUtils.materializeCertificatesForUser(project.getName(),
-                  username, settings
-                      .getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(),
-                  dfso, certificateMaterializer, settings, true);
+              HopsUtils.materializeCertificatesForProject(project.getName(),
+                  settings.getHopsworksTmpCertDir(), settings.getHdfsTmpCertDir(),
+                  dfso, certificateMaterializer, settings);
             } catch (IOException ex) {
               LOG.warn("Could not materialize certificates for user: " +
                   project.getName() + "__" + username);
-              HopsUtils.cleanupCertificatesForUser(username,
-                  project.getName(), settings.getHdfsTmpCertDir(),
-                  dfso, certificateMaterializer, true);
+              HopsUtils.cleanupCertificatesForProject(project.getName(),
+                  settings.getHdfsTmpCertDir(), dfso, certificateMaterializer);
               throw ex;
             }
           }
@@ -1030,7 +1028,7 @@ public class NotebookRestApi {
   @POST
   @Path("/new")
   @Consumes(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.ALL})
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response createNew(NewNotebookRequest newNote) throws AppException {
     Note note;
     NoteInfo noteInfo;
