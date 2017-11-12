@@ -74,6 +74,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_KIBANA_IP = "kibana_ip";
   private static final String VARIABLE_LIVY_IP = "livy_ip";
   private static final String VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT = "livy_zeppelin_session_timeout";
+  private static final String VARIABLE_ZEPPELIN_INTERPRETERS = "zeppelin_interpreters";
   private static final String VARIABLE_JHS_IP = "jhs_ip";
   private static final String VARIABLE_RM_IP = "rm_ip";
   private static final String VARIABLE_RM_PORT = "rm_port";
@@ -113,6 +114,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_HIVE_SERVER_HOSTNAME = "hiveserver_ssl_hostname";
   private static final String VARIABLE_HIVE_SERVER_HOSTNAME_EXT
       = "hiveserver_ext_hostname";
+  private static final String VARIABLE_HIVE_SUPERUSER = "hive_superuser";
   private static final String VARIABLE_HIVE_WAREHOUSE = "hive_warehouse";
   private static final String VARIABLE_HIVE_SCRATCHDIR = "hive_scratchdir";
   private static final String VARIABLE_HIVE_DEFAULT_QUOTA = "hive_default_quota";
@@ -298,6 +300,7 @@ public class Settings implements Serializable {
               HIVE_SERVER_HOSTNAME);
       HIVE_SERVER_HOSTNAME_EXT = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME_EXT,
           HIVE_SERVER_HOSTNAME_EXT);
+      HIVE_SUPERUSER = setStrVar(VARIABLE_HIVE_SUPERUSER, HIVE_SUPERUSER);
       HIVE_WAREHOUSE = setStrVar(VARIABLE_HIVE_WAREHOUSE, HIVE_WAREHOUSE);
       HIVE_LLAP_SLIDER_DIR = setStrVar(VARIABLE_HIVE_LLAP_SLIDER_DIR, HIVE_LLAP_SLIDER_DIR);
       HIVE_LLAP_LOCAL_FS_DIR= setStrVar(VARIABLE_HIVE_LLAP_LOCAL_DIR, HIVE_LLAP_LOCAL_FS_DIR);
@@ -332,6 +335,7 @@ public class Settings implements Serializable {
       JHS_IP = setIpVar(VARIABLE_JHS_IP, JHS_IP);
       LIVY_IP = setIpVar(VARIABLE_LIVY_IP, LIVY_IP);
       LIVY_ZEPPELIN_SESSION_TIMEOUT = setVar(VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT, LIVY_ZEPPELIN_SESSION_TIMEOUT);
+      ZEPPELIN_INTERPRETERS = setVar(VARIABLE_ZEPPELIN_INTERPRETERS, ZEPPELIN_INTERPRETERS);
       OOZIE_IP = setIpVar(VARIABLE_OOZIE_IP, OOZIE_IP);
       SPARK_HISTORY_SERVER_IP = setIpVar(VARIABLE_SPARK_HISTORY_SERVER_IP,
         SPARK_HISTORY_SERVER_IP);
@@ -390,7 +394,8 @@ public class Settings implements Serializable {
       RECOVERY_PATH = setStrVar(VARIABLE_RECOVERY_PATH, RECOVERY_PATH);
       VERIFICATION_PATH = setStrVar(VARIABLE_VERIFICATION_PATH, VERIFICATION_PATH);
       populateDelaCache();
-
+      //Set Zeppelin Default Interpreter
+      zeppelinDefaultInterpreter = getZeppelinDefaultInterpreter(ZEPPELIN_INTERPRETERS);
       cached = true;
     }
   }
@@ -602,6 +607,12 @@ public class Settings implements Serializable {
       return HIVE_SERVER_HOSTNAME_EXT;
     }
     return HIVE_SERVER_HOSTNAME;
+  }
+
+  private String HIVE_SUPERUSER = "hive";
+  public synchronized String getHiveSuperUser() {
+    checkCache();
+    return HIVE_SUPERUSER;
   }
 
   private String HIVE_WAREHOUSE = "/apps/hive/warehouse";
@@ -1202,10 +1213,47 @@ public class Settings implements Serializable {
   }
   
   // Zeppelin
-  public static String HOPSHIVE_INT_GROUP = "2CRSX9NDY";
-  public static String HOPSHIVE_INT_NAME = "hopshive";
-
+  public static final String HOPSHIVE_INT_GROUP = "2CRSX9NDY";
+  public static final String HOPSHIVE_INT_NAME = "hopshive";
   private String ZEPPELIN_DIR = "/srv/hops/zeppelin";
+  private String ZEPPELIN_INTERPRETERS
+      = "org.apache.zeppelin.livy.LivySparkInterpreter,org.apache.zeppelin.livy.LivyPySparkInterpreter,"
+      + "org.apache.zeppelin.livy.LivySparkRInterpreter,org.apache.zeppelin.livy.LivySparkSQLInterpreter,"
+      + "org.apache.zeppelin.spark.SparkInterpreter,org.apache.zeppelin.spark.PySparkInterpreter,"
+      + "org.apache.zeppelin.rinterpreter.RRepl,org.apache.zeppelin.rinterpreter.KnitR,"
+      + "org.apache.zeppelin.spark.SparkRInterpreter,org.apache.zeppelin.spark.SparkSqlInterpreter,"
+      + "org.apache.zeppelin.spark.DepInterpreter,org.apache.zeppelin.markdown.Markdown,"
+      + "org.apache.zeppelin.angular.AngularInterpreter,org.apache.zeppelin.flink.FlinkInterpreter";
+  
+  private String zeppelinDefaultInterpreter;
+  
+  /**
+   * 
+   * @return 
+   */
+  public synchronized String getZeppelinInterpreters() {
+    checkCache();
+    return ZEPPELIN_INTERPRETERS;
+  }
+  
+  /**
+   * 
+   * @return 
+   */
+  public synchronized String getZeppelinDefaultInterpreter() {
+    return zeppelinDefaultInterpreter;
+  }
+  
+  /**
+   * Extract default interpreter from zeppelin interpreters.
+   *
+   * @return
+   */
+  private String getZeppelinDefaultInterpreter(String interpreters) {
+    //Split interpreters
+    return interpreters.split(",")[0].split("\\.")[3];
+  }
+  
 
   public synchronized String getZeppelinDir() {
     checkCache();
