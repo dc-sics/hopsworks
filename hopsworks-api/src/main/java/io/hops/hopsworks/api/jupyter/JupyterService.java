@@ -18,12 +18,15 @@ import io.hops.hopsworks.api.util.LivyController;
 import io.hops.hopsworks.api.zeppelin.util.LivyMsg;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
+import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
+import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
@@ -84,6 +87,8 @@ public class JupyterService {
   private CertificateMaterializer certificateMaterializer;
   @EJB
   private DistributedFsService dfsService;
+  @EJB
+  private YarnProjectsQuotaFacade yarnProjectsQuotaFacade;
 
   private Integer projectId;
   private Project project;
@@ -247,6 +252,13 @@ public class JupyterService {
           "First enable Anaconda. Click on 'Settings -> Python'");
     }
 
+    if(project.getPaymentType().equals(PaymentType.PREPAID)){
+      YarnProjectsQuota projectQuota = yarnProjectsQuotaFacade.findByProjectName(project.getName());
+      if(projectQuota==null || projectQuota.getQuotaRemaining() < 0){
+        throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(), "This project is out of credits.");
+      }
+    }
+    
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
 
     if (jp == null) {
