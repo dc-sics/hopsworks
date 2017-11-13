@@ -504,6 +504,7 @@ public class ProjectController {
     //Persist project object
     this.projectFacade.persistProject(project);
     this.projectFacade.flushEm();
+    userBean.increaseNumCreatedProjects(user.getUid());
     logProject(project, OperationType.Add);
     return project;
   }
