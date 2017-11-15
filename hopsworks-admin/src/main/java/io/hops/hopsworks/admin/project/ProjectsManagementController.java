@@ -17,10 +17,15 @@
  */
 package io.hops.hopsworks.admin.project;
 
+import io.hops.hopsworks.common.dao.dataset.Dataset;
+import io.hops.hopsworks.common.dao.dataset.DatasetType;
 import io.hops.hopsworks.common.dao.hdfs.HdfsInodeAttributes;
 import io.hops.hopsworks.common.dao.project.payment.ProjectPaymentsHistoryFacade;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
+import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
+import io.hops.hopsworks.common.dao.project.service.ProjectServiceFacade;
+import io.hops.hopsworks.common.hive.HiveController;
 import io.hops.hopsworks.common.util.Settings;
 
 import javax.ejb.EJB;
@@ -31,6 +36,7 @@ import java.util.List;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.payment.LastPayment;
 import io.hops.hopsworks.common.dao.project.payment.LastPaymentFacade;
@@ -55,6 +61,12 @@ public class ProjectsManagementController {
 
   @EJB
   private PythonDepsFacade pythonDepsFacade;
+
+  @EJB
+  private ProjectServiceFacade projectServiceFacade;
+
+  @EJB
+  private HiveController hiveController;
 
   @EJB
   private ProjectPaymentsHistoryFacade projectPaymentsHistoryFacade;
@@ -83,7 +95,32 @@ public class ProjectsManagementController {
   public HdfsInodeAttributes getHDFSQuotas(String name) throws AppException {
     String pathname = Settings.getProjectPath(name);
     Inode inode = inodes.getInodeAtPath(pathname);
-    return projectController.getHdfsQuotas(inode.getId());
+    if(inode!=null){
+      return projectController.getHdfsQuotas(inode.getId());
+    }else{
+      return null;
+    }
+  }
+
+  /**
+   * Get the Hdfs quota information for the HiveDB directory of the project
+   * @param projectName
+   * @return
+   * @throws AppException
+   */
+  public HdfsInodeAttributes getHiveHDFSQuotas(String projectName) throws AppException {
+    Project project = projectFacade.findByName(projectName);
+
+    if (projectServiceFacade.isServiceEnabledForProject(project, ProjectServiceEnum.HIVE)) {
+      List<Dataset> datasets = (List<Dataset>)project.getDatasetCollection();
+      for (Dataset ds : datasets) {
+        if (ds.getType() == DatasetType.HIVEDB) {
+          return projectController.getHdfsQuotas(ds.getInodeId());
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -110,6 +147,41 @@ public class ProjectsManagementController {
     }
   }
 
+  /**
+   * Set the HopsFs quota for the Hive Database
+   * @param projectName
+   * @param quotaInMBs: size of quota for project subtree in HDFS in MBs
+   * @throws IOException
+   */
+  public void setHiveHdfsQuota(String projectName, long quotaInMBs) throws IOException {
+    DistributedFileSystemOps dfso = null;
+    try {
+      dfso = dfs.getDfsOps();
+      dfso.setHdfsSpaceQuotaInMBs(hiveController.getDbPath(projectName), quotaInMBs);
+    } finally {
+      if (dfso != null) {
+        dfso.close();
+      }
+
+    }
+  }
+
+  /**
+   *
+   * @param projectname
+   * @param paymentType
+   * size of quota for project subtree in HDFS in MBs
+   * @throws IOException
+   */
+  public void setPaymentType(String projectname, PaymentType paymentType) throws
+      IOException {
+    projectController.setPaymentType(projectname, paymentType);
+  }
+  
+  public PaymentType getPaymentType(String projectName) throws AppException {
+    return projectFacade.findByName(projectName).getPaymentType();
+  }
+  
   public List<Project> getAllProjects() {
     return projectFacade.findAll();
   }

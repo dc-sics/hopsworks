@@ -1,6 +1,5 @@
 package io.hops.hopsworks.api.app;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
@@ -16,7 +15,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import io.hops.hopsworks.common.dao.app.EmailJsonDTO;
-import io.hops.hopsworks.common.dao.app.KeystoreDTO;
+import io.hops.hopsworks.common.dao.app.JobWorkflowDTO;
 import io.hops.hopsworks.common.dao.app.TopicJsonDTO;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.certificates.UserCerts;
@@ -24,30 +23,21 @@ import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
-import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.jobs.JobController;
 import io.hops.hopsworks.common.jobs.execution.ExecutionController;
 import io.hops.hopsworks.common.project.CertificatesController;
-import io.hops.hopsworks.common.project.ProjectController;
-import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.regex.Pattern;
-import javax.ejb.TransactionAttribute;
-import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
-import javax.ws.rs.GET;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.SecurityContext;
 
 @Path("/appservice")
@@ -56,10 +46,7 @@ import javax.ws.rs.core.SecurityContext;
     description = "Application Service")
 public class ApplicationService {
 
-  final static Logger LOGGER = Logger.getLogger(ApplicationService.class.
-      getName());
-
-  private final Pattern projectUserPattern = Pattern.compile("\\w*__\\w*");
+  final static Logger LOGGER = Logger.getLogger(ApplicationService.class.getName());
 
   @EJB
   private NoCacheResponse noCacheResponse;
@@ -74,19 +61,13 @@ public class ApplicationService {
   @EJB
   private ProjectFacade projectFacade;
   @EJB
-  private ProjectController projectController;
-  @EJB
   private UserFacade userFacade;
   @EJB
   protected UserManager userManager;
   @EJB
-  private UsersController usersController;
-  @EJB
   private CertificatesController certificatesController;
   @EJB
   private ExecutionController executionController;
-  @EJB
-  private JobController jobController;
   @EJB
   private JobFacade jobFacade;
 
@@ -123,7 +104,6 @@ public class ApplicationService {
   @POST
   @Path("schema")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
   public Response getSchemaForTopics(@Context SecurityContext sc,
       @Context HttpServletRequest req, TopicJsonDTO topicInfo) throws
       AppException {
@@ -144,66 +124,33 @@ public class ApplicationService {
 
   }
 
-  @GET
-  @Path("/certpw")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
-  @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response getCertPw(@QueryParam("keyStore") String keyStore, @QueryParam("projectUser") String projectUser,
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) {
-
-    try {
-      CertPwDTO respDTO;
-      Users user;
-      if (projectUserPattern.matcher(projectUser).matches()) {
-        //Find user
-        String username = hdfsUserBean.getUserName(projectUser);
-        String projectName = hdfsUserBean.getProjectName(projectUser);
-        user = userFacade.findByUsername(username);
-        respDTO = projectController.getProjectSpecificCertPw(user, projectName, keyStore);
-      } else {
-        // In that case projectUser is the project name. It is used by the Spark
-        // interpreter of Zeppelin which runs as user Project
-        user = projectFacade.findByName(projectUser).getOwner();
-        respDTO = projectController.getProjectWideCertPw(user,
-            projectUser, keyStore);
-      }
-
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(respDTO).build();
-    } catch (Exception ex) {
-      LOGGER.log(Level.SEVERE, "Could not retrieve certificate passwords for " + "user:" + projectUser, ex);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.EXPECTATION_FAILED).build();
-    }
-  }
-
   /////////////////////////////////////////////////
   //Endpoints that act as access point of HopsUtil or other services to create job workflows
   @POST
-  @Path("jobs/{jobId}/executions")
-  public Response startJob(@Context SecurityContext sc,
-      @Context HttpServletRequest req, @PathParam("jobId") String jobId,
-      KeystoreDTO keystoreDTO) throws
-      AppException {
-    String projectUser = checkAndGetProjectUser(keystoreDTO.
-        getKeyStoreBytes(), keystoreDTO.getKeyStorePwd().toCharArray());
-
+  @Path("jobs/executions")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @ApiOperation(value = "Submit IDs of jobs to start")
+  public Response startJobs(@Context SecurityContext sc,
+      @Context HttpServletRequest req, JobWorkflowDTO jobsDTO) throws AppException {
+    
+    String projectUser = checkAndGetProjectUser(jobsDTO.getKeyStoreBytes(), jobsDTO.getKeyStorePwd().toCharArray());
     assertAdmin(projectUser);
     Users user = userFacade.findByUsername(hdfsUserBean.getUserName(projectUser));
-    Jobs job = jobFacade.findById(Integer.parseInt(jobId));
-    try {
-      executionController.start(job, user, "nosession");
-    } catch (IOException ex) {
-      Logger.getLogger(ApplicationService.class.getName()).log(Level.SEVERE, null,
-          ex);
-      return noCacheResponse.getNoCacheResponseBuilder(
-          Response.Status.INTERNAL_SERVER_ERROR).build();
+    for (String jobId : jobsDTO.getJobIds()) {
+      Jobs job = jobFacade.findById(Integer.parseInt(jobId));
+      try {
+        executionController.start(job, user);
+      } catch (IOException ex) {
+        LOGGER.log(Level.SEVERE, null, ex);
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.INTERNAL_SERVER_ERROR).build();
+      }
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-        build();
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
-
   /////////////////////////////////////////////////
+  
+  
   /**
    * Returns the project user from the keystore and verifies it.
    *

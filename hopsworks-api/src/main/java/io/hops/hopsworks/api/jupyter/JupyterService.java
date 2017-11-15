@@ -13,23 +13,25 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import io.hops.hopsworks.api.filter.AllowedRoles;
-import io.hops.hopsworks.api.util.LivyService;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
+import io.hops.hopsworks.api.util.LivyController;
 import io.hops.hopsworks.api.zeppelin.util.LivyMsg;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
-import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
+import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
+import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
-import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
@@ -66,8 +68,6 @@ public class JupyterService {
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
-  private UserManager userManager;
-  @EJB
   private UserFacade userFacade;
   @EJB
   private JupyterProcessFacade jupyterProcessFacade;
@@ -82,13 +82,13 @@ public class JupyterService {
   @EJB
   private Settings settings;
   @EJB
-  private LivyService livyService;
+  private LivyController livyService;
   @EJB
   private CertificateMaterializer certificateMaterializer;
   @EJB
   private DistributedFsService dfsService;
   @EJB
-  private YarnApplicationstateFacade appStateBean;
+  private YarnProjectsQuotaFacade yarnProjectsQuotaFacade;
 
   private Integer projectId;
   private Project project;
@@ -115,7 +115,7 @@ public class JupyterService {
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response getAllNotebookServersInProject(
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -145,12 +145,13 @@ public class JupyterService {
   @GET
   @Path("/livy/sessions")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response livySessions(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     String loggedinemail = sc.getUserPrincipal().getName();
     Users user = userFacade.findByEmail(loggedinemail);
-    List<LivyMsg.Session> sessions = livyService.getJupyterLivySessionsForProjectUser(this.project, user);
+    List<LivyMsg.Session> sessions = livyService.getLivySessionsForProjectUser(this.project, user,
+        ProjectServiceEnum.JUPYTER);
     GenericEntity<List<LivyMsg.Session>> livyActive
         = new GenericEntity<List<LivyMsg.Session>>(sessions) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(livyActive).build();
@@ -159,14 +160,13 @@ public class JupyterService {
   /**
    * Get livy session Yarn AppId
    *
-   * @param sessionId
    * @return
    * @throws AppException
    */
   @GET
   @Path("/settings")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response settings(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
@@ -187,7 +187,7 @@ public class JupyterService {
   @GET
   @Path("/running")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response isRunning(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
@@ -230,7 +230,7 @@ public class JupyterService {
   @Path("/start")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response startNotebookServer(JupyterSettings jupyterSettings,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -252,6 +252,13 @@ public class JupyterService {
           "First enable Anaconda. Click on 'Settings -> Python'");
     }
 
+    if(project.getPaymentType().equals(PaymentType.PREPAID)){
+      YarnProjectsQuota projectQuota = yarnProjectsQuotaFacade.findByProjectName(project.getName());
+      if(projectQuota==null || projectQuota.getQuotaRemaining() < 0){
+        throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(), "This project is out of credits.");
+      }
+    }
+    
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
 
     if (jp == null) {
@@ -277,13 +284,13 @@ public class JupyterService {
         HopsUtils.materializeCertificatesForUser(project.getName(),
             project_user[1], settings.getHopsworksTmpCertDir(), settings
             .getHdfsTmpCertDir(), dfso, certificateMaterializer,
-            settings, false);
+            settings);
       } catch (InterruptedException | IOException ex) {
         Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null, ex);
         try {
           HopsUtils.cleanupCertificatesForUser(project_user[1], project
               .getName(), settings.getHdfsTmpCertDir(), dfso,
-              certificateMaterializer, false);
+              certificateMaterializer);
         } catch (IOException e) {
           LOGGER.log(Level.SEVERE, "Could not cleanup certificates for " + hdfsUser);
         }
@@ -330,7 +337,7 @@ public class JupyterService {
   @GET
   @Path("/stopDataOwner")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response stopDataOwner(@PathParam("hdfsUsername") String hdfsUsername,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -341,7 +348,7 @@ public class JupyterService {
   @GET
   @Path("/stop")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response stopNotebookServer(@Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     String hdfsUsername = getHdfsUser(sc);
@@ -361,7 +368,7 @@ public class JupyterService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           "Could not find Jupyter entry for user: " + hdfsUser);
     }
-    livyService.deleteAllJupyterLivySessions(hdfsUser);
+    livyService.deleteAllLivySessions(hdfsUser, ProjectServiceEnum.JUPYTER);
     String projectPath = jupyterProcessFacade.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
@@ -375,7 +382,7 @@ public class JupyterService {
     try {
       HopsUtils.cleanupCertificatesForUser(project_user[1], project
           .getName(), settings.getHdfsTmpCertDir(), dfso,
-          certificateMaterializer, false);
+          certificateMaterializer);
     } catch (IOException e) {
       LOGGER.log(Level.SEVERE, "Could not cleanup certificates for " + hdfsUser);
     } finally {
@@ -387,7 +394,7 @@ public class JupyterService {
 
   @GET
   @Path("/convertIPythonNotebook/{path: .+}")
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER, AllowedRoles.DATA_SCIENTIST})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response convertIPythonNotebook(@PathParam("path") String path,
       @Context SecurityContext sc) throws AppException {
     String hdfsUsername = getHdfsUser(sc);

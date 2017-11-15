@@ -318,6 +318,8 @@ angular.module('hopsWorksApp')
               if (op === 'CREATED_SOCKET') {
                 load();
                 loaded = true;
+	      } else if (op === 'ERROR_INFO') {
+		growl.error(payload.data.info, {title: 'Error', ttl: 5000, referenceId: 10});
               } else if (loaded && op === 'NOTES_INFO') {
                 self.notes = payload.data.notes;
                 setNotes(self.notes);
@@ -342,6 +344,10 @@ angular.module('hopsWorksApp')
               if (event.code === 1012) {
                 startLoading("Restarting zeppelin...");
                 $route.reload();
+              } else if(event.code === 1000) {
+                growl.warning(event.reason,
+                            {title: 'Error', ttl: 5000, referenceId: 10});
+                self.loading = false;
               }
             });
 

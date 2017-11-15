@@ -434,8 +434,7 @@ public class ZeppelinConfig {
           "hadoop_dir", settings.getHadoopSymbolicLinkDir(),
           "anaconda_env_dir", settings.getAnacondaDir() + "/envs/"
           + this.projectName,
-          // TODO: This should be the project__username, not just the projectname
-          "hadoop_username", this.projectName,
+          "hadoop_username", this.projectName + Settings.PROJECT_GENERIC_USER_SUFFIX,
           "java_home", javaHome,
           "cuda_dir", settings.getCudaDir(),
           "ld_library_path", ldLibraryPath,
@@ -456,7 +455,8 @@ public class ZeppelinConfig {
               "livy_url", settings.getLivyUrl(),
               "livy_master", settings.getLivyYarnMode(),
               "zeppelin_home_dir", home,
-              "zeppelin_notebook_dir", notebookDir);
+              "zeppelin_notebook_dir", notebookDir,
+              "zeppelin_interpreters", settings.getZeppelinInterpreters());
       createdXml = ConfigFileGenerator.createConfigFile(zeppelin_site_xml_file,
           zeppelin_site_xml.
               toString());
@@ -477,44 +477,51 @@ public class ZeppelinConfig {
         getElasticRESTEndpoint();
     String projectIdProp = " -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=" + this.projectId;
     String projectNameProp = " -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=" + this.projectName;
-    String userProp = " -D" + Settings.HOPSWORKS_PROJECTUSER_PROPERTY + "=" + this.projectName;
+    String userProp = " -D" + Settings.HOPSWORKS_PROJECTUSER_PROPERTY + "=" + this.projectName
+        + Settings.PROJECT_GENERIC_USER_SUFFIX;
     //String sessionIdProp =  " -D" + Settings.HOPSWORKS_SESSIONID_PROPERTY + "=" + this.sessionId;
     String extraSparkJavaOptions = " -Dlog4j.configuration=./log4j.properties "
         + logstashID + restEndpointProp + keystorePwProp + truststorePwProp + elasticEndpointProp + projectIdProp
         + projectNameProp + userProp;
     String hdfsResourceDir = "hdfs://" + resourceDir + File.separator;
-    // Comma-separated files to be added as local resources to Spark interpreter
-    StringBuilder sparkDistFiles = new StringBuilder();
-    sparkDistFiles
+    // Comma-separated files to be added as local resources to Spark/Livy interpreter
+
+    StringBuilder distFiles = new StringBuilder();
+    distFiles
         // KeyStore
         .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator)
-        .append(this.projectName).append("__kstore.jks#")
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append(File.separator)
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append("__kstore.jks#")
         .append(Settings.K_CERTIFICATE).append(",")
         // TrustStore
         .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator)
-        .append(this.projectName).append("__tstore.jks#")
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append(File.separator)
+        .append(projectName)
+        .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+        .append("__tstore.jks#")
         .append(Settings.T_CERTIFICATE);
-
-    StringBuilder keyStoreSB = new StringBuilder();
-    keyStoreSB
-        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator).append(this.projectName)
-        .append("__kstore.jks#").append(Settings.K_CERTIFICATE);
-    StringBuilder trustStoreSB = new StringBuilder();
-    trustStoreSB
-        .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
-        .append(this.projectName).append(File.separator).append(this.projectName)
-        .append("__tstore.jks#").append(Settings.T_CERTIFICATE);
-        
-    // Comma-separated files to be added as local resources to Livy interpreter
-    StringBuilder livySparkDistFiles = new StringBuilder();
-    livySparkDistFiles
-        // KeyStore
-        .append(keyStoreSB).append(",")
-        // TrustStore
-        .append(trustStoreSB);
+  
+    // If RPC TLS is enabled, password file would be injected by the
+    // NodeManagers. We don't need to add it as LocalResource
+    if (!settings.getHopsRpcTls()) {
+      distFiles
+          // File with crypto material password
+          .append(",")
+          .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+          .append(projectName)
+          .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+          .append(File.separator)
+          .append(projectName)
+          .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
+          .append("__cert.key#")
+          .append(Settings.CRYPTO_MATERIAL_PASSWORD);
+    }
 
     if (interpreterConf == null) {
       StringBuilder interpreter_json = ConfigFileGenerator.
@@ -522,10 +529,10 @@ public class ZeppelinConfig {
               ConfigFileGenerator.INTERPRETER_TEMPLATE,
               "projectName", this.projectName,
               "zeppelin_home_dir", home,
-              "hdfs_user", this.projectName,
+              "hdfs_user", this.projectName + Settings.PROJECT_GENERIC_USER_SUFFIX,
               "hadoop_home", settings.getHadoopSymbolicLinkDir(),
               "livy_url", settings.getLivyUrl(),
-              "metrics-properties_path", log4jPath + "," + livySparkDistFiles.toString(),
+              "metrics-properties_path", log4jPath + "," + distFiles.toString(),
               "extra_spark_java_options", extraSparkJavaOptions,
               "spark.sql.warehouse.dir", hdfsResourceDir + "spark-warehouse",
               "spark.yarn.stagingDir", hdfsResourceDir,
@@ -533,8 +540,10 @@ public class ZeppelinConfig {
               "livy.spark.yarn.stagingDir", hdfsResourceDir,
               "hadoop_version", settings.getHadoopVersion(),
               "zeppelin.python_conda_path", zeppelinPythonPath,
-              "spark.yarn.dist.files", sparkDistFiles.toString(),
-              "livy_session_timeout", settings.getLivyZeppelinSessionTimeout()
+              "livy_session_timeout", settings.getLivyZeppelinSessionTimeout(),
+              "spark.yarn.dist.files", distFiles.toString(),
+              "hive.server", settings.getHiveServerHostName(false),
+              "hive.db", this.projectName
           );
       interpreterConf = interpreter_json.toString();
     } 

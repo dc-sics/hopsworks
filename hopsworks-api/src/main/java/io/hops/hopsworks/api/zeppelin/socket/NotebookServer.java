@@ -54,6 +54,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import io.hops.hopsworks.api.zeppelin.util.ZeppelinResource;
+import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
+import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.user.CertificateMaterializer;
@@ -119,6 +122,8 @@ public class NotebookServer {
   private DistributedFsService dfsService;
   @EJB
   private ZeppelinResource zeppelinResource;
+  @EJB
+  private YarnProjectsQuotaFacade yarnProjectsQuotaFacade;
   
   public NotebookServer() {
   }
@@ -134,14 +139,22 @@ public class NotebookServer {
         LOG.log(Level.INFO, "User not authorized for Zeppelin Access: {0}", this.sender);
         return;
       }
+      if (project.getPaymentType().equals(PaymentType.PREPAID)) {
+        YarnProjectsQuota projectQuota = yarnProjectsQuotaFacade.findByProjectName(project.getName());
+        if (projectQuota == null || projectQuota.getQuotaRemaining() < 0) {
+          session.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "This project is out of credits."));
+          return;
+        }
+      }
       this.impl = notebookServerImplFactory.getNotebookServerImps(project.getName(), conn);
       if (impl.getConf() == null) {
         impl.removeConnectedSockets(conn, notebookServerImplFactory);
         LOG.log(Level.INFO, "Could not create Zeppelin config for user: {0}, project: {1}", new Object[]{this.sender,
-          this.project.getName()});
+          project.getName()});
         return;
       }
       addUserConnection(this.hdfsUsername, conn);
+      addUserConnection(project.getProjectGenericUser(), conn);
       this.session.getUserProperties().put("projectID", this.project.getId());
       String httpHeader = (String) config.getUserProperties().get(WatcherSecurityKey.HTTP_HEADER);
       this.session.getUserProperties().put(WatcherSecurityKey.HTTP_HEADER, httpHeader);
@@ -190,7 +203,7 @@ public class NotebookServer {
         throw new Exception("Anonymous access not allowed ");
       }
 
-      messagereceived.principal = this.project.getName();
+      messagereceived.principal = this.project.getProjectGenericUser();
       HashSet<String> userAndRoles = new HashSet<>();
       userAndRoles.add(messagereceived.principal);
       if (!messagereceived.roles.equals("")) {
@@ -353,7 +366,11 @@ public class NotebookServer {
           break;
       }
     } catch (Exception e) {
-      LOG.log(Level.SEVERE, "Can't handle message", e);
+      Level logLevel = Level.SEVERE;
+      if (e.getMessage().contains("is not allowed to empty the Trash")) {
+        logLevel = Level.INFO;
+      }
+      LOG.log(logLevel, "Can't handle message", e);
     }
   }
 
@@ -364,6 +381,7 @@ public class NotebookServer {
     impl.removeConnectionFromAllNote(conn);
     impl.removeConnectedSockets(conn, notebookServerImplFactory);
     impl.removeUserConnection(this.hdfsUsername, conn);
+    impl.removeUserConnection(project.getProjectGenericUser(), conn);
   }
 
   @OnError
@@ -401,6 +419,7 @@ public class NotebookServer {
       impl.removeConnectionFromAllNote(this.session);
       impl.removeConnectedSockets(this.session, notebookServerImplFactory);
       impl.removeUserConnection(this.hdfsUsername, this.session);
+      impl.removeUserConnection(project.getProjectGenericUser(), this.session);
     } catch (IOException ex) {
       LOG.log(Level.SEVERE, null, ex);
     }

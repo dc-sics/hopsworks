@@ -147,8 +147,8 @@ public class ResetPassword implements Serializable {
       return ("password_sent");
     }
     try {
-
-      if (!DigestUtils.sha256Hex(answer).equals(people.
+      
+      if (!DigestUtils.sha256Hex(answer.toLowerCase()).equals(people.
           getSecurityAnswer())) {
 
         // Lock the account if n tmies wrong answer  
@@ -199,6 +199,9 @@ public class ResetPassword implements Serializable {
         IllegalStateException | SystemException | NotSupportedException ex) {
       MessagesController.addSecurityErrorMessage("Technical Error!");
       return ("");
+    } catch (Exception ex) {
+      Logger.getLogger(ResetPassword.class.getName()).log(Level.SEVERE, null, ex);
+      return "";
     }
 
     return ("password_sent");
@@ -260,6 +263,9 @@ public class ResetPassword implements Serializable {
           people);
       return ("");
 
+    } catch (Exception ex) {
+      Logger.getLogger(ResetPassword.class.getName()).log(Level.SEVERE, null, ex);
+      return "";
     }
   }
 
@@ -334,7 +340,7 @@ public class ResetPassword implements Serializable {
 
         // update the security question
         mgr.resetSecQuestion(people.getUid(), question, DigestUtils.sha256Hex(
-            this.answer));
+            this.answer.toLowerCase()));
 
         // send email    
         String message = UserAccountsEmailMessages.buildSecResetMessage();
@@ -528,6 +534,9 @@ public class ResetPassword implements Serializable {
           name(), AccountsAuditActions.FAILED.name(), "",
           people);
 
+      return ("");
+    } catch (Exception ex) {
+      Logger.getLogger(ResetPassword.class.getName()).log(Level.SEVERE, null, ex);
       return ("");
     }
   }
