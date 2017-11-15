@@ -1,7 +1,10 @@
 package io.hops.hopsworks.common.dao.user.security.ua;
 
 import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
+import io.hops.hopsworks.common.dao.certificates.CertsFacade;
+import io.hops.hopsworks.common.dao.certificates.UserCerts;
 import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.Iterator;
@@ -22,6 +25,9 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAudit;
 import io.hops.hopsworks.common.metadata.exception.ApplicationException;
+import io.hops.hopsworks.common.util.HopsUtils;
+import java.util.logging.Level;
+import javax.ejb.EJB;
 import javax.persistence.TransactionRequiredException;
 
 @Stateless
@@ -32,7 +38,12 @@ public class UserManager {
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
-
+  
+  @EJB
+  private CertsFacade userCertsFacade;
+  @EJB
+  private ProjectFacade projectFacade;
+  
   /**
    * Register a new group for user.
    *
@@ -106,10 +117,32 @@ public class UserManager {
 
   }
 
-  public void resetPassword(Users p, String pass) {
-    p.setPassword(pass);
-    p.setPasswordChanged(new Timestamp(new Date().getTime()));
-    em.merge(p);
+  public void resetPassword(Users p, String pass) throws Exception {
+    //For every project, change the certificate secret in the database
+    //Get cert password by decrypting it with old password
+    List<Project> projects = projectFacade.findByUser(p);
+    //In case of failure, keep a list of old certs 
+    List<UserCerts> oldCerts = userCertsFacade.findUserCertsByUid(p.getUsername());
+    try {
+      for (Project project : projects) {
+        UserCerts userCert = userCertsFacade.findUserCert(project.getName(), p.getUsername());
+        String certPassword = HopsUtils.decrypt(p.getPassword(), userCert.getUserKeyPwd());
+        //Encrypt it with new password and store it in the db
+        String newSecret = HopsUtils.encrypt(pass, certPassword);
+        userCert.setUserKeyPwd(newSecret);
+        userCertsFacade.persist(userCert);
+      }
+      p.setPassword(pass);
+      p.setPasswordChanged(new Timestamp(new Date().getTime()));
+      em.merge(p);
+    } catch (Exception ex) {
+      Logger.getLogger(UserManager.class.getName()).log(Level.SEVERE, null, ex);
+      //Persist old certs
+      for (UserCerts oldCert : oldCerts) {
+        userCertsFacade.persist(oldCert);
+      }
+      throw new Exception(ex);
+    }
 
   }
 
