@@ -135,7 +135,7 @@ angular.module('hopsWorksApp')
             self.resultItems = 0;
             self.resultItemsPublicSearch = 0;
             self.currentPage = 1;
-            self.pageSize = 16;
+            self.pageSize = 9;
 
             self.hitEnter = function (event) {
               var code = event.which || event.keyCode || event.charCode;
@@ -173,7 +173,7 @@ angular.module('hopsWorksApp')
             self.search = function () {
               self.showSearchPage = true;
               self.currentPage = 1;
-              self.pageSize = 16;
+              self.pageSize = 9;
               self.searchResult = [];
 
               if (self.searchTerm === undefined || self.searchTerm === "" || self.searchTerm === null) {
@@ -331,7 +331,7 @@ angular.module('hopsWorksApp')
               if (listView) {
                 self.pageSize = 4;
               } else {
-                self.pageSize = 16;
+                self.pageSize = 9;
               }
             };
 
