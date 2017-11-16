@@ -340,7 +340,7 @@ angular.module('hopsWorksApp')
               ModalService.confirm('sm', 'Confirm', 'Are you sure you want to make this DataSet public? \n\
                 This will make all its files available for any registered user to download and process.').then(
                 function (success) {
-                  self.sharingWithHops[id] = true;
+                  self.sharingDataset[id] = true;
                   delaHopsService.shareWithHopsByInodeId(id).then(
                     function (success) {
                       self.sharingDataset[id] = false;
