@@ -129,7 +129,7 @@ angular.module('hopsWorksApp')
               if (self.publicDSId !== undefined) {
                 getDatasetFromLocal(self.publicDSId);
               }
-              self.selectCategory(self.displayCategories[0]);
+              self.selectCategory({'categoryName': 'all', 'displayName': 'All'}); //open by default 
             };
             
             initCtrl();
