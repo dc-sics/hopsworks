@@ -85,6 +85,10 @@ import java.util.List;
   @NamedQuery(name = "Execution.findUserJobsForExecutionInState",
       query
       = "SELECT DISTINCT e.job FROM Execution e WHERE e.job.project = :project AND e.hdfsUser = :hdfsUser "
+      + "AND e.state IN :stateCollection ORDER BY e.submissionTime DESC"),
+  @NamedQuery(name = "Execution.findUserJobForExecutionInState",
+      query
+      = "SELECT e.job FROM Execution e WHERE e.job.id = :jobid AND e.job.project = :project AND e.hdfsUser = :hdfsUser "
       + "AND e.state IN :stateCollection ORDER BY e.submissionTime DESC")})
 public class Execution implements Serializable {
 

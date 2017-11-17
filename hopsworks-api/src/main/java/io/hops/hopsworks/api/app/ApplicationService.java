@@ -19,6 +19,7 @@ import io.hops.hopsworks.common.dao.app.JobWorkflowDTO;
 import io.hops.hopsworks.common.dao.app.TopicJsonDTO;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.certificates.UserCerts;
+import io.hops.hopsworks.common.dao.jobhistory.ExecutionFacade;
 import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -31,10 +32,13 @@ import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.jobs.execution.ExecutionController;
 import io.hops.hopsworks.common.project.CertificatesController;
 import io.hops.hopsworks.common.util.EmailBean;
+import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.ws.rs.Produces;
@@ -70,6 +74,8 @@ public class ApplicationService {
   private ExecutionController executionController;
   @EJB
   private JobFacade jobFacade;
+  @EJB
+  private ExecutionFacade executionFacade;
 
   @POST
   @Path("mail")
@@ -127,13 +133,13 @@ public class ApplicationService {
   /////////////////////////////////////////////////
   //Endpoints that act as access point of HopsUtil or other services to create job workflows
   @POST
-  @Path("jobs/executions")
+  @Path("jobs")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @ApiOperation(value = "Submit IDs of jobs to start")
   public Response startJobs(@Context SecurityContext sc,
       @Context HttpServletRequest req, JobWorkflowDTO jobsDTO) throws AppException {
-    
+
     String projectUser = checkAndGetProjectUser(jobsDTO.getKeyStoreBytes(), jobsDTO.getKeyStorePwd().toCharArray());
     assertAdmin(projectUser);
     Users user = userFacade.findByUsername(hdfsUserBean.getUserName(projectUser));
@@ -148,9 +154,32 @@ public class ApplicationService {
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
+
+  @POST
+  @Path("runningjobs")
+  @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
+  @ApiOperation(value = "Retrieve jobs status")
+  public Response getRunningJobs(@Context SecurityContext sc,
+      @Context HttpServletRequest req, JobWorkflowDTO jobsDTO) throws AppException {
+    String projectUser = checkAndGetProjectUser(jobsDTO.getKeyStoreBytes(), jobsDTO.getKeyStorePwd().toCharArray());
+    assertAdmin(projectUser);
+    for (String jobId : jobsDTO.getJobIds()) {
+      Project project = projectFacade.findByName(projectUser.split(Settings.DOUBLE_UNDERSCORE)[0]);
+      List<Jobs> jobsRunning = jobFacade.getUserRunningJob(project, projectUser, Integer.parseInt(jobId));
+      List<String> jobIds = new ArrayList<>();
+      for (Jobs job : jobsRunning) {
+        jobIds.add(Integer.toString(job.getId()));
+      }
+      JobWorkflowDTO jobsrRunningDTO = new JobWorkflowDTO();
+      jobsrRunningDTO.setJobIds(jobIds);
+//      GenericEntity<JobWorkflowDTO> jobs = new GenericEntity<JobWorkflowDTO>(jobsrRunningDTO) {};
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(jobsrRunningDTO).build();
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.INTERNAL_SERVER_ERROR).build();
+  }
   /////////////////////////////////////////////////
-  
-  
+
   /**
    * Returns the project user from the keystore and verifies it.
    *

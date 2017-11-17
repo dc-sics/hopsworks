@@ -155,4 +155,13 @@ public class JobFacade extends AbstractFacade<Jobs> {
     q.setParameter("stateCollection", JobState.getRunningStates());
     return q.getResultList();
   }
+  
+  public List<Jobs> getUserRunningJob(Project project, String hdfsUser, int jobId) {
+    TypedQuery<Jobs> q = em.createNamedQuery("Execution.findUserJobForExecutionInState", Jobs.class);
+    q.setParameter("jobid", jobId);
+    q.setParameter("project", project);
+    q.setParameter("hdfsUser", hdfsUser);
+    q.setParameter("stateCollection", JobState.getRunningStates());
+    return q.getResultList();
+  }
 }
