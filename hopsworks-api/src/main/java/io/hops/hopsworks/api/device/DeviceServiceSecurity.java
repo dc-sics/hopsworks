@@ -14,10 +14,9 @@ import java.util.Date;
 
 class DeviceServiceSecurity {
 
-  private static final String DEVICE_UUID = "deviceUuid";
+  public static final String DEVICE_UUID = "deviceUuid";
 
-  private static final String PROJECT_ID = "projectId";
-
+  public static final String PROJECT_ID = "projectId";
 
   /***
    * This method generates a jwt token (RFC 7519) which is unencrypted but signed with the given projectDevicesSettings.
