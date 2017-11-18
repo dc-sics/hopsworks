@@ -56,6 +56,15 @@ public class DeviceJwtAuthFilter implements ContainerRequestFilter {
         return;
       }
 
+      // Validates that the Devices Feature is Active for the given project.
+      ProjectDevicesSettings devicesSettings;
+      try {
+        devicesSettings = deviceFacade.readProjectDevicesSettings(project.getId());
+      }catch (Exception e) {
+        requestContext.abortWith(new DeviceResponseBuilder().DEVICES_FEATURE_NOT_ACTIVE);
+        return;
+      }
+
       // Validates that the DeviceJwtTokenRequired exists for the requested method.
       if (method.isAnnotationPresent(DeviceJwtTokenRequired.class)) {
 
@@ -76,15 +85,6 @@ public class DeviceJwtAuthFilter implements ContainerRequestFilter {
 
         // Gets the jwtToken from the Authorization Header and removes empty characters.
         String jwtToken =  authorizationHeader.substring("Bearer".length()).replaceAll("\\s","");
-
-        // Validates that the Devices Feature is Active for the given project.
-        ProjectDevicesSettings devicesSettings;
-        try {
-          devicesSettings = deviceFacade.readProjectDevicesSettings(project.getId());
-        }catch (Exception e) {
-          requestContext.abortWith(new DeviceResponseBuilder().DEVICES_FEATURE_NOT_ACTIVE);
-          return;
-        }
 
         // Validates that the jwtToken is authentic.
         DecodedJWT decodedJWT;

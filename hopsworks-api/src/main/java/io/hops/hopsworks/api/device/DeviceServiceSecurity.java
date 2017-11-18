@@ -14,9 +14,12 @@ import java.util.Date;
 
 class DeviceServiceSecurity {
 
+  public static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
+
   public static final String DEVICE_UUID = "deviceUuid";
 
   public static final String PROJECT_ID = "projectId";
+
 
   /***
    * This method generates a jwt token (RFC 7519) which is unencrypted but signed with the given projectDevicesSettings.

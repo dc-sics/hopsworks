@@ -45,18 +45,15 @@ public class DeviceManagementService {
   private final static Logger LOGGER = Logger.getLogger(DeviceManagementService.class.getName());
 
   @EJB
-  private NoCacheResponse noCacheResponse;
-
-  @EJB
   private ProjectController projectController;
 
   @EJB
   private DeviceFacade deviceFacade;
 
+  @EJB
+  private NoCacheResponse noCacheResponse;
+
   private Integer projectId;
-
-  private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
-
 
   public DeviceManagementService() {
   }
@@ -74,7 +71,7 @@ public class DeviceManagementService {
   private void createDevicesSettings(Integer projectId, ProjectDevicesSettingsDTO settingsDTO) throws AppException{
     // Adds the device-user to the project as a Data Owner
     List<ProjectTeam> list = new ArrayList<>();
-    ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DEFAULT_DEVICE_USER_EMAIL));
+    ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DeviceServiceSecurity.DEFAULT_DEVICE_USER_EMAIL));
     pt.setTeamRole(AllowedRoles.DATA_OWNER);
     pt.setTimestamp(new Date());
     list.add(pt);
@@ -120,8 +117,8 @@ public class DeviceManagementService {
     Integer projectId, SecurityContext sc, HttpServletRequest req) throws AppException {
     Project project = projectController.findProjectById(projectId);
     try {
-      projectController.removeMemberFromTeam(
-        project, sc.getUserPrincipal().getName(), DEFAULT_DEVICE_USER_EMAIL, req.getSession().getId());
+      projectController.removeMemberFromTeam(project, sc.getUserPrincipal().getName(),
+        DeviceServiceSecurity.DEFAULT_DEVICE_USER_EMAIL, req.getSession().getId());
     } catch (Exception e) {
       e.printStackTrace();
     }

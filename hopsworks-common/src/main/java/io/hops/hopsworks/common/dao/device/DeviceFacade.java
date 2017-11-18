@@ -50,9 +50,9 @@ public class DeviceFacade {
     }
   }
 
-  public void createProjectDevice(AuthProjectDeviceDTO authDTO) {
+  public void createProjectDevice(Integer projectId, AuthDeviceDTO authDTO) {
     if (authDTO != null){
-      ProjectDevicePK pdKey = new ProjectDevicePK(authDTO.getProjectId(), authDTO.getDeviceUuid());
+      ProjectDevicePK pdKey = new ProjectDevicePK(projectId, authDTO.getDeviceUuid());
       em.persist(new ProjectDevice(pdKey, authDTO.getPassword(), ProjectDevice.State.Pending, authDTO.getAlias()));
     }
   }
@@ -110,9 +110,9 @@ public class DeviceFacade {
     em.persist(projectDevice);
   }
 
-  public void updateProjectDeviceLastLoggedIn(AuthProjectDeviceDTO projectDeviceDTO) {
+  public void updateProjectDeviceLastLoggedIn(Integer projectId, AuthDeviceDTO projectDeviceDTO) {
     ProjectDevice projectDevice = em.find(ProjectDevice.class,
-      new ProjectDevicePK(projectDeviceDTO.getProjectId(), projectDeviceDTO.getDeviceUuid()));
+      new ProjectDevicePK(projectId, projectDeviceDTO.getDeviceUuid()));
     projectDevice.setLastLoggedIn(new Date());
     em.persist(projectDevice);
   }

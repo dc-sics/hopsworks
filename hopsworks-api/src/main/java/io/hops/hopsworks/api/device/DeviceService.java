@@ -17,6 +17,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -25,8 +26,7 @@ import javax.ws.rs.core.Response.Status;
 import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
-import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
-import io.hops.hopsworks.common.dao.device.AuthProjectDeviceDTO;
+import io.hops.hopsworks.common.dao.device.AuthDeviceDTO;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
@@ -49,8 +49,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
-
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
@@ -58,7 +56,7 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.exception.AppException;
 
-@Path("/device")
+@Path("/devices-api")
 @Api(value = "Device Service",
     description = "Device Service")
 @Stateless
@@ -67,17 +65,8 @@ public class DeviceService {
 
   private final static Logger logger = Logger.getLogger(DeviceService.class.getName());
 
-  private static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
-
-  private static final String AUTHORIZATION_HEADER = "Authorization";
-  private static final String BEARER = "Bearer";
-  private static final String UUID_V4_REGEX =
+  public static final String UUID_V4_REGEX =
     "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[4][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}";
-
-  private static final String PROJECT_ID = "projectId";
-  private static final String DEVICE_UUID = "deviceUuid";
-  private static final String TOPIC = "topic";
-  private static final String RECORDS = "records";
 
   @EJB
   private DeviceFacade deviceFacade;
@@ -111,84 +100,18 @@ public class DeviceService {
   }
 
   /**
-   * Returns the jwtToken from the contents of the Authorization header.
-   *
-   * @param authorizationHeader The entire contents of the Authorization header of a request.
-   * @return The jwtToken as a string
-   * @throws DeviceServiceException Throws an exception if the
-   * Authorization header is missing or if the Bearer is not present.
-   */
-  private String getJwtFromAuthorizationHeader(String authorizationHeader) throws DeviceServiceException{
-    if (authorizationHeader == null) {
-      throw new DeviceServiceException(new DeviceResponseBuilder().AUTH_HEADER_MISSING);
-    }
-
-    if(!authorizationHeader.startsWith(BEARER)){
-      throw new DeviceServiceException(new DeviceResponseBuilder().AUTH_HEADER_BEARER_MISSING);
-    }
-
-    return authorizationHeader.substring(BEARER.length()).replaceAll("\\s","");
-  }
-
-  /**
-   * Retrieves the Project Devices Settings from the database for the specified project.
-   * If no such record exists the device feature is considered to be disabled.
-   *
-   * @param projectId The projectId of a project
-   * @return The Project Devices Settings of the project with the specified projectId
-   * @throws DeviceServiceException  It is thrown when there is no Project Devices Settings in the database and as
-   * such all endpoints defined in this EJB must catch this exception and block all incoming requests.
-   */
-  private ProjectDevicesSettings getProjectDevicesSettings(Integer projectId) throws DeviceServiceException{
-    try {
-      return deviceFacade.readProjectDevicesSettings(projectId);
-    }catch (Exception e) {
-      throw new DeviceServiceException(new DeviceResponseBuilder().DEVICES_FEATURE_NOT_ACTIVE);
-    }
-  }
-
-  /**
-   * Retrieves the Project Device from the database for the specified pair (projectId, deviceUuid).
-   *
-   * @param projectId The projectId of a project
-   * @param deviceUuid The deviceUuid of a device
-   * @return The Project Device
-   * @throws DeviceServiceException  It is thrown when there is no such record in the database and as such the device
-   * is not yet registered in this project or there is such a record but the device is not in the Approved state.
-   */
-  private ProjectDevice getProjectDevice(Integer projectId, String deviceUuid) throws DeviceServiceException{
-    ProjectDevice device;
-    try {
-      device = deviceFacade.readProjectDevice(projectId, deviceUuid);
-    }catch (Exception e) {
-      throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_NOT_REGISTERED);
-    }
-    if (device.getState() != ProjectDevice.State.Approved){
-      if (device.getState() == ProjectDevice.State.Disabled){
-        throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_DISABLED);
-      }
-      if (device.getState() == ProjectDevice.State.Pending){
-        throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_PENDING);
-      }
-      throw new DeviceServiceException(new DeviceResponseBuilder().DEVICE_UNKNOWN_STATE);
-    }
-    return device;
-  }
-
-  /**
    * This method validates an AuthProjectDeviceDTO object and checks that no critical information is missing and that
    * the deviceUuid is a valid UUID version 4. A "No news is good news" policy is applied. If no exception is thrown
    * then the object is considered validated.
    *
-   * @param authProjectDeviceDTO The object to validate
+   * @param authDeviceDTO The object to validate
    * @throws DeviceServiceException It is thrown when there is a validation problem with the provided object.
    */
-  private void validate(AuthProjectDeviceDTO authProjectDeviceDTO) throws DeviceServiceException {
-    if (authProjectDeviceDTO == null || authProjectDeviceDTO.getProjectId() == null ||
-      authProjectDeviceDTO.getDeviceUuid() == null || authProjectDeviceDTO.getPassword() == null){
-      throw new DeviceServiceException(new DeviceResponseBuilder().AUTH_BAD_REQ);
+  private void validate(AuthDeviceDTO authDeviceDTO) throws DeviceServiceException {
+    if (authDeviceDTO == null || authDeviceDTO.getDeviceUuid() == null || authDeviceDTO.getPassword() == null){
+      throw new DeviceServiceException(new DeviceResponseBuilder().MISSING_PARAMS);
     }
-    if (!authProjectDeviceDTO.getDeviceUuid().matches(UUID_V4_REGEX)){
+    if (!authDeviceDTO.getDeviceUuid().matches(UUID_V4_REGEX)){
       throw new DeviceServiceException(new DeviceResponseBuilder().AUTH_UUID4_BAD_REQ);
     }
   }
@@ -239,17 +162,17 @@ public class DeviceService {
    * Registers a device under a project.
    */
   @POST
-  @Path("/register")
+  @Path("/{projectName}/register")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response postRegisterEndpoint(
-    @Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
+  public Response postRegisterEndpoint(@PathParam("projectName") String projectName,
+    @Context HttpServletRequest req, AuthDeviceDTO deviceDTO) throws AppException {
     try {
-      getProjectDevicesSettings(authDTO.getProjectId());
-      validate(authDTO);
+      validate(deviceDTO);
       try {
-        authDTO.setPassword(DigestUtils.sha256Hex(authDTO.getPassword()));
-        deviceFacade.createProjectDevice(authDTO);
+        Project project = projectFacade.findByName(projectName);
+        deviceDTO.setPassword(DigestUtils.sha256Hex(deviceDTO.getPassword()));
+        deviceFacade.createProjectDevice(project.getId(), deviceDTO);
         return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
       }catch (Exception e) {
         return new DeviceResponseBuilder().DEVICE_ALREADY_REGISTERED;
@@ -263,18 +186,20 @@ public class DeviceService {
    * Logs in a device under a project.
    */
   @POST
-  @Path("/login")
+  @Path("/{projectName}/login")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response postLoginEndpoint(@Context HttpServletRequest req, AuthProjectDeviceDTO authDTO) throws AppException {
+  public Response postLoginEndpoint(@PathParam("projectName") String projectName, @Context HttpServletRequest req,
+                                    AuthDeviceDTO deviceDTO) throws AppException {
     try {
-      ProjectDevicesSettings devicesSettings = getProjectDevicesSettings(authDTO.getProjectId());
-      validate(authDTO);
-      ProjectDevice device = getProjectDevice(authDTO.getProjectId(), authDTO.getDeviceUuid());
-      if (device.getPassword().equals(DigestUtils.sha256Hex(authDTO.getPassword()))) {
-        deviceFacade.updateProjectDeviceLastLoggedIn(authDTO);
+      validate(deviceDTO);
+      Project project = projectFacade.findByName(projectName);
+      ProjectDevice device = deviceFacade.getProjectDevice(project.getId(), deviceDTO.getDeviceUuid());
+      if (device.getPassword().equals(DigestUtils.sha256Hex(deviceDTO.getPassword()))) {
+        deviceFacade.updateProjectDeviceLastLoggedIn(project.getId(), deviceDTO);
         return DeviceResponseBuilder.successfulJsonResponse(
-          Status.OK, DeviceServiceSecurity.generateJwt(devicesSettings, device));
+          Status.OK, DeviceServiceSecurity.generateJwt(
+            deviceFacade.readProjectDevicesSettings(project.getId()), device));
       }
       return new DeviceResponseBuilder().DEVICE_LOGIN_FAILED;
     }catch(DeviceServiceException e) {
@@ -287,27 +212,12 @@ public class DeviceService {
    * Useful for testing purposes for developers of devices that are integrating towards hopsworks.
    */
   @POST
-  @Path("/verify-token")
-  @Consumes(MediaType.APPLICATION_JSON)
+  @Path("/{projectName}/verify-token")
+  @DeviceJwtTokenRequired
   @Produces(MediaType.APPLICATION_JSON)
-  public Response postVerifyTokenEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
-
-    try {
-      JSONObject json = new JSONObject(jsonString);
-      Integer projectId = json.getInt(PROJECT_ID);
-
-      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(projectId);
-
-      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      DeviceServiceSecurity.verifyJwt(projectDevicesSettings, jwtToken);
-      // Device is authenticated at this point.
-
-      return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
-    } catch (JSONException e) {
-      return new DeviceResponseBuilder().JWT_VERIFY_TOKEN_BAD_REQ;
-    }catch(DeviceServiceException e) {
-      return e.getResponse();
-    }
+  public Response postVerifyTokenEndpoint(
+    @PathParam("projectName") String projectName, @Context HttpServletRequest req) throws AppException {
+    return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
   }
 
   /**
@@ -315,19 +225,14 @@ public class DeviceService {
    * Useful for checking the schema of the topic on the client before producing.
    */
   @GET
-  @Path("/topic-schema")
+  @Path("/{projectName}/topic-schema")
+  @DeviceJwtTokenRequired
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getTopicSchemaEndpoint(@Context HttpServletRequest req) throws AppException {
-
+  public Response getTopicSchemaEndpoint(
+    @PathParam("projectName") String projectName, @Context HttpServletRequest req) throws AppException {
     try {
-      Integer projectId = Integer.valueOf(req.getParameter(PROJECT_ID));
-      String topicName = req.getParameter(TOPIC);
-
-      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(projectId);
-
-      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      DeviceServiceSecurity.verifyJwt(projectDevicesSettings, jwtToken);
-      // Device is authenticated at this point.
+      Integer projectId = (Integer) req.getAttribute(DeviceServiceSecurity.PROJECT_ID);
+      String topicName = req.getParameter("topic");
 
       SchemaDTO schemaDTO;
       try {
@@ -338,8 +243,6 @@ public class DeviceService {
 
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
 
-    }catch(JSONException e) {
-      return new DeviceResponseBuilder().GET_TOPIC_SCHEMA_BAD_REQ;
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }
@@ -349,32 +252,27 @@ public class DeviceService {
    * Endpoint to produce to kafka the specified records to the specified topic of the specified project.
    */
   @POST
-  @Path("/produce")
+  @Path("/{projectName}/produce")
+  @DeviceJwtTokenRequired
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @TransactionAttribute(TransactionAttributeType.NEVER)
-  public Response postProduceEndpoint(@Context HttpServletRequest req, String jsonString) throws AppException {
+  public Response postProduceEndpoint(@PathParam("projectName") String projectName, @Context HttpServletRequest req,
+                                      String jsonString) throws AppException {
 
     try {
+      // projectId and deviceUuid are injected from the jwtToken into the Context by the DeviceJwtAuthFilter.
+      Integer projectId = (Integer) req.getAttribute(DeviceServiceSecurity.PROJECT_ID);
+      String deviceUuid = (String) req.getAttribute(DeviceServiceSecurity.DEVICE_UUID);
+
       // Extracts all the json parameters
       JSONObject json = new JSONObject(jsonString);
-      Integer projectId = json.getInt(PROJECT_ID);
-      String topicName = json.getString(TOPIC);
-      JSONArray records = json.getJSONArray(RECORDS);
 
-      // Retrieves the project devices settings that contain the project's jwtSecret
-      ProjectDevicesSettings projectDevicesSettings = getProjectDevicesSettings(projectId);
-
-      // Verifies jwtToken
-      String jwtToken = getJwtFromAuthorizationHeader(req.getHeader(AUTHORIZATION_HEADER));
-      DecodedJWT decodedJwt = DeviceServiceSecurity.verifyJwt(projectDevicesSettings, jwtToken);
-
-      // The device is authenticated at this point.
-
-      String deviceUuid = decodedJwt.getClaim(DEVICE_UUID).asString();
+      String topicName = json.getString("topic");
+      JSONArray records = json.getJSONArray("records");
 
       // Extracts the default device-user from the database
-      Users user = userManager.getUserByEmail(DEFAULT_DEVICE_USER_EMAIL);
+      Users user = userManager.getUserByEmail(DeviceServiceSecurity.DEFAULT_DEVICE_USER_EMAIL);
 
       Project project = projectFacade.find(projectId);
 
@@ -408,7 +306,7 @@ public class DeviceService {
         return new DeviceResponseBuilder().PRODUCE_FAILED;
       }
     }catch(JSONException e) {
-      return new DeviceResponseBuilder().PRODUCE_BAD_REQ;
+      return new DeviceResponseBuilder().MISSING_PARAMS;
     }catch(DeviceServiceException e) {
       return e.getResponse();
     }
