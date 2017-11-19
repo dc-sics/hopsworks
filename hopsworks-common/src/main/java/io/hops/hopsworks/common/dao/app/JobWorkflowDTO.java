@@ -10,13 +10,13 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement
 public class JobWorkflowDTO extends KeystoreDTO {
 
-  List<String> jobIds;
+  List<Integer> jobIds;
 
-  public List<String> getJobIds() {
+  public List<Integer> getJobIds() {
     return jobIds;
   }
 
-  public void setJobIds(List<String> jobIds) {
+  public void setJobIds(List<Integer> jobIds) {
     this.jobIds = jobIds;
   }
 

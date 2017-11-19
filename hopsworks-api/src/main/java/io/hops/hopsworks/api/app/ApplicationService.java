@@ -133,7 +133,7 @@ public class ApplicationService {
   /////////////////////////////////////////////////
   //Endpoints that act as access point of HopsUtil or other services to create job workflows
   @POST
-  @Path("jobs")
+  @Path("jobs/executions")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   @ApiOperation(value = "Submit IDs of jobs to start")
@@ -143,8 +143,8 @@ public class ApplicationService {
     String projectUser = checkAndGetProjectUser(jobsDTO.getKeyStoreBytes(), jobsDTO.getKeyStorePwd().toCharArray());
     assertAdmin(projectUser);
     Users user = userFacade.findByUsername(hdfsUserBean.getUserName(projectUser));
-    for (String jobId : jobsDTO.getJobIds()) {
-      Jobs job = jobFacade.findById(Integer.parseInt(jobId));
+    for (Integer jobId : jobsDTO.getJobIds()) {
+      Jobs job = jobFacade.findById(jobId);
       try {
         executionController.start(job, user);
       } catch (IOException ex) {
@@ -156,27 +156,23 @@ public class ApplicationService {
   }
 
   @POST
-  @Path("runningjobs")
+  @Path("jobs")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  @ApiOperation(value = "Retrieve jobs status")
-  public Response getRunningJobs(@Context SecurityContext sc,
+  @ApiOperation(value = "Retrieve jobs state")
+  public Response getJobsWithRunningState(@Context SecurityContext sc,
       @Context HttpServletRequest req, JobWorkflowDTO jobsDTO) throws AppException {
     String projectUser = checkAndGetProjectUser(jobsDTO.getKeyStoreBytes(), jobsDTO.getKeyStorePwd().toCharArray());
     assertAdmin(projectUser);
-    for (String jobId : jobsDTO.getJobIds()) {
-      Project project = projectFacade.findByName(projectUser.split(Settings.DOUBLE_UNDERSCORE)[0]);
-      List<Jobs> jobsRunning = jobFacade.getUserRunningJob(project, projectUser, Integer.parseInt(jobId));
-      List<String> jobIds = new ArrayList<>();
-      for (Jobs job : jobsRunning) {
-        jobIds.add(Integer.toString(job.getId()));
-      }
-      JobWorkflowDTO jobsrRunningDTO = new JobWorkflowDTO();
-      jobsrRunningDTO.setJobIds(jobIds);
-//      GenericEntity<JobWorkflowDTO> jobs = new GenericEntity<JobWorkflowDTO>(jobsrRunningDTO) {};
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(jobsrRunningDTO).build();
+    Project project = projectFacade.findByName(projectUser.split(Settings.DOUBLE_UNDERSCORE)[0]);
+    List<Jobs> jobsRunning = jobFacade.getRunningJobs(project, projectUser, jobsDTO.getJobIds());
+    List<Integer> jobIds = new ArrayList<>();
+    for (Jobs job : jobsRunning) {
+      jobIds.add(job.getId());
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.INTERNAL_SERVER_ERROR).build();
+    JobWorkflowDTO jobsrRunningDTO = new JobWorkflowDTO();
+    jobsrRunningDTO.setJobIds(jobIds);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(jobsrRunningDTO).build();
   }
   /////////////////////////////////////////////////
 
