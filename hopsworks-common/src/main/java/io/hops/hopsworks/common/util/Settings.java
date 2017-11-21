@@ -1455,12 +1455,16 @@ public class Settings implements Serializable {
   public static final String META_DATA_FIELDS = META_DATA_NESTED_FIELD + ".*";
 
   //Filename conventions
-  public static final String FILENAME_DISALLOWED_CHARS
+  public static final String PROJECT_DISALLOWED_CHARS
           = " -/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String PRINT_PROJECT_DISALLOWED_CHARS
+    = "__, -, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #";
+  public static final String FILENAME_DISALLOWED_CHARS
+          = " /\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
   public static final String SUBDIR_DISALLOWED_CHARS
           = "/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
   public static final String PRINT_FILENAME_DISALLOWED_CHARS
-    = "__, -, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #";
+    = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #";
   public static final String SHARED_FILE_SEPARATOR = "::";
   public static final String DOUBLE_UNDERSCORE = "__";
 
