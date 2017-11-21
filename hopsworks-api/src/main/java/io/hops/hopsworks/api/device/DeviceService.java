@@ -194,7 +194,7 @@ public class DeviceService {
     try {
       validate(deviceDTO);
       Project project = projectFacade.findByName(projectName);
-      ProjectDevice device = deviceFacade.getProjectDevice(project.getId(), deviceDTO.getDeviceUuid());
+      ProjectDevice device = deviceFacade.readProjectDevice(project.getId(), deviceDTO.getDeviceUuid());
       if (device.getPassword().equals(DigestUtils.sha256Hex(deviceDTO.getPassword()))) {
         deviceFacade.updateProjectDeviceLastLoggedIn(project.getId(), deviceDTO);
         return DeviceResponseBuilder.successfulJsonResponse(
@@ -230,22 +230,19 @@ public class DeviceService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getTopicSchemaEndpoint(
     @PathParam("projectName") String projectName, @Context HttpServletRequest req) throws AppException {
+
+    Integer projectId = (Integer) req.getAttribute(DeviceServiceSecurity.PROJECT_ID);
+    String topicName = req.getParameter("topic");
+
+    SchemaDTO schemaDTO;
     try {
-      Integer projectId = (Integer) req.getAttribute(DeviceServiceSecurity.PROJECT_ID);
-      String topicName = req.getParameter("topic");
-
-      SchemaDTO schemaDTO;
-      try {
-        schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
-      } catch (Exception e) {
-        return new DeviceResponseBuilder().PROJECT_TOPIC_NOT_FOUND;
-      }
-
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
-
-    }catch(DeviceServiceException e) {
-      return e.getResponse();
+      schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
+    } catch (Exception e) {
+      return new DeviceResponseBuilder().PROJECT_TOPIC_NOT_FOUND;
     }
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
+
   }
 
   /**
