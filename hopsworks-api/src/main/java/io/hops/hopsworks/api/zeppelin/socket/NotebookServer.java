@@ -59,7 +59,7 @@ import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
 import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
-import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.util.Settings;
 import java.util.Date;
 import javax.ws.rs.core.Response;
@@ -440,7 +440,7 @@ public class NotebookServer {
   private void authenticateUser(Session session, Project project, String user) {
     //returns the user role in project. Null if the user has no role in project
     this.userRole = projectTeamBean.findCurrentRole(project, user);
-    LOG.log(Level.SEVERE, "User role in this project {0}", this.userRole);
+    LOG.log(Level.FINEST, "User role in this project {0}", this.userRole);
     Users users = userBean.findByEmail(user);
     if (users == null || this.userRole == null) {
       try {

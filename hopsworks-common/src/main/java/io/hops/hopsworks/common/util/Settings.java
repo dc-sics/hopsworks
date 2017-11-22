@@ -677,6 +677,11 @@ public class Settings implements Serializable {
     return CERTS_DIR;
   }
 
+  public synchronized String getHopsworksMasterEncPasswordFile() {
+    checkCache();
+    return getCertsDir() + File.separator + "encryption_master_password";
+  }
+  
   private static String HOPSWORKS_INSTALL_DIR = "/srv/hops/domains";
 
   public synchronized String getHopsworksInstallDir() {
@@ -1455,12 +1460,14 @@ public class Settings implements Serializable {
   public static final String META_DATA_FIELDS = META_DATA_NESTED_FIELD + ".*";
 
   //Filename conventions
-  public static final String FILENAME_DISALLOWED_CHARS
-          = " /\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
-  public static final String SUBDIR_DISALLOWED_CHARS
-          = "/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String PROJECT_DISALLOWED_CHARS
+          = " -/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String PRINT_PROJECT_DISALLOWED_CHARS
+    = "__, -, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
+  public static final String FILENAME_DISALLOWED_CHARS = " /\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String SUBDIR_DISALLOWED_CHARS = "/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
   public static final String PRINT_FILENAME_DISALLOWED_CHARS
-    = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #";
+    = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
   public static final String SHARED_FILE_SEPARATOR = "::";
   public static final String DOUBLE_UNDERSCORE = "__";
 
