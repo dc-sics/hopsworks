@@ -30,6 +30,7 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.project.MembersDTO;
 import io.hops.hopsworks.common.project.ProjectController;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -156,7 +157,7 @@ public class ProjectMembersService {
   public Response removeMembersByID(
           @PathParam("email") String email,
           @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException, Exception {
+          @Context HttpServletRequest req) throws AppException, YarnException, InterruptedException {
 
     Project project = projectController.findProjectById(this.projectId);
     JsonResponse json = new JsonResponse();

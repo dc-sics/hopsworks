@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 @Produces("application/json")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Zeppelin interpreter",
-        description = "Zeppelin interpreter")
+        description = "Zeppelin interpreter", hidden = true)
 public class InterpreterService {
 
   Logger logger = LoggerFactory.getLogger(InterpreterService.class);

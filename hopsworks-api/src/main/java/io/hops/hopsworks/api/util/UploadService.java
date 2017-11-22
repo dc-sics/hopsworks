@@ -141,6 +141,15 @@ public class UploadService {
     this.isTemplate = false;
     this.path = dsPath.getFullPath().toString();
   }
+  
+  public void confFileUpload(String fullPath, String userName, int templateId, String role) throws AppException {
+    this.username = userName;
+    this.role = role;
+    this.templateId = templateId;
+    this.isTemplate = false;
+    this.path = fullPath;
+  }
+  
 
 
   /**

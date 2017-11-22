@@ -23,7 +23,7 @@ public class ProjectDTO {
   private List<InodeView> datasets;
   private Integer inodeid;
   private QuotasDTO quotas;
-
+  
   public ProjectDTO() {
   }
 

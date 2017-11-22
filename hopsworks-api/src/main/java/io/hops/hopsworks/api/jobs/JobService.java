@@ -84,6 +84,8 @@ import io.hops.hopsworks.common.yarn.YarnClientWrapper;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import io.swagger.annotations.Api;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
@@ -107,6 +109,7 @@ import org.influxdb.dto.QueryResult;
  *
  * <p>
  */
+@Api("Jobs")
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class JobService {

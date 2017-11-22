@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 @Produces("application/json")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
 @Api(value = "Helium Rest Api",
-        description = "Helium Rest Api")
+        description = "Helium Rest Api", hidden = true)
 public class HeliumService {
 
   Logger logger = LoggerFactory.getLogger(HeliumService.class);

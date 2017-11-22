@@ -115,6 +115,7 @@ import org.apache.hadoop.yarn.api.records.LogAggregationStatus;
 import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.json.JSONObject;
 
 @Stateless
@@ -365,8 +366,8 @@ public class ProjectController {
 
       //add members of the project   
       try {
-        failedMembers = addMembers(project, owner.getEmail(), projectDTO.
-            getProjectTeam());
+        failedMembers.addAll(addMembers(project, owner.getEmail(), projectDTO.
+            getProjectTeam()));
       } catch (AppException | EJBException ex) {
         cleanup(project, sessionId, certsGenerationFuture);
         throw ex;
@@ -918,13 +919,13 @@ public class ProjectController {
 
     Project project = projectFacade.find(projectId);
     if (project == null) {
-      throw new AppException(Response.Status.FORBIDDEN.getStatusCode(),
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
           ResponseMessages.PROJECT_NOT_FOUND);
     }
     //Only project owner is able to delete a project
     Users user = userBean.getUserByEmail(userMail);
     if (!project.getOwner().equals(user)) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+      throw new AppException(Response.Status.FORBIDDEN.getStatusCode(),
           ResponseMessages.PROJECT_REMOVAL_NOT_ALLOWED);
     }
 
@@ -1547,7 +1548,7 @@ public class ProjectController {
    * @throws AppException
    */
   public void removeMemberFromTeam(Project project, String email,
-      String toRemoveEmail, String sessionId) throws AppException, Exception {
+      String toRemoveEmail, String sessionId) throws AppException, IOException, YarnException, InterruptedException {
     Users userToBeRemoved = userBean.getUserByEmail(toRemoveEmail);
     if (userToBeRemoved == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
