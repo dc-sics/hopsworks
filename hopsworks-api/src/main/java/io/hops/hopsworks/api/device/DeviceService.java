@@ -33,7 +33,7 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.project.ProjectController;
 
-import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
