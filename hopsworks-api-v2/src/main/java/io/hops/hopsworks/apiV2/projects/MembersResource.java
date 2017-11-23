@@ -1,7 +1,6 @@
 package io.hops.hopsworks.apiV2.projects;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.project.ProjectMembersService;
+import io.hops.hopsworks.apiV2.filter.AllowedProjectRoles;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
@@ -16,7 +15,6 @@ import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
-import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -34,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-@Api("V2 Members")
+@Api("Members")
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class MembersResource {
@@ -45,9 +43,6 @@ public class MembersResource {
   ProjectFacade projectFacade;
   @EJB
   UserFacade userFacade;
-  
-  @Inject
-  ProjectMembersService projectMembersService;
   
   private Integer projectId;
   
@@ -64,16 +59,15 @@ public class MembersResource {
   
   @ApiOperation("Get a list of project members")
   @GET
-  @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response getAll(@Context SecurityContext sc){
     List<ProjectTeam> membersByProject = projectTeamFacade.findMembersByProject(projectFacade.find(projectId));
-    List<MemberView> result = new ArrayList<>();
+    List<MemberDTO> result = new ArrayList<>();
     for (ProjectTeam projectTeam : membersByProject) {
-      result.add(new MemberView(projectTeam));
+      result.add(new MemberDTO(projectTeam));
     }
-    GenericEntity<List<MemberView>> entity = new GenericEntity<List<MemberView>>(result){};
+    GenericEntity<List<MemberDTO>> entity = new GenericEntity<List<MemberDTO>>(result){};
     return Response.ok(entity, MediaType.APPLICATION_JSON_TYPE).build();
   }
   
@@ -84,8 +78,11 @@ public class MembersResource {
   public Response deleteMember(@PathParam("id") Integer userId, @Context SecurityContext sc, @Context
       HttpServletRequest req) throws Exception {
     Users user = userFacade.find(userId);
-    projectMembersService.removeMembersByID(user.getEmail(),sc, req);
-    return Response.noContent().build();
+    
+    //projectMembersService.removeMembersByID(user.getEmail(),sc, req);
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented");
+  
+    //return Response.noContent().build();
   }
   
   @ApiOperation("Get member information")
@@ -96,7 +93,7 @@ public class MembersResource {
   public Response getMember(@PathParam("id") Integer userId, @Context SecurityContext sc) throws AppException {
     for (ProjectTeam member : projectTeamFacade.findMembersByProject(projectFacade.find(projectId))){
       if (userId.equals(member.getUser().getUid())){
-        GenericEntity<MemberView> result = new GenericEntity<MemberView>(new MemberView(member)){};
+        GenericEntity<MemberDTO> result = new GenericEntity<MemberDTO>(new MemberDTO(member)){};
         Response.ok(result, MediaType.APPLICATION_JSON_TYPE).build();
       }
     }
@@ -113,8 +110,9 @@ public class MembersResource {
     ProjectTeam teamOfOne = new ProjectTeam();
     teamOfOne.setUser(userFacade.find(userId));
     toAdd.setProjectTeam(Collections.singletonList(teamOfOne));
-    projectMembersService.addMembers(toAdd, sc, req);
-    return Response.noContent().build();
+    //projectMembersService.addMembers(toAdd, sc, req);
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented");
+    //return Response.noContent().build();
   }
   
   

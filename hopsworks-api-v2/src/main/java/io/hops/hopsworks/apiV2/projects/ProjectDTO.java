@@ -30,7 +30,7 @@ import java.util.Date;
 import java.util.List;
 
 @XmlRootElement
-public class ProjectView {
+public class ProjectDTO {
   
   private List<ProjectTeam> team;
   private List<ProjectServices> services;
@@ -43,10 +43,11 @@ public class ProjectView {
   private UserView owner;
   private List<Activity> activity;
   private List<Dataset> datasets;
+  private Date retentionPeriod;
   
-  public ProjectView(){}
+  public ProjectDTO(){}
   
-  public ProjectView(Project project){
+  public ProjectDTO(Project project){
     this.projectId = project.getId();
     this.name = project.getName();
     this.ethicalStatus = project.getEthicalStatus();
@@ -58,6 +59,7 @@ public class ProjectView {
     this.team = new ArrayList<>(project.getProjectTeamCollection());
     this.services = new ArrayList<>(project.getProjectServicesCollection());
     this.archived = project.getArchived();
+    retentionPeriod = project.getRetentionPeriod();
   }
   
   public List<ProjectTeam> getTeam() {
@@ -122,5 +124,9 @@ public class ProjectView {
   
   public List<Dataset> getDatasets() {
     return datasets;
+  }
+  
+  public Date getRetentionPeriod() {
+    return retentionPeriod;
   }
 }

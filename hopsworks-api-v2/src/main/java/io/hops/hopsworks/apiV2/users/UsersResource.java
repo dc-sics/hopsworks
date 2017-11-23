@@ -17,8 +17,8 @@
  */
 package io.hops.hopsworks.apiV2.users;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.apiV2.Util;
+import io.hops.hopsworks.apiV2.filter.AllowedProjectRoles;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.swagger.annotations.Api;
@@ -40,9 +40,9 @@ import javax.ws.rs.core.SecurityContext;
 import java.util.ArrayList;
 import java.util.List;
 
-@Path("/v2/users")
+@Path("/users")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
-@Api(value = "V2 Users", description = "Users Resource")
+@Api(value = "Users", description = "Users Resource")
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class UsersResource {
@@ -65,6 +65,6 @@ public class UsersResource {
     }
     GenericEntity<List<UserView>> result
         = new GenericEntity<List<UserView>>(userViews) {};
-    return Util.jsonOk(result);
+    return Util.ok(result);
   }
 }

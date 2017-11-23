@@ -15,6 +15,7 @@
     <module>hopsworks-kmon</module>
     <module>hopsworks-admin</module>
     <module>hopsworks-api</module>
+    <module>hopsworks-api-v2</module>
     <module>hopsworks-cluster</module>
     <module>hopsworks-ear</module>
     <module>hopsworks-ca</module>
@@ -46,7 +47,7 @@
     <glassfish.admin_port>4848</glassfish.admin_port>
     <glassfish.domain>domain1</glassfish.domain>
 
-    <swagger.version>1.5.16</swagger.version>
+    <swagger.version>1.5.10</swagger.version>
   </properties>
 
   <dependencies>

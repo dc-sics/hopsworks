@@ -1,7 +1,5 @@
 package io.hops.hopsworks.apiV2.currentUser;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.apiV2.Util;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
@@ -12,12 +10,10 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
 import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
-import io.hops.hopsworks.common.dao.user.sshkey.SshKeyDTO;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.user.UsersController;
 import io.swagger.annotations.Api;
-import org.apache.commons.codec.binary.Base64;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -26,8 +22,6 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
 import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -45,9 +39,9 @@ import java.util.logging.Logger;
 
 import static io.hops.hopsworks.apiV2.Util.except;
 
-@Path("/v2/user")
+@Path("/user")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
-@Api(value = "V2 User", description = "Current User Resources")
+@Api(value = "User", description = "Current User Resources")
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class UserResource {
@@ -82,7 +76,7 @@ public class UserResource {
 
     UserDTO userDTO = new UserDTO(user);
 
-    return Util.jsonOk(userDTO);
+    return Util.ok(userDTO);
   }
 
   @POST
@@ -94,16 +88,12 @@ public class UserResource {
           @FormParam("toursState") Integer toursState,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
-    JsonResponse json = new JsonResponse();
 
     UserDTO userDTO = userController.updateProfile(sc.getUserPrincipal().
             getName(), firstName, lastName, telephoneNum, toursState, req);
 
-    json.setStatus("OK");
-    json.setSuccessMessage(ResponseMessages.PROFILE_UPDATED);
-    json.setData(userDTO);
 
-    return Util.jsonOk(userDTO);
+    return Response.ok(userDTO, MediaType.APPLICATION_JSON_TYPE).build();
   }
 
   @POST
@@ -115,15 +105,11 @@ public class UserResource {
           @FormParam("confirmedPassword") String confirmedPassword,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
-    JsonResponse json = new JsonResponse();
 
     userController.changePassword(sc.getUserPrincipal().getName(), oldPassword,
             newPassword, confirmedPassword, req);
-
-    json.setStatus("OK");
-    json.setSuccessMessage(ResponseMessages.PASSWORD_CHANGED);
-
-    return Util.jsonOk(json);
+    
+    return Response.noContent().build();
   }
 
   @POST
@@ -134,118 +120,13 @@ public class UserResource {
           @FormParam("securityAnswer") String securityAnswer,
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
-    JsonResponse json = new JsonResponse();
     userController.changeSecQA(sc.getUserPrincipal().getName(), oldPassword,
             securityQuestion, securityAnswer, req);
 
-    json.setStatus("OK");
-    json.setSuccessMessage(ResponseMessages.SEC_QA_CHANGED);
-
-    return Util.jsonOk(json);
+    return Response.noContent().build();
   }
-
-  @POST
-  @Path("twoFactor")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response changeTwoFactor(@FormParam("password") String password,
-          @FormParam("twoFactor") boolean twoFactor,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
-    Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
-
-    byte[] qrCode;
-    JsonResponse json = new JsonResponse();
-    if (user.getTwoFactor() == twoFactor) {
-      json.setSuccessMessage("No change made.");
-      json.setStatus("OK");
-      return Util.jsonOk(json);
-    }
-
-    qrCode = userController.changeTwoFactor(user, password, req);
-    if (qrCode != null) {
-      json.setQRCode(new String(Base64.encodeBase64(qrCode)));
-    } else {
-      json.setSuccessMessage("Tow factor authentication disabled.");
-    }
-    json.setStatus("OK");
-    return Util.jsonOk(json);
-  }
-
-  @POST
-  @Path("QRCode")
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response getQRCode(@FormParam("password") String password,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
-    Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
-    if (user == null) {
-      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-              ResponseMessages.USER_WAS_NOT_FOUND);
-    }
-    if (password == null || password.isEmpty()) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Password requierd.");
-    }
-    byte[] qrCode;
-    JsonResponse json = new JsonResponse();
-    qrCode = userController.getQRCode(user, password);
-    if (qrCode != null) {
-      json.setQRCode(new String(Base64.encodeBase64(qrCode)));
-    } else {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-              "Two factor disabled.");
-    }
-    json.setStatus("OK");
-    return Util.jsonOk(json);
-  }
-
-  @POST
-  @Path("/sshKeys")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response addSshkey(SshKeyDTO sshkey,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
-    Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
-    int id = user.getUid();
-    SshKeyDTO dto = userController.addSshKey(id, sshkey.getName(), sshkey.
-            getPublicKey());
-    return Util.jsonOk(dto);
-  }
-
-  @DELETE
-  @Path("/sshKeys/{name}")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response removeSshkey(@PathParam("name") String name,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
-    JsonResponse json = new JsonResponse();
-    Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
-    int id = user.getUid();
-    userController.removeSshKey(id, name);
-    json.setStatus("OK");
-    json.setSuccessMessage(ResponseMessages.SSH_KEY_REMOVED);
-    return Util.jsonOk(json);
-  }
-
-  @GET
-  @Path("/sshKeys")
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response getSshkeys(@Context SecurityContext sc,
-          @Context HttpServletRequest req) throws AppException {
-    Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
-    int id = user.getUid();
-    List<SshKeyDTO> sshKeys = userController.getSshKeys(id);
-
-    GenericEntity<List<SshKeyDTO>> sshKeyViews
-            = new GenericEntity<List<SshKeyDTO>>(sshKeys) {};
-    return Util.jsonOk(sshKeyViews);
-
-  }
-
+  
+  
   @GET
   @Path("/projects/{id}/role")
   @Produces(MediaType.APPLICATION_JSON)
@@ -269,7 +150,7 @@ public class UserResource {
       }
     }
 
-    return Util.jsonOk(userDTO);
+    return Util.ok(userDTO);
   }
   
   @Path("/messages")
@@ -285,6 +166,6 @@ public class UserResource {
     List<Activity> activityDetails = activityFacade.getAllActivityByUser(user);
     GenericEntity<List<Activity>> projectActivities
         = new GenericEntity<List<Activity>>(activityDetails) {};
-    return Util.jsonOk(projectActivities);
+    return Util.ok(projectActivities);
   }
 }

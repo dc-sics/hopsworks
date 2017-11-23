@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,38 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.hopsworks.apiV2.projects;
-
-import io.hops.hopsworks.apiV2.users.UserView;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
+package io.hops.hopsworks.apiV2;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class MemberView {
-  private UserView user;
-  private String role;
+public class ErrorResponse {
+  private static final long version = 1L;
   
-  public MemberView(){}
+  private String description;
   
-  public MemberView(ProjectTeam member){
-    user = new UserView(member.getUser());
-    role = member.getTeamRole();
+  public ErrorResponse(){}
+  
+  public String getDescription() {
+    return description;
   }
   
-  public UserView getUser() {
-    return user;
-  }
-  
-  public void setUser(UserView user) {
-    this.user = user;
-  }
-  
-  public String getRole() {
-    return role;
-  }
-  
-  public void setRole(String role) {
-    this.role = role;
+  public void setDescription(String description) {
+    this.description = description;
   }
 }
