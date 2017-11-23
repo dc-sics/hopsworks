@@ -14,9 +14,11 @@ import java.util.Date;
 
 class DeviceServiceSecurity {
 
-  private static final String DEVICE_UUID = "deviceUuid";
+  public static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
 
-  private static final String PROJECT_ID = "projectId";
+  public static final String DEVICE_UUID = "deviceUuid";
+
+  public static final String PROJECT_ID = "projectId";
 
 
   /***
