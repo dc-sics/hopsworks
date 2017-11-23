@@ -4,9 +4,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 
 @XmlRootElement
-public class AuthProjectDeviceDTO implements Serializable{
-
-  private Integer projectId;
+public class AuthDeviceDTO implements Serializable{
 
   private String deviceUuid;
 
@@ -14,28 +12,18 @@ public class AuthProjectDeviceDTO implements Serializable{
 
   private String alias;
 
-  public AuthProjectDeviceDTO() {
+  public AuthDeviceDTO() {
   }
 
-  public AuthProjectDeviceDTO(Integer projectId, String deviceUuid, String password) {
-    this.projectId = projectId;
+  public AuthDeviceDTO(String deviceUuid, String password) {
     this.deviceUuid = deviceUuid;
     this.password = password;
   }
 
-  public AuthProjectDeviceDTO(Integer projectId, String deviceUuid, String password, String alias) {
-    this.projectId = projectId;
+  public AuthDeviceDTO(String deviceUuid, String password, String alias) {
     this.deviceUuid = deviceUuid;
     this.password = password;
     this.alias = alias;
-  }
-
-  public Integer getProjectId() {
-    return projectId;
-  }
-
-  public void setProjectId(Integer projectId) {
-    this.projectId = projectId;
   }
 
   public String getDeviceUuid() {

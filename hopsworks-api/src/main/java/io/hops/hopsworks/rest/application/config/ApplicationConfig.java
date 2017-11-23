@@ -1,5 +1,6 @@
 package io.hops.hopsworks.rest.application.config;
 
+import io.hops.hopsworks.api.device.DeviceJwtAuthFilter;
 import io.swagger.annotations.Api;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -21,6 +22,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.exception.mapper.ThrowableExceptionMapper.class);
     register(io.hops.hopsworks.api.exception.mapper.TransactionExceptionMapper.class);
     register(io.hops.hopsworks.api.filter.RequestAuthFilter.class);
+    register(DeviceJwtAuthFilter.class);
     register(io.hops.hopsworks.api.jobs.AdamService.class);
     register(io.hops.hopsworks.api.jobs.BiobankingService.class);
     register(io.hops.hopsworks.api.jobs.ExecutionService.class);
