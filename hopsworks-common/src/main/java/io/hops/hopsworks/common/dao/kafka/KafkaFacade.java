@@ -1003,7 +1003,7 @@ public class KafkaFacade {
     return servers;
   }
 
-  private KafkaProducer<String, String> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
+  private KafkaProducer<String, byte[]> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
     try {
 
       // TODO: Change Trust store and Keys tore Location for the certificates (if need be)
@@ -1015,8 +1015,8 @@ public class KafkaFacade {
 
       Properties props = new Properties();
       props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, getAllKafkaBootstrapServers());
-      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
-      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+      props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
+      props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
       //configure the ssl parameters
       props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SSL");
       props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, trustStoreFilePath);
@@ -1037,19 +1037,19 @@ public class KafkaFacade {
   public boolean produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO, String deviceUuid,
                          String topic, String schemaContents, List<GenericData.Record> avroRecords){
 
-    KafkaProducer<String, String> producer = null;
+    KafkaProducer<String, byte[]> producer = null;
 
     try {
       producer = getKafkaProducer(project, user, certPwDTO);
 
       Schema.Parser parser = new Schema.Parser();
       Schema schema = parser.parse(schemaContents);
-      Injection<GenericRecord, String>  recordInjection = GenericAvroCodecs.toJson(schema);
+      Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
 
       // Loop through records
       for (GenericData.Record avroRecord: avroRecords) {
-        String record = recordInjection.apply(avroRecord);
-        producer.send(new ProducerRecord<String, String>(topic, deviceUuid, record));
+        byte[] record = recordInjection.apply(avroRecord);
+        producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record));
       }
       if (synchronous){
         producer.flush();
