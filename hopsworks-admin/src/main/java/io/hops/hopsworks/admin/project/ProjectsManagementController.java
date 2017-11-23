@@ -36,6 +36,7 @@ import java.util.List;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.hdfs.inode.InodeFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.payment.LastPayment;
 import io.hops.hopsworks.common.dao.project.payment.LastPaymentFacade;
@@ -94,7 +95,11 @@ public class ProjectsManagementController {
   public HdfsInodeAttributes getHDFSQuotas(String name) throws AppException {
     String pathname = Settings.getProjectPath(name);
     Inode inode = inodes.getInodeAtPath(pathname);
-    return projectController.getHdfsQuotas(inode.getId());
+    if(inode!=null){
+      return projectController.getHdfsQuotas(inode.getId());
+    }else{
+      return null;
+    }
   }
 
   /**
@@ -161,6 +166,22 @@ public class ProjectsManagementController {
     }
   }
 
+  /**
+   *
+   * @param projectname
+   * @param paymentType
+   * size of quota for project subtree in HDFS in MBs
+   * @throws IOException
+   */
+  public void setPaymentType(String projectname, PaymentType paymentType) throws
+      IOException {
+    projectController.setPaymentType(projectname, paymentType);
+  }
+  
+  public PaymentType getPaymentType(String projectName) throws AppException {
+    return projectFacade.findByName(projectName).getPaymentType();
+  }
+  
   public List<Project> getAllProjects() {
     return projectFacade.findAll();
   }

@@ -20,7 +20,7 @@ import io.hops.hopsworks.common.user.UserStatusValidator;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
-import io.hops.hopsworks.common.util.PKIUtils;
+import io.hops.hopsworks.common.security.PKIUtils;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -168,6 +168,7 @@ public class ClusterController {
 
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
     clusterCert.setRegistrationStatus(RegistrationStatusEnum.UNREGISTRATION_PENDING);
+    clusterCert.setValidationKeyDate(new Date());
     clusterCertFacade.update(clusterCert);
     sendEmail(cluster, req, clusterCert.getId() + clusterCert.getValidationKey(), clusterAgent,
         AccountsAuditActions.UNREGISTRATION.name());

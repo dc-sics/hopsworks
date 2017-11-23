@@ -21,7 +21,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 
 import io.hops.hopsworks.common.exception.CryptoPasswordNotFoundException;
-import io.hops.hopsworks.common.util.BaseHadoopClientsService;
+import io.hops.hopsworks.common.security.BaseHadoopClientsService;
 import io.hops.hopsworks.common.util.Settings;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -200,7 +200,8 @@ public class DistributedFsService {
 
   public void closeDfsClient(DistributedFileSystemOps udfso) {
     if (null != udfso) {
-      if (settings.getHopsRpcTls()) {
+      if (settings.getHopsRpcTls()
+          && !udfso.getEffectiveUser().equals(settings.getHdfsSuperUser())) {
         bhcs.removeNonSuperUserCertificate(udfso.getEffectiveUser());
       }
       udfso.close();

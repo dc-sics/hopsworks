@@ -7,6 +7,7 @@ import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.zeppelin.rest.exception.ForbiddenException;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfig;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfigFactory;
@@ -17,10 +18,14 @@ import io.hops.hopsworks.api.zeppelin.util.ZeppelinResource;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.certificates.ProjectGenericUserCerts;
 import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.activity.Activity;
+import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
-import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificatesMgmService;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
@@ -34,6 +39,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -110,17 +116,25 @@ public class NotebookServerImpl implements
   private Project project;
   private Settings settings;
   private CertsFacade certsFacade;
+  private final ProjectTeamFacade projectTeamFacade;
+  private final ActivityFacade activityFacade;
+  private final CertificatesMgmService certificatesMgmService;
 
   private String certPwd;
 
   public NotebookServerImpl(Project project, ZeppelinConfigFactory zeppelin,
-      CertsFacade certsFacade, Settings settings) throws IOException, RepositoryException,
+      CertsFacade certsFacade, Settings settings, ProjectTeamFacade projectTeamFacade,
+      ActivityFacade activityFacade, CertificatesMgmService certificatesMgmService)
+      throws IOException, RepositoryException,
       TaskRunnerException {
     this.project = project;
     this.conf = zeppelin.getZeppelinConfig(project.getName(), this);
     this.notebook = this.conf.getNotebook();
     this.settings = settings;
     this.certsFacade = certsFacade;
+    this.projectTeamFacade = projectTeamFacade;
+    this.activityFacade = activityFacade;
+    this.certificatesMgmService = certificatesMgmService;
   }
 
   public Notebook notebook() {
@@ -238,7 +252,7 @@ public class NotebookServerImpl implements
 
   private void multicastToUser(String user, Message m) {
     if (!userConnectedSockets.containsKey(user)) {
-      LOG.log(Level.SEVERE, "Multicasting to user {} that is not in connections map", user);
+      LOG.log(Level.SEVERE, "Multicasting to user {0} that is not in connections map", user);
       return;
     }
 
@@ -513,7 +527,7 @@ public class NotebookServerImpl implements
   public void sendNote(Session conn, HashSet<String> userAndRoles, Notebook notebook,
       Message fromMessage, Users user, String hdfsUser) throws IOException {
 
-    LOG.log(Level.INFO, "New operation from {0} : {1} : {2}", new Object[]{
+    LOG.log(Level.FINE, "New operation from {0} : {1} : {2}", new Object[]{
       fromMessage.principal, fromMessage.op, fromMessage.get("id")});
 
     String noteId = (String) fromMessage.get("id");
@@ -778,6 +792,24 @@ public class NotebookServerImpl implements
       return;
     }
 
+    String hopsworksUserRole = projectTeamFacade.findCurrentRole(project, user);
+    if (hopsworksUserRole == null) {
+      String errorMsg = "Hopsworks role for user " + user.getUsername() +
+          " should not be null";
+      sendMsg(conn,
+          serializeMessage(new Message(Message.OP.ERROR_INFO).put
+              ("info", errorMsg)));
+      throw new IOException(errorMsg);
+    }
+    
+    if (!hopsworksUserRole.equals(AllowedProjectRoles.DATA_OWNER)) {
+      String errorMsg = "User " + user.getUsername() + " is not a DATA " +
+          "OWNER for this project and is not allowed to empty the Trash";
+      sendMsg(conn,
+          serializeMessage(new Message(Message.OP.ERROR_INFO).put
+              ("info", errorMsg)));
+      throw new IOException(errorMsg);
+    }
     List<Note> notes = notebook.getNotesUnderFolder(folderId);
     for (Note note : notes) {
       String noteId = note.getId();
@@ -795,7 +827,19 @@ public class NotebookServerImpl implements
     }
     broadcastNoteList(subject, userAndRoles);
   }
-
+  
+  
+  private void logTrashActivity(String activityMsg, Users user) {
+    Activity activity = new Activity();
+    Date now = new Date();
+    activity.setActivity(activityMsg);
+    activity.setFlag(ActivityFacade.FLAG_PROJECT);
+    activity.setProject(project);
+    activity.setTimestamp(now);
+    activity.setUser(user);
+    activityFacade.persistActivity(activity);
+  }
+  
   public void moveNoteToTrash(Session conn, HashSet<String> userAndRoles,
       Notebook notebook, Message fromMessage, Users user)
       throws SchedulerException, IOException {
@@ -806,9 +850,13 @@ public class NotebookServerImpl implements
 
     Note note = notebook.getNote(noteId);
     if (note != null && !note.isTrash()) {
+      String noteName = note.getName();
       fromMessage.put("name", Folder.TRASH_FOLDER_ID + "/" + note.getName());
       renameNote(conn, userAndRoles, notebook, fromMessage, "move", user);
       notebook.moveNoteToTrash(note.getId());
+      
+      logTrashActivity(ActivityFacade.TRASH_NOTEBOOK + "notebook " + noteName,
+          user);
     }
   }
 
@@ -831,6 +879,9 @@ public class NotebookServerImpl implements
 
       fromMessage.put("name", trashFolderId);
       renameFolder(conn, userAndRoles, notebook, fromMessage, "move", user);
+      
+      logTrashActivity(ActivityFacade.TRASH_NOTEBOOK + "notebook folder " +
+          folderId + "/", user);
     }
   }
 
@@ -1449,7 +1500,8 @@ public class NotebookServerImpl implements
     }
 
     String noteId = getOpenNoteId(conn);
-
+    Properties props = notebook.getInterpreterSettingManager().getInterpreterSettings(noteId).get(0).
+        getFlatProperties();
     if (!hasParagraphWriterPermission(conn, notebook, noteId,
         userAndRoles, fromMessage.principal, "write", user)) {
       return;
@@ -1490,8 +1542,8 @@ public class NotebookServerImpl implements
       try {
         ProjectGenericUserCerts serviceCert =
             certsFacade.findProjectGenericUserCerts(project.getProjectGenericUser());
-        certPwd = HopsUtils.decrypt(user.getPassword(), settings.getHopsworksMasterPasswordSsl(),
-            serviceCert.getCertificatePassword());
+        certPwd = HopsUtils.decrypt(user.getPassword(), serviceCert.getCertificatePassword(),
+            certificatesMgmService.getMasterEncryptionPassword());
       } catch (Exception e) {
         LOG.log(Level.SEVERE, "Cannot retrieve user " + project.getName()  +
             " keystore password. " + e);
@@ -2161,6 +2213,7 @@ public class NotebookServerImpl implements
     removeConnectionFromAllNote(conn);
     removeConnectedSockets(conn, notebookServerImplFactory);
     removeUserConnection(hdfsUsername, conn);
+    removeUserConnection(project.getProjectGenericUser(), conn);
   }
 
   public synchronized void addConnectedSocket(Session conn) {
@@ -2272,7 +2325,7 @@ public class NotebookServerImpl implements
 
   public void sendMsg(Session conn, String msg) throws IOException {
     if (conn == null || !conn.isOpen()) {
-      LOG.log(Level.SEVERE, "Can't handle messag. The connection has been closed.");
+      LOG.log(Level.SEVERE, "Can't handle message. The connection has been closed.");
       return;
     }
     conn.getBasicRemote().sendText(msg);
@@ -2300,6 +2353,7 @@ public class NotebookServerImpl implements
       removeConnectionFromAllNote(session);
       removeConnectedSockets(session, notebookServerImplFactory);
       removeUserConnection(hdfsUsername, session);
+      removeUserConnection(project.getProjectGenericUser(), session);
     } catch (IOException ex) {
       LOG.log(Level.SEVERE, null, ex);
     }

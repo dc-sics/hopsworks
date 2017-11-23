@@ -39,6 +39,7 @@ import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLog;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLogFacade;
+import io.hops.hopsworks.common.dao.project.PaymentType;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
@@ -66,8 +67,10 @@ import io.hops.hopsworks.common.exception.ProjectInternalFoldersFailedException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificatesController;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.jobs.yarn.YarnLogUtil;
+import io.hops.hopsworks.common.security.CertificatesMgmService;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.hive.HiveController;
 import io.hops.hopsworks.common.util.LocalhostServices;
@@ -176,6 +179,8 @@ public class ProjectController {
   private HdfsUsersController hdfsUsersController;
   @EJB
   private CertificatesController certificatesController;
+  @EJB
+  private CertificatesMgmService certificatesMgmService;
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -205,7 +210,7 @@ public class ProjectController {
     //check that the project name is ok
     String projectName = projectDTO.getProjectName();
     try {
-      FolderNameValidator.isValidName(projectName, false);
+      FolderNameValidator.isValidProjectName(projectName, false);
     } catch (ValidationException ex) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.INVALID_PROJECT_NAME);
@@ -478,7 +483,7 @@ public class ProjectController {
     }
     //Create a new project object
     Date now = new Date();
-    Project project = new Project(projectName, user, now);
+    Project project = new Project(projectName, user, now, PaymentType.PREPAID);
     project.setDescription(projectDescription);
 
     // make ethical status pending
@@ -504,6 +509,7 @@ public class ProjectController {
     //Persist project object
     this.projectFacade.persistProject(project);
     this.projectFacade.flushEm();
+    userBean.increaseNumCreatedProjects(user.getUid());
     logProject(project, OperationType.Add);
     return project;
   }
@@ -1472,6 +1478,15 @@ public class ProjectController {
         diskspaceQuotaInMB);
   }
 
+  public void setPaymentType(String projectname, PaymentType paymentType){
+    Project project = projectFacade.findByName(projectname);
+    if (project != null) {
+      project.setPaymentType(paymentType);
+      this.projectFacade.mergeProject(project);
+      this.projectFacade.flushEm();
+    }
+  }
+  
   public HdfsInodeAttributes getHdfsQuotas(int inodeId) throws AppException {
 
     HdfsInodeAttributes res = em.find(HdfsInodeAttributes.class, inodeId);
@@ -1591,7 +1606,7 @@ public class ProjectController {
       }
       //kill all jobs run by this user.
       //kill jobs
-      List<Jobs> running = jobFacade.getUserRunningJobs(project, hdfsUser);
+      List<Jobs> running = jobFacade.getRunningJobs(project, hdfsUser);
       if (running != null && !running.isEmpty()) {
         Runtime rt = Runtime.getRuntime();
         for (Jobs job : running) {
@@ -1884,15 +1899,15 @@ public class ProjectController {
     }
   }
 
-  public YarnPriceMultiplicator getYarnMultiplicator() {
-    YarnPriceMultiplicator multiplicator = yarnProjectsQuotaFacade.
-        getMultiplicator();
-    if (multiplicator == null) {
-      multiplicator = new YarnPriceMultiplicator();
+  public List<YarnPriceMultiplicator> getYarnMultiplicators() {
+    List<YarnPriceMultiplicator> multiplicators = yarnProjectsQuotaFacade.getMultiplicators();
+    if (multiplicators == null || multiplicators.isEmpty()) {
+      YarnPriceMultiplicator multiplicator = new YarnPriceMultiplicator();
       multiplicator.setMultiplicator(Settings.DEFAULT_YARN_MULTIPLICATOR);
       multiplicator.setId("-1");
+      multiplicators.add(multiplicator);
     }
-    return multiplicator;
+    return multiplicators;
   }
 
   public void logProject(Project project, OperationType type) {
@@ -2108,8 +2123,7 @@ public class ProjectController {
     } catch (IOException ex) {
       if (ex.getMessage().contains("kibana")) {
         LOGGER.log(Level.WARNING, "error", ex);
-        LOGGER.log(Level.WARNING, "Kibana index could not be deleted for "
-            + params.get("project"));
+        LOGGER.log(Level.WARNING, "Kibana index could not be deleted for {0}", params.get("project"));
       } else {
         throw new IOException(ex);
       }
@@ -2120,8 +2134,8 @@ public class ProjectController {
   public CertPwDTO getProjectSpecificCertPw(Users user, String projectName,
       String keyStore) throws Exception {
     //Compare the sent certificate with the one in the database
-    String keypw = HopsUtils.decrypt(user.getPassword(), settings.getHopsworksMasterPasswordSsl(), userCertsFacade.
-        findUserCert(projectName, user.getUsername()).getUserKeyPwd());
+    String keypw = HopsUtils.decrypt(user.getPassword(), userCertsFacade.findUserCert(projectName, user.getUsername()).
+        getUserKeyPwd(), certificatesMgmService.getMasterEncryptionPassword());
     String projectUser = projectName + HdfsUsersController.USER_NAME_DELIMITER
         + user.getUsername();
     validateCert(Base64.decodeBase64(keyStore), keypw.toCharArray(),
@@ -2142,9 +2156,8 @@ public class ProjectController {
           "certificates for project " + projectGenericUsername);
     }
 
-    String keypw = HopsUtils.decrypt(user.getPassword(), settings
-        .getHopsworksMasterPasswordSsl(), projectGenericUserCerts
-            .getCertificatePassword());
+    String keypw = HopsUtils.decrypt(user.getPassword(), projectGenericUserCerts.getCertificatePassword(),
+        certificatesMgmService.getMasterEncryptionPassword());
     validateCert(Base64.decodeBase64(keyStore), keypw.toCharArray(),
         projectGenericUsername, false);
 
