@@ -539,7 +539,7 @@ public class DatasetController {
         String username = hdfsUsersBean.getHdfsUserName(project, user);
         udfso = dfs.getDfsOps(username);
         String owner = udfso.getFileStatus(new org.apache.hadoop.fs.Path(path)).getOwner();
-        if (owner.equals(project.getName() + Settings.PROJECT_GENERIC_USER_SUFFIX)) {
+        if (owner.equals(project.getProjectGenericUser())) {
           return true;
         }
         //Find hdfs user for this project
