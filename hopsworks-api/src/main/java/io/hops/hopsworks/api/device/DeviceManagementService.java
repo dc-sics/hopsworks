@@ -1,6 +1,6 @@
 package io.hops.hopsworks.api.device;
 
-import io.hops.hopsworks.api.filter.AllowedRoles;
+import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
 import io.hops.hopsworks.common.dao.device.ProjectDeviceDTO;
@@ -72,7 +72,7 @@ public class DeviceManagementService {
     // Adds the device-user to the project as a Data Owner
     List<ProjectTeam> list = new ArrayList<>();
     ProjectTeam pt = new ProjectTeam(new ProjectTeamPK(projectId, DeviceServiceSecurity.DEFAULT_DEVICE_USER_EMAIL));
-    pt.setTeamRole(AllowedRoles.DATA_OWNER);
+    pt.setTeamRole(AllowedProjectRoles.DATA_OWNER);
     pt.setTimestamp(new Date());
     list.add(pt);
 
@@ -129,7 +129,7 @@ public class DeviceManagementService {
   @GET
   @Path("/devicesSettings")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response getDevicesSettings(@Context HttpServletRequest req) throws AppException {
     checkForProjectId();
     ProjectDevicesSettingsDTO settingsDTO = readDevicesSettings(projectId);
@@ -144,7 +144,7 @@ public class DeviceManagementService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @TransactionAttribute(TransactionAttributeType.NEVER)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response postDevicesSettings(@Context SecurityContext sc, @Context HttpServletRequest req,
                                       ProjectDevicesSettingsDTO settingsDTO) throws AppException {
     checkForProjectId();
@@ -163,7 +163,7 @@ public class DeviceManagementService {
   @GET
   @Path("/devices")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response getDevices(
     @QueryParam("state") String state, @Context HttpServletRequest req) throws AppException {
     checkForProjectId();
@@ -183,7 +183,7 @@ public class DeviceManagementService {
   @Path("/device")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response putDevice( @Context HttpServletRequest req, ProjectDeviceDTO device) throws AppException {
     checkForProjectId();
     deviceFacade.updateProjectDevice(device);
@@ -194,7 +194,7 @@ public class DeviceManagementService {
   @DELETE
   @Path("/device/{deviceUuid}/remove")
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedRoles(roles = {AllowedRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
   public Response deleteDevice(
     @Context HttpServletRequest req, @PathParam("deviceUuid") String  deviceUuid) throws AppException {
     checkForProjectId();
