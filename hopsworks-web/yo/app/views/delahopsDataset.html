@@ -1,12 +1,12 @@
-<div class="container" ng-controller="MainCtrl as mainCtrl" id="publicdatasetWrapper" style="width: 1500px;">
+<div class="container content-wrapper" ng-controller="MainCtrl as mainCtrl" id="publicdatasetWrapper" style="width: 1500px;">
   <div ng-include="'nav.html'"></div>
-  <div ng-if="mainCtrl.searchTerm.length > 3" class="row" ng-init="publicDataset.overflowYAuto()">
+  <div ng-if="mainCtrl.showSearchPage" class="row" ng-init="publicDataset.overflowYAuto()">
     <div id="projectSearchResults">
       <div ng-include="'views/search.html'"></div>
     </div>
   </div>
   <div growl reference="13" class="pull-right"></div>
-  <div ng-if="mainCtrl.searchTerm.length <= 3" class="row" ng-init="publicDataset.setupStyle()">
+  <div ng-if="!mainCtrl.showSearchPage" class="row" ng-init="publicDataset.setupStyle()">
     <nav class="publicdataset-nav" id="publicdataset">
       <ul class=" keep-open">
         <li class="publicdataset-heading">Public Datasets</li>
@@ -93,7 +93,7 @@
                 <span class="text-muted"><b>{{comment.user.firstname }} {{comment.user.lastname}} @ {{comment.user.organization}}</b> commented | on {{comment.datePublished | date:'medium'}}</span>
                 <div id="commentdiv" class="publicdataset-comment-msg" 
                      contenteditable="{{publicDataset.myUserId === comment.user.userId && publicDataset.commentEditable}}" 
-                     ng-bind-html="comment.content | highlight"></div>
+                     ng-bind-html="comment.content | highlightUsername"></div>
                 <div class="pull-right">
                   <span title="Edit your comment" ng-if="publicDataset.myUserId === comment.user.userId && !publicDataset.commentEditable"
                         class="publicdataset-issue text-muted"

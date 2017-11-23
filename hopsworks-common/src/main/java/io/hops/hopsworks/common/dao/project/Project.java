@@ -25,6 +25,8 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
+
+import io.hops.hopsworks.common.util.Settings;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
 import io.hops.hopsworks.common.dao.project.service.ProjectServices;
@@ -36,6 +38,8 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 
@@ -134,9 +138,13 @@ public class Project implements Serializable {
   @Column(name = "deleted")
   private Boolean deleted;
 
+  @NotNull
+  @Column(name = "payment_type")
+  @Enumerated(EnumType.STRING)
+  private PaymentType paymentType;
+  
   @Column(name = "python_version")
   private String pythonVersion;
-  
   
   @Size(max = 2000)
   @Column(name = "description")
@@ -181,11 +189,12 @@ public class Project implements Serializable {
     this.inode = inode;
   }
 
-  public Project(String name, Users owner, Date timestamp) {
+  public Project(String name, Users owner, Date timestamp, PaymentType paymentType) {
     this.name = name;
     this.owner = owner;
     this.created = timestamp;
     this.archived = false;
+    this.paymentType = paymentType;
   }
 
   public Date getCreated() {
@@ -275,6 +284,18 @@ public class Project implements Serializable {
 
   public void setDeleted(Boolean deleted) {
     this.deleted = deleted;
+  }
+
+  public PaymentType getPaymentType() {
+    return paymentType;
+  }
+
+  public void setPaymentType(PaymentType paymentType) {
+    this.paymentType = paymentType;
+  }
+
+  public String getPaymentTypeString() {
+    return paymentType.name();
   }
 
   @Override
@@ -407,7 +428,9 @@ public class Project implements Serializable {
     this.jupyterSettingsCollection = jupyterSettingsCollection;
   }
   
-  
+  public String getProjectGenericUser() {
+    return name + Settings.PROJECT_GENERIC_USER_SUFFIX;
+  }
   
   @Override
   public String toString() {

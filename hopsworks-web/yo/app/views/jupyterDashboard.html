@@ -81,7 +81,6 @@
                   <br>
                 </div>
               </div>
-
               <div class="row top-buffer" ng-if="jupyterCtrl.advanced === true">
                 <div class="row">
                   <div class="row clusterparams">
@@ -113,18 +112,20 @@
                 <!-- AppMaster specific configuration should always be first -->
                 <div class="row">
                   <div class="row clusterparams">
-                    <div class="text-right col-md-6">AppMaster memory (MB)<i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be requested for the Yarn Application Master container." style="margin-left: 10px"></i></div>
+                    <div class="text-right col-md-6">AppMaster memory (MB)<i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be requested for the Yarn Application Master container. 1024 MB is more than sufficient for most cases." style="margin-left: 10px"></i></div>
                     <div class="col-md-2 jupyter-left">
                       <input type="number" step="256" ng-model="jupyterCtrl.val.appmasterMemory" min="1024" class="form-control">
                     </div>
                   </div>
+                </div>
+                  <div class="row" ng-if="jupyterCtrl.val.mode === 'sparkStatic' || jupyterCtrl.val.mode === 'sparkDynamic'">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">AppMaster virtual cores<i class="fa fa-info-circle" uib-tooltip="The number of virtual cores that should be requested for the Yarn Application Master container." style="margin-left: 10px"></i></div>
                     <div class="col-md-2 jupyter-left">
                       <input type="number" step="1" ng-model="jupyterCtrl.val.appmasterCores" ng-init="1" min="1" class="form-control">
                     </div>
                   </div>
-                </div>
+                  </div>
 
                 <div class="row"  ng-if="jupyterCtrl.val.mode === 'horovod'">
                   <div class="row clusterparams">
@@ -132,11 +133,6 @@
                                                                         uib-tooltip="The number of hosts to run Horovod on. Current support is only 1 host." style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left"><input type="number" step="1" ng-readonly="true" ng-init="1" ng-model="jupyterCtrl.val.numExecutors" min="0" max="1" class="form-control"></div>
-                  </div>
-                  <div class="row clusterparams">
-                    <div class="text-right col-md-6">Virtual cores per host <i class="fa fa-info-circle"
-                                                                               uib-tooltip="The number of virtual cores to be shared by all the MPI processes." style="margin-left: 10px"></i></div>
-                    <div class="col-md-2 jupyter-left"><input type="number" step="1" ng-model="jupyterCtrl.val.numExecutorCores" ng-init="1" min="1" value="1" class="form-control"></div>
                   </div>
                   <div class="row clusterparams">
                     <div class="text-right col-md-6"> Memory (MB) per host <i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be allocated on each host. The specified amount of memory will be shared by all MPI processes on the machine." style="margin-left: 10px"></i></div>
@@ -211,7 +207,7 @@
                   </div>
                 </div>
 
-                <div class="row" ng-if="jupyterCtrl.val.mode !== 'sparkDynamic' && jupyterCtrl.val.mode !== 'horovod'">
+                <div class="row" ng-if="jupyterCtrl.val.mode !== 'sparkDynamic' && jupyterCtrl.val.mode !== 'horovod' && jupyterCtrl.val.mode !== 'tensorflow'">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">Number of executors <i class="fa fa-info-circle"
                                                                             uib-tooltip="The number of executors that should be requested for this job." style="margin-left: 10px"></i>
@@ -219,21 +215,30 @@
                     <div class="col-md-2 jupyter-left"><input type="number" ng-model="jupyterCtrl.val.numExecutors" ng-init="1" min="1" value="1" class="form-control"></div>
                   </div>
                 </div>
+                <div class="row" ng-if="jupyterCtrl.val.mode === 'tensorflow'">
+                  <div class="row clusterparams">
+                    <div class="text-right col-md-6">Max parallel executions <i class="fa fa-info-circle" uib-tooltip="The maximum number of parallel tflauncher executions. If this configuration is less than the number of tflauncher jobs, the remaining jobs will be queued and executed once a previous job is finished." style="margin-left: 10px"></i>
+                    </div>
+                    <div class="col-md-2 jupyter-left"><input type="number" ng-model="jupyterCtrl.val.numExecutors" ng-init="1" min="1" value="1" class="form-control"></div>
+                  </div>
+                </div>
                 <div class="row" ng-if="jupyterCtrl.val.mode !== 'horovod'">
+                  <div class="row clusterparams">
+                      <div class="text-right col-md-6"> Executor memory (MB) <i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be requested for each Spark executor in this job." style="margin-left: 10px"></i></div>
+                      <div class="col-md-2 jupyter-left"><input type="number" step="256" min="1024" ng-model="jupyterCtrl.val.executorMemory" class="form-control"></div>
+                    </div>
+                </div>
+                  <div class="row" ng-if="jupyterCtrl.val.mode === 'sparkStatic' || jupyterCtrl.val.mode === 'sparkDynamic'">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6"> Executor virtual cores <i class="fa fa-info-circle"
                                                                                 uib-tooltip="The number of cores that should be requested for each Spark executor in this job." style="margin-left: 10px"></i></div>
                     <div class="col-md-2 jupyter-left"><input type="number" min="1" step="1" ng-model="jupyterCtrl.val.numExecutorCores" class="form-control"></div>
-                  </div>
-                  <div class="row clusterparams">
-                    <div class="text-right col-md-6"> Executor memory (MB) <i class="fa fa-info-circle" uib-tooltip="The amount of memory, in MB, that should be requested for each Spark executor in this job." style="margin-left: 10px"></i></div>
-                    <div class="col-md-2 jupyter-left"><input type="number" step="256" min="1024" ng-model="jupyterCtrl.val.executorMemory" class="form-control"></div>
-                  </div>
-                </div>
+                    </div>
+                    </div>
                 <div class="row" ng-if="jupyterCtrl.val.mode === 'tensorflow'">
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">Executor GPUs<i class="fa fa-info-circle"
-                                                                     uib-tooltip="The number of GPUs accessible for each Spark executor in this job."
+                                                                     uib-tooltip="The number of GPUs allocated for each Spark executor in this job."
                                                                      style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left"><input type="number" ng-init="0"  ng-model="jupyterCtrl.val.numTfGpus" min="0" class="form-control"></div>
@@ -243,7 +248,7 @@
 
                   <div class="row clusterparams">
                     <div class="text-right col-md-6">GPUs per worker<i class="fa fa-info-circle"
-                                                                       uib-tooltip="The number of GPUs accessible for each worker. Parameter servers do not have access to a GPU."
+                                                                       uib-tooltip="The number of GPUs allocated for each worker. Parameter servers do not have access to a GPU."
                                                                        style="margin-left: 10px"></i>
                     </div>
                     <div class="col-md-2 jupyter-left">
@@ -265,7 +270,7 @@
                            id="archives" ng-model="jupyterCtrl.val.archives">
                   </div>
                 </div>
-                <div class="row" ng-if="jupyterCtrl.val.mode === 'sparkStatic' || jupyterCtrl.val.mode === 'sparkDynamic'">
+                <div class="row">
                   <div class="text-right col-md-6">
                     <label for="jars">
                       <button uib-tooltip='Comma-separated quoted list of .jar files, this option corresponds to --jars option in Spark.' id="selectJarButton" class="btn btn-default"
@@ -375,48 +380,33 @@
                                 </div>
                               </div>-->
               </div>
-
-
             </div>
           </div>
         </div>
-
 
         <div class="row top-buffer" ng-if="jupyterCtrl.ui !== ''">
 
           <div class="col-md-1"></div> 
           <div class="col-md-8 panel panel-default shift-left">
             <div class="panel-heading" >
-              <div class="row">
-                <span style="margin-left: 100px; font-weight: bold;">Jupyter Notebook Server Details</span>
+              <div>
+                <span style="font-weight: bold;">Jupyter Notebook Server Details</span>
               </div>
             </div>
-            <div class="panel-body shift-left">
-              <div class="row">
-                <div class="text-right col-md-2">Port <i class="fa fa-info-circle" 
-                                                         uib-tooltip="Port number where this Jupyter Notebook Server is listening" 
-                                                         style="margin-left: 10px"></i>
+            <div class="panel-body">
+              <div>
+                <div>Port <i class="fa fa-info-circle" uib-tooltip="Port number where this Jupyter Notebook Server is listening" style="margin-left: 10px"></i> 
+                  <span style="margin-left: 10px;">  {{jupyterCtrl.config.port}}</span>
                 </div>
-                <div class="jupyter-left">
-                  {{jupyterCtrl.config.port}}
-                </div>
-              </div>              
-              <div class="row">
-                <div class="text-right col-md-2">Token <i class="fa fa-info-circle" 
-                                                          uib-tooltip="Secret token used to authenticate with this Jupyter Notebook Server." 
-                                                          style="margin-left: 10px"></i>
-                </div>
-                <div class="jupyter-left">
-                  {{jupyterCtrl.config.token}}
+              </div>             
+              <div>
+                <div>Token <i class="fa fa-info-circle" uib-tooltip="Secret token used to authenticate with this Jupyter Notebook Server." style="margin-left: 10px"></i>
+                  <span style="margin-left: 10px;">{{jupyterCtrl.config.token}}</span>
                 </div>
               </div>   
-              <div class="row">
-                <div class="text-right col-md-2">$PDIR <i class="fa fa-info-circle" 
-                                                          uib-tooltip="Private local directory on this server for Python Notebooks." 
-                                                          style="margin-left: 10px"></i>
-                </div>
-                <div class="jupyter-left">
-                  {{jupyterCtrl.val.privateDir}}
+              <div>
+                <div>$PDIR <i class="fa fa-info-circle" uib-tooltip="Private local directory on this server for Python Notebooks." style="margin-left: 10px"></i>
+                  <span style="margin-left: 10px;">{{jupyterCtrl.val.privateDir}}</span>
                 </div>
               </div>   
               <!--              <div class="row top-buffer">
@@ -429,13 +419,7 @@
             </div>
           </div>
         </div>
-
-
-
-
-
         <!--, top-buffer: jupyterCtrl.ui !== ''-->
-
         <div class="ds-sidenav" ng-class="{open: jupyterCtrl.tgState}" ng-if="jupyterCtrl.ui !== ''">
           <div class="ibox float-e-margins" style="margin-bottom:-25px; height: 95%;">
             <div class="file-manager">
@@ -444,14 +428,12 @@
                   <md-tabs md-dynamic-height md-border-bottom>
                     <md-tab label="Notebook Server">
                       <md-content>
-                        <table class="table table-hover" style="width: 100%">
+                        <table class="table table-hover ds-sidenav-table" style="width: 100%">
                           <tbody>
-                            <tr></tr>
                             <tr>
-                              <td><span>Open Jupyter in a new Tab</span></td>
+                              <td>Open Jupyter in a new Tab</td>
                               <td style="text-align: right">                                      
-                                <button tooltip-placement='right'
-                                        uib-tooltip="Open a new Browser Tab to connect to the running Jupyter Notebook Server" 
+                                <button uib-tooltip="Open a new Browser Tab to connect to the running Jupyter Notebook Server" 
                                         tooltip-placement="auto left"
                                         ng-click="jupyterCtrl.openWindow()" 
                                         type="button" class="btn btn-info btn-sm">
@@ -460,7 +442,7 @@
                               </td>
                             </tr>
                             <tr ng-repeat="session in sessions">
-                              <td><span>Open UI for {{session.appId}}</span></td>
+                              <td>Open UI for {{session.appId}}</td>
                               <td style="text-align: right">                                      
                                 <button
                                   uib-tooltip="Open the Spark UI for a Livy Session" 
@@ -484,7 +466,7 @@
                                                       </td>
                                                     </tr>-->
                             <tr>
-                              <td><span>Shutdown Notebook Server</span></td>
+                              <td>Shutdown Notebook Server</td>
                               <td style="text-align: right">                                      			  
                                 <button tooltip-placement="auto left"
                                         uib-tooltip="Shutdown Jupyter Notebook Server and stop applications." 
@@ -505,7 +487,6 @@
             </div>
           </div>
         </div>
-
       </section>
     </div>
   </div>

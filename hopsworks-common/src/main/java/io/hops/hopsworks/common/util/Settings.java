@@ -1,8 +1,11 @@
 package io.hops.hopsworks.common.util;
 
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
+import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
+import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.dela.AddressJSON;
+import io.hops.hopsworks.common.exception.AppException;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -13,19 +16,30 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
 import javax.ejb.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
+import javax.ws.rs.core.Response;
+
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
@@ -37,6 +51,16 @@ public class Settings implements Serializable {
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
+  @PostConstruct
+  private void init() {
+    try {
+      setKafkaBrokers(getBrokerEndpoints());
+    } catch (AppException ex) {
+      logger.log(Level.SEVERE, null, ex);
+    }
+  }
+  
+  
   public static String AGENT_EMAIL = "kagent@hops.io";
   public static final String SITE_EMAIL = "admin@kth.se";
   /**
@@ -50,6 +74,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_KIBANA_IP = "kibana_ip";
   private static final String VARIABLE_LIVY_IP = "livy_ip";
   private static final String VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT = "livy_zeppelin_session_timeout";
+  private static final String VARIABLE_ZEPPELIN_INTERPRETERS = "zeppelin_interpreters";
   private static final String VARIABLE_JHS_IP = "jhs_ip";
   private static final String VARIABLE_RM_IP = "rm_ip";
   private static final String VARIABLE_RM_PORT = "rm_port";
@@ -83,7 +108,21 @@ public class Settings implements Serializable {
   private static final String VARIABLE_YARN_DEFAULT_QUOTA = "yarn_default_quota";
   private static final String VARIABLE_HDFS_DEFAULT_QUOTA = "hdfs_default_quota";
   private static final String VARIABLE_MAX_NUM_PROJ_PER_USER
-    = "max_num_proj_per_user";
+          = "max_num_proj_per_user";
+
+  // HIVE configuration variables
+  private static final String VARIABLE_HIVE_SERVER_HOSTNAME = "hiveserver_ssl_hostname";
+  private static final String VARIABLE_HIVE_SERVER_HOSTNAME_EXT
+      = "hiveserver_ext_hostname";
+  private static final String VARIABLE_HIVE_SUPERUSER = "hive_superuser";
+  private static final String VARIABLE_HIVE_WAREHOUSE = "hive_warehouse";
+  private static final String VARIABLE_HIVE_SCRATCHDIR = "hive_scratchdir";
+  private static final String VARIABLE_HIVE_DEFAULT_QUOTA = "hive_default_quota";
+  private static final String VARIABLE_HIVE_LLAP_SLIDER_DIR = "hive_llap_slider_dir";
+  private static final String VARIABLE_HIVE_LLAP_LOCAL_DIR = "hive_llap_local_dir";
+  public static final String VARIABLE_LLAP_APP_ID = "hive_llap_app_id";
+  public static final String VARIABLE_LLAP_START_PROC = "hive_llap_start_proc";
+
   private static final String VARIABLE_ADAM_USER = "adam_user";
   private static final String VARIABLE_ADAM_DIR = "adam_dir";
   private static final String VARIABLE_TWOFACTOR_AUTH = "twofactor_auth";
@@ -257,6 +296,16 @@ public class Settings implements Serializable {
       FLINK_DIR = setDirVar(VARIABLE_FLINK_DIR, FLINK_DIR);
       STAGING_DIR = setDirVar(VARIABLE_STAGING_DIR, STAGING_DIR);
       HOPSUTIL_VERSION = setVar(VARIABLE_HOPSUTIL_VERSION, HOPSUTIL_VERSION);
+      HIVE_SERVER_HOSTNAME = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME,
+              HIVE_SERVER_HOSTNAME);
+      HIVE_SERVER_HOSTNAME_EXT = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME_EXT,
+          HIVE_SERVER_HOSTNAME_EXT);
+      HIVE_SUPERUSER = setStrVar(VARIABLE_HIVE_SUPERUSER, HIVE_SUPERUSER);
+      HIVE_WAREHOUSE = setStrVar(VARIABLE_HIVE_WAREHOUSE, HIVE_WAREHOUSE);
+      HIVE_LLAP_SLIDER_DIR = setStrVar(VARIABLE_HIVE_LLAP_SLIDER_DIR, HIVE_LLAP_SLIDER_DIR);
+      HIVE_LLAP_LOCAL_FS_DIR= setStrVar(VARIABLE_HIVE_LLAP_LOCAL_DIR, HIVE_LLAP_LOCAL_FS_DIR);
+      HIVE_SCRATCHDIR= setStrVar(VARIABLE_HIVE_SCRATCHDIR, HIVE_SCRATCHDIR);
+      HIVE_DB_DEFAULT_QUOTA= setStrVar(VARIABLE_HIVE_DEFAULT_QUOTA, HIVE_DB_DEFAULT_QUOTA);
       ZEPPELIN_USER = setVar(VARIABLE_ZEPPELIN_USER, ZEPPELIN_USER);
       ZEPPELIN_DIR = setDirVar(VARIABLE_ZEPPELIN_DIR, ZEPPELIN_DIR);
       ZEPPELIN_PROJECTS_DIR = setDirVar(VARIABLE_ZEPPELIN_PROJECTS_DIR,
@@ -286,6 +335,7 @@ public class Settings implements Serializable {
       JHS_IP = setIpVar(VARIABLE_JHS_IP, JHS_IP);
       LIVY_IP = setIpVar(VARIABLE_LIVY_IP, LIVY_IP);
       LIVY_ZEPPELIN_SESSION_TIMEOUT = setVar(VARIABLE_LIVY_ZEPPELIN_SESSION_TIMEOUT, LIVY_ZEPPELIN_SESSION_TIMEOUT);
+      ZEPPELIN_INTERPRETERS = setVar(VARIABLE_ZEPPELIN_INTERPRETERS, ZEPPELIN_INTERPRETERS);
       OOZIE_IP = setIpVar(VARIABLE_OOZIE_IP, OOZIE_IP);
       SPARK_HISTORY_SERVER_IP = setIpVar(VARIABLE_SPARK_HISTORY_SERVER_IP,
         SPARK_HISTORY_SERVER_IP);
@@ -296,7 +346,6 @@ public class Settings implements Serializable {
       DRELEPHANT_PORT = setIntVar(VARIABLE_DRELEPHANT_PORT, DRELEPHANT_PORT);
       DRELEPHANT_DB = setDbVar(VARIABLE_DRELEPHANT_DB, DRELEPHANT_DB);
       KIBANA_IP = setIpVar(VARIABLE_KIBANA_IP, KIBANA_IP);
-      KAFKA_IP = setIpVar(VARIABLE_KAFKA_IP, KAFKA_IP);
       KAFKA_USER = setVar(VARIABLE_KAFKA_USER, KAFKA_USER);
       KAFKA_DIR = setDirVar(VARIABLE_KAFKA_DIR, KAFKA_DIR);
       KAFKA_DEFAULT_NUM_PARTITIONS = setDirVar(VARIABLE_KAFKA_NUM_PARTITIONS,
@@ -345,7 +394,8 @@ public class Settings implements Serializable {
       RECOVERY_PATH = setStrVar(VARIABLE_RECOVERY_PATH, RECOVERY_PATH);
       VERIFICATION_PATH = setStrVar(VARIABLE_VERIFICATION_PATH, VERIFICATION_PATH);
       populateDelaCache();
-
+      //Set Zeppelin Default Interpreter
+      zeppelinDefaultInterpreter = getZeppelinDefaultInterpreter(ZEPPELIN_INTERPRETERS);
       cached = true;
     }
   }
@@ -549,6 +599,52 @@ public class Settings implements Serializable {
     return HADOOP_DIR + "-" + getHadoopVersion();
   }
 
+  private String HIVE_SERVER_HOSTNAME = "127.0.0.1:9085";
+  private String HIVE_SERVER_HOSTNAME_EXT = "127.0.0.1:9084";
+  public synchronized String getHiveServerHostName(boolean ext) {
+    checkCache();
+    if (ext) {
+      return HIVE_SERVER_HOSTNAME_EXT;
+    }
+    return HIVE_SERVER_HOSTNAME;
+  }
+
+  private String HIVE_SUPERUSER = "hive";
+  public synchronized String getHiveSuperUser() {
+    checkCache();
+    return HIVE_SUPERUSER;
+  }
+
+  private String HIVE_WAREHOUSE = "/apps/hive/warehouse";
+  public synchronized String getHiveWarehouse() {
+    checkCache();
+    return HIVE_WAREHOUSE;
+  }
+
+  private String HIVE_LLAP_SLIDER_DIR = "/home/hive/.slider";
+  public synchronized String getHiveLlapSliderDir() {
+    checkCache();
+    return HIVE_LLAP_SLIDER_DIR;
+  }
+
+  private String HIVE_LLAP_LOCAL_FS_DIR = "/srv/hops/apache-hive/bin/llap";
+  public synchronized String getHiveLlapLocalDir() {
+    checkCache();
+    return HIVE_LLAP_LOCAL_FS_DIR;
+  }
+
+  private String HIVE_SCRATCHDIR = "/tmp/hive";
+  public synchronized String getHiveScratchdir() {
+    checkCache();
+    return HIVE_SCRATCHDIR;
+  }
+
+  private String HIVE_DB_DEFAULT_QUOTA = "50000";
+  public synchronized Long getHiveDbDefaultQuota() {
+    checkCache();
+    return Long.parseLong(HIVE_DB_DEFAULT_QUOTA);
+  }
+
   private String HOPSWORKS_EXTERNAL_IP = "127.0.0.1";
 
   public synchronized String getHopsworksExternalIp() {
@@ -581,6 +677,11 @@ public class Settings implements Serializable {
     return CERTS_DIR;
   }
 
+  public synchronized String getHopsworksMasterEncPasswordFile() {
+    checkCache();
+    return getCertsDir() + File.separator + "encryption_master_password";
+  }
+  
   private static String HOPSWORKS_INSTALL_DIR = "/srv/hops/domains";
 
   public synchronized String getHopsworksInstallDir() {
@@ -695,7 +796,7 @@ public class Settings implements Serializable {
 
   
   private static String HADOOP_VERSION = "2.8.2";
-  private static String HADOOP_MINOR_VERSION = "2.8.2.1";
+  private static String HADOOP_MINOR_VERSION = "2.8.2.2-SNAPSHOT";
   
   public synchronized String getHadoopVersion() {
     checkCache();
@@ -1117,7 +1218,47 @@ public class Settings implements Serializable {
   }
   
   // Zeppelin
+  public static final String HOPSHIVE_INT_GROUP = "2CRSX9NDY";
+  public static final String HOPSHIVE_INT_NAME = "hopshive";
   private String ZEPPELIN_DIR = "/srv/hops/zeppelin";
+  private String ZEPPELIN_INTERPRETERS
+      = "org.apache.zeppelin.livy.LivySparkInterpreter,org.apache.zeppelin.livy.LivyPySparkInterpreter,"
+      + "org.apache.zeppelin.livy.LivySparkRInterpreter,org.apache.zeppelin.livy.LivySparkSQLInterpreter,"
+      + "org.apache.zeppelin.spark.SparkInterpreter,org.apache.zeppelin.spark.PySparkInterpreter,"
+      + "org.apache.zeppelin.rinterpreter.RRepl,org.apache.zeppelin.rinterpreter.KnitR,"
+      + "org.apache.zeppelin.spark.SparkRInterpreter,org.apache.zeppelin.spark.SparkSqlInterpreter,"
+      + "org.apache.zeppelin.spark.DepInterpreter,org.apache.zeppelin.markdown.Markdown,"
+      + "org.apache.zeppelin.angular.AngularInterpreter,org.apache.zeppelin.flink.FlinkInterpreter";
+  
+  private String zeppelinDefaultInterpreter;
+  
+  /**
+   * 
+   * @return 
+   */
+  public synchronized String getZeppelinInterpreters() {
+    checkCache();
+    return ZEPPELIN_INTERPRETERS;
+  }
+  
+  /**
+   * 
+   * @return 
+   */
+  public synchronized String getZeppelinDefaultInterpreter() {
+    return zeppelinDefaultInterpreter;
+  }
+  
+  /**
+   * Extract default interpreter from zeppelin interpreters.
+   *
+   * @return
+   */
+  private String getZeppelinDefaultInterpreter(String interpreters) {
+    //Split interpreters
+    return interpreters.split(",")[0].split("\\.")[3];
+  }
+  
 
   public synchronized String getZeppelinDir() {
     checkCache();
@@ -1146,20 +1287,6 @@ public class Settings implements Serializable {
   public synchronized String getJupyterDir() {
     checkCache();
     return JUPYTER_DIR;
-  }
-
-  // Kafka
-  private String KAFKA_IP = "10.0.2.15";
-  public static final int KAFKA_PORT = 9091;
-
-  public synchronized String getKafkaRestEndpoint() {
-    checkCache();
-    return "http://" + KAFKA_IP + ":" + REST_PORT;
-  }
-
-  public synchronized String getKafkaConnectStr() {
-    checkCache();
-    return KAFKA_IP + ":" + KAFKA_PORT;
   }
 
   private String KAFKA_USER = "kafka";
@@ -1333,17 +1460,17 @@ public class Settings implements Serializable {
   public static final String META_DATA_FIELDS = META_DATA_NESTED_FIELD + ".*";
 
   //Filename conventions
-  public static final String FILENAME_DISALLOWED_CHARS
-          = " /\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
-  public static final String SUBDIR_DISALLOWED_CHARS
-          = "/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String PROJECT_DISALLOWED_CHARS
+          = " -/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String PRINT_PROJECT_DISALLOWED_CHARS
+    = "__, -, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
+  public static final String FILENAME_DISALLOWED_CHARS = " /\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String SUBDIR_DISALLOWED_CHARS = "/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
   public static final String PRINT_FILENAME_DISALLOWED_CHARS
-    = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #";
+    = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
   public static final String SHARED_FILE_SEPARATOR = "::";
   public static final String DOUBLE_UNDERSCORE = "__";
 
-  public static final String KAFKA_ACL_WILDCARD = "*";
-  public static final String KAFKA_DEFAULT_CONSUMER_GROUP = "default";
   public static final String K_CERTIFICATE = "k_certificate";
   public static final String T_CERTIFICATE = "t_certificate";
   public static final String CRYPTO_MATERIAL_PASSWORD = "material_passwd";
@@ -1771,6 +1898,9 @@ public class Settings implements Serializable {
 
   private void populateDelaCache() {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
+    HOPSSITE_CLUSTER_NAME = setVar(VARIABLE_HOPSSITE_CLUSTER_NAME, HOPSSITE_CLUSTER_NAME);
+    HOPSSITE_CLUSTER_PSWD = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD, HOPSSITE_CLUSTER_PSWD);
+    HOPSSITE_CLUSTER_PSWD_AUX = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD_AUX, HOPSSITE_CLUSTER_PSWD_AUX);
     HOPSSITE_HOST = setVar(VARIABLE_HOPSSITE_BASE_URI_HOST, HOPSSITE_HOST);
     HOPSSITE = setVar(VARIABLE_HOPSSITE_BASE_URI, HOPSSITE);
     HOPSSITE_HEARTBEAT_INTERVAL = setLongVar(VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL, HOPSSITE_HEARTBEAT_INTERVAL);
@@ -1907,16 +2037,192 @@ public class Settings implements Serializable {
     return null;
   }
 
+
+  public final static String PROJECT_GENERIC_USER_SUFFIX =
+      HdfsUsersController.USER_NAME_DELIMITER + "PROJECTGENERICUSER";
+
   //************************************************CERTIFICATES********************************************************
-  private static final String HOPS_SITE_CA_DIR = CA_DIR + "/hops-site-certs";
+  private static final String HOPS_SITE_CA_DIR = "hops-site-certs";
   public final static String HOPS_SITE_CERTFILE = "/pub.pem";
   public final static String HOPS_SITE_CA_CERTFILE = "/ca_pub.pem";
+  public final static String HOPS_SITE_INTERMEDIATE_CERTFILE = "/intermediate_ca_pub.pem";
   public final static String HOPS_SITE_KEY_STORE = "/keystores/keystore.jks";
   public final static String HOPS_SITE_TRUST_STORE = "/keystores/truststore.jks";
+  
+  private static final String VARIABLE_HOPSSITE_CLUSTER_NAME = "hops_site_cluster_name";
+  private static final String VARIABLE_HOPSSITE_CLUSTER_PSWD = "hops_site_cluster_pswd";
+  private static final String VARIABLE_HOPSSITE_CLUSTER_PSWD_AUX = "hops_site_cluster_pswd_aux";
+  
+  private String HOPSSITE_CLUSTER_NAME = null;
+  private String HOPSSITE_CLUSTER_PSWD = null;
+  private String HOPSSITE_CLUSTER_PSWD_AUX = "1234";
 
-  public synchronized String getHopsSiteCaDir() {
+  public synchronized Optional<String> getHopsSiteClusterName() {
     checkCache();
-    return getCertsDir() + Settings.HOPS_SITE_CA_DIR;
+    return Optional.ofNullable(HOPSSITE_CLUSTER_NAME);
+  }
+  
+  public synchronized void setHopsSiteClusterName(String clusterName) {
+    if (getHopsSiteClusterName().isPresent()) {
+      em.merge(new Variables(VARIABLE_HOPSSITE_CLUSTER_NAME, clusterName));
+    } else {
+      em.persist(new Variables(VARIABLE_HOPSSITE_CLUSTER_NAME, clusterName));
+    }
+    HOPSSITE_CLUSTER_NAME = clusterName;
+  }
+  
+  public synchronized void deleteHopsSiteClusterName() {
+    if(getHopsSiteClusterName().isPresent()) {
+      Variables v = findById(VARIABLE_HOPSSITE_CLUSTER_NAME);
+      em.remove(v);
+      HOPSSITE_CLUSTER_NAME = null;
+    }
+  }
+
+  public synchronized String getHopsSiteClusterPswdAux() {
+    checkCache();
+    return HOPSSITE_CLUSTER_PSWD_AUX;
+  }
+    
+  public synchronized Optional<String> getHopsSiteClusterPswd() {
+    checkCache();
+    return Optional.ofNullable(HOPSSITE_CLUSTER_PSWD);
+  }
+  
+  public synchronized void setHopsSiteClusterPswd(String pswd) {
+    if (getHopsSiteClusterPswd().isPresent()) {
+      em.merge(new Variables(VARIABLE_HOPSSITE_CLUSTER_PSWD, pswd));
+    } else {
+      em.persist(new Variables(VARIABLE_HOPSSITE_CLUSTER_PSWD, pswd));
+    }
+    HOPSSITE_CLUSTER_PSWD = pswd;
+  }
+  
+  public synchronized String getHopsSiteCaDir() {
+    return getCertsDir() + File.separator + HOPS_SITE_CA_DIR;
+  }
+  
+  public synchronized String getHopsSiteCaScript() {
+    return getHopsworksInstallDir()
+      + File.separator + "domain1"
+      + File.separator + "bin"
+      + File.separator + "ca-keystore.sh";
+  }
+  
+  public synchronized String getHopsSiteCert() {
+    return getHopsSiteCaDir() + HOPS_SITE_CERTFILE;
+  }
+  
+  public synchronized String getHopsSiteCaCert() {
+    return getHopsSiteCaDir() + HOPS_SITE_CA_CERTFILE;
+  }
+  
+  public synchronized String getHopsSiteIntermediateCert() {
+    return getHopsSiteCaDir() + HOPS_SITE_INTERMEDIATE_CERTFILE;
+  }
+  
+  public synchronized String getHopsSiteKeyStorePath() {
+    return getHopsSiteCaDir() + HOPS_SITE_KEY_STORE;
+  }
+  
+  public synchronized String getHopsSiteTrustStorePath() {
+    return getHopsSiteCaDir() + HOPS_SITE_TRUST_STORE;
   }
   //Dela END
+  
+  
+  //************************************************ZOOKEEPER********************************************************
+  public static final int ZOOKEEPER_SESSION_TIMEOUT_MS = 30 * 1000;//30 seconds
+  public static final int ZOOKEEPER_CONNECTION_TIMEOUT_MS = 30 * 1000;// 30 seconds
+  //Zookeeper END
+
+  //************************************************KAFKA********************************************************
+  public static final String KAFKA_ACL_WILDCARD = "*";
+  public static final String KAFKA_DEFAULT_CONSUMER_GROUP = "default";
+  public static final String KAFKA_BROKER_PROTOCOL = "INTERNAL";
+  //These brokers are updated periodically by ZookeeperTimerThread
+  public Set<String> kafkaBrokers = new HashSet<>();
+
+  public synchronized Set<String> getKafkaBrokers() {
+    return kafkaBrokers;
+  }
+
+  /**
+   * Used when the application does not want all the brokers but mearly one to connect. 
+   * 
+   * @return 
+   */
+  public synchronized String getRandomKafkaBroker() {
+    Iterator<String> it = this.kafkaBrokers.iterator(); 
+    if(it.hasNext()){
+      return it.next();
+    }
+    return null;
+  }
+  
+  /**
+   *
+   * @return
+   */
+  public synchronized String getKafkaBrokersStr() {
+    if (!kafkaBrokers.isEmpty()) {
+      StringBuilder sb = new StringBuilder();
+      for (String addr : kafkaBrokers) {
+        sb.append(addr).append(",");
+      }
+      return sb.substring(0, sb.length() - 1);
+    }
+    return null;
+  }
+
+  public synchronized void setKafkaBrokers(Set<String> kafkaBrokers) {
+    this.kafkaBrokers.clear();
+    this.kafkaBrokers.addAll(kafkaBrokers);
+  }
+  
+  public Set<String> getBrokerEndpoints() throws AppException {
+
+    Set<String> brokerList = new HashSet<>();
+    ZooKeeper zk = null;
+    try {
+      zk = new ZooKeeper(getZkConnectStr(),
+          Settings.ZOOKEEPER_SESSION_TIMEOUT_MS, new ZookeeperWatcher());
+
+      List<String> ids = zk.getChildren("/brokers/ids", false);
+      for (String id : ids) {
+        String brokerInfo = new String(zk.getData("/brokers/ids/" + id,
+            false, null));
+        String[] tokens = brokerInfo.split(DLIMITER);
+        for (String str : tokens) {
+          if (str.contains(SLASH_SEPARATOR) && str.startsWith(KAFKA_BROKER_PROTOCOL)) {
+            brokerList.add(str);
+          }
+        }
+      }
+    } catch (IOException ex) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
+          "Unable to find the zookeeper server: " + ex);
+    } catch (KeeperException | InterruptedException ex) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
+          "Unable to retrieve seed brokers from the kafka cluster: " + ex);
+    } finally {
+      if (zk != null) {
+        try {
+          zk.close();
+        } catch (InterruptedException ex) {
+          logger.log(Level.SEVERE, null, ex.getMessage());
+        }
+      }
+    }
+
+    return brokerList;
+  }
+
+  public class ZookeeperWatcher implements Watcher {
+
+    @Override
+    public void process(WatchedEvent we) {
+    }
+  }
+  //Kafka END
 }
