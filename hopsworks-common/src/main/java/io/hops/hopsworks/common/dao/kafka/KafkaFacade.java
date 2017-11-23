@@ -1003,7 +1003,7 @@ public class KafkaFacade {
     return servers;
   }
 
-  private KafkaProducer<String, byte[]> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
+  private KafkaProducer<byte[], byte[]> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
     try {
 
       // TODO: Change Trust store and Keys tore Location for the certificates (if need be)
@@ -1016,7 +1016,7 @@ public class KafkaFacade {
       Properties props = new Properties();
       props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, getAllKafkaBootstrapServers());
       props.put(
-        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
       props.put(
         ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
       //configure the ssl parameters
@@ -1039,7 +1039,7 @@ public class KafkaFacade {
   public boolean produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO, String deviceUuid,
                          String topic, String schemaContents, List<GenericData.Record> avroRecords){
 
-    KafkaProducer<String, byte[]> producer = null;
+    KafkaProducer<byte[], byte[]> producer = null;
 
     try {
       producer = getKafkaProducer(project, user, certPwDTO);
@@ -1051,7 +1051,7 @@ public class KafkaFacade {
       // Loop through records
       for (GenericData.Record avroRecord: avroRecords) {
         byte[] record = recordInjection.apply(avroRecord);
-        producer.send(new ProducerRecord<String, byte[]>(topic, deviceUuid, record));
+        producer.send(new ProducerRecord<byte[], byte[]>(topic, deviceUuid.getBytes(), record));
       }
       if (synchronous){
         producer.flush();
