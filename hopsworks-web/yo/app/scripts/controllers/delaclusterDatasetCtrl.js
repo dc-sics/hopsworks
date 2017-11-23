@@ -2,8 +2,8 @@
 
 angular.module('hopsWorksApp')
         .controller('ClusterDatasetCtrl', ['$location', '$anchorScroll', '$scope', '$rootScope',
-          'showdown', 'md5', 'ModalService', 'HopssiteService', 'DelaService', 'DelaClusterService','ProjectService', 'growl',
-          function ($location, $anchorScroll, $scope, $rootScope, showdown, md5, ModalService,
+          'md5', 'ModalService', 'HopssiteService', 'DelaService', 'DelaClusterService','ProjectService', 'growl',
+          function ($location, $anchorScroll, $scope, $rootScope, md5, ModalService,
                   HopssiteService, DelaService, DelaClusterService, ProjectService, growl) {
             var self = this;
             self.readme;
@@ -39,15 +39,6 @@ angular.module('hopsWorksApp')
               });
             };
 
-            var initCtrl = function () {
-              self.displayCategories = [{'categoryName': 'all', 'displayName': 'All'}];
-              if (self.publicDSId !== undefined) {
-                getDatasetFromLocal(self.publicDSId);
-              }
-            };
-            
-            initCtrl();
-            
             self.selectCategory = function (category) {
               console.log("selectDisplayCategory", category);
               self.selectedDataset = undefined;
@@ -55,7 +46,7 @@ angular.module('hopsWorksApp')
               self.selectedCategoryMap[category.categoryName] = category;
               doGetLocalCluster(self.selectedCategoryMap[category.categoryName]);
             };
-            
+                                    
             self.selectDisplayCategory = function (category) {
               console.log("selectDisplayCategory", category);
               self.selectedDataset = undefined;
@@ -132,6 +123,16 @@ angular.module('hopsWorksApp')
                 console.log('Error: ' + error);
               });
             };
+            
+            var initCtrl = function () {
+              self.displayCategories = [{'categoryName': 'all', 'displayName': 'All'}];
+              if (self.publicDSId !== undefined) {
+                getDatasetFromLocal(self.publicDSId);
+              }
+              self.selectCategory({'categoryName': 'all', 'displayName': 'All'}); //open by default 
+            };
+            
+            initCtrl();
 
 
             var init = function () {

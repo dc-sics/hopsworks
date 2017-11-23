@@ -95,7 +95,7 @@ angular.module('hopsWorksApp', [
                                       if($rootScope.isDelaEnabled) {
                                         $cookies.put("email", success.data.data.value);
                                       } else {
-                                        return $q.reject(err);
+                                        return $q.reject();
                                       }
                                     },
                                     function (err) {
@@ -727,7 +727,7 @@ angular.module('hopsWorksApp', [
           };
         })  
         // Filter that highlight @username.
-        .filter('highlight', function () {
+        .filter('highlightUsername', function () {
           return function (text) {
             var matches = text.match(/@\w+/g);
             if (matches) {
@@ -758,4 +758,14 @@ angular.module('hopsWorksApp', [
 
             return value + (tail || ' …');
           };
-        });
+        })
+        .run(['$rootScope', '$routeParams', function ($rootScope, $routeParams) {
+            $rootScope.$on('$routeChangeSuccess',
+              function (e, current, pre) {
+                if ($routeParams.projectID === undefined) {
+                  $rootScope.projectView = false;
+                } else {
+                  $rootScope.projectView = true;
+                }
+              });
+  }]);

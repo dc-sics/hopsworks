@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 
 import io.hops.hopsworks.common.exception.CryptoPasswordNotFoundException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -179,53 +179,42 @@ public class HopsUtils {
         null, applicationId, certMat, isRpcTlsEnabled);
   }
   
-  private static boolean checkMaterializedCertificatesExist(String username,
-      String remoteFSDir, DistributedFileSystemOps dfso,
-      Settings settings)
-    throws IOException {
-    
-    return checkUserMatCertsInHDFS(username, remoteFSDir, dfso,
-        settings);
-  }
-  
-  private static boolean checkUserMatCertsInHDFS(String username,
-      String remoteFSDir, DistributedFileSystemOps dfso, Settings settings)
-      throws IOException {
+  private static boolean checkUserMatCertsInHDFS(String username, String remoteFSDir,
+      DistributedFileSystemOps dfso, Settings settings) throws IOException {
     Path kstoreU = new Path(remoteFSDir + Path.SEPARATOR +
         username + Path.SEPARATOR + username + "__kstore.jks");
     Path tstoreU = new Path(remoteFSDir + Path.SEPARATOR +
         username + Path.SEPARATOR + username + "__tstore.jks");
     Path passwdU = new Path(remoteFSDir + Path.SEPARATOR +
         username + Path.SEPARATOR + username + "__cert.key");
-    
+
     if (!settings.getHopsRpcTls()) {
       return dfso.exists(kstoreU.toString()) && dfso.exists(tstoreU.toString())
           && dfso.exists(passwdU.toString());
     }
-    
+
     return dfso.exists(kstoreU.toString()) && dfso.exists(tstoreU.toString());
   }
-  
-  private static boolean checkProjectMatCertsInHDFS(String projectName, String remoteFSDir,
-      DistributedFileSystemOps dfso, Settings settings)
-      throws IOException {
 
-    Path kstoreP = new Path(remoteFSDir + Path.SEPARATOR + projectName + Path.SEPARATOR + projectName + "__kstore.jks");
-    Path tstoreP = new Path(remoteFSDir + Path.SEPARATOR + projectName + Path.SEPARATOR + projectName + "__tstore.jks");
-  
-    // If RPC TLS is enabled, password file would be injected by the
-    // NodeManagers. We don't need to add it as LocalResource
-    if (!settings.getHopsRpcTls()) {
-      Path passwdP = new Path(remoteFSDir + Path.SEPARATOR + projectName
-          + Path.SEPARATOR + projectName + "__cert.key");
-      return dfso.exists(kstoreP.toString()) && dfso.exists(tstoreP.toString())
-          && dfso.exists(passwdP.toString());
-    }
 
-    return dfso.exists(kstoreP.toString()) && dfso.exists(tstoreP.toString());
+  /**
+   * Remote user generic project certificates materialized both from the local
+   * filesystem and from HDFS
+   * @param projectName
+   * @param remoteFSDir
+   * @param dfso
+   * @param certificateMaterializer
+   * @throws IOException
+   */
+  public static void cleanupCertificatesForProject(String projectName,
+      String remoteFSDir, DistributedFileSystemOps dfso, CertificateMaterializer
+      certificateMaterializer) throws IOException {
 
+    String projectGenericUsername = projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
+    cleanupCertsLocal(null, projectName, certificateMaterializer);
+    cleanupCertsHDFS(projectGenericUsername, remoteFSDir, dfso);
   }
-  
+
   /**
    * Remote user certificates materialized both from the local
    * filesystem and from HDFS
@@ -233,48 +222,38 @@ public class HopsUtils {
    * @param remoteFSDir
    * @param dfso
    * @param certificateMaterializer
-   * @param isForZeppelin When set to true it will also remove the
-   *                      project-wide certificates
    * @throws IOException
    */
   public static void cleanupCertificatesForUser(String username,
       String projectName, String remoteFSDir,
       DistributedFileSystemOps dfso, CertificateMaterializer
-      certificateMaterializer, boolean isForZeppelin) throws IOException {
+      certificateMaterializer) throws IOException {
+
     String projectSpecificUsername = projectName + HdfsUsersController
         .USER_NAME_DELIMITER + username;
-    cleanupCertsLocal(username, projectName, certificateMaterializer, isForZeppelin);
-    cleanupCertsHDFS(projectSpecificUsername, projectName, remoteFSDir, dfso,
-        isForZeppelin);
+    cleanupCertsLocal(username, projectName, certificateMaterializer);
+    cleanupCertsHDFS(projectSpecificUsername, remoteFSDir, dfso);
   }
-  
-  private static void cleanupCertsLocal(String username, String
-      projectName, CertificateMaterializer certificateMaterializer, boolean
-      isForZeppelin) {
+
+  /**
+   * Remote user certificates materialized from the local filesystem
+   * @param username
+   * @param certificateMaterializer
+   * @throws IOException
+   */
+  public static void cleanupCertsLocal(String username, String
+      projectName, CertificateMaterializer certificateMaterializer) {
     certificateMaterializer.removeCertificate(username, projectName);
-    if (isForZeppelin) {
-      certificateMaterializer.removeCertificate(projectName);
-    }
   }
   
-  private static void cleanupCertsHDFS(String username, String
-      projectName, String remoteFSDir, DistributedFileSystemOps dfso, boolean
-      isForZeppelin) throws IOException {
+  private static void cleanupCertsHDFS(String username, String remoteFSDir,
+      DistributedFileSystemOps dfso) throws IOException {
     Path remoteProjectDirK = new Path(remoteFSDir + Path.SEPARATOR
       + username + Path.SEPARATOR + username + "__kstore.jks");
     Path remoteProjectDirT = new Path(remoteFSDir + Path.SEPARATOR
         + username + Path.SEPARATOR + username + "__tstore.jks");
     dfso.rm(remoteProjectDirK, false);
     dfso.rm(remoteProjectDirT, false);
-  
-    if (isForZeppelin) {
-      remoteProjectDirK = new Path(remoteFSDir + Path.SEPARATOR
-          + projectName + Path.SEPARATOR + projectName + "__kstore.jks");
-      remoteProjectDirT = new Path(remoteFSDir + Path.SEPARATOR
-          + projectName + Path.SEPARATOR + projectName + "__tstore.jks");
-      dfso.rm(remoteProjectDirK, false);
-      dfso.rm(remoteProjectDirT, false);
-    }
   }
   
   /**
@@ -286,39 +265,27 @@ public class HopsUtils {
    * @param dfso
    * @param certificateMaterializer
    * @param settings
-   * @param isForZeppelin When it is set to true it will materialize also the
-   *                     project-wide certificates for the Spark interpreter
-   *                      in Zeppelin
    * @throws IOException
    */
   public static void materializeCertificatesForUser(String projectName,
       String userName, String localFSDir, String remoteFSDir,
       DistributedFileSystemOps dfso, CertificateMaterializer
-      certificateMaterializer, Settings settings, boolean isForZeppelin) throws
+      certificateMaterializer, Settings settings) throws
       IOException {
-    // For Spark interpreter, jobs are launched as user Project
-    // For Livy interpreter, jobs are launched as user Project__Username
-    // Both will be materialized
+
     String projectSpecificUsername = projectName + "__" + userName;
-    
-    if (isForZeppelin) {
-      materializeCertificatesForProject(projectName, localFSDir, remoteFSDir, dfso, certificateMaterializer, settings);
-    }
+
     certificateMaterializer.materializeCertificates(userName, projectName);
     
     // If certificates exist in HDFS do not materialize them again
-    if (checkMaterializedCertificatesExist(projectSpecificUsername,
-        remoteFSDir, dfso, settings)) {
+    if (checkUserMatCertsInHDFS(projectSpecificUsername, remoteFSDir, dfso, settings)) {
       return;
     }
     
-    String kStorePath, tStorePath, passwdPath;
-    
-    
-    kStorePath = localFSDir + File.separator + projectSpecificUsername + "__kstore.jks";
-    tStorePath = localFSDir + File.separator + projectSpecificUsername + "__tstore.jks";
-    passwdPath = localFSDir + File.separator + projectSpecificUsername +
-        "__cert.key";
+    String kStorePath = localFSDir + File.separator + projectSpecificUsername + "__kstore.jks";
+    String tStorePath = localFSDir + File.separator + projectSpecificUsername + "__tstore.jks";
+    String passwdPath = localFSDir + File.separator + projectSpecificUsername + "__cert.key";
+
     materializeCertsRemote(projectSpecificUsername, remoteFSDir, kStorePath,
         tStorePath, passwdPath, dfso, settings);
     
@@ -345,15 +312,16 @@ public class HopsUtils {
       DistributedFileSystemOps dfso, CertificateMaterializer certificateMaterializer, Settings settings) throws
       IOException {
     certificateMaterializer.materializeCertificates(projectName);
+    String projectGenericUser = projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
 
-    if (checkProjectMatCertsInHDFS(projectName,remoteFSDir, dfso, settings)) {
+    if (checkUserMatCertsInHDFS(projectGenericUser,remoteFSDir, dfso, settings)) {
       return;
     }
-    String kStorePath = localFSDir + File.separator + projectName + "__kstore.jks";
-    String tStorePath = localFSDir + File.separator + projectName + "__tstore.jks";
-    String passwdPath = localFSDir + File.separator + projectName + "__cert.key";
-    
-    materializeCertsRemote(projectName, remoteFSDir, kStorePath, tStorePath,
+    String kStorePath = localFSDir + File.separator + projectGenericUser + "__kstore.jks";
+    String tStorePath = localFSDir + File.separator + projectGenericUser + "__tstore.jks";
+    String passwdPath = localFSDir + File.separator + projectGenericUser + "__cert.key";
+
+    materializeCertsRemote(projectGenericUser, remoteFSDir, kStorePath, tStorePath,
         passwdPath, dfso, settings);
 
     // If RPC SSL is not enabled, we don't need them anymore in the local fs
@@ -663,16 +631,36 @@ public class HopsUtils {
     return true;
   }
 
+  private static Key generateKey(String userKey, String masterKey) {
+    // This is for backwards compatibility
+    // sha256 of 'adminpw'
+    if (masterKey.equals("5fcf82bc15aef42cd3ec93e6d4b51c04df110cf77ee715f62f3f172ff8ed9de9")) {
+      return new SecretKeySpec(userKey.substring(0, 16).getBytes(), "AES");
+    }
+    
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < 8; i++) {
+      sb.append(userKey.charAt(i));
+      if (masterKey.length() > i + 1) {
+        sb.append(masterKey.charAt(i + 1));
+      } else {
+        sb.append(userKey.charAt(Math.max(0, userKey.length() - i)));
+      }
+    }
+    return new SecretKeySpec(sb.toString().getBytes(), "AES");
+  }
+  
   /**
    *
    * @param key
-   * @param salt
    * @param plaintext
    * @return
    * @throws Exception
    */
-  public static String encrypt(String key, String salt, String plaintext) throws Exception {
-    Key aesKey = new SecretKeySpec(key.substring(0, 16).getBytes(), "AES");
+  public static String encrypt(String key, String plaintext, String masterEncryptionPassword)
+      throws Exception {
+    
+    Key aesKey = generateKey(key, masterEncryptionPassword);
     Cipher cipher = Cipher.getInstance("AES");
     cipher.init(Cipher.ENCRYPT_MODE, aesKey);
     byte[] encrypted = cipher.doFinal(plaintext.getBytes());
@@ -682,14 +670,14 @@ public class HopsUtils {
   /**
    *
    * @param key
-   * @param salt
    * @param ciphertext
    * @return
    * @throws Exception
    */
-  public static String decrypt(String key, String salt, String ciphertext) throws Exception {
+  public static String decrypt(String key, String ciphertext, String masterEncryptionPassword)
+      throws Exception {
     Cipher cipher = Cipher.getInstance("AES");
-    Key aesKey = new SecretKeySpec(key.substring(0, 16).getBytes(), "AES");
+    Key aesKey = generateKey(key, masterEncryptionPassword);
     cipher.init(Cipher.DECRYPT_MODE, aesKey);
     String decrypted = new String(cipher.doFinal(Base64.decodeBase64(ciphertext)));
     return decrypted;
