@@ -1,11 +1,6 @@
 package io.hops.hopsworks.apiV2.projects;
 
-
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.api.project.DataSetService;
-import io.hops.hopsworks.api.util.JsonResponse;
-import io.hops.hopsworks.common.constants.message.ResponseMessages;
+import io.hops.hopsworks.apiV2.filter.AllowedProjectRoles;
 import io.hops.hopsworks.common.dao.dataset.DataSetDTO;
 import io.hops.hopsworks.common.dao.dataset.DataSetView;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
@@ -60,7 +55,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Api(value = "V2 Datasets", tags = {"V2 Datasets"})
+@Api(value = "Datasets")
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class DataSetsResource {
@@ -73,8 +68,6 @@ public class DataSetsResource {
   private HdfsUsersController hdfsUsersBean;
   @EJB
   private UserManager userBean;
-  @EJB
-  private NoCacheResponse noCacheResponse;
   @EJB
   private DatasetController datasetController;
   @EJB
@@ -90,8 +83,6 @@ public class DataSetsResource {
   @EJB
   private UserFacade userFacade;
   @Inject
-  private DataSetService dataSetService;
-  @Inject
   private BlobsResource blobsResource;
 
   private Integer projectId;
@@ -100,7 +91,6 @@ public class DataSetsResource {
   public void setProjectId(Integer projectId) {
     this.projectId = projectId;
     this.project = this.projectFacade.find(projectId);
-    this.dataSetService.setProjectId(projectId);
   }
 
   public Integer getProjectId() {
@@ -230,7 +220,6 @@ public class DataSetsResource {
       AccessControlException {
     
     boolean success = false;
-    JsonResponse json = new JsonResponse();
     Dataset dataset = getDataSet(name);
     DataSetPath path = new DataSetPath(dataset, "/");
   
@@ -241,9 +230,7 @@ public class DataSetsResource {
       // But leave it in hopsfs because the user doesn't have the right to delete it
       hdfsUsersBean.unShareDataset(project, dataset);
       datasetFacade.removeDataset(dataset);
-      json.setSuccessMessage(ResponseMessages.SHARED_DATASET_REMOVED);
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-          entity(json).build();
+      return Response.noContent().build();
     }
     
     DistributedFileSystemOps dfso = null;
@@ -289,8 +276,7 @@ public class DataSetsResource {
       logger.log(Level.WARNING,
           "Error while trying to delete a dataset group", ex);
     }
-    json.setSuccessMessage(ResponseMessages.DATASET_REMOVED_FROM_HDFS);
-    return Response.ok(json, MediaType.APPLICATION_JSON_TYPE).build();
+    return Response.noContent().build();
   }
   
   @ApiOperation(value = "Get data set README-file")
@@ -448,7 +434,8 @@ public class DataSetsResource {
   @Path("/{name}/files/{path: .+}")
   public Response deleteFileOrDir(@PathParam("name") String dataSetName, @PathParam("path") String path, @Context
       SecurityContext sc, @Context HttpServletRequest req) throws AccessControlException, AppException {
-    return dataSetService.removefile(dataSetName + "/" + path, sc, req);
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet");
+    //return dataSetService.removefile(dataSetName + "/" + path, sc, req);
   }
   
   @ApiOperation(value = "Copy, Move, Zip or Unzip", notes = "Performs the selected operation on the file/dir " +
@@ -486,7 +473,9 @@ public class DataSetsResource {
     moveDto.setInodeId(inodeAtPath.getId());
     DataSetPath destPath = new DataSetPath(ds, targetPath);
     moveDto.setDestPath(pathValidator.getFullPath(destPath).toString());
-    return dataSetService.copyFile(sc, req,moveDto);
+    
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet");
+    //return dataSetService.copyFile(sc, req,moveDto);
   }
   
   private Response move(String dataSet, String targetPath, String sourcePath, SecurityContext sc, HttpServletRequest
@@ -498,16 +487,22 @@ public class DataSetsResource {
     moveDto.setInodeId(inodeAtPath.getId());
     DataSetPath destPath = new DataSetPath(ds, targetPath);
     moveDto.setDestPath(pathValidator.getFullPath(destPath).toString());
-    return dataSetService.moveFile(sc, req, moveDto);
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet");
+  
+    //return dataSetService.moveFile(sc, req, moveDto);
   }
   
   private Response zip(String dataSet, String targetPath, SecurityContext sc) throws AppException {
-    return dataSetService.compressFile(dataSet + "/" + targetPath, sc);
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet");
+  
+    //return dataSetService.compressFile(dataSet + "/" + targetPath, sc);
   }
   
   private Response unzip(String dataSet, String targetPath, SecurityContext sc)
       throws AppException, AccessControlException {
-    return dataSetService.unzip(dataSet + "/" + targetPath, sc);
+    throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet");
+  
+    //return dataSetService.unzip(dataSet + "/" + targetPath, sc);
   }
   
   @Path("/{name}/blobs")
@@ -555,6 +550,4 @@ public class DataSetsResource {
     }
     return new GenericEntity<List<InodeView>>(kids) { };
   }
-  
-  
 }

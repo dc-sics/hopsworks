@@ -63,6 +63,7 @@
       <version>0.1.0</version>
       <type>war</type>
     </dependency>
+
   </dependencies>
   <profiles>
     <profile>

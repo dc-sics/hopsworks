@@ -17,7 +17,6 @@
  */
 package io.hops.hopsworks.apiV2.filter;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.apiV2.projects.ProjectsResource;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;

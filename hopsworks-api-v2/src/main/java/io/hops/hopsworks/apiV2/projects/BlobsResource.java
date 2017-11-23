@@ -17,8 +17,7 @@
  */
 package io.hops.hopsworks.apiV2.projects;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.util.UploadService;
+import io.hops.hopsworks.apiV2.filter.AllowedProjectRoles;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -34,30 +33,20 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.security.AccessControlException;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataParam;
-
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
-import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,8 +68,6 @@ public class BlobsResource {
   private ProjectTeamFacade projectTeamFacade;
   @Inject
   private DistributedFsService dfs;
-  @Inject
-  private UploadService uploadService;
   @Inject
   private DatasetController datasetController;
   
@@ -118,16 +105,7 @@ public class BlobsResource {
     return downloadFromHdfs(hdfsUserName, fullPath);
   }
   
-  //@ApiOperation(value="Upload a file", notes = "File size must be <2GB.")
-  //@PUT
-  //@Path("/{path: .+}")
-  //@Consumes(MediaType.APPLICATION_OCTET_STREAM)
-  //public Response putFile(@PathParam("path") String filePath, InputStream
-  //    fileInputStream) throws AppException {
-  //  throw new AppException(Response.Status.NOT_IMPLEMENTED, "Endpoint not implemented yet.");
-  //}
-  
-  @ApiOperation(value="Upload a large file in parts")
+ /* @ApiOperation(value="Upload a large file in parts")
   @POST
   @Path("/{path: .+}")
   @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -164,7 +142,7 @@ public class BlobsResource {
     
     return uploadService.uploadMethod(uploadedInputStream,fileDetail,flowChunkNumber,flowChunkSize,flowCurrentChunkSize,
         flowFilename,flowIdentifier,flowRelativePath,flowTotalChunks, flowTotalSize);
-  }
+  }*/
   
   private Response downloadFromHdfs(String projectUsername, org.apache.hadoop.fs.Path fullPath) throws AppException,
       AccessControlException {

@@ -23,15 +23,15 @@ import io.hops.hopsworks.common.dao.project.Project;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class LimitedProjectView {
+public class LimitedProjectDTO {
   private Integer projectId;
   private String description;
   private String name;
   private UserView owner;
   
-  public LimitedProjectView(){}
+  public LimitedProjectDTO(){}
   
-  public LimitedProjectView(Project project){
+  public LimitedProjectDTO(Project project){
     this.projectId = project.getId();
     this.description = project.getDescription();
     this.name = project.getName();

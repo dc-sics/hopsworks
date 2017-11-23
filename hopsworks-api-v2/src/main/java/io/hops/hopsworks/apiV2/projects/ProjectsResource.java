@@ -1,12 +1,12 @@
 package io.hops.hopsworks.apiV2.projects;
 
-import io.hops.hopsworks.api.dela.DelaProjectService;
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.util.JsonResponse;
+import io.hops.hopsworks.apiV2.ErrorResponse;
+import io.hops.hopsworks.apiV2.filter.AllowedProjectRoles;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
+import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
@@ -17,7 +17,6 @@ import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.project.ProjectController;
-import io.hops.hopsworks.common.project.ProjectDTO;
 import io.hops.hopsworks.common.project.TourProjectType;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.Settings;
@@ -52,9 +51,11 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Path("/v2/projects")
+@Path("/projects")
 @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
-@Api(value = "V2 Projects")
+@Api(value = "Projects")
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class ProjectsResource {
@@ -83,33 +84,30 @@ public class ProjectsResource {
   private MembersResource members;
   @Inject
   private DataSetsResource dataSets;
-  @Inject
-  private DelaProjectService delaService;
+
   
   @ApiOperation(value= "Get a list of projects")
   @GET
-  @Path("/")
-  @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getProjects(@Context SecurityContext sc, @Context
       HttpServletRequest req){
     
     if(sc.isUserInRole("HOPS_ADMIN")){
       //Create full project views for admins
-      List<ProjectView> projectViews = new ArrayList<>();
+      List<ProjectDTO> projectDTOViews = new ArrayList<>();
       for (Project project : projectFacade.findAll()){
-        projectViews.add(new ProjectView(project));
+        projectDTOViews.add(new ProjectDTO(project));
       }
-      GenericEntity<List<ProjectView>> projects = new GenericEntity<List<ProjectView>>(projectViews){};
+      GenericEntity<List<ProjectDTO>> projects = new GenericEntity<List<ProjectDTO>>(projectDTOViews){};
       return Response.ok(projects,MediaType.APPLICATION_JSON_TYPE).build();
     } else {
       //Create limited project views for everyone else
-      List<LimitedProjectView> limitedProjectViews = new ArrayList<>();
-      for (Project project : projectFacade.findAll()) {
-        limitedProjectViews.add(new LimitedProjectView(project));
+      List<LimitedProjectDTO> limitedProjectDTOS = new ArrayList<>();
+      for (io.hops.hopsworks.common.dao.project.Project project : projectFacade.findAll()) {
+        limitedProjectDTOS.add(new LimitedProjectDTO(project));
       }
-      GenericEntity<List<LimitedProjectView>> projects =
-          new GenericEntity<List<LimitedProjectView>>(limitedProjectViews){};
+      GenericEntity<List<LimitedProjectDTO>> projects =
+          new GenericEntity<List<LimitedProjectDTO>>(limitedProjectDTOS){};
       return Response.ok(projects, MediaType.APPLICATION_JSON_TYPE).build();
     }
   }
@@ -117,12 +115,9 @@ public class ProjectsResource {
   
   @ApiOperation(value= "Create a project")
   @POST
-  @Path("/")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response createProject(
-      ProjectDTO projectDTO,
+      io.hops.hopsworks.common.project.ProjectDTO projectDTODTO,
       @Context SecurityContext sc,
       @Context HttpServletRequest req, @QueryParam("template") String starterType) throws AppException {
     
@@ -140,20 +135,18 @@ public class ProjectsResource {
     }
     
     List<String> failedMembers = new ArrayList<>();
-    Project project = projectController.createProject(projectDTO, user, failedMembers, req.getSession().getId());
+    io.hops.hopsworks.common.dao.project.Project
+        project = projectController.createProject(projectDTODTO, user, failedMembers, req.getSession().getId());
   
-    JsonResponse json = new JsonResponse();
-    json.setStatus("201");// Created
-    json.setSuccessMessage(ResponseMessages.PROJECT_CREATED);
-    
+
     if (!failedMembers.isEmpty()) {
-      json.setFieldErrors(failedMembers);
+      //json.setFieldErrors(failedMembers);
     }
   
     URI uri = UriBuilder.fromResource(ProjectsResource.class).path("{id}").build(project.getId());
     logger.info("Created uri: " + uri.toString());
   
-    return Response.created(uri).entity(json).build();
+    return Response.created(uri).entity(project).build();
   }
   
   private void populateActiveServices(List<String> projectServices,
@@ -169,9 +162,9 @@ public class ProjectsResource {
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
   
-    ProjectDTO projectDTO = new ProjectDTO();
-    Project project = null;
-    projectDTO.setDescription("A demo project for getting started with " + type);
+    io.hops.hopsworks.common.project.ProjectDTO projectDTODTO = new io.hops.hopsworks.common.project.ProjectDTO();
+    io.hops.hopsworks.common.dao.project.Project project = null;
+    projectDTODTO.setDescription("A demo project for getting started with " + type);
   
     String owner = sc.getUserPrincipal().getName();
     String username = usersController.generateUsername(owner);
@@ -190,37 +183,37 @@ public class ProjectsResource {
     if (TourProjectType.SPARK.getTourName().equalsIgnoreCase(type)) {
       // It's a Spark guide
       demoType = TourProjectType.SPARK;
-      projectDTO.setProjectName("demo_" + TourProjectType.SPARK.getTourName() + "_" + username);
+      projectDTODTO.setProjectName("demo_" + TourProjectType.SPARK.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.SPARK);
       readMeMessage = "jar file to demonstrate the creation of a spark batch job";
     } else if (TourProjectType.KAFKA.getTourName().equalsIgnoreCase(type)) {
       // It's a Kafka guide
       demoType = TourProjectType.KAFKA;
-      projectDTO.setProjectName("demo_" + TourProjectType.KAFKA.getTourName() + "_" + username);
+      projectDTODTO.setProjectName("demo_" + TourProjectType.KAFKA.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.KAFKA);
       readMeMessage = "jar file to demonstrate Kafka streaming";
     } else if (TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName().replace("_", " ").equalsIgnoreCase(type)) {
       // It's a Distributed TensorFlow guide
       demoType = TourProjectType.DISTRIBUTED_TENSORFLOW;
-      projectDTO.setProjectName("demo_" + TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName() + "_" + username);
+      projectDTODTO.setProjectName("demo_" + TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.DISTRIBUTED_TENSORFLOW);
       readMeMessage = "Mnist data to demonstrate the creation of a distributed TensorFlow job";
     } else if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)) {
       // It's a TensorFlow guide
       demoType = TourProjectType.TENSORFLOW;
-      projectDTO.setProjectName("demo_" + TourProjectType.TENSORFLOW.getTourName() + "_" + username);
+      projectDTODTO.setProjectName("demo_" + TourProjectType.TENSORFLOW.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.TENSORFLOW);
       readMeMessage = "Mnist data and python files to demonstrate running TensorFlow noteooks";
     } else {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.STARTER_PROJECT_BAD_REQUEST);
     }
-    projectDTO.setServices(projectServices);
+    projectDTODTO.setServices(projectServices);
   
     DistributedFileSystemOps dfso = null;
     DistributedFileSystemOps udfso = null;
     try {
-      project = projectController.createProject(projectDTO, user, failedMembers, req.getSession().getId());
+      project = projectController.createProject(projectDTODTO, user, failedMembers, req.getSession().getId());
       dfso = dfs.getDfsOps();
       username = hdfsUsersBean.getHdfsUserName(project, user);
       udfso = dfs.getDfsOps(username);
@@ -251,7 +244,6 @@ public class ProjectsResource {
   @ApiOperation(value = "Get project metadata")
   @GET
   @Path("/{id}")
-  @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response getProject(@PathParam("id") Integer id, @Context SecurityContext sc) throws AppException {
     Project project = projectController.findProjectById(id);
@@ -260,12 +252,9 @@ public class ProjectsResource {
   
   @ApiOperation(value= "Update project metadata")
   @POST
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
   @Path("/{id}")
   public Response updateProject(ProjectDTO update, @PathParam("id") Integer id, @Context SecurityContext sc)
       throws AppException {
-    JsonResponse json = new JsonResponse();
     String userEmail = sc.getUserPrincipal().getName();
     Users user = userManager.getUserByEmail(userEmail);
     Project project = projectController.findProjectById(id);
@@ -274,39 +263,28 @@ public class ProjectsResource {
   
     if (projectController.updateProjectDescription(project,
         update.getDescription(), user)){
-      json.setSuccessMessage(ResponseMessages.PROJECT_DESCRIPTION_CHANGED);
       updated = true;
     }
   
     if (projectController.updateProjectRetention(project,
         update.getRetentionPeriod(), user)){
-      json.setSuccessMessage(json.getSuccessMessage() + "\n" +
-          ResponseMessages.PROJECT_RETENTON_CHANGED);
       updated = true;
     }
   
+    ErrorResponse errorResponse = new ErrorResponse();
+    
     if (!update.getServices().isEmpty()) {
       // Create dfso here and pass them to the different controllers
       DistributedFileSystemOps dfso = dfs.getDfsOps();
       DistributedFileSystemOps udfso = dfs.getDfsOps(hdfsUsersBean.getHdfsUserName(project, user));
-    
-      for (String s : update.getServices()) {
-        ProjectServiceEnum se = null;
+  
+      for (ProjectServices projectServices : update.getServices()) {
+        ProjectServiceEnum se = projectServices.getProjectServicesPK().getService();
         try {
-          se = ProjectServiceEnum.valueOf(s.toUpperCase());
           if (projectController.addService(project, se, user, dfso, udfso)) {
             // Service successfully enabled
-            json.setSuccessMessage(json.getSuccessMessage() + "\n"
-                + ResponseMessages.PROJECT_SERVICE_ADDED
-                + s
-            );
             updated = true;
           }
-        } catch (IllegalArgumentException iex) {
-          logger.log(Level.SEVERE,
-              ResponseMessages.PROJECT_SERVICE_NOT_FOUND);
-          json.setErrorMsg(s + ResponseMessages.PROJECT_SERVICE_NOT_FOUND + "\n "
-              + json.getErrorMsg());
         } catch (ServiceException sex) {
           // Error enabling the service
           String error;
@@ -320,7 +298,7 @@ public class ProjectsResource {
             default:
               error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
           }
-          json.setErrorMsg(json.getErrorMsg() + "\n" + error);
+          errorResponse.setDescription(errorResponse.getDescription() + "\n" + error);
         }
       }
     
@@ -333,11 +311,15 @@ public class ProjectsResource {
       }
     }
   
-    if (!updated) {
-      json.setSuccessMessage(ResponseMessages.NOTHING_TO_UPDATE);
+    if (errorResponse.getDescription() != null) {
+      return Response.serverError().entity(errorResponse).build();
     }
-  
-    return Response.ok(json, MediaType.APPLICATION_JSON_TYPE).build();
+    
+    if (!updated){
+      return Response.notModified().build();
+    }
+    
+    return Response.noContent().build();
   }
   
   @ApiOperation(value= "Delete project")
@@ -349,15 +331,13 @@ public class ProjectsResource {
     String userMail = sc.getUserPrincipal().getName();
     projectController.removeProject(userMail, id, req.getSession().getId());
     
-    JsonResponse json = new JsonResponse();
-    json.setSuccessMessage(ResponseMessages.PROJECT_REMOVED);
-    return Response.ok(json,MediaType.APPLICATION_JSON_TYPE).build();
+    return Response.noContent().build();
   }
   
   @Path("/{id}/datasets")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public DataSetsResource getDataSets(@PathParam("id") Integer id, @Context SecurityContext sc) throws AppException {
-    Project project = projectController.findProjectById(id);
+    io.hops.hopsworks.common.dao.project.Project project = projectController.findProjectById(id);
     dataSets.setProjectId(project.getId());
     return dataSets;
   }
@@ -385,20 +365,5 @@ public class ProjectsResource {
     }
     GenericEntity<List<Activity>> result = new GenericEntity<List<Activity>>(activities){};
     return Response.ok(result).type(MediaType.APPLICATION_JSON_TYPE).build();
-  }
-  
-  
-  @Path("{id}/dela")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public DelaProjectService dela(
-      @PathParam("id") Integer id) throws AppException {
-    Project project = projectController.findProjectById(id);
-    if (project == null) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.PROJECT_NOT_FOUND);
-    }
-    this.delaService.setProjectId(id);
-    
-    return this.delaService;
   }
 }

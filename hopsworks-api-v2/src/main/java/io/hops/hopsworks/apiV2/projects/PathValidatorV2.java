@@ -37,7 +37,7 @@ public class PathValidatorV2 {
     return toReturn;
   }
   
-  public Inode exists(DataSetPath path, InodeFacade ifacade,
+  Inode exists(DataSetPath path, InodeFacade ifacade,
       Boolean dir) throws AppException {
     Path fullPath = getFullPath(path);
     Inode inode = ifacade.getInodeAtPath(fullPath.toString());

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,21 +15,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.hopsworks.apiV2;
+package io.hops.hopsworks.apiV2.projects;
 
-import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.apiV2.users.UserView;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.xml.bind.annotation.XmlRootElement;
 
-public class Util {
+@XmlRootElement
+public class MemberDTO {
+  private UserView user;
+  private String role;
   
-  public static void except(Response.Status status, String msg)
-      throws AppException {
-    throw new AppException(status.getStatusCode(), msg);
+  public MemberDTO(){}
+  
+  public MemberDTO(ProjectTeam member){
+    user = new UserView(member.getUser());
+    role = member.getTeamRole();
   }
   
-  public static Response jsonOk(Object entity){
-    return Response.ok(entity).type(MediaType.APPLICATION_JSON_TYPE).build();
+  public UserView getUser() {
+    return user;
+  }
+  
+  public void setUser(UserView user) {
+    this.user = user;
+  }
+  
+  public String getRole() {
+    return role;
+  }
+  
+  public void setRole(String role) {
+    this.role = role;
   }
 }

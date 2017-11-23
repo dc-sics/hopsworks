@@ -1,8 +1,6 @@
 package io.hops.hopsworks.apiV2.currentUser;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
-import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.api.util.JsonResponse;
+import io.hops.hopsworks.apiV2.filter.AllowedProjectRoles;
 import io.hops.hopsworks.common.dao.dataset.DatasetRequest;
 import io.hops.hopsworks.common.dao.dataset.DatasetRequestFacade;
 import io.hops.hopsworks.common.dao.message.Message;
@@ -38,7 +36,7 @@ import java.util.logging.Logger;
 
 import static io.hops.hopsworks.apiV2.Util.except;
 
-@Api("V2 Messages")
+@Api("Messages")
 @RequestScoped
 @Produces(MediaType.APPLICATION_JSON)
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -54,8 +52,6 @@ public class MessagesResource {
   private UserFacade userFacade;
   @EJB
   private DatasetRequestFacade dsReqFacade;
-  @EJB
-  private NoCacheResponse noCacheResponse;
 
   @GET
   @Path("/inbox")
@@ -68,8 +64,7 @@ public class MessagesResource {
     List<Message> list = msgFacade.getInbox(getByEmail(email));
     GenericEntity<List<Message>> msgs
             = new GenericEntity<List<Message>>(list) {};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            msgs).type(MediaType.APPLICATION_JSON).build();
+    return Response.ok(msgs,MediaType.APPLICATION_JSON).build();
   }
   
   
@@ -111,8 +106,7 @@ public class MessagesResource {
         return Response.ok(message).type(MediaType.APPLICATION_JSON).build();
       }
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status
-        .NOT_FOUND).build();
+    return Response.status(Response.Status.NOT_FOUND).build();
   }
   
   private List<Message> getUserInbox(String email) throws AppException {
@@ -132,8 +126,7 @@ public class MessagesResource {
     List<Message> list = msgFacade.getAllDeletedMessagesTo(user);
     GenericEntity<List<Message>> msgs
             = new GenericEntity<List<Message>>(list) {};
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
-        .entity(msgs).type(MediaType.APPLICATION_JSON).build();
+    return Response.ok(msgs,MediaType.APPLICATION_JSON).build();
   }
   
   @GET
@@ -148,8 +141,7 @@ public class MessagesResource {
         return Response.ok(message).type(MediaType.APPLICATION_JSON).build();
       }
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status
-        .NOT_FOUND).build();
+    return Response.status(Response.Status.NOT_FOUND).build();
   }
   
   private List<Message> getUserTrash(String email){
@@ -178,7 +170,7 @@ public class MessagesResource {
     checkMsgUser(msg, user);//check if the user is the owner of the message
     msg.setUnread(false);
     msgFacade.update(msg);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    return Response.noContent().build();
   }
   @PUT
   @Path("trash/{msgId}/read")
@@ -202,7 +194,7 @@ public class MessagesResource {
     checkMsgUser(msg, user);//check if the user is the owner of the message
     msg.setUnread(false);
     msgFacade.update(msg);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    return Response.noContent().build();
   }
 
   @PUT
@@ -227,7 +219,7 @@ public class MessagesResource {
     checkMsgUser(msg, user);//check if the user is the owner of the message
     msg.setDeleted(true);
     msgFacade.update(msg);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    return Response.noContent().build();
   }
 
   @PUT
@@ -245,7 +237,7 @@ public class MessagesResource {
     checkMsgUser(msg, user);//check if the user is the owner of the message
     msg.setDeleted(false);
     msgFacade.update(msg);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    return Response.noContent().build();
   }
 
   @DELETE
@@ -282,13 +274,10 @@ public class MessagesResource {
   @Path("/trash")
   @Produces(MediaType.APPLICATION_JSON)
   public Response emptyTrash(@Context SecurityContext sc) throws AppException {
-    JsonResponse json = new JsonResponse();
     String eamil = sc.getUserPrincipal().getName();
     Users user = userFacade.findByEmail(eamil);
-    int rowsAffected = msgFacade.emptyTrash(user);
-    json.setSuccessMessage(rowsAffected + " messages deleted.");
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            json).build();
+    msgFacade.emptyTrash(user);
+    return Response.noContent().build();
   }
 
   @POST
@@ -316,8 +305,8 @@ public class MessagesResource {
       except(Response.Status.BAD_REQUEST,
               e.getMessage());
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-            msg).build();
+    //TODO: Set location and return msg
+    return Response.created(null).build();
   }
   
   @GET
