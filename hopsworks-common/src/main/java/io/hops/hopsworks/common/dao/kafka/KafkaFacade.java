@@ -1066,12 +1066,4 @@ public class KafkaFacade {
     return true;
   }
 
-
-  public class ZookeeperWatcher implements Watcher {
-
-    @Override
-    public void process(WatchedEvent we) {
-    }
-  }
-
 }
