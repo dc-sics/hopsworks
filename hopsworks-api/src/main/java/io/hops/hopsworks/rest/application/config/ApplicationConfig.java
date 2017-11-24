@@ -60,7 +60,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.cluster.Monitor.class);
     register(io.hops.hopsworks.api.admin.UsersAdmin.class);
     register(io.hops.hopsworks.api.admin.SystemAdminService.class);
-    
+    register(io.hops.hopsworks.api.admin.ProjectsAdmin.class);
     register(org.glassfish.jersey.media.multipart.MultiPartFeature.class);
     
     //dela
