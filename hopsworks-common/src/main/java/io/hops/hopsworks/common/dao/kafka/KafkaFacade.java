@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.dao.kafka;
 
+import io.hops.hopsworks.common.dao.device.AckRecordDTO;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -43,6 +46,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.config.SslConfigs;
@@ -1036,36 +1040,56 @@ public class KafkaFacade {
 
   }
 
-  public boolean produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO, String deviceUuid,
-                         String topic, String schemaContents, List<GenericData.Record> avroRecords){
+  public List<AckRecordDTO> produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO,
+                                    String deviceUuid, String topic, String schemaContents,
+                                    List<GenericData.Record> avroRecords){
 
     KafkaProducer<byte[], byte[]> producer = null;
-
     try {
+      // Get the Kafka Producer
       producer = getKafkaProducer(project, user, certPwDTO);
 
+      // Parses the schema of the given topic.
       Schema.Parser parser = new Schema.Parser();
       Schema schema = parser.parse(schemaContents);
       Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
 
-      // Loop through records
+      // Validates the records with the schema (Additional fields will be ignored)
+      List<ProducerRecord<byte[], byte[]>> kafkaRecords = new ArrayList<>();
       for (GenericData.Record avroRecord: avroRecords) {
         byte[] record = recordInjection.apply(avroRecord);
-        producer.send(new ProducerRecord<byte[], byte[]>(topic, deviceUuid.getBytes(), record));
+        kafkaRecords.add(new ProducerRecord<byte[], byte[]>(topic, deviceUuid.getBytes(), record));
       }
+
+      // Sends records to Kafka
+      List<Future<RecordMetadata>> metaRecords = new ArrayList<>();
+      for(ProducerRecord<byte[], byte[]> kafkaRecord : kafkaRecords){
+        metaRecords.add(producer.send(kafkaRecord));
+      }
+
+      // If Synchronous we need to flush the buffer and receive the gather the acks.
       if (synchronous){
         producer.flush();
+        List<AckRecordDTO> acks = new ArrayList<>();
+        for (Future<RecordMetadata> meta: metaRecords){
+          try{
+            meta.get(10, TimeUnit.MILLISECONDS);
+            acks.add(new AckRecordDTO(true));
+          }catch(Exception e){
+            acks.add(new AckRecordDTO(false));
+          }
+        }
+        return acks;
       }
+      return null;
     }catch (Exception ex){
-      ex.printStackTrace();
-      return false;
+      return null;
     } finally {
       if (producer != null) {
         producer.close();
       }
       certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
     }
-    return true;
   }
 
 }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
@@ -27,7 +28,11 @@ public class DeviceFacade {
     TypedQuery<ProjectDevicesSettings> query = em.createNamedQuery(
       "ProjectDevicesSettings.findByProjectId", ProjectDevicesSettings.class);
     query.setParameter("projectId", projectId);
-    return query.getSingleResult();
+    try {
+      return query.getSingleResult();
+    } catch (NoResultException e) {
+      return null;
+    }
   }
 
   public void updateProjectDevicesSettings(ProjectDevicesSettings projectDevicesSettings) {
@@ -62,7 +67,11 @@ public class DeviceFacade {
     TypedQuery<ProjectDevice> query = em.createNamedQuery(
       "ProjectDevice.findByProjectDevicePK", ProjectDevice.class);
     query.setParameter("projectDevicePK", pdKey);
-    return query.getSingleResult();
+    try {
+      return query.getSingleResult();
+    } catch (NoResultException e) {
+      return null;
+    }
   }
 
   public List<ProjectDeviceDTO> readProjectDevices(Integer projectId) {

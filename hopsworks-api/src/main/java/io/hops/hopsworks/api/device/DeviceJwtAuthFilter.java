@@ -57,10 +57,8 @@ public class DeviceJwtAuthFilter implements ContainerRequestFilter {
       }
 
       // Validates that the Devices Feature is Active for the given project.
-      ProjectDevicesSettings devicesSettings;
-      try {
-        devicesSettings = deviceFacade.readProjectDevicesSettings(project.getId());
-      }catch (Exception e) {
+      ProjectDevicesSettings devicesSettings = deviceFacade.readProjectDevicesSettings(project.getId());
+      if (devicesSettings == null){
         requestContext.abortWith(new DeviceResponseBuilder().DEVICES_FEATURE_NOT_ACTIVE);
         return;
       }
@@ -122,10 +120,8 @@ public class DeviceJwtAuthFilter implements ContainerRequestFilter {
         }
 
         // Validates that the device is already registered within the project.
-        ProjectDevice device;
-        try {
-          device = deviceFacade.readProjectDevice(projectId, deviceUuid);
-        }catch (Exception e) {
+        ProjectDevice device = deviceFacade.readProjectDevice(projectId, deviceUuid);
+        if(device == null) {
           requestContext.abortWith(new DeviceResponseBuilder().DEVICE_NOT_REGISTERED);
           return;
         }

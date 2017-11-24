@@ -25,6 +25,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
+import io.hops.hopsworks.common.dao.device.AckRecordDTO;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.AuthDeviceDTO;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
@@ -195,6 +196,18 @@ public class DeviceService {
       validate(deviceDTO);
       Project project = projectFacade.findByName(projectName);
       ProjectDevice device = deviceFacade.readProjectDevice(project.getId(), deviceDTO.getDeviceUuid());
+
+      // Validates that the Device is in the Approved State.
+      if (device.getState() != ProjectDevice.State.Approved){
+        if (device.getState() == ProjectDevice.State.Disabled){
+          return new DeviceResponseBuilder().DEVICE_DISABLED;
+        }
+        if (device.getState() == ProjectDevice.State.Pending){
+          return new DeviceResponseBuilder().DEVICE_PENDING;
+        }
+        return new DeviceResponseBuilder().DEVICE_UNKNOWN_STATE;
+      }
+
       if (device.getPassword().equals(DigestUtils.sha256Hex(deviceDTO.getPassword()))) {
         deviceFacade.updateProjectDeviceLastLoggedIn(project.getId(), deviceDTO);
         return DeviceResponseBuilder.successfulJsonResponse(
@@ -292,10 +305,10 @@ public class DeviceService {
       SchemaDTO schema = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
       try {
         List<GenericData.Record> avroRecords = toAvro(schema.getContents(), records);
-        boolean success = kafkaFacade.produce(
+        List<AckRecordDTO> acks = kafkaFacade.produce(
           false, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
-        if (success){
-          return DeviceResponseBuilder.successfulJsonResponse(Status.OK);
+        if (acks != null){
+          return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(acks).build();
         }else{
           return new DeviceResponseBuilder().PRODUCE_FAILED;
         }
