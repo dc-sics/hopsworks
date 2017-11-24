@@ -1040,33 +1040,69 @@ public class KafkaFacade {
 
   }
 
+
   public List<AckRecordDTO> produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO,
                                     String deviceUuid, String topic, String schemaContents,
                                     List<GenericData.Record> avroRecords){
 
+    // Gets the Kafka Producer
     KafkaProducer<byte[], byte[]> producer = null;
     try {
-      // Get the Kafka Producer
       producer = getKafkaProducer(project, user, certPwDTO);
+    }catch (Exception ex) {
+      LOG.severe("Kafka produce - Kafka Producer could not be initialized!");
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      return null;
+    }
 
-      // Parses the schema of the given topic.
+    // Parses the schema contents
+    Injection<GenericRecord, byte[]>  recordInjection = null;
+    try {
       Schema.Parser parser = new Schema.Parser();
       Schema schema = parser.parse(schemaContents);
-      Injection<GenericRecord, byte[]>  recordInjection = GenericAvroCodecs.toBinary(schema);
+      recordInjection = GenericAvroCodecs.toBinary(schema);
+    }catch (Exception ex) {
+      LOG.severe("Kafka produce - Schema could not be parsed!");
+      if (producer != null) {
+        producer.close();
+      }
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      return null;
+    }
 
-      // Validates the records with the schema (Additional fields will be ignored)
-      List<ProducerRecord<byte[], byte[]>> kafkaRecords = new ArrayList<>();
+    // Validates the records with the schema (Additional fields will be ignored)
+    List<ProducerRecord<byte[], byte[]>> kafkaRecords = new ArrayList<>();
+    try {
       for (GenericData.Record avroRecord: avroRecords) {
         byte[] record = recordInjection.apply(avroRecord);
         kafkaRecords.add(new ProducerRecord<byte[], byte[]>(topic, deviceUuid.getBytes(), record));
       }
+    }catch (Exception ex) {
+      LOG.warning("Kafka produce - Data posted were invalid.");
+      if (producer != null) {
+        producer.close();
+      }
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      return null;
+    }
 
-      // Sends records to Kafka
-      List<Future<RecordMetadata>> metaRecords = new ArrayList<>();
+    // Sends records to Kafka
+    List<Future<RecordMetadata>> metaRecords = new ArrayList<>();
+    try {
       for(ProducerRecord<byte[], byte[]> kafkaRecord : kafkaRecords){
         metaRecords.add(producer.send(kafkaRecord));
       }
+    }catch (Exception ex) {
+      LOG.severe("Kafka produce - Sending data to Kafka broker did not work.");
+      ex.printStackTrace();
+      if (producer != null) {
+        producer.close();
+      }
+      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      return null;
+    }
 
+    try {
       // If Synchronous we need to flush the buffer and receive the gather the acks.
       if (synchronous){
         producer.flush();
@@ -1081,15 +1117,17 @@ public class KafkaFacade {
         }
         return acks;
       }
-      return null;
-    }catch (Exception ex){
-      return null;
-    } finally {
+    }catch (Exception ex) {
+      LOG.severe("Kafka produce - Error occurred during flashing of records.");
+      ex.printStackTrace();
       if (producer != null) {
         producer.close();
       }
       certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      return null;
     }
+
+    return null;
   }
 
 }
