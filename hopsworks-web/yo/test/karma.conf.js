@@ -61,7 +61,6 @@ module.exports = function (config) {
       'bower_components/angular-tour/dist/angular-tour-tpls.min.js',
       'bower_components/angular-resizable/src/angular-resizable.js',
       'bower_components/v-accordion/dist/v-accordion.js',
-      'bower_components/angular-smart-table/dist/smart-table.js',
       'bower_components/ng-context-menu/dist/ng-context-menu.js',
       'bower_components/flow.js/dist/flow.js',
       'bower_components/ng-flow/dist/ng-flow.js',
