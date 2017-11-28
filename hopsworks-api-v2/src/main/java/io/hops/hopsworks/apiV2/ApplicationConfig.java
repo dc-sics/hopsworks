@@ -25,7 +25,7 @@ import io.hops.hopsworks.apiV2.mapper.TransactionExceptionMapper;
 import io.hops.hopsworks.apiV2.projects.BlobsResource;
 import io.hops.hopsworks.apiV2.projects.DataSetsResource;
 import io.hops.hopsworks.apiV2.projects.MembersResource;
-import io.hops.hopsworks.apiV2.projects.PathValidatorV2;
+import io.hops.hopsworks.apiV2.projects.PathValidator;
 import io.hops.hopsworks.apiV2.projects.ProjectsResource;
 import io.hops.hopsworks.apiV2.users.UsersResource;
 import io.swagger.annotations.Api;
@@ -51,7 +51,7 @@ public class ApplicationConfig extends ResourceConfig {
     register(DataSetsResource.class);
     register(MembersResource.class);
     register(BlobsResource.class);
-    register(PathValidatorV2.class);
+    register(PathValidator.class);
   
     //Hopsworks-Users
     register(UsersResource.class);

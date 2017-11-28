@@ -67,18 +67,6 @@ public class PathValidator {
     return dsPath;
   }
   
-  public DsPath validatePath(Dataset dataset, String
-      relativePath){
-    //TODO: Do the validation as well.
-    DsPath dsPath = new DsPath();
-    Path fullPath = new Path(datasetContoller.getDatasetPath(dataset),
-        relativePath);
-    dsPath.setDs(dataset);
-    dsPath.setFullPath(fullPath);
-    dsPath.setDsRelativePath(new Path(relativePath));
-    return dsPath;
-  }
-  
   private void buildFullPath(Project project, String path,
                              DsPath dsPath) throws AppException {
     //Strip leading slashes.

@@ -31,23 +31,33 @@ import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.security.AccessControlException;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
+
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
+import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,9 +67,8 @@ import java.util.logging.Logger;
 public class BlobsResource {
   private final static Logger logger = Logger.getLogger(BlobsResource.class.getName());
   
-  
   @EJB
-  private PathValidatorV2 pathValidator;
+  private PathValidator pathValidator;
   @EJB
   private UserManager userBean;
   @EJB
@@ -78,6 +87,7 @@ public class BlobsResource {
   public void setDataset(Dataset ds){
     this.ds = ds;
   }
+  
   public void setProject(Project project){
     this.project = project;
   }
@@ -105,30 +115,18 @@ public class BlobsResource {
     return downloadFromHdfs(hdfsUserName, fullPath);
   }
   
- /* @ApiOperation(value="Upload a large file in parts")
+  @ApiOperation(value="Create/Write/Append a file")
   @POST
   @Path("/{path: .+}")
-  @Consumes(MediaType.MULTIPART_FORM_DATA)
+  @Consumes(MediaType.APPLICATION_OCTET_STREAM)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response uploadMethod(@Context SecurityContext sc, @PathParam("path") String relativePath,
-      @FormDataParam("file") InputStream uploadedInputStream,
-      @FormDataParam("file")
-          FormDataContentDisposition fileDetail,
-      @FormDataParam("flowChunkNumber") String flowChunkNumber,
-      @FormDataParam("flowChunkSize") String flowChunkSize,
-      @FormDataParam("flowCurrentChunkSize") String flowCurrentChunkSize,
-      @FormDataParam("flowFilename") String flowFilename,
-      @FormDataParam("flowIdentifier") String flowIdentifier,
-      @FormDataParam("flowRelativePath") String flowRelativePath,
-      @FormDataParam("flowTotalChunks") String flowTotalChunks,
-      @FormDataParam("flowTotalSize") String flowTotalSize,
-      @QueryParam("templateId") int templateId)
-      throws AppException, IOException {
+  public Response uploadMethod(InputStream uploadedInputStream, @Context SecurityContext sc,
+      @PathParam("path") String relativePath, @QueryParam("mode") String mode) throws AppException, IOException {
     
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
-  
+    
     Project owning = datasetController.getOwningProject(ds);
     //Is user a member of this project? If so get their role
     boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
@@ -137,12 +135,28 @@ public class BlobsResource {
       role = projectTeamFacade.findCurrentRole(owning, user);
     }
     
-    DataSetPath dsPath = new DataSetPath(ds, relativePath);
-    uploadService.confFileUpload(pathValidator.getFullPath(dsPath).toString(),username, templateId, role);
+    org.apache.hadoop.fs.Path path = pathValidator.getFullPath(new DataSetPath(ds, relativePath));
+  
+    DistributedFileSystem filesystem = dfs.getDfsOps().getFilesystem();
+    switch (mode){
+      case "append":
+        FSDataOutputStream append = filesystem.append(path);
+        IOUtils.copy(uploadedInputStream,append);
+        return Response.noContent().build();
+      case "overwrite":
+        FSDataOutputStream overwrite = filesystem.create(path, true, 1024);
+        IOUtils.copy(uploadedInputStream, overwrite);
+        return Response.noContent().build();
+      case ""
+  
+    }
+    FSDataInputStream open = filesystem.open(pathValidator.getFullPath(dsPath));
+    open.
+    uploadService.confFileUpload(pathValidator.getFullPath(dsPath).toString(),username, role);
     
     return uploadService.uploadMethod(uploadedInputStream,fileDetail,flowChunkNumber,flowChunkSize,flowCurrentChunkSize,
-        flowFilename,flowIdentifier,flowRelativePath,flowTotalChunks, flowTotalSize);
-  }*/
+        flowFilename,flowIdentifier,flowRelativePath,flowTotalChunks,flowTotalSize);
+  }
   
   private Response downloadFromHdfs(String projectUsername, org.apache.hadoop.fs.Path fullPath) throws AppException,
       AccessControlException {
@@ -173,21 +187,17 @@ public class BlobsResource {
   
   private StreamingOutput buildOutputStream(final FSDataInputStream stream,
       final DistributedFileSystemOps udfso) {
-    StreamingOutput output = new StreamingOutput() {
-      @Override
-      public void write(OutputStream out) throws IOException,
-          WebApplicationException {
-        try {
-          int length;
-          byte[] buffer = new byte[1024];
-          while ((length = stream.read(buffer)) != -1) {
-            out.write(buffer, 0, length);
-          }
-          out.flush();
-          stream.close();
-        } finally {
-          dfs.closeDfsClient(udfso);
+    StreamingOutput output = out -> {
+      try {
+        int length;
+        byte[] buffer = new byte[1024];
+        while ((length = stream.read(buffer)) != -1) {
+          out.write(buffer, 0, length);
         }
+        out.flush();
+        stream.close();
+      } finally {
+        dfs.closeDfsClient(udfso);
       }
     };
     

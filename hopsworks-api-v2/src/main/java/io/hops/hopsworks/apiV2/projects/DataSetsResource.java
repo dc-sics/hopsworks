@@ -75,7 +75,7 @@ public class DataSetsResource {
   @EJB
   private DistributedFsService dfs;
   @EJB
-  private PathValidatorV2 pathValidator;
+  private PathValidator pathValidator;
   @EJB
   private ProjectTeamFacade projectTeamFacade;
   @EJB

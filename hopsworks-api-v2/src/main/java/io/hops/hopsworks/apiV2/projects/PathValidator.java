@@ -13,9 +13,9 @@ import javax.ws.rs.core.Response;
 import java.util.logging.Logger;
 
 @Stateless
-public class PathValidatorV2 {
+public class PathValidator {
   
-  private static final Logger LOGGER = Logger.getLogger(PathValidatorV2.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(PathValidator.class.getName());
   
   @EJB
   private DatasetController datasetContoller;

@@ -91,7 +91,6 @@ public class UserService {
 
     UserDTO userDTO = new UserDTO(user);
 
-    //userDTO = new UserDTO();
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
             userDTO).build();
   }
