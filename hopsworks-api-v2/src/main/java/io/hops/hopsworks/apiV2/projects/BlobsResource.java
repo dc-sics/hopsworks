@@ -138,18 +138,21 @@ public class BlobsResource {
     org.apache.hadoop.fs.Path path = pathValidator.getFullPath(new DataSetPath(ds, relativePath));
   
     DistributedFileSystem filesystem = dfs.getDfsOps().getFilesystem();
+    FSDataOutputStream outputStream;
     switch (mode){
       case "append":
-        FSDataOutputStream append = filesystem.append(path);
-        IOUtils.copy(uploadedInputStream,append);
-        return Response.noContent().build();
+        outputStream = filesystem.append(path);
+        break;
       case "overwrite":
-        FSDataOutputStream overwrite = filesystem.create(path, true, 1024);
-        IOUtils.copy(uploadedInputStream, overwrite);
-        return Response.noContent().build();
-      case ""
-  
+        outputStream = filesystem.create(path, true, 100*1024);
+        break;
+      case "create":
+        FSDataOutputStream create = filesystem.create(path, false);
+        IOUtils.copy(uploadedInputStream, create);
+        
     }
+    IOUtils.copy(uploadedInputStream,outputStream);
+  
     FSDataInputStream open = filesystem.open(pathValidator.getFullPath(dsPath));
     open.
     uploadService.confFileUpload(pathValidator.getFullPath(dsPath).toString(),username, role);
