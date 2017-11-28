@@ -1,7 +1,6 @@
 package io.hops.hopsworks.apiV2.mapper;
 
 import io.hops.hopsworks.apiV2.ErrorResponse;
-import org.glassfish.jersey.internal.Errors;
 
 import javax.ejb.AccessLocalException;
 import javax.ws.rs.core.MediaType;
