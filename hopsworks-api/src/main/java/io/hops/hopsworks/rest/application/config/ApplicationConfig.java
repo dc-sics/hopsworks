@@ -72,8 +72,9 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.hopssite.HopssiteService.class);
     register(io.hops.hopsworks.api.hopssite.CommentService.class);
     register(io.hops.hopsworks.api.hopssite.RatingService.class);
-    
-    
-    
+  
+    //swagger
+    register(io.swagger.jaxrs.listing.ApiListingResource.class);
+    register(io.swagger.jaxrs.listing.SwaggerSerializers.class);
   }
 }

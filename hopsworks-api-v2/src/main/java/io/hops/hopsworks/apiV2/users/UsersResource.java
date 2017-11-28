@@ -51,7 +51,6 @@ public class UsersResource {
   
   @ApiOperation("Get a list of users in the cluster")
   @GET
-  @Path("/")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response findAll(@Context SecurityContext sc) {
