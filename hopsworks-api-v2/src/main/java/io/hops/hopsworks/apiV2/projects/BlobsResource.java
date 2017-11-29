@@ -36,8 +36,6 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.security.AccessControlException;
-import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
-import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
@@ -151,14 +149,16 @@ public class BlobsResource {
         IOUtils.copy(uploadedInputStream, create);
         
     }
-    IOUtils.copy(uploadedInputStream,outputStream);
+    return null;
+    //IOUtils.copy(uploadedInputStream,outputStream);
   
-    FSDataInputStream open = filesystem.open(pathValidator.getFullPath(dsPath));
-    open.
-    uploadService.confFileUpload(pathValidator.getFullPath(dsPath).toString(),username, role);
+    //FSDataInputStream open = filesystem.open(pathValidator.getFullPath(dsPath));
+    //open.
+    //uploadService.confFileUpload(pathValidator.getFullPath(dsPath).toString(),username, role);
     
-    return uploadService.uploadMethod(uploadedInputStream,fileDetail,flowChunkNumber,flowChunkSize,flowCurrentChunkSize,
-        flowFilename,flowIdentifier,flowRelativePath,flowTotalChunks,flowTotalSize);
+    //return uploadService.uploadMethod(uploadedInputStream,fileDetail,flowChunkNumber,flowChunkSize,
+    //    flowCurrentChunkSize,
+    //    flowFilename,flowIdentifier,flowRelativePath,flowTotalChunks,flowTotalSize);
   }
   
   private Response downloadFromHdfs(String projectUsername, org.apache.hadoop.fs.Path fullPath) throws AppException,

@@ -56,6 +56,12 @@
       <artifactId>swagger-jersey2-jaxrs</artifactId>
       <version>${swagger.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>3.0.6</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <finalName>hopsworks-api-v2</finalName>
