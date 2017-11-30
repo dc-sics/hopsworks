@@ -307,7 +307,7 @@ public class DeviceService {
       try {
         List<GenericData.Record> avroRecords = toAvro(schema.getContents(), records);
         List<AckRecordDTO> acks = kafkaFacade.produce(
-          false, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
+          true, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
         if (acks != null){
           logger.log(Level.WARNING, "Kafka produce - It works!");
           return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(acks).build();
