@@ -130,6 +130,7 @@ public class DeviceService {
     } catch (Exception e) {
       throw new DeviceServiceException(new DeviceResponseBuilder().PROJECT_TOPIC_NOT_FOUND);
     }
+    return schemaDTO;
   }
 
 
