@@ -73,13 +73,9 @@ public class BlobsResource {
   private UserManager userBean;
   @EJB
   private HdfsUsersController hdfsUsersBean;
-  @EJB
-  private ProjectTeamFacade projectTeamFacade;
   @Inject
   private DistributedFsService dfs;
-  @Inject
-  private DatasetController datasetController;
-  
+
   private Dataset ds;
   
   private Project project;
@@ -113,52 +109,6 @@ public class BlobsResource {
     DataSetPath dsPath = new DataSetPath(ds, path);
     org.apache.hadoop.fs.Path fullPath = pathValidator.getFullPath(dsPath);
     return downloadFromHdfs(hdfsUserName, fullPath);
-  }
-  
-  @ApiOperation(value="Create/Write/Append a file")
-  @POST
-  @Path("/{path: .+}")
-  @Consumes(MediaType.APPLICATION_OCTET_STREAM)
-  @Produces(MediaType.APPLICATION_JSON)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response uploadMethod(InputStream uploadedInputStream, @Context SecurityContext sc,
-      @PathParam("path") String relativePath, @QueryParam("mode") String mode) throws AppException, IOException {
-    
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
-    String username = hdfsUsersBean.getHdfsUserName(project, user);
-    
-    Project owning = datasetController.getOwningProject(ds);
-    //Is user a member of this project? If so get their role
-    boolean isMember = projectTeamFacade.isUserMemberOfProject(owning, user);
-    String role = null;
-    if(isMember){
-      role = projectTeamFacade.findCurrentRole(owning, user);
-    }
-    
-    org.apache.hadoop.fs.Path path = pathValidator.getFullPath(new DataSetPath(ds, relativePath));
-  
-    DistributedFileSystem filesystem = dfs.getDfsOps().getFilesystem();
-    FSDataOutputStream outputStream;
-    switch (mode){
-      case "append":
-        outputStream = filesystem.append(path);
-        break;
-      case "overwrite":
-        outputStream = filesystem.create(path, true, 100*1024);
-        break;
-      case "create":
-        FSDataOutputStream create = filesystem.create(path, false);
-        IOUtils.copy(uploadedInputStream, create);
-        
-    }
-    IOUtils.copy(uploadedInputStream,outputStream);
-  
-    FSDataInputStream open = filesystem.open(pathValidator.getFullPath(dsPath));
-    open.
-    uploadService.confFileUpload(pathValidator.getFullPath(dsPath).toString(),username, role);
-    
-    return uploadService.uploadMethod(uploadedInputStream,fileDetail,flowChunkNumber,flowChunkSize,flowCurrentChunkSize,
-        flowFilename,flowIdentifier,flowRelativePath,flowTotalChunks,flowTotalSize);
   }
   
   private Response downloadFromHdfs(String projectUsername, org.apache.hadoop.fs.Path fullPath) throws AppException,
