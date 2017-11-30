@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -308,11 +309,14 @@ public class DeviceService {
         List<AckRecordDTO> acks = kafkaFacade.produce(
           false, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
         if (acks != null){
+          logger.log(Level.WARNING, "Kafka produce - It works!");
           return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(acks).build();
         }else{
+          logger.log(Level.SEVERE, "Kafka produce - acks not found!");
           return new DeviceResponseBuilder().PRODUCE_FAILED;
         }
       } catch (Exception e) {
+        logger.log(Level.SEVERE, "Kafka produce - Error occured!");
         return new DeviceResponseBuilder().PRODUCE_FAILED;
       }
     }catch(JSONException e) {

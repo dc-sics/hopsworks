@@ -1050,7 +1050,7 @@ public class KafkaFacade {
     try {
       producer = getKafkaProducer(project, user, certPwDTO);
     }catch (Exception ex) {
-      LOG.severe("Kafka produce - Kafka Producer could not be initialized!");
+      LOG.log(Level.SEVERE, "Kafka produce - Kafka Producer could not be initialized!", ex);
       certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
       return null;
     }
@@ -1062,7 +1062,7 @@ public class KafkaFacade {
       Schema schema = parser.parse(schemaContents);
       recordInjection = GenericAvroCodecs.toBinary(schema);
     }catch (Exception ex) {
-      LOG.severe("Kafka produce - Schema could not be parsed!");
+      LOG.log(Level.SEVERE, "Kafka produce - Schema could not be parsed!", ex);
       if (producer != null) {
         producer.close();
       }
@@ -1078,7 +1078,7 @@ public class KafkaFacade {
         kafkaRecords.add(new ProducerRecord<byte[], byte[]>(topic, deviceUuid.getBytes(), record));
       }
     }catch (Exception ex) {
-      LOG.warning("Kafka produce - Data posted were invalid.");
+      LOG.log(Level.SEVERE, "Kafka produce - Data posted were invalid.", ex);
       if (producer != null) {
         producer.close();
       }
@@ -1093,8 +1093,7 @@ public class KafkaFacade {
         metaRecords.add(producer.send(kafkaRecord));
       }
     }catch (Exception ex) {
-      LOG.severe("Kafka produce - Sending data to Kafka broker did not work.");
-      ex.printStackTrace();
+      LOG.log(Level.SEVERE, "Kafka produce - Sending data to Kafka broker did not work.", ex);
       if (producer != null) {
         producer.close();
       }
@@ -1103,7 +1102,7 @@ public class KafkaFacade {
     }
 
     try {
-      // If Synchronous we need to flush the buffer and receive the gather the acks.
+      // If Synchronous we need to flush the buffer and receive and gather the acks.
       if (synchronous){
         producer.flush();
         List<AckRecordDTO> acks = new ArrayList<>();
@@ -1118,8 +1117,7 @@ public class KafkaFacade {
         return acks;
       }
     }catch (Exception ex) {
-      LOG.severe("Kafka produce - Error occurred during flashing of records.");
-      ex.printStackTrace();
+      LOG.log(Level.SEVERE, "Kafka produce - Error occurred during flashing of records.", ex);
       if (producer != null) {
         producer.close();
       }
