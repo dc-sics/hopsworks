@@ -1,4 +1,5 @@
-package io.hops.hopsworks.api.device;
+package io.hops.hopsworks.common.device;
+
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -6,7 +7,7 @@ import javax.ws.rs.core.Response;
 public class DeviceResponseBuilder {
 
   public Response DEVICES_FEATURE_NOT_ACTIVE = failedJsonResponse(Response.Status.FORBIDDEN,
-          "The devices feature for this project is not activated.");
+    "The devices feature for this project is not activated.");
 
   public Response DEVICE_NOT_REGISTERED = failedJsonResponse(Response.Status.UNAUTHORIZED,
     "The device is not registered.");
@@ -68,11 +69,17 @@ public class DeviceResponseBuilder {
   public Response PRODUCE_FAILED = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
     "Produce failed.");
 
+  public Response PRODUCE_DATA_MALFORMED = failedJsonResponse(Response.Status.BAD_REQUEST,
+    "Produced data do not conform with the topic schema.");
+
   public Response PRODUCE_KEYSTORE_FILE_NOT_FOUND = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
     "Keystore File not found, when producing.");
 
   public Response PRODUCE_KEYSTORE_IO_EXCEPTION = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
     "Keystore File to Byte IO exception.");
+
+  public Response UNEXPECTED_ERROR = failedJsonResponse(Response.Status.INTERNAL_SERVER_ERROR,
+    "An unexpected error occurred.");
 
 
   public static Response failedJsonResponse(Response.Status status, String errorMessage) {
@@ -99,5 +106,4 @@ public class DeviceResponseBuilder {
     rb.entity(resp);
     return rb.build();
   }
-
 }

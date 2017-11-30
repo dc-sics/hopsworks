@@ -8,6 +8,8 @@ import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.device.DeviceResponseBuilder;
+import io.hops.hopsworks.common.exception.DeviceServiceException;
 
 import javax.annotation.Priority;
 import javax.ejb.EJB;

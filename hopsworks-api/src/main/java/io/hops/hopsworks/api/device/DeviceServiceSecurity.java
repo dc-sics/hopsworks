@@ -8,11 +8,13 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.ProjectDevicesSettings;
+import io.hops.hopsworks.common.device.DeviceResponseBuilder;
+import io.hops.hopsworks.common.exception.DeviceServiceException;
 
 import java.util.Calendar;
 import java.util.Date;
 
-class DeviceServiceSecurity {
+public class DeviceServiceSecurity {
 
   public static final String DEFAULT_DEVICE_USER_EMAIL = "devices@hops.io";
 
@@ -28,8 +30,8 @@ class DeviceServiceSecurity {
    * @param projectDevice Contains the device identification information for the project.
    * @return Returns the jwt token.
    */
-  static String generateJwt(
-    ProjectDevicesSettings projectDevicesSettings, ProjectDevice projectDevice) throws DeviceServiceException{
+  public static String generateJwt(
+    ProjectDevicesSettings projectDevicesSettings, ProjectDevice projectDevice) throws DeviceServiceException {
     try {
       Calendar cal = Calendar.getInstance();
       cal.setTime(new Date());
@@ -55,7 +57,7 @@ class DeviceServiceSecurity {
    * @param jwtToken The jwt token
    * @return Returns DecodedJWT if the token is verified and has not expired. Otherwise throws a DeviceServiceException.
    */
-  static DecodedJWT verifyJwt(
+  public static DecodedJWT verifyJwt(
     ProjectDevicesSettings projectDevicesSettings, String jwtToken) throws DeviceServiceException{
     try {
       Algorithm algorithm = Algorithm.HMAC256(projectDevicesSettings.getJwtSecret());

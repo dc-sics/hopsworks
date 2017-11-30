@@ -26,6 +26,8 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.core.Response;
 
+import io.hops.hopsworks.common.device.DeviceResponseBuilder;
+import io.hops.hopsworks.common.exception.DeviceServiceException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.security.BaseHadoopClientsService;
@@ -1010,7 +1012,7 @@ public class KafkaFacade {
   private KafkaProducer<byte[], byte[]> getKafkaProducer(Project project, Users user, CertPwDTO certPwDTO){
     try {
 
-      // TODO: Change Trust store and Keys tore Location for the certificates (if need be)
+      // TODO: Change Trust store and Keys store Location for the certificates (if need be)
       String trustStoreFilePath = settings.getHopsworksTmpCertDir() + File.separator +
         HopsUtils.getProjectTruststoreName(project.getName(), user.getUsername());
 
@@ -1043,16 +1045,15 @@ public class KafkaFacade {
 
   public List<AckRecordDTO> produce(boolean synchronous, Project project, Users user, CertPwDTO certPwDTO,
                                     String deviceUuid, String topic, String schemaContents,
-                                    List<GenericData.Record> avroRecords){
+                                    List<GenericData.Record> avroRecords) throws DeviceServiceException{
 
     // Gets the Kafka Producer
     KafkaProducer<byte[], byte[]> producer = null;
     try {
       producer = getKafkaProducer(project, user, certPwDTO);
     }catch (Exception ex) {
-      LOG.log(Level.SEVERE, "Kafka produce - Kafka Producer could not be initialized!", ex);
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
-      return null;
+      LOG.log(Level.SEVERE, "Kafka produce - Kafka producer could not be initialized.", ex);
+      throw new DeviceServiceException(new DeviceResponseBuilder().PRODUCE_FAILED);
     }
 
     // Parses the schema contents
@@ -1062,12 +1063,11 @@ public class KafkaFacade {
       Schema schema = parser.parse(schemaContents);
       recordInjection = GenericAvroCodecs.toBinary(schema);
     }catch (Exception ex) {
-      LOG.log(Level.SEVERE, "Kafka produce - Schema could not be parsed!", ex);
+      LOG.log(Level.SEVERE, "Kafka produce - Schema Contents could not be parsed.", ex);
       if (producer != null) {
         producer.close();
       }
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
-      return null;
+      throw new DeviceServiceException(new DeviceResponseBuilder().PRODUCE_FAILED);
     }
 
     // Validates the records with the schema (Additional fields will be ignored)
@@ -1078,12 +1078,11 @@ public class KafkaFacade {
         kafkaRecords.add(new ProducerRecord<byte[], byte[]>(topic, deviceUuid.getBytes(), record));
       }
     }catch (Exception ex) {
-      LOG.log(Level.SEVERE, "Kafka produce - Data posted were invalid.", ex);
+      LOG.log(Level.WARNING, "Kafka produce - Produced data do not conform with the schema.", ex);
       if (producer != null) {
         producer.close();
       }
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
-      return null;
+      throw new DeviceServiceException(new DeviceResponseBuilder().PRODUCE_DATA_MALFORMED);
     }
 
     // Sends records to Kafka
@@ -1093,17 +1092,17 @@ public class KafkaFacade {
         metaRecords.add(producer.send(kafkaRecord));
       }
     }catch (Exception ex) {
-      LOG.log(Level.SEVERE, "Kafka produce - Sending data to Kafka broker did not work.", ex);
+      LOG.log(Level.SEVERE, "Kafka produce - Error occurred during the produce phase.", ex);
       if (producer != null) {
         producer.close();
       }
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
-      return null;
+      throw new DeviceServiceException(new DeviceResponseBuilder().PRODUCE_FAILED);
     }
 
     try {
-      // If Synchronous we need to flush the buffer and receive and gather the acks.
+      // If Synchronous we need to flush the buffer and gather the received acks.
       if (synchronous){
+        // Flushes the buffer of the produced records to the Kafka cluster/broker.
         producer.flush();
         List<AckRecordDTO> acks = new ArrayList<>();
         for (Future<RecordMetadata> meta: metaRecords){
@@ -1116,16 +1115,14 @@ public class KafkaFacade {
         }
         return acks;
       }
+      // If asynchronous produce we return null since no acknowledgement is required.
+      return null;
     }catch (Exception ex) {
-      LOG.log(Level.SEVERE, "Kafka produce - Error occurred during flashing of records.", ex);
+      LOG.log(Level.SEVERE, "Kafka produce - Error occurred during flushing of the produced records.", ex);
       if (producer != null) {
         producer.close();
       }
-      certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
-      return null;
+      throw new DeviceServiceException(new DeviceResponseBuilder().PRODUCE_FAILED);
     }
-
-    return null;
   }
-
 }

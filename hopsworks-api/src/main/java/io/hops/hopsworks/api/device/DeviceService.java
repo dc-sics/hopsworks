@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -20,6 +19,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -27,14 +27,15 @@ import javax.ws.rs.core.Response.Status;
 import com.google.common.io.ByteStreams;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.device.AckRecordDTO;
-import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.device.AuthDeviceDTO;
 import io.hops.hopsworks.common.dao.device.DeviceFacade;
+import io.hops.hopsworks.common.dao.device.ProjectDevice;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
+import io.hops.hopsworks.common.device.DeviceResponseBuilder;
+import io.hops.hopsworks.common.exception.DeviceServiceException;
 import io.hops.hopsworks.common.project.ProjectController;
-
 import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
@@ -117,6 +118,20 @@ public class DeviceService {
       throw new DeviceServiceException(new DeviceResponseBuilder().AUTH_UUID4_BAD_REQ);
     }
   }
+
+
+  private SchemaDTO getSchemaForTopic(Integer projectId, String topicName) throws  DeviceServiceException{
+    SchemaDTO schemaDTO;
+    try {
+      schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
+      if (schemaDTO == null){
+        throw new DeviceServiceException(new DeviceResponseBuilder().PROJECT_TOPIC_NOT_FOUND);
+      }
+    } catch (Exception e) {
+      throw new DeviceServiceException(new DeviceResponseBuilder().PROJECT_TOPIC_NOT_FOUND);
+    }
+  }
+
 
   /**
    * Retrieves the entire keystore file of the provided path into a Base64 encoded string.
@@ -248,13 +263,12 @@ public class DeviceService {
     Integer projectId = (Integer) req.getAttribute(DeviceServiceSecurity.PROJECT_ID);
     String topicName = req.getParameter("topic");
 
-    SchemaDTO schemaDTO;
+    SchemaDTO schemaDTO = null;
     try {
-      schemaDTO = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
-    } catch (Exception e) {
-      return new DeviceResponseBuilder().PROJECT_TOPIC_NOT_FOUND;
+      schemaDTO = getSchemaForTopic(projectId, topicName);
+    } catch (DeviceServiceException e) {
+      return e.getResponse();
     }
-
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(schemaDTO).build();
 
   }
@@ -271,6 +285,9 @@ public class DeviceService {
   public Response postProduceEndpoint(@PathParam("projectName") String projectName, @Context HttpServletRequest req,
                                       String jsonString) throws AppException {
 
+    Users user = null;
+    Project project = null;
+
     try {
       // projectId and deviceUuid are injected from the jwtToken into the Context by the DeviceJwtAuthFilter.
       Integer projectId = (Integer) req.getAttribute(DeviceServiceSecurity.PROJECT_ID);
@@ -278,14 +295,23 @@ public class DeviceService {
 
       // Extracts all the json parameters
       JSONObject json = new JSONObject(jsonString);
-
       String topicName = json.getString("topic");
       JSONArray records = json.getJSONArray("records");
 
       // Extracts the default device-user from the database
-      Users user = userManager.getUserByEmail(DeviceServiceSecurity.DEFAULT_DEVICE_USER_EMAIL);
+      user = userManager.getUserByEmail(DeviceServiceSecurity.DEFAULT_DEVICE_USER_EMAIL);
 
-      Project project = projectFacade.find(projectId);
+      // Extracts the project from the database
+      project = projectFacade.find(projectId);
+
+      // Extracts the Avro Schema contents from the database
+      SchemaDTO schemaDTO;
+      try {
+        schemaDTO = getSchemaForTopic(projectId, topicName);
+      } catch (DeviceServiceException e) {
+        return e.getResponse();
+      }
+
 
       HopsUtils.copyUserKafkaCerts(userCerts, project,  user.getUsername(), settings.getHopsworksTmpCertDir(),
         settings.getHdfsTmpCertDir(), certificateMaterializer, settings.getHopsRpcTls());
@@ -302,27 +328,21 @@ public class DeviceService {
         return new DeviceResponseBuilder().PROJECT_USER_PASS_FOR_KS_TS_NOT_FOUND;
       }
 
-      // Extracts the Avro Schema contents from the database
-      SchemaDTO schema = kafkaFacade.getSchemaForProjectTopic(projectId, topicName);
-      try {
-        List<GenericData.Record> avroRecords = toAvro(schema.getContents(), records);
-        List<AckRecordDTO> acks = kafkaFacade.produce(
-          true, project, user, certPwDTO, deviceUuid, topicName, schema.getContents(), avroRecords);
-        if (acks != null){
-          logger.log(Level.WARNING, "Kafka produce - It works!");
-          return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(acks).build();
-        }else{
-          logger.log(Level.SEVERE, "Kafka produce - acks not found!");
-          return new DeviceResponseBuilder().PRODUCE_FAILED;
-        }
-      } catch (Exception e) {
-        logger.log(Level.SEVERE, "Kafka produce - Error occured!");
-        return new DeviceResponseBuilder().PRODUCE_FAILED;
-      }
+      List<GenericData.Record> avroRecords = toAvro(schemaDTO.getContents(), records);
+      List<AckRecordDTO> acks = kafkaFacade.produce(
+        true, project, user, certPwDTO, deviceUuid, topicName, schemaDTO.getContents(), avroRecords);
+      GenericEntity<List<AckRecordDTO>> listAcks = new GenericEntity<List<AckRecordDTO>>(acks){};
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(listAcks).build();
     }catch(JSONException e) {
       return new DeviceResponseBuilder().MISSING_PARAMS;
-    }catch(DeviceServiceException e) {
+    } catch (DeviceServiceException e) {
       return e.getResponse();
+    }catch (Exception e){
+      return new DeviceResponseBuilder().UNEXPECTED_ERROR;
+    }finally {
+      if (user != null && project != null) {
+        certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
+      }
     }
 
   }
