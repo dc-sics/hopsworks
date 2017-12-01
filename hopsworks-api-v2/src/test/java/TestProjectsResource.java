@@ -41,7 +41,7 @@ public class TestProjectsResource {
     //RestAssured.authentication = basic("admin@kth.se", "admin");
     RestAssured.baseURI = "http://somemachine/hopsworks-api/api";
     sessionId = given()
-        .formParam("email, "")
+        .formParam("email", "")
         .formParam("password", "")
         .when()
         .post("/auth/login")
