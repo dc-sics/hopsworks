@@ -346,16 +346,28 @@ public class JupyterConfig {
                   "spark_params", sparkProps,
                   "livy_ip", settings.getLivyIp(),
                   "hdfs_user", this.hdfsUser,
-                  "driver_cores", Integer.toString(js.getAppmasterCores()),
+                  "driver_cores", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "1" :
+                              Integer.toString(js.getAppmasterCores()),
                   "driver_memory", Integer.toString(js.getAppmasterMemory()) + "m",
-                  "num_executors", (isSparkDynamic || isTensorFlow) ? "0" : Integer.toString(js.getNumExecutors()),
-                  "executor_cores", Integer.toString(js.getNumExecutorCores()),
+                  "num_executors", (isHorovod) ? "1":
+                                   (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()):
+                                   (isSparkDynamic) ? Integer.toString(js.getDynamicMinExecutors()):
+                                   Integer.toString(js.getNumExecutors()),
+                  "executor_cores", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "1" :
+                              Integer.toString(js.getNumExecutorCores()),
                   "executor_memory", Integer.toString(js.getExecutorMemory()) + "m",
-                  "dynamic_executors", Boolean.toString(isSparkDynamic || isTensorFlow),
-                  "min_executors", (isTensorFlow) ? "0" : Integer.toString(js.getDynamicMinExecutors()),
-                  "initial_executors", (isTensorFlow) ? "0" : Integer.toString(js.getDynamicInitialExecutors()),
+                  "dynamic_executors", Boolean.toString(isSparkDynamic || isTensorFlow || isTensorFlowOnSpark ||
+                              isHorovod),
+                  "min_executors", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "0" :
+                                   Integer.toString(js.getDynamicMinExecutors()),
+                  "initial_executors", (isTensorFlow) ? "0" :
+                                   (isHorovod) ? "1" :
+                                   (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()):
+                                   Integer.toString(js.getDynamicMinExecutors()),
                   "max_executors", (isTensorFlow) ? Integer.toString(js.getNumExecutors()):
-                              Integer.toString(js.getDynamicMaxExecutors()),
+                                   (isHorovod) ? "1" :
+                                   (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()):
+                                   Integer.toString(js.getDynamicMaxExecutors()),
                   "archives", js.getArchives(),
                   "jars", js.getJars(),
                   "files", sparkFiles.toString(),
@@ -380,7 +392,9 @@ public class JupyterConfig {
                   "anaconda_env", this.settings.getAnacondaProjectDir(project.getName()),
                   "sparkhistoryserver_ip", this.settings.getSparkHistoryServerIp(),
                   "metrics_path", settings.getSparkMetricsPath(),
-                  "exec_timeout", (isTensorFlow) ? "5s" : "60s",
+                  "exec_timeout", (isTensorFlowOnSpark) ?
+                                  Integer.toString(((js.getNumExecutors() + js.getNumTfPs()) * 15) + 60 ) + "s":
+                                  "60s",
                   "extra_java_options", extraJavaOptions
               );
       createdSparkmagic = ConfigFileGenerator.createConfigFile(

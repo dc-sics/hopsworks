@@ -57,6 +57,8 @@ public class ResponseMessages {
           + "before you can login.";
   public final static String PASSWORD_RESET_SUCCESSFUL
           = "Your password was successfully reset, your new password have been sent to your email.";
+  public final static String PASSWORD_RESET_UNSUCCESSFUL
+          = "Your password could not be reset. Please try again later or contact support.";
   public final static String PASSWORD_CHANGED
           = "Your password was successfully changed.";
   public final static String SEC_QA_CHANGED
@@ -71,6 +73,8 @@ public class ResponseMessages {
           = "Your ssh keys were listed successfully.";
   public final static String NOTHING_TO_UPDATE
           = "Nothing to update";
+  public final static String MASTER_ENCRYPTION_PASSWORD_CHANGE = "Master password change procedure started. Check " +
+      "your inbox for final status";
 
   //project error response
   public final static String PROJECT_EXISTS
@@ -224,4 +228,10 @@ public class ResponseMessages {
       + "Jupyter will not work properly. "
       + "Try recreating the following dir manually:";
   public final static String HIVE_ADD_FAILURE = "Failed to create the Hive database";
+
+  // LLAP
+  public final static String LLAP_STATUS_INVALID = "Unrecognized new LLAP status";
+  public final static String LLAP_CLUSTER_ALREADY_UP = "LLAP cluster already up";
+  public final static String LLAP_CLUSTER_ALREADY_DOWN = "LLAP cluster already down";
+
 }

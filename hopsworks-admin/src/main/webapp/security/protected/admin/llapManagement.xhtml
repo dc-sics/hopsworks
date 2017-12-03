@@ -24,7 +24,7 @@
     <h:body id="entirePage" style="height: 100%; width: 100%; position: absolute"
             onload="waitForCluster();">
 
-        <p:growl id="messages" showDetail="true" sticky="true" />
+        <p:growl id="messages" showDetail="true" sticky="true" autoUpdate="true"/>
 
         <pe:blockUI target="entirePage" widgetVar="blockUIWidget">
             <h:panelGrid columns="2">
@@ -40,7 +40,7 @@
 
         <h:form>
             <p:remoteCommand name="waitForCluster"
-                             actionListener="#{LlapBean.waitForCluster()}"
+                             actionListener="#{LlapBean.waitForCluster(false)}"
                              onstart="PF('blockUIWidget').block()"
                              oncomplete="unblockOrReload(xhr, status, args)"
                              />
@@ -48,20 +48,15 @@
 
         <script type="text/javascript">
             function unblockOrReload(xhr, status, args) {
-                if (args.alreadyUp === "true"){
-                    PF('blockUIWidget').unblock();
-                } else if (args.alreadyUp === "timeout") {
-                    PF('blockUIWidget').unblock();
-                    PF('messages').renderMessage({"summary":"Timeout",
-                        "detail":"Timeout starting the cluster, check the logs for more information.",
-                        "severity":"error"})
-                } else {
+                if (args.alreadyUp === "false"){
                     location.reload(true);
+                } else {
+                    PF('blockUIWidget').unblock();
                 }
             }
         </script>
 
-        <h:form style="width: 500px; margin: auto" >
+        <h:form style="width: 700px; margin: auto" >
             <h:panelGrid columns="2">
                 <f:facet name="header">
                     <p:column colspan="3">Settings</p:column>
@@ -71,22 +66,22 @@
                     <p:spinner id="nInstances" min="0" value="#{LlapBean.nInstances}" />
                 </p:column>
 
-                <p:column colspan="2">Executor Memory [mb]</p:column>
+                <p:column colspan="2">Executors Memory [mb per daemon]</p:column>
                 <p:column colspan="1">
                     <p:spinner id="execMemory" min="0" value="#{LlapBean.execMemory}"/>
                 </p:column>
 
-                <p:column colspan="2">Cache Memory [mb]</p:column>
-                <p:column colspan="1">
-                    <p:spinner id="cacheMemory" min="0" value="#{LlapBean.cacheMemory}"/>
-                </p:column>
-
-                <p:column colspan="2">Number of Executors per daemon</p:column>
+                <p:column colspan="2">Number of executors [per daemon]</p:column>
                 <p:column colspan="1">
                     <p:spinner id="nExecutors" min="0" value="#{LlapBean.nExecutors}"/>
                 </p:column>
 
-                <p:column colspan="2">Number of IO Threads per daemon</p:column>
+                <p:column colspan="2">Cache Memory [mb per daemon]</p:column>
+                <p:column colspan="1">
+                    <p:spinner id="cacheMemory" min="0" value="#{LlapBean.cacheMemory}"/>
+                </p:column>
+
+                <p:column colspan="2">Number of IO Threads [per daemon]</p:column>
                 <p:column colspan="1">
                     <p:spinner id="nIOThreads" min="0" value="#{LlapBean.nIOThreads}"/>
                 </p:column>
@@ -96,7 +91,7 @@
                                      actionListener="#{LlapBean.startLLAP()}"
                                      disabled="#{LlapBean.isClusterUp()}"
                                      onstart="PF('blockUIWidget').block()"
-                                     oncomplete="location.reload(true)"
+                                     oncomplete="unblockOrReload(xhr, status, args)"
                                      value="Start LLAP cluster" />
 
                     <p:commandButton type="submit"

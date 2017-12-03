@@ -22,9 +22,11 @@ import javax.persistence.TypedQuery;
 @Stateless
 public class CertsFacade {
 
+  private final Logger LOG = Logger.getLogger(CertsFacade.class.getName());
+  
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
-
+  
   protected EntityManager getEntityManager() {
     return em;
   }
@@ -91,6 +93,15 @@ public class CertsFacade {
   public void persist(UserCerts uc) {
     em.persist(uc);
   }
+  
+  /**
+   * Persist ProjectGenericUser certificates.
+   *
+   * @param pgu
+   */
+  public void persistPGUCert(ProjectGenericUserCerts pgu) {
+    em.persist(pgu);
+  }
 
   public ProjectGenericUserCerts findProjectGenericUserCerts(String projectGenericUsername) {
     TypedQuery<ProjectGenericUserCerts> query = em.createNamedQuery(
@@ -109,6 +120,20 @@ public class CertsFacade {
     return null;
   }
 
+  public List<ProjectGenericUserCerts> findAllProjectGenericUserCerts() {
+    TypedQuery<ProjectGenericUserCerts> query = em.createNamedQuery("ProjectGenericUserCerts.findAll",
+        ProjectGenericUserCerts.class);
+    
+    try {
+      return query.getResultList();
+    } catch (EntityNotFoundException ex) {
+      LOG.log(Level.SEVERE, ex.getMessage(), ex);
+    } catch (NoResultException ex) {
+    
+    }
+    return new ArrayList<>();
+  }
+  
   public void putUserCerts(String projectname, String username, String userKeyPwd)
       throws IOException {
     File kFile = new File("/tmp/" + projectname + "__"

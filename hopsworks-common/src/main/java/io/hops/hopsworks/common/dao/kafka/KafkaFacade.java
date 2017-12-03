@@ -23,8 +23,8 @@ import javax.persistence.TypedQuery;
 import javax.ws.rs.core.Response;
 
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.user.CertificateMaterializer;
-import io.hops.hopsworks.common.util.BaseHadoopClientsService;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
+import io.hops.hopsworks.common.security.BaseHadoopClientsService;
 import io.hops.hopsworks.common.util.Settings;
 import kafka.admin.AdminUtils;
 import kafka.admin.RackAwareMode;
@@ -329,7 +329,7 @@ public class KafkaFacade {
       }
     }
   }
-
+  
   public void removeAllTopicsFromProject(Project project) throws
       InterruptedException, AppException {
 
@@ -373,6 +373,13 @@ public class KafkaFacade {
     }
   }
 
+  public void removeAclsForUser(Users user, Integer projectId) {
+    em.createNamedQuery("TopicAcls.deleteByUser", TopicAcls.class)
+        .setParameter("user", user)
+        .setParameter("projectId", projectId)
+        .executeUpdate();
+  }
+  
   public TopicDefaultValueDTO topicDefaultValues() throws AppException {
 
     Set<String> brokers = settings.getBrokerEndpoints();

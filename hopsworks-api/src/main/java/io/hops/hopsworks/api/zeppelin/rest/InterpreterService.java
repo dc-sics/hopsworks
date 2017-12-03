@@ -1,6 +1,6 @@
 package io.hops.hopsworks.api.zeppelin.rest;
 
-import io.hops.hopsworks.api.util.LivyService;
+import io.hops.hopsworks.api.util.LivyController;
 import io.hops.hopsworks.api.zeppelin.server.JsonResponse;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfig;
 import io.hops.hopsworks.api.zeppelin.server.ZeppelinConfigFactory;
@@ -48,7 +48,7 @@ public class InterpreterService {
   @Inject
   private InterpreterRestApi interpreterRestApi;
   @EJB
-  private LivyService livyService;
+  private LivyController livyService;
 
   @Path("/")
   @RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
@@ -65,17 +65,19 @@ public class InterpreterService {
       logger.error("Could not find remote user in request.");
       throw new AppException(Response.Status.FORBIDDEN.getStatusCode(), "Could not find remote user.");
     }
-    String userRole = projectTeamBean.findCurrentRole(project, user);
-    if (userRole == null) {
-      logger.error("User with no role in this project.");
-      throw new AppException(Response.Status.FORBIDDEN.getStatusCode(), "You curently have no role in this project!");
+    if (!httpReq.isUserInRole("HOPS_ADMIN")) {
+      String userRole = projectTeamBean.findCurrentRole(project, user);
+      if (userRole == null) {
+        logger.error("User with no role in this project.");
+        throw new AppException(Response.Status.FORBIDDEN.getStatusCode(), "You curently have no role in this project!");
+      }
     }
     ZeppelinConfig zeppelinConf = zeppelinConfFactory.getProjectConf(project.getName());
     if (zeppelinConf == null) {
       logger.error("Could not connect to web socket.");
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Could not connect to web socket.");
     }
-    interpreterRestApi.setParms(project, user, userRole, zeppelinConf);
+    interpreterRestApi.setParms(project, user, zeppelinConf);
     return interpreterRestApi;
   }
 
@@ -95,10 +97,13 @@ public class InterpreterService {
       logger.error("Could not find remote user in request.");
       return new JsonResponse(Response.Status.NOT_FOUND, "").build();
     }
-    String userRole = projectTeamBean.findCurrentRole(project, user);
-    if (userRole == null) {
-      logger.error("User with no role in this project.");
-      return new JsonResponse(Response.Status.NOT_FOUND, "").build();
+    
+    if (!httpReq.isUserInRole("HOPS_ADMIN")) {
+      String userRole = projectTeamBean.findCurrentRole(project, user);
+      if (userRole == null) {
+        logger.error("User with no role in this project.");
+        return new JsonResponse(Response.Status.NOT_FOUND, "").build();
+      }
     }
     ZeppelinConfig zeppelinConf = zeppelinConfFactory.getProjectConf(project.getName());
     if (zeppelinConf == null) {

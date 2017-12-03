@@ -23,7 +23,7 @@ import javax.enterprise.context.RequestScoped;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.user.CertificateMaterializer;
+import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import org.apache.commons.lang3.StringUtils;
@@ -1055,6 +1055,13 @@ public class NotebookRestApi {
         noteName = "Note " + note.getId();
       }
       note.setName(noteName);
+      Set<String> owners = notebook.getNotebookAuthorization().getOwners(note
+          .getId());
+      String projectGenericUser = hdfsUsersController.getProjectName(hdfsUserName)
+          + Settings.PROJECT_GENERIC_USER_SUFFIX;
+      owners.add(projectGenericUser);
+      notebook.getNotebookAuthorization().setOwners(note.getId(), owners);
+      
       note.persist(subject);
       noteInfo = new NoteInfo(note);
       zeppelinResource.persistToDB(this.project);
