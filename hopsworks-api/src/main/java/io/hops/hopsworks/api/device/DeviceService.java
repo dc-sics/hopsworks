@@ -213,6 +213,9 @@ public class DeviceService {
       validate(deviceDTO);
       Project project = projectFacade.findByName(projectName);
       ProjectDevice device = deviceFacade.readProjectDevice(project.getId(), deviceDTO.getDeviceUuid());
+      if (device == null){
+        return new DeviceResponseBuilder().DEVICE_NOT_REGISTERED;
+      }
 
       // Validates that the Device is in the Approved State.
       if (device.getState() != ProjectDevice.State.Approved){
