@@ -37,6 +37,7 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
+import io.hops.hopsworks.common.dao.tensorflow.TfServing;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -175,6 +176,12 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
           mappedBy = "projectId")
   private Collection<JupyterProject> jupyterProjectCollection;
+  
+  
+  @OneToMany(cascade = CascadeType.ALL,
+      mappedBy = "projectId")
+  private Collection<TfServing> tfServingCollection;
+  
   
   public Project() {
   }
@@ -427,6 +434,18 @@ public class Project implements Serializable {
           Collection<JupyterSettings> jupyterSettingsCollection) {
     this.jupyterSettingsCollection = jupyterSettingsCollection;
   }
+  
+
+  @XmlTransient
+  @JsonIgnore
+  public Collection<TfServing> getTfServingCollection() {
+    return tfServingCollection;
+  }
+
+  public void setTfServingCollection(Collection<TfServing> tfServingCollection) {
+    this.tfServingCollection = tfServingCollection;
+  }
+  
   
   public String getProjectGenericUser() {
     return name + Settings.PROJECT_GENERIC_USER_SUFFIX;
