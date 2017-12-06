@@ -110,7 +110,7 @@ public class ClusterController {
     clusterAgent.setBbcGroupCollection(groups);
     userBean.persist(clusterAgent);
     String commonName;
-    commonName = cluster.getOrganizationName() + Settings.DOUBLE_UNDERSCORE + cluster.getOrganizationalUnitName();
+    commonName = cluster.getOrganizationName() + "_" + cluster.getOrganizationalUnitName();
     clusterCert = new ClusterCert(commonName, cluster.getOrganizationName(), cluster.getOrganizationalUnitName(), 
         RegistrationStatusEnum.REGISTRATION_PENDING, clusterAgent);
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
@@ -136,7 +136,7 @@ public class ClusterController {
     }
     checkUserPasswordAndStatus(cluster, clusterAgent, req);
     String commonName;
-    commonName = cluster.getOrganizationName() + Settings.DOUBLE_UNDERSCORE + cluster.getOrganizationalUnitName();
+    commonName = cluster.getOrganizationName() + "_" + cluster.getOrganizationalUnitName();
     clusterCert = new ClusterCert(commonName, cluster.getOrganizationName(), cluster.
         getOrganizationalUnitName(), RegistrationStatusEnum.REGISTRATION_PENDING, clusterAgent);
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
