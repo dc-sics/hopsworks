@@ -11,8 +11,7 @@ controllers.controller("RegisterController", ['$scope', 'ClusterService', functi
     $scope.working = false;
     $scope.successMessage = '';
     $scope.errorMessage = '';
-    $scope.newUser = {commonName: '',
-                      organizationName: '',
+    $scope.newUser = {organizationName: '',
                       organizationalUnitName: '',
                       email: '',
                       chosenPassword: '',

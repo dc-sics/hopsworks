@@ -89,8 +89,8 @@ public class ClusterController {
     clusterAgent = new Users();
     clusterAgent.setUsername(agentName);
     clusterAgent.setEmail(cluster.getEmail());
-    clusterAgent.setFname(cluster.getCommonName());
-    clusterAgent.setLname(CLUSTER_NAME_PREFIX);
+    clusterAgent.setFname(CLUSTER_NAME_PREFIX);
+    clusterAgent.setLname("007");
     clusterAgent.setTitle("Mrs");
     clusterAgent.setStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT);
     clusterAgent.setMode(PeopleAccountType.M_ACCOUNT_TYPE);
@@ -109,9 +109,10 @@ public class ClusterController {
     groups.add(group);
     clusterAgent.setBbcGroupCollection(groups);
     userBean.persist(clusterAgent);
-
-    clusterCert = new ClusterCert(cluster.getCommonName(), cluster.getOrganizationName(), cluster.
-        getOrganizationalUnitName(), RegistrationStatusEnum.REGISTRATION_PENDING, clusterAgent);
+    String commonName;
+    commonName = cluster.getOrganizationName() + Settings.DOUBLE_UNDERSCORE + cluster.getOrganizationalUnitName();
+    clusterCert = new ClusterCert(commonName, cluster.getOrganizationName(), cluster.getOrganizationalUnitName(), 
+        RegistrationStatusEnum.REGISTRATION_PENDING, clusterAgent);
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
     clusterCert.setValidationKeyDate(new Date());
     clusterCertFacade.save(clusterCert);
@@ -134,7 +135,9 @@ public class ClusterController {
       throw new IllegalArgumentException("User not registerd.");
     }
     checkUserPasswordAndStatus(cluster, clusterAgent, req);
-    clusterCert = new ClusterCert(cluster.getCommonName(), cluster.getOrganizationName(), cluster.
+    String commonName;
+    commonName = cluster.getOrganizationName() + Settings.DOUBLE_UNDERSCORE + cluster.getOrganizationalUnitName();
+    clusterCert = new ClusterCert(commonName, cluster.getOrganizationName(), cluster.
         getOrganizationalUnitName(), RegistrationStatusEnum.REGISTRATION_PENDING, clusterAgent);
     clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
     clusterCert.setValidationKeyDate(new Date());
@@ -331,12 +334,6 @@ public class ClusterController {
 
   private void isValidNewCluster(ClusterDTO cluster) {
     isValidCluster(cluster);
-    if (cluster.getCommonName() == null || cluster.getCommonName().isEmpty()) {
-      throw new IllegalArgumentException("Cluster Common Name not set.");
-    }
-    if (cluster.getCommonName().contains(Settings.DOUBLE_UNDERSCORE)) {
-      throw new IllegalArgumentException("Cluster Common Name can not contain " + Settings.DOUBLE_UNDERSCORE);
-    }
     if (!cluster.getChosenPassword().equals(cluster.getRepeatedPassword())) {
       throw new IllegalArgumentException("Cluster password does not match.");
     }
