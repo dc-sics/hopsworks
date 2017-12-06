@@ -74,6 +74,19 @@ controllers.controller("RegisterController", ['$scope', 'ClusterService', functi
       });
     };
 
+    $scope.$watch('newUser', function (newValue, oldValue) {
+      var orgAndUnit;
+      var index;
+      if (newValue.email !== undefined) {
+        index = newValue.email.indexOf("@");
+        if (index !== -1) {
+          orgAndUnit = newValue.email.split("@");
+          $scope.newUser.organizationalUnitName = orgAndUnit[0];
+          $scope.newUser.organizationName = orgAndUnit[1];
+        }
+      }
+    }, true);
+
   }]);
 
 controllers.controller("UnregisterController", ['$scope', 'ClusterService', function ($scope, ClusterService) {
