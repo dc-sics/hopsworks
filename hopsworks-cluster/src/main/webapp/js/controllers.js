@@ -74,15 +74,19 @@ controllers.controller("RegisterController", ['$scope', 'ClusterService', functi
       });
     };
 
-    $scope.$watch('newUser', function (newValue, oldValue) {
+    $scope.$watch('newUser.email', function (newValue, oldValue) {
       var orgAndUnit;
       var index;
-      if (newValue.email !== undefined) {
-        index = newValue.email.indexOf("@");
+      if (newValue !== undefined) {
+        index = newValue.indexOf("@");
         if (index !== -1) {
-          orgAndUnit = newValue.email.split("@");
-          $scope.newUser.organizationalUnitName = orgAndUnit[0];
-          $scope.newUser.organizationName = orgAndUnit[1];
+          orgAndUnit = newValue.split("@");
+          if ($scope.registerForm.org_name.$pristine) {
+            $scope.newUser.organizationName = orgAndUnit[1];
+          }
+          if ($scope.registerForm.org_unit_name.$pristine) {
+            $scope.newUser.organizationalUnitName = orgAndUnit[0];
+          }
         }
       }
     }, true);
