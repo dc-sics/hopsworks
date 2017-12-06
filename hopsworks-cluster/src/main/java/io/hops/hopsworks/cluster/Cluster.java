@@ -117,8 +117,8 @@ public class Cluster {
     ClusterDTO cluster = new ClusterDTO();
     cluster.setEmail(email);
     cluster.setChosenPassword(pwd);
-    List<ClusterCert> clusters = clusterController.getAllClusters(cluster, req);
-    GenericEntity<List<ClusterCert>> clustersEntity = new GenericEntity<List<ClusterCert>>(clusters) {
+    List<ClusterYmlDTO> clusters = clusterController.getAllClusterYml(cluster, req);
+    GenericEntity<List<ClusterYmlDTO>> clustersEntity = new GenericEntity<List<ClusterYmlDTO>>(clusters) {
     };
     return Response.ok().entity(clustersEntity).build();
   }

@@ -1,6 +1,7 @@
 package io.hops.hopsworks.cluster.controller;
 
 import io.hops.hopsworks.cluster.ClusterDTO;
+import io.hops.hopsworks.cluster.ClusterYmlDTO;
 import io.hops.hopsworks.common.dao.user.BbcGroup;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
@@ -256,7 +257,34 @@ public class ClusterController {
     checkUserPasswordAndStatus(cluster, clusterAgent, req);
     return clusterCertFacade.getByAgent(clusterAgent);
   }
-
+  public List<ClusterYmlDTO> getAllClusterYml(ClusterDTO cluster, HttpServletRequest req) throws MessagingException {
+    if (cluster == null) {
+      throw new NullPointerException("Cluster not assigned.");
+    }
+    if (cluster.getEmail() == null || cluster.getEmail().isEmpty()) {
+      throw new IllegalArgumentException("Cluster email not set.");
+    }
+    if (cluster.getChosenPassword() == null || cluster.getChosenPassword().isEmpty()) {
+      throw new IllegalArgumentException("Cluster password not set.");
+    }
+    Users clusterAgent = userBean.findByEmail(cluster.getEmail());
+    if (clusterAgent == null) {
+      throw new IllegalArgumentException("No registerd cluster found for user.");
+    }
+    checkUserPasswordAndStatus(cluster, clusterAgent, req);
+    List<ClusterCert> clusterCerts = clusterCertFacade.getByAgent(clusterAgent);
+    List<ClusterYmlDTO> clusterYmlDTOs = new ArrayList<>();
+    for (ClusterCert cCert : clusterCerts) {
+      clusterYmlDTOs.add(new ClusterYmlDTO(cCert.getAgentId().getEmail(),
+          cCert.getCommonName(),
+          cCert.getOrganizationName(),
+          cCert.getOrganizationalUnitName(),
+          cCert.getRegistrationStatus(),
+          cCert.getRegistrationDate(),
+          cCert.getSerialNumber()));
+    }
+    return clusterYmlDTOs;
+  }
   public ClusterCert getCluster(ClusterDTO cluster, HttpServletRequest req) throws MessagingException {
     isValidCluster(cluster);
     Users clusterAgent = userBean.findByEmail(cluster.getEmail());

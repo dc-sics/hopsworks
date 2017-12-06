@@ -47,15 +47,36 @@
           </div>
         </div>
         <div class="panel panel-default" ng-repeat="cluster in clusters">
-          <div class="panel-body" style="overflow-x: auto;">
-            <label><b class="text-muted">Common name:</b> <i>{{cluster.commonName}}</i></label> <br/>
-            <label><b class="text-muted">Organization Name:</b> <i>{{cluster.organizationName}}</i></label> <br/>
-            <label><b class="text-muted">Organization Unit Name:</b> <i>{{cluster.organizationalUnitName}}</i></label> <br/>
-            <label><b class="text-muted">Registered on:</b> <i>{{cluster.registrationDate| date:'medium'}}</i></label> <br/>
-            <label><b class="text-muted">Registration Status:</b> <i>{{cluster.registrationStatus}}</i></label> <br/>
-            <label><b class="text-muted">Certificate Status:</b> <i>{{certStatus(cluster.serialNumber)}}</i></label> <br/>
+          <div class="panel-body row" style="overflow-x: auto;">
+            <div class="col-md-6">
+              <label><b class="text-muted">Common name:</b> <i>{{cluster.commonName}}</i></label> <br/>
+              <label><b class="text-muted">Organization Name:</b> <i>{{cluster.organizationName}}</i></label> <br/>
+              <label><b class="text-muted">Organization Unit Name:</b> <i>{{cluster.organizationalUnitName}}</i></label> <br/>
+              <label><b class="text-muted">Registered on:</b> <i>{{cluster.registrationDate| date:'medium'}}</i></label> <br/>
+              <label><b class="text-muted">Registration Status:</b> <i>{{cluster.registrationStatus}}</i></label> <br/>
+              <label><b class="text-muted">Certificate Status:</b> <i>{{certStatus(cluster.serialNumber)}}</i></label> <br/>
+            </div>
+            <div class="col-md-6">
+              <pre>
+cluster.yml
+
+  hopsworks:
+    ...
+    cert:
+      email: {{cluster.email}}
+      o: {{cluster.organizationName}}
+      ou: {{cluster.organizationalUnitName}}
+    dela:
+      ...
+    hopssite:
+      ...
+  hopssite:
+    ...
+    password: "change me"
+              </pre>
+            </div>
           </div>
-        </div>               
+        </div> 
         <div class="panel panel-default" ng-if="!working && clusters.length === 0 && getForm.$submitted">
           <div class="panel-body">
             <label class="text-muted"> No registered cluster found for the given email.</label> <br/>
