@@ -15,7 +15,7 @@ angular.module('hopsWorksApp')
             self.userRating = 0;
             self.myUserId;
             self.myClusterId;
-            self.commentEditable = false;
+            self.commentEditable = [];
             self.newComment;
             self.updateComment;
             self.publicDSId = $rootScope.publicDSId;
@@ -262,17 +262,28 @@ angular.module('hopsWorksApp')
               });
             };
 
-            self.commentMakeEditable = function () {
-              self.commentEditable = !self.commentEditable;
-              if (this.commentEditable) {
-                $('#commentdiv').css("background-color", "#FFFFCC");
+            self.commentMakeEditable = function (index) {
+              self.commentEditable[index] = !self.commentEditable[index];
+              var commentId = "#commentdiv-" + index;
+              if (self.commentEditable[index]) {
+                $(commentId).css("background-color", "#FFFFCC");
               }
             };
 
+            self.cancelEdit = function (comment, index) {
+              self.commentEditable[index] = !self.commentEditable[index];
+              var commentElementId = "#commentdiv-" + index;
+              if (!self.commentEditable[index]) {
+                $(commentElementId).html(comment.content);
+                $(commentElementId).css("background-color", "#FFF");
+              }
+            };
+            
             self.postComment = function () {
               HopssiteService.postComment(self.selectedDataset.publicId, self.newComment).then(function (success) {
                 console.log("saveComment", success);
                 self.newComment = '';
+                self.commentEditable = [];
                 getComments(self.selectedDataset.publicId);
               }, function (error) {
                 console.log("saveComment", error);
@@ -288,13 +299,14 @@ angular.module('hopsWorksApp')
               });
             };
 
-            self.saveComment = function (commentId) {
-              self.commentEditable = !self.commentEditable;
-              self.updateComment = $('#commentdiv').text();
+            self.saveComment = function (commentId, index) {
+              self.commentEditable[index] = !self.commentEditable[index];
+              var commentElementId = "#commentdiv-" + index;
+              self.updateComment = $(commentElementId).html();
               //TODO (Ermias): delete if empty
               HopssiteService.updateComment(self.selectedDataset.publicId, commentId, self.updateComment).then(function (success) {
                 console.log("saveComment", success);
-                $('#commentdiv').css("background-color", "#FFF");
+                $(commentElementId).css("background-color", "#FFF");
                 self.updateComment = '';
                 getComments(self.selectedDataset.publicId);
               }, function (error) {
