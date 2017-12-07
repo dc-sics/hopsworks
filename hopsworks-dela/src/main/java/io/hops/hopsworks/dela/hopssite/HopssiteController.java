@@ -16,7 +16,6 @@ import io.hops.hopsworks.dela.dto.hopssite.RateDTO;
 import io.hops.hopsworks.dela.dto.hopssite.RatingDTO;
 import io.hops.hopsworks.dela.dto.hopssite.SearchServiceDTO;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
-import io.hops.hopsworks.dela.hopssite.util.HopsSiteEndpoints;
 import io.hops.hopsworks.dela.old_hopssite_dto.DatasetIssueDTO;
 import io.hops.hopsworks.dela.old_hopssite_dto.PopularDatasetJSON;
 import io.hops.hopsworks.util.SettingsHelper;
@@ -60,13 +59,6 @@ public class HopssiteController {
     return ClientWrapper.httpsInstance(delaStateCtrl.getKeystore(), delaStateCtrl.getTruststore(), 
       delaStateCtrl.getKeystorePassword(), new HopsSiteHostnameVerifier(settings), resultClass)
       .setTarget(hopsSite).setPath(path);
-  }
-
-  // cluster services
-  public String getRole() throws ThirdPartyException {
-    checkHopssiteReady();
-    ClientWrapper client = getClient(HopsSiteEndpoints.CLUSTER_SERVICE_ROLE, String.class);
-    return (String) client.doGet();
   }
 
   //*************************************************HEARTBEAT**********************************************************
@@ -324,7 +316,7 @@ public class HopssiteController {
   public boolean updateUser(UserDTO.Publish userDTO) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.USER_SERVICE, String.class);
+      ClientWrapper client = getClient(HopsSite.UserService.user(), String.class);
       client.setPayload(userDTO);
       String res = (String) client.doPut();
       return "OK".equals(res);
@@ -337,7 +329,7 @@ public class HopssiteController {
   public boolean deleteUser(Integer uId) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.USER_SERVICE + "/" + uId, String.class);
+      ClientWrapper client = getClient(HopsSite.UserService.user() + "/" + uId, String.class);
       String res = (String) client.doDelete();
       return "OK".equals(res);
     } catch (IllegalStateException ise) {
@@ -476,7 +468,7 @@ public class HopssiteController {
     checkHopssiteReady();
     try {
       ClientWrapper client
-        = getClient(HopsSiteEndpoints.RATING_SERVICE_ALL_BY_PUBLICID + "/" + publicId, RateDTO.class);
+        = getClient(HopsSite.RatingService.getDatasetAllByPublicId() + "/" + publicId, RateDTO.class);
       return (List<RateDTO>) client.doGetGenericType();
     } catch (IllegalStateException ise) {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), ise.getMessage(),
@@ -487,7 +479,7 @@ public class HopssiteController {
   public boolean updateRating(RateDTO datasetRating) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.RATING_SERVICE, String.class);
+      ClientWrapper client = getClient(HopsSite.RatingService.rating(), String.class);
       client.setPayload(datasetRating);
       String res = (String) client.doPut();
       return "OK".equals(res);
@@ -500,7 +492,7 @@ public class HopssiteController {
   public boolean deleteRating(Integer ratingId) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.RATING_SERVICE + "/" + ratingId, String.class);
+      ClientWrapper client = getClient(HopsSite.RatingService.rating() + "/" + ratingId, String.class);
       String res = (String) client.doDelete();
       return "OK".equals(res);
     } catch (IllegalStateException ise) {
@@ -513,7 +505,7 @@ public class HopssiteController {
   public List<HopsSiteDatasetDTO> getAll() throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET, HopsSiteDatasetDTO.class);
+      ClientWrapper client = getClient(HopsSite.DatasetService.dataset(), HopsSiteDatasetDTO.class);
       LOG.log(Settings.DELA_DEBUG, "hops-site:dataset - {0}", client.getFullPath());
       List<HopsSiteDatasetDTO> result = (List<HopsSiteDatasetDTO>) client.doGetGenericType();
       LOG.log(Settings.DELA_DEBUG, "hops-site:dataset - done {0}", client.getFullPath());
@@ -527,7 +519,7 @@ public class HopssiteController {
   public DatasetDTO.Complete getDataset(String publicDSId) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET_BY_PUBLIC_ID + "/" + publicDSId,
+      ClientWrapper client = getClient(HopsSite.DatasetService.datasetByPublicId() + "/" + publicDSId,
         DatasetDTO.Complete.class);
       return (DatasetDTO.Complete) client.doGet();
     } catch (IllegalStateException ise) {
@@ -539,7 +531,7 @@ public class HopssiteController {
   public SearchServiceDTO.ItemDetails getDatasetDetails(String publicDSId) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_GET + "/" + publicDSId + "/details",
+      ClientWrapper client = getClient(HopsSite.DatasetService.dataset() + "/" + publicDSId + "/details",
         SearchServiceDTO.ItemDetails.class);
       return (SearchServiceDTO.ItemDetails) client.doGet();
     } catch (IllegalStateException ise) {
@@ -551,7 +543,7 @@ public class HopssiteController {
   public boolean addDatasetIssue(DatasetIssueDTO datasetIssue) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_ISSUE, String.class);
+      ClientWrapper client = getClient(HopsSite.DatasetService.datasetIssue(), String.class);
       client.setPayload(datasetIssue);
       String res = (String) client.doPost();
       return "OK".equals(res);
@@ -564,7 +556,7 @@ public class HopssiteController {
   public boolean addCategory(DatasetDTO dataset) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_ADD_CATEGORY, String.class);
+      ClientWrapper client = getClient(HopsSite.DatasetService.datasetCategory(), String.class);
       client.setPayload(dataset);
       String res = (String) client.doPost();
       return "OK".equals(res);
@@ -577,7 +569,7 @@ public class HopssiteController {
   public List<PopularDatasetJSON> getPopularDatasets() throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_POPULAR, PopularDatasetJSON.class);
+      ClientWrapper client = getClient(HopsSite.DatasetService.datasetPopular(), PopularDatasetJSON.class);
       return (List<PopularDatasetJSON>) client.doGetGenericType();
     } catch (IllegalStateException ise) {
       throw new ThirdPartyException(Response.Status.EXPECTATION_FAILED.getStatusCode(), ise.getMessage(),
@@ -588,7 +580,7 @@ public class HopssiteController {
   public boolean addPopularDatasets(PopularDatasetJSON popularDatasetsJson) throws ThirdPartyException {
     checkHopssiteReady();
     try {
-      ClientWrapper client = getClient(HopsSiteEndpoints.DATASET_SERVICE_POPULAR, String.class);
+      ClientWrapper client = getClient(HopsSite.DatasetService.datasetPopular(), String.class);
       client.setPayload(popularDatasetsJson);
       String res = (String) client.doPost();
       return "OK".equals(res);
