@@ -1316,12 +1316,10 @@ public class DataSetService {
 
   @Path("fileDownload")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public DownloadService downloadDS(@Context SecurityContext sc) throws
-      AppException {
+  public DownloadService downloadDS(@Context SecurityContext sc) throws AppException {
     Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
     this.downloader.setProject(project);
     this.downloader.setProjectUsername(hdfsUsersBean.getHdfsUserName(project, user));
-    this.downloader.setUser(user);
     return downloader;
   }
   
