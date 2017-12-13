@@ -62,17 +62,15 @@ cluster.yml
 
   hopsworks:
     ...
+    hopssite:
+      version: "hops"
+  hopssite:
+    user: {{cluster.email}}
+    password: "change me"
     cert:
-      email: {{cluster.email}}
       o: {{cluster.organizationName}}
       ou: {{cluster.organizationalUnitName}}
-    dela:
-      ...
-    hopssite:
-      ...
-  hopssite:
     ...
-    password: "change me"
               </pre>
             </div>
           </div>
