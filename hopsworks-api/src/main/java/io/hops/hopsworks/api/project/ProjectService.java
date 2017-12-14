@@ -845,8 +845,8 @@ public class ProjectService {
   public Response downloadCerts(@PathParam("id") Integer id, @FormParam("password") String password,
       @Context HttpServletRequest req) throws AppException {
     Users user = userFacade.findByEmail(req.getRemoteUser());
-    if (user == null || user.getEmail().equals(Settings.SITE_EMAIL) || user.getEmail().equals(Settings.AGENT_EMAIL) ||
-        !authController.validatePassword(user, password, req)) {
+    if (user == null || user.getEmail().equals(Settings.AGENT_EMAIL) || !authController.validatePassword(user, password,
+        req)) {
       throw new AppException(Response.Status.FORBIDDEN.getStatusCode(), "Access to the certificat has been forbidden.");
     }
     Project project = projectController.findProjectById(id);
@@ -867,7 +867,6 @@ public class ProjectService {
       String certPwd = projectController.getProjectSpecificCertPw(user, project.getName(),
           Base64.encodeBase64String(certsFacade.findUserCert(project.getName(), user.getUsername()).getUserKey()))
           .getKeyPw();
-      logger.log(Level.SEVERE, "Project certificates pwd: {0}", certPwd);
       //Pop-up a message from admin
       messageController.send(user, userFacade.findByEmail(Settings.SITE_EMAIL), "Certificate Info", "",
           "An email was sent with the password for your project's certificates. If an email does not arrive shortly, "
