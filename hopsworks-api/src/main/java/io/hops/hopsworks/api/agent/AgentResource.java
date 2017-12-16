@@ -17,9 +17,9 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import io.hops.hopsworks.common.dao.host.Host;
+import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostEJB;
-import io.hops.hopsworks.common.dao.role.Role;
+import io.hops.hopsworks.common.dao.role.Roles;
 import io.hops.hopsworks.common.dao.role.RoleEJB;
 import io.hops.hopsworks.common.dao.host.Status;
 import io.hops.hopsworks.common.dao.project.Project;
@@ -98,14 +98,14 @@ public class AgentResource {
           StandardCharsets.UTF_8));
       JsonObject json = Json.createReader(stream).readObject();
       long agentTime = json.getJsonNumber("agent-time").longValue();
-      String hostId = json.getString("host-id");
-      Host host = hostFacade.findByHostId(hostId);
+      String hostname = json.getString("host-id");
+      Hosts host = hostFacade.findByHostname(hostname);
       if (host == null) {
-        logger.log(Level.WARNING, "Host with id {0} not found.", hostId);
+        logger.log(Level.WARNING, "Host with id {0} not found.", hostname);
         return Response.status(Response.Status.NOT_FOUND).build();
       }
       if (!host.isRegistered()) {
-        logger.log(Level.WARNING, "Host with id {0} is not registered.", hostId);
+        logger.log(Level.WARNING, "Host with id {0} is not registered.", hostname);
         return Response.status(Response.Status.NOT_ACCEPTABLE).build();
       }
       host.setLastHeartbeat((new Date()).getTime());
@@ -132,17 +132,17 @@ public class AgentResource {
         String cluster = s.getString("cluster");
         String roleName = s.getString("role");
         String service = s.getString("service");
-        Role role = null;
+        Roles role = null;
         try {
-          role = roleFacade.find(hostId, cluster, service, roleName);
+          role = roleFacade.find(hostname, cluster, service, roleName);
         } catch (Exception ex) {
           logger.log(Level.FINE, "Could not find a role for the kagent heartbeat.");
           continue;
         }
 
         if (role == null) {
-          role = new Role();
-          role.setHostId(hostId);
+          role = new Roles();
+          role.setHostId(host);
           role.setCluster(cluster);
           role.setService(service);
           role.setRole(roleName);
@@ -153,7 +153,7 @@ public class AgentResource {
             : "0";
         String pid = s.containsKey("pid") ? s.getString("pid") : "-1";
         try {
-          role.setWebPort(Integer.parseInt(webPort));
+//          role.setWebPort(Integer.parseInt(webPort));
           role.setPid(Integer.parseInt(pid));
         } catch (NumberFormatException ex) {
           logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", role);

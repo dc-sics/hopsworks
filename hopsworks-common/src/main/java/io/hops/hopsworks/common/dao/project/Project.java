@@ -177,11 +177,10 @@ public class Project implements Serializable {
           mappedBy = "projectId")
   private Collection<JupyterProject> jupyterProjectCollection;
   
-  
+
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "projectId")
   private Collection<TfServing> tfServingCollection;
-  
   
   public Project() {
   }
@@ -435,17 +434,6 @@ public class Project implements Serializable {
     this.jupyterSettingsCollection = jupyterSettingsCollection;
   }
   
-
-  @XmlTransient
-  @JsonIgnore
-  public Collection<TfServing> getTfServingCollection() {
-    return tfServingCollection;
-  }
-
-  public void setTfServingCollection(Collection<TfServing> tfServingCollection) {
-    this.tfServingCollection = tfServingCollection;
-  }
-  
   
   public String getProjectGenericUser() {
     return name + Settings.PROJECT_GENERIC_USER_SUFFIX;
@@ -456,4 +444,15 @@ public class Project implements Serializable {
     return "se.kth.bbc.project.Project[ name=" + this.name + ", id=" + this.id
             + ", parentId=" + this.inode.getInodePK().getParentId() + " ]";
   }
+
+  @XmlTransient
+  @JsonIgnore
+  public Collection<TfServing> getTfServingCollection() {
+    return tfServingCollection;
+  }
+
+  public void setTfServingCollection(Collection<TfServing> tfServingCollection) {
+    this.tfServingCollection = tfServingCollection;
+  }
+
 }
