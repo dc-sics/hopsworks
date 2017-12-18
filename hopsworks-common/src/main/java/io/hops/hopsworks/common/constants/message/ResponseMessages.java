@@ -19,8 +19,8 @@ public class ResponseMessages {
   public final static String ACCOUNT_BLOCKED
           = "Your account hsd been blocked. Contact the administrator.";
   public final static String AUTHENTICATION_FAILURE = "Authentication failed";
-  public final static String LOGOUT_FAILURE
-          = "Logout failed due to server error";
+  public final static String NO_ROLE_FOUND = "No valid role found for this user";
+  public final static String LOGOUT_FAILURE = "Logout failed on backend.";
   public final static String EMAIL_EMPTY = "Email cannot be empty.";
   public final static String EMAIL_INVALID = "Not a valid email address.";
   public final static String EMAIL_SENDING_FAILURE
@@ -131,6 +131,9 @@ public class ResponseMessages {
   public final static String CONSENT_ALREADY_EXISTS
           = "Duplicate error. There is already a consent form in the Project with the same name";
   public final static String PROJECT_NOT_SELECTED = "No project selected";
+  public final static String QUOTA_NOT_FOUND = "Quota information not found.";
+  public final static String QUOTA_REQUEST_NOT_COMPLETE = "Please specify both namespace and space quota.";
+  public final static String QUOTA_ERROR = "Quota update error.";
 
   //project success messages
   public final static String PROJECT_CREATED = "Project created successfully.";

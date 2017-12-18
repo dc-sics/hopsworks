@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -6,46 +6,34 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p/>
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.hopsworks.common.dao.project.payment;
+package io.hops.hopsworks.apiV2.filter;
 
-public enum ProjectAction {
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import java.io.IOException;
 
-  YARN_CHANCED_QUOTA("Yarn changed quota"),
-  HDFS_CHANCED_QUOTA("HDFS changed quota"),
-  DISABLED("Disabled"),
-  UNDEFINED("Undefined");
-
-  private final String readable;
-
-  private ProjectAction(String readable) {
-    this.readable = readable;
-  }
-
-  public static ProjectAction create(String str) {
-    if (str.compareTo(YARN_CHANCED_QUOTA.toString()) == 0) {
-      return YARN_CHANCED_QUOTA;
-    }
-    if (str.compareTo(HDFS_CHANCED_QUOTA.toString()) == 0) {
-      return HDFS_CHANCED_QUOTA;
-    }
-    if (str.compareTo(DISABLED.toString()) == 0) {
-      return DISABLED;
-    }
-    return UNDEFINED;
-  }
-
+public abstract class ApiV2FilterBase implements ContainerRequestFilter{
+  
   @Override
-  public String toString() {
-    return readable;
+  public final void filter(ContainerRequestContext requestContext) throws IOException {
+    String path = requestContext.getUriInfo().getPath();
+    String[] pathParts = path.split("/");
+  
+    if (pathParts.length > 0 && "v2".equalsIgnoreCase(pathParts[0])) {
+      //Only apply filter to v2-endpoints
+      filterInternal(requestContext);
+    }
   }
-
+  
+  protected abstract void filterInternal(ContainerRequestContext v2RequestContext)
+      throws IOException;
 }

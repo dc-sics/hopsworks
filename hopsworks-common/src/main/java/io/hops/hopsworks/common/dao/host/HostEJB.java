@@ -88,4 +88,13 @@ public class HostEJB implements Serializable {
     }
     return host;
   }
+  
+  public boolean removeByHostname(String hostname) {
+    Hosts host = findByHostname(hostname);
+    if (host != null) {
+      em.remove(host);
+      return true;
+    }
+    return false;
+  }
 }

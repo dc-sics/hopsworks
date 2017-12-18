@@ -36,11 +36,11 @@ import org.codehaus.jackson.annotate.JsonIgnore;
           query = "SELECT h FROM Hosts h WHERE h.hostIp = :hostIp"),
   @NamedQuery(name = "Hosts.findBy-Cluster.Service.Role.Status",
           query
-          = "SELECT h FROM Hosts h, Roles r WHERE h.id = r.hostId AND r.cluster "
+          = "SELECT h FROM Hosts h, Roles r WHERE h = r.host AND r.cluster "
           + "= :cluster AND r.service = :service AND r.role = :role AND r.status = :status"),
   @NamedQuery(name = "Hosts.findBy-Cluster.Service.Role",
           query
-          = "SELECT h FROM Hosts h, Roles r WHERE h.id = r.hostId AND r.cluster "
+          = "SELECT h FROM Hosts h, Roles r WHERE h = r.host AND r.cluster "
           + "= :cluster AND r.service = :service AND r.role = :role"),})
 public class Hosts implements Serializable {
 
@@ -109,7 +109,7 @@ public class Hosts implements Serializable {
           mappedBy = "hostId")
   private Collection<CondaCommands> condaCommandsCollection;
 
-  @OneToMany(mappedBy = "hostId")
+  @OneToMany(mappedBy = "host")
   private Collection<Roles> rolesCollection;
   
   public Hosts() {

@@ -30,6 +30,8 @@ import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade.CondaOp;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade.CondaStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
+import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
 import java.io.ByteArrayInputStream;
@@ -44,6 +46,7 @@ import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.mail.MessagingException;
 import javax.ws.rs.POST;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
@@ -71,6 +74,8 @@ public class AgentResource {
   private NoCacheResponse noCacheResponse;
   @EJB
   private Settings settings;
+  @EJB
+  private EmailBean emailBean;
 
   final static Logger logger = Logger.getLogger(AgentResource.class.getName());
 
@@ -142,7 +147,7 @@ public class AgentResource {
 
         if (role == null) {
           role = new Roles();
-          role.setHostId(host);
+          role.setHost(host);
           role.setCluster(cluster);
           role.setService(service);
           role.setRole(roleName);
@@ -383,10 +388,10 @@ public class AgentResource {
       @Context HttpHeaders httpHeaders, String jsonString
   ) {
     // TODO: Alerts are stored in the database. Later, we should define reactions (Email, SMS, ...).
+    Alert alert = new Alert();
     try {
       InputStream stream = new ByteArrayInputStream(jsonString.getBytes(StandardCharsets.UTF_8));
       JsonObject json = Json.createReader(stream).readObject();
-      Alert alert = new Alert();
       alert.setAlertTime(new Date());
       alert.setProvider(Alert.Provider.valueOf(json.getString("Provider")).toString());
       alert.setSeverity(Alert.Severity.valueOf(json.getString("Severity")).toString());
@@ -427,6 +432,16 @@ public class AgentResource {
       logger.log(Level.SEVERE, "Exception: {0}", ex);
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
+
+    if (!settings.getAlertEmailAddrs().isEmpty()) {
+      try {
+        emailBean.sendEmails(settings.getAlertEmailAddrs(), UserAccountsEmailMessages.ALERT_SERVICE_DOWN, alert.
+            toString());
+      } catch (MessagingException ex) {
+        Logger.getLogger(AgentResource.class.getName()).log(Level.SEVERE, null, ex);
+      }
+    }
+
     return Response.ok().build();
   }
 }

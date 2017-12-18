@@ -6,42 +6,31 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * <p/>
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.hops.hopsworks.common.dao.project.payment;
+package io.hops.hopsworks.apiV2;
 
-public enum ProjectPaymentAction {
+import javax.xml.bind.annotation.XmlRootElement;
 
-  DEPOSIT_MONEY("Deposit money"),
-  WITHDRAW_MONEY("Withdraw money"),
-  UNDEFINED("Undefined");
-
-  private final String readable;
-
-  private ProjectPaymentAction(String readable) {
-    this.readable = readable;
+@XmlRootElement
+public class ErrorResponse {
+  
+  private String description;
+  
+  public ErrorResponse(){}
+  
+  public String getDescription() {
+    return description;
   }
-
-  public static ProjectPaymentAction create(String str) {
-    if (str.compareTo(DEPOSIT_MONEY.toString()) == 0) {
-      return DEPOSIT_MONEY;
-    }
-    if (str.compareTo(WITHDRAW_MONEY.toString()) == 0) {
-      return WITHDRAW_MONEY;
-    }
-    return UNDEFINED;
+  
+  public void setDescription(String description) {
+    this.description = description;
   }
-
-  @Override
-  public String toString() {
-    return readable;
-  }
-
 }

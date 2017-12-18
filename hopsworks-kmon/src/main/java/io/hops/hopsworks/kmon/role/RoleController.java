@@ -54,7 +54,7 @@ public class RoleController {
       InstanceFullInfo info = new InstanceFullInfo(roleHost.getRole().
               getCluster(),
               roleHost.getRole().getService(), roleHost.getRole().getRole(),
-              roleHost.getRole().getHostId().getHostname(), ip, 0,
+              roleHost.getRole().getHost().getHostname(), ip, 0,
 //          roleHost.getRole().getWebPort(),
               roleHost.getStatus(), roleHost.getHealth().toString());
       info.setPid(roleHost.getRole().getPid());

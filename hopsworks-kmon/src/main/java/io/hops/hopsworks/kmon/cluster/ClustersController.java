@@ -17,8 +17,7 @@ public class ClustersController {
 
   @EJB
   private RoleEJB roleEjb;
-  private static final Logger logger = Logger.getLogger(
-          ClustersController.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(ClustersController.class.getName());
   private List<ClusterInfo> clusters;
 
   public ClustersController() {
@@ -26,7 +25,7 @@ public class ClustersController {
 
   @PostConstruct
   public void init() {
-    logger.info("init ClustersController");
+    LOGGER.info("init ClustersController");
     clusters = new ArrayList<>();
     loadClusters();
   }
@@ -51,9 +50,9 @@ public class ClustersController {
     String hosts = "";
     List<Roles> roles = roleEjb.findRoles("namenode");
     if (roles != null && !roles.isEmpty()) {
-      hosts = hosts + roles.get(0).getHostId();
+      hosts = hosts + roles.get(0).getHost();
       for (int i = 1; i < roles.size(); i++) {
-        hosts = hosts + "," + roles.get(i).getHostId();
+        hosts = hosts + "," + roles.get(i).getHost();
       }
     }
     return hosts;

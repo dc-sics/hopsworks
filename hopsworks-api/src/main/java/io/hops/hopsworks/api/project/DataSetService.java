@@ -28,14 +28,12 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
-import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.dataset.DatasetController;
 import io.hops.hopsworks.common.dataset.FilePreviewDTO;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
-import io.hops.hopsworks.common.hdfs.MoveDTO;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
 import io.hops.hopsworks.common.jobs.JobController;
 import io.hops.hopsworks.common.jobs.configuration.JobConfiguration;
@@ -97,8 +95,6 @@ public class DataSetService {
   private DatasetRequestFacade datasetRequest;
   @EJB
   private ActivityFacade activityFacade;
-  @EJB
-  private UserManager userBean;
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
@@ -338,7 +334,7 @@ public class DataSetService {
           @Context HttpServletRequest req) throws AppException,
           AccessControlException {
 
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     Dataset ds = dtoValidator.validateDTO(this.project, dataSet, false);
     JsonResponse json = new JsonResponse();
 
@@ -393,7 +389,7 @@ public class DataSetService {
           @Context HttpServletRequest req) throws AppException,
           AccessControlException {
 
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     JsonResponse json = new JsonResponse();
 
     Dataset ds = dtoValidator.validateDTO(this.project, dataSet, true);
@@ -596,7 +592,7 @@ public class DataSetService {
           @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
 
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     DistributedFileSystemOps dfso = dfs.getDfsOps();
     String username = hdfsUsersBean.getHdfsUserName(project, user);
     if (username == null) {
@@ -643,7 +639,7 @@ public class DataSetService {
           AccessControlException {
 
     JsonResponse json = new JsonResponse();
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
 
     DsPath dsPath = pathValidator.validatePath(this.project, dataSetName.getName());
     org.apache.hadoop.fs.Path fullPath = dsPath.getFullPath();
@@ -726,7 +722,7 @@ public class DataSetService {
     DistributedFileSystemOps dfso = null;
     try {
       //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
-      Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+      Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
       String username = hdfsUsersBean.getHdfsUserName(project, user);
       //If a Data Scientist requested it, do it as project user to avoid deleting Data Owner files
       //Find project of dataset as it might be shared
@@ -790,7 +786,7 @@ public class DataSetService {
       @Context HttpServletRequest req) throws AppException,
       AccessControlException {
     JsonResponse json = new JsonResponse();
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
 
     DsPath dsPath = pathValidator.validatePath(this.project, fileName);
     Dataset ds = dsPath.getDs();
@@ -862,7 +858,7 @@ public class DataSetService {
           AccessControlException {
     boolean success = false;
     JsonResponse json = new JsonResponse();
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
 
     DsPath dsPath = pathValidator.validatePath(this.project, fileName);
     Dataset ds = dsPath.getDs();
@@ -930,7 +926,7 @@ public class DataSetService {
           @Context SecurityContext sc, @Context HttpServletRequest req,
           MoveDTO dto) throws
           AppException, AccessControlException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
 
     Inode sourceInode = inodes.findById(dto.getInodeId());
@@ -1034,7 +1030,7 @@ public class DataSetService {
           @Context SecurityContext sc, @Context HttpServletRequest req,
           MoveDTO dto) throws
           AppException, AccessControlException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
 
     Inode sourceInode = inodes.findById(dto.getInodeId());
@@ -1109,7 +1105,7 @@ public class DataSetService {
   public Response checkFileExists(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
 
     DsPath dsPath = pathValidator.validatePath(this.project, path);
@@ -1153,7 +1149,7 @@ public class DataSetService {
   public Response checkFileForDownload(@PathParam("path") String path,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     DsPath dsPath = pathValidator.validatePath(this.project, path);
     Project owningProject = datasetController.getOwningProject(dsPath.getDs());
     //User must be accessing a dataset directly, not by being shared with another project.
@@ -1175,7 +1171,7 @@ public class DataSetService {
           @QueryParam("mode") String mode,
           @Context SecurityContext sc) throws
           AppException, AccessControlException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
 
     DsPath dsPath = pathValidator.validatePath(this.project, path);
@@ -1198,8 +1194,7 @@ public class DataSetService {
       String fileExtension = "txt"; // default file  type
       //Check if file contains a valid extension
       if (fileName.contains(".")) {
-        fileExtension = fileName.substring(fileName.lastIndexOf(".")).replace(".", "").
-                toUpperCase();
+        fileExtension = fileName.substring(fileName.lastIndexOf(".")).replace(".", "").toUpperCase();
       }
       long fileSize = udfso.getFileStatus(fullPath).getLen();
 
@@ -1209,42 +1204,34 @@ public class DataSetService {
         if (fileSize < settings.getFilePreviewImageSize()) {
           //Read the image in bytes and convert it to base64 so that is 
           //rendered properly in the front-end
-          byte[] imageInBytes = new byte[(int)fileSize];
+          byte[] imageInBytes = new byte[(int) fileSize];
           is.readFully(imageInBytes);
           String base64Image = new Base64().encodeAsString(imageInBytes);
-          filePreviewDTO = new FilePreviewDTO("image",
-                  fileExtension.toLowerCase(), base64Image);
+          filePreviewDTO = new FilePreviewDTO(Settings.FILE_PREVIEW_IMAGE_TYPE,
+              fileExtension.toLowerCase(), base64Image);
         } else {
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-                  "Image at " + fullPath.toString() + " is too big to display, " +
-                  "please download it by double-clicking it instead");
+              "Image at " + fullPath.toString() + " is too big to display, "
+              + "please download it by double-clicking it instead");
         }
       } else {
-        DataInputStream dis = new DataInputStream(is);
-        try {
+        try (DataInputStream dis = new DataInputStream(is)) {
           int sizeThreshold = Settings.FILE_PREVIEW_TXT_SIZE_BYTES; //in bytes
-          if (fileSize > sizeThreshold && !fileName.endsWith("README.md")
-                && mode.equals("tail")) {
+          if (fileSize > sizeThreshold && !fileName.endsWith(Settings.README_FILE)
+              && mode.equals(Settings.FILE_PREVIEW_MODE_TAIL)) {
             dis.skipBytes((int) (fileSize - sizeThreshold));
-          } else if (fileName.endsWith("README.md") &&
-              fileSize > Settings.FILE_PREVIEW_TXT_SIZE_BYTES_README) {
-
+          } else if (fileName.endsWith(Settings.README_FILE) && fileSize > Settings.FILE_PREVIEW_TXT_SIZE_BYTES) {
             throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-                    "README.md must be smaller than "
-                    + Settings.FILE_PREVIEW_TXT_SIZE_BYTES_README
-                    + " to be previewd");
-          } else  {
-            sizeThreshold = (int)fileSize;
+                Settings.README_FILE + " must be smaller than " + Settings.FILE_PREVIEW_TXT_SIZE_BYTES/1024
+                + " KB to be previewed");
+          } else if ((int) fileSize < sizeThreshold) {
+            sizeThreshold = (int) fileSize;
           }
-
           byte[] headContent = new byte[sizeThreshold];
           dis.readFully(headContent, 0, sizeThreshold);
           //File content
-          filePreviewDTO = new FilePreviewDTO("text", fileExtension.
-                  toLowerCase(), new String(headContent));
-
-        } finally {
-          dis.close();
+          filePreviewDTO = new FilePreviewDTO(Settings.FILE_PREVIEW_TEXT_TYPE, fileExtension.toLowerCase(),
+              new String(headContent));
         }
       }
 
@@ -1325,38 +1312,31 @@ public class DataSetService {
 
   @Path("fileDownload")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public DownloadService downloadDS(@Context SecurityContext sc) throws
-      AppException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+  public DownloadService downloadDS(@Context SecurityContext sc) throws AppException {
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     this.downloader.setProject(project);
     this.downloader.setProjectUsername(hdfsUsersBean.getHdfsUserName(project, user));
-    this.downloader.setUser(user);
     return downloader;
   }
   
   @Path("compressFile/{path: .+}")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
-  public Response compressFile(@PathParam("path") String path,
-          @Context SecurityContext context) throws
-          AppException {
-    Users user = userBean.getUserByEmail(context.getUserPrincipal().getName());
+  public Response compressFile(@PathParam("path") String path, @Context SecurityContext context) throws AppException {
+    Users user = userFacade.findByEmail(context.getUserPrincipal().getName());
 
     DsPath dsPath = pathValidator.validatePath(this.project, path);
     org.apache.hadoop.fs.Path fullPath = dsPath.getFullPath();
     Dataset ds = dsPath.getDs();
     if (ds.isShared() && !ds.isEditable() && !ds.isPublicDs()) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-          ResponseMessages.COMPRESS_ERROR);
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.COMPRESS_ERROR);
     }
 
-    ErasureCodeJobConfiguration ecConfig
-            = (ErasureCodeJobConfiguration) JobConfiguration.JobConfigurationFactory.
+    ErasureCodeJobConfiguration ecConfig = (ErasureCodeJobConfiguration) JobConfiguration.JobConfigurationFactory.
             getJobConfigurationTemplate(JobType.ERASURE_CODING);
     ecConfig.setFilePath(fullPath.toString());
 
     //persist the job in the database
-    Jobs jobdesc = this.jobcontroller.createJob(user, project,
-            ecConfig);
+    Jobs jobdesc = this.jobcontroller.createJob(user, project, ecConfig);
     //instantiate the job
     ErasureCodeJob encodeJob = new ErasureCodeJob(jobdesc, this.async, user,
             settings.getHadoopSymbolicLinkDir(), jobsMonitor);
@@ -1385,7 +1365,7 @@ public class DataSetService {
   public UploadService upload(
           @PathParam("path") String path, @Context SecurityContext sc,
           @QueryParam("templateId") int templateId) throws AppException {
-    Users user = userBean.getUserByEmail(sc.getUserPrincipal().getName());
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
     String username = hdfsUsersBean.getHdfsUserName(project, user);
 
     DsPath dsPath = pathValidator.validatePath(this.project, path);

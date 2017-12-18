@@ -68,17 +68,17 @@ public class RoleEJB {
     return query.getResultList();
   }
 
-  public List<Roles> findRoleOnHost(String hostId, String service, String role) {
+  public List<Roles> findRoleOnHost(String hostname, String service, String role) {
 
     TypedQuery<Roles> query = em.createNamedQuery("Roles.findOnHost", Roles.class)
-        .setParameter("hostId", hostId).setParameter("service", service).setParameter("role", role);
+        .setParameter("hostname", hostname).setParameter("service", service).setParameter("role", role);
     return query.getResultList();
   }
 
-  public Roles find(String hostId, String cluster, String service, String role) {
+  public Roles find(String hostname, String cluster, String service, String role) {
 
     TypedQuery<Roles> query = em.createNamedQuery("Roles.find", Roles.class)
-            .setParameter("hostId", hostId).setParameter("cluster", cluster)
+            .setParameter("hostname", hostname).setParameter("cluster", cluster)
             .setParameter("service", service).setParameter("role", role);
     List results = query.getResultList();
     if (results.isEmpty()) {
@@ -89,10 +89,10 @@ public class RoleEJB {
     throw new NonUniqueResultException();
   }
 
-  public List<Roles> findHostRoles(String hostId) {
+  public List<Roles> findHostRoles(String hostname) {
     TypedQuery<Roles> query = em.createNamedQuery("Roles.findBy-HostId",
             Roles.class)
-            .setParameter("hostId", hostId);
+            .setParameter("hostname", hostname);
     return query.getResultList();
   }
 
@@ -175,11 +175,11 @@ public class RoleEJB {
   }
 
   public RoleHostInfo findRoleHost(String cluster, String service, String role,
-          String hostId) throws Exception {
+          String hostname) throws Exception {
     TypedQuery<RoleHostInfo> query = em.createNamedQuery(
             "Roles.findRoleHostBy-Cluster-Service-Role-Host", RoleHostInfo.class)
             .setParameter("cluster", cluster).setParameter("service", service)
-            .setParameter("role", role).setParameter("hostid", hostId);
+            .setParameter("role", role).setParameter("hostname", hostname);
     try {
       return query.getSingleResult();
     } catch (NoResultException ex) {
@@ -211,7 +211,7 @@ public class RoleEJB {
 
   public void store(Roles role) {
     TypedQuery<Roles> query = em.createNamedQuery("Roles.find", Roles.class)
-            .setParameter("hostId", role.getHostId()).setParameter("cluster",
+            .setParameter("hostname", role.getHost().getHostname()).setParameter("cluster",
             role.getCluster())
             .setParameter("service", role.getService()).setParameter("role",
             role.getRole());
@@ -225,8 +225,8 @@ public class RoleEJB {
     }
   }
 
-  public void deleteRolesByHostId(String hostId) {
-    em.createNamedQuery("Roles.DeleteBy-HostId").setParameter("hostId", hostId).
+  public void deleteRolesByHostname(String hostname) {
+    em.createNamedQuery("Roles.DeleteBy-HostId").setParameter("hostname", hostname).
             executeUpdate();
   }
 
@@ -238,9 +238,9 @@ public class RoleEJB {
     return webOp(action, findServiceRoles(service));
   }
 
-  public String roleOnHostOp(String service, String roleName, String hostId,
+  public String roleOnHostOp(String service, String roleName, String hostname,
           Action action) throws AppException {
-    return webOp(action, findRoleOnHost(hostId, service, roleName));
+    return webOp(action, findRoleOnHost(hostname, service, roleName));
   }
 
   private String webOp(Action operation, List<Roles> roles) throws AppException {
@@ -257,7 +257,7 @@ public class RoleEJB {
     boolean success = false;
     int exception = Response.Status.BAD_REQUEST.getStatusCode();
     for (Roles role : roles) {
-      Hosts h = role.getHostId();
+      Hosts h = role.getHost();
       if (h != null) {
         String ip = h.getPublicOrPrivateIp();
         String agentPassword = h.getAgentPassword();
@@ -274,7 +274,7 @@ public class RoleEJB {
           }
         }
       } else {
-        result += role.toString() + " " + "host not found: " + role.getHostId();
+        result += role.toString() + " " + "host not found: " + role.getHost();
       }
       result += "\n";
     }
@@ -284,8 +284,8 @@ public class RoleEJB {
     return result;
   }
 
-  private Hosts findHostById(String hostId) {
-    Hosts host = hostEJB.findByHostname(hostId);
+  private Hosts findHostById(String hostname) {
+    Hosts host = hostEJB.findByHostname(hostname);
     return host;
   }
 

@@ -103,7 +103,7 @@ public class CommunicationController {
 
   private Hosts findHostByRole(String cluster, String service, String role)
           throws Exception {
-    String id = roleEjb.findRoles(cluster, service, role).get(0).getHostId().getHostname();
+    String id = roleEjb.findRoles(cluster, service, role).get(0).getHost().getHostname();
     return findHostById(id);
   }
 
@@ -223,7 +223,7 @@ public class CommunicationController {
     final String ROLE = "mysqld";
     List<NodesTableItem> results;
     try {
-      String id = roleEjb.findRoles(cluster, service, ROLE).get(0).getHostId().getHostname();
+      String id = roleEjb.findRoles(cluster, service, ROLE).get(0).getHost().getHostname();
       Hosts h = findHostById(hostId);
       String ip = h.getPublicOrPrivateIp();
       String agentPassword = h.getAgentPassword();
