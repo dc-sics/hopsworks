@@ -103,6 +103,7 @@ public class NodesBean implements Serializable {
       storedHost.setPublicIp(host.getPublicIp());
       storedHost.setPrivateIp(host.getPrivateIp());
       storedHost.setAgentPassword(host.getAgentPassword());
+      storedHost.setRegistered(host.isRegistered());
       hostsFacade.storeHost(storedHost, true);
       MessagesController.addInfoMessage("Updated host");
       LOG.log(Level.FINE, "Updated Host with ID: " + host.getHostname() + " Hostname: " + host.getHostIp()
