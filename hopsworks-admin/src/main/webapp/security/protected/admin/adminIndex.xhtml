@@ -89,13 +89,13 @@
 
               </h:commandLink>
               <br></br>
-              <p:outputLabel style="text-align: left"  value="Jobs Administration"></p:outputLabel>
+              <p:outputLabel style="text-align: left"  value="Jobs Admin"></p:outputLabel>
             </p:column>
 
             <p:column>
-              <h:commandLink action="#{facesContext.externalContext.redirect('/hopsworks-api/hdfs')}">
+              <h:commandLink action="#{facesContext.externalContext.redirect('/hopsworks-api/hdfsui')}">
                 <p:graphicImage id="hdfs"
-                                value="/resources/images/users/elephant.png"
+                                value="/resources/images/users/hdfs-logo.jpg"
                                 width="100"
                                 height="100"
                                 title="HDFS Administration"
@@ -104,7 +104,7 @@
 
               </h:commandLink>
               <br></br>
-              <p:outputLabel style="text-align: left"  value="Jobs Administration"></p:outputLabel>
+              <p:outputLabel style="text-align: left"  value="HDFS Admin"></p:outputLabel>
             </p:column>
 
             <p:column>
@@ -126,7 +126,7 @@
               <h:commandLink  action="spamUsers">
 
                 <p:graphicImage id="spam" 
-                                value="/resources/images/users/hdfs-logo.png" 
+                                value="/resources/images/users/spam.png" 
                                 width="100"
                                 height="100"
                                 title="Spam Requests"
