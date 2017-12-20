@@ -205,9 +205,8 @@
                               <span>Show Manifest</span>
                             </a>
                           </li>
-                          <div ng-controller="DelaClientCtrl as delaClientCtrl">
                           <li class="divider" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner'  && (dataset.publicDs === 0)"></li>
-                          <li class="dropdown-submenu" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner' && (dataset.publicDs === 0)">
+                          <li ng-controller="DelaClientCtrl as delaClientCtrl" class="dropdown-submenu" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner' && (dataset.publicDs === 0)">
                             <a tabindex="-1"><span><i class="fa fa-share-alt"></i> Share with</span></a>
                             <ul class="dropdown-menu">
                               <li ng-if="dataset.publicDs === 0">
@@ -248,7 +247,6 @@
                               </li>
                             </ul>
                           </li>
-                          </div>
                         </ul>
                       </div>
                       </div> <!-- end repeat -->
