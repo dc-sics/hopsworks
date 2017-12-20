@@ -54,11 +54,11 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
+import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
 import io.hops.hopsworks.common.dao.user.consent.ConsentStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.UserManager;
 import io.hops.hopsworks.common.dataset.DatasetController;
 import io.hops.hopsworks.common.dataset.FolderNameValidator;
 import io.hops.hopsworks.common.elastic.ElasticController;
@@ -74,6 +74,7 @@ import io.hops.hopsworks.common.jobs.yarn.YarnLogUtil;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.hive.HiveController;
+import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.LocalhostServices;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
@@ -130,7 +131,9 @@ public class ProjectController {
   @EJB
   private YarnProjectsQuotaFacade yarnProjectsQuotaFacade;
   @EJB
-  private UserManager userBean;
+  protected UsersController usersController;
+  @EJB
+  private UserFacade userFacade;
   @EJB
   private ActivityFacade activityFacade;
   @EJB
@@ -245,8 +248,7 @@ public class ProjectController {
        */
       try {
         try {
-          project = createProject(projectName, owner, projectDTO.
-              getDescription(), dfso);
+          project = createProject(projectName, owner, projectDTO.getDescription(), dfso);
         } catch (EJBException ex) {
           LOGGER.log(Level.WARNING, null, ex);
           Path dummy = new Path("/tmp/" + projectName);
@@ -262,19 +264,18 @@ public class ProjectController {
             getStatusCode(), "An error occured when creating the project");
       }
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 2 (hdfs): " + (System.currentTimeMillis() - startTime));
-  
+
       verifyProject(project, dfso, sessionId);
-  
+
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 3 (verify): " + (System.currentTimeMillis() - startTime));
-      
+
       //create certificate for this user
       // User's certificates should be created before making any call to
       // Hadoop clients. Otherwise the client will fail if RPC TLS is enabled
       // This is an async call
       Future<CertificatesController.CertsResult> certsGenerationFuture = null;
       try {
-        certsGenerationFuture = certificatesController.generateCertificates
-            (project, owner, true);
+        certsGenerationFuture = certificatesController.generateCertificates(project, owner, true);
       } catch (Exception ex) {
         LOGGER.log(Level.SEVERE, "Error while creating certificates: "
             + ex.getMessage(), ex);
@@ -289,9 +290,9 @@ public class ProjectController {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), "wrong user name");
       }
-      
+
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 4 (certs): " + (System.currentTimeMillis() - startTime));
-      
+
       //all the verifications have passed, we can now create the project  
       //create the project folder
       String projectPath = null;
@@ -378,14 +379,14 @@ public class ProjectController {
         cleanup(project, sessionId, certsGenerationFuture);
       }
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 10 (elastic): " + (System.currentTimeMillis() - startTime));
-      
+
       try {
         if (certsGenerationFuture != null) {
           certsGenerationFuture.get();
         }
       } catch (InterruptedException | ExecutionException ex) {
-        LOGGER.log(Level.SEVERE, "Error while waiting for the certificate " +
-            "generation thread to finish. Will try to cleanup...", ex);
+        LOGGER.log(Level.SEVERE, "Error while waiting for the certificate "
+            + "generation thread to finish. Will try to cleanup...", ex);
         cleanup(project, sessionId, certsGenerationFuture);
       }
       return project;
@@ -468,7 +469,8 @@ public class ProjectController {
       AppException, IOException {
     if (projectFacade.numProjectsLimitReached(user)) {
       LOGGER.log(Level.SEVERE,
-          "You have reached the maximum number of allowed projects.");
+          "You have reached the maximum number of projects that you could create. Please contact "
+          + "your system administrator to request an increase in the number of projects you were allowed to create.");
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.NUM_PROJECTS_LIMIT_REACHED);
     } else if (projectFacade.projectExists(projectName)) {
@@ -505,7 +507,7 @@ public class ProjectController {
     //Persist project object
     this.projectFacade.persistProject(project);
     this.projectFacade.flushEm();
-    userBean.increaseNumCreatedProjects(user.getUid());
+    usersController.increaseNumCreatedProjects(user.getUid());
     logProject(project, OperationType.Add);
     return project;
   }
@@ -630,15 +632,15 @@ public class ProjectController {
     for (Settings.BaseDataset ds : Settings.BaseDataset.values()) {
       datasetController.createDataset(user, project, ds.getName(), ds.
           getDescription(), -1, false, true, dfso);
-      
+
       StringBuilder dsStrBuilder = new StringBuilder();
       dsStrBuilder.append(File.separator).append(Settings.DIR_ROOT)
           .append(File.separator).append(project.getName())
           .append(File.separator).append(ds.getName());
-      
+
       Path dsPath = new Path(dsStrBuilder.toString());
       FileStatus fstatus = dfso.getFileStatus(dsPath);
-      
+
       // create subdirectories for the resource dataset
       if (ds.equals(Settings.BaseDataset.RESOURCES)) {
         String[] subResources = settings.getResourceDirs().split(";");
@@ -690,7 +692,7 @@ public class ProjectController {
       throws
       ProjectInternalFoldersFailedException, AppException {
 
-    Users user = userBean.getUserByEmail(username);
+    Users user = userFacade.findByEmail(username);
 
     try {
       datasetController.createDataset(user, project, "consents",
@@ -725,7 +727,7 @@ public class ProjectController {
       Users user, DistributedFileSystemOps dfso) throws ServiceException {
     return addService(project, service, user, dfso, dfso);
   }
-  
+
   public boolean addService(Project project, ProjectServiceEnum service,
       Users user, DistributedFileSystemOps dfso,
       DistributedFileSystemOps udfso) throws ServiceException {
@@ -773,7 +775,7 @@ public class ProjectController {
           getDescription(), -1, false, true, dfso);
       datasetController.generateReadme(udfso, ds.getName(),
           ds.getDescription(), project.getName());
-      
+
       // This should only happen in project creation
       // Create dataset and corresponding README file as superuser
       // to postpone waiting for the certificates generation thread when
@@ -798,7 +800,7 @@ public class ProjectController {
   }
 
   private boolean addServiceHive(Project project, Users user,
-        DistributedFileSystemOps dfso) {
+      DistributedFileSystemOps dfso) {
     try {
       hiveController.createDatabase(project, user, dfso);
     } catch (SQLException | IOException ex) {
@@ -919,7 +921,7 @@ public class ProjectController {
           ResponseMessages.PROJECT_NOT_FOUND);
     }
     //Only project owner is able to delete a project
-    Users user = userBean.getUserByEmail(userMail);
+    Users user = userFacade.findByEmail(userMail);
     if (!project.getOwner().equals(user)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.PROJECT_REMOVAL_NOT_ALLOWED);
@@ -932,8 +934,9 @@ public class ProjectController {
     if (settings.isPythonKernelEnabled()) {
       jupyterProcessFacade.removePythonKernelsForProject(project.getName());
     }
+//    projectFacade.decrementNumProjectsCreated(user);
   }
-  
+
   public String[] forceCleanup(String projectName, String userEmail, String sessionId) {
     CleanupLogger cleanupLogger = new CleanupLogger(projectName);
     DistributedFileSystemOps dfso = null;
@@ -944,7 +947,7 @@ public class ProjectController {
       Project project = projectFacade.findByName(projectName);
       if (project != null) {
         cleanupLogger.logSuccess("Project not found in the database");
-  
+
         // Remove from Project team
         try {
           updateProjectTeamRole(project, ProjectRoleTypes.UNDER_REMOVAL);
@@ -952,7 +955,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Get Yarn applications
         List<ApplicationReport> projectApps = null;
         try {
@@ -964,13 +967,13 @@ public class ProjectController {
             hdfsUsers.add(hdfsUsername);
           }
           hdfsUsers.add(project.getProjectGenericUser());
-    
+
           projectApps = getYarnApplications(hdfsUsers, yarnClientWrapper.getYarnClient());
           cleanupLogger.logSuccess("Gotten Yarn applications");
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Kill Zeppelin jobs
         try {
           killZeppelin(project.getId(), sessionId);
@@ -978,7 +981,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Stop Jupyter
         try {
           jupyterProcessFacade.stopProject(project);
@@ -986,7 +989,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Kill Yarn Jobs
         try {
           killYarnJobs(project);
@@ -994,7 +997,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Wait for Yarn logs
         try {
           waitForJobLogs(projectApps, yarnClientWrapper.getYarnClient());
@@ -1002,7 +1005,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Log removal
         try {
           logProject(project, OperationType.Delete);
@@ -1010,7 +1013,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // Change ownership of root dir
         try {
           Path path = new Path(File.separator + Settings.DIR_ROOT + File.separator
@@ -1020,7 +1023,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // Change ownership of tmp file
         Path dummy = new Path("/tmp/" + project.getName());
         try {
@@ -1029,7 +1032,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // Remove Kafka
         try {
           removeKafkaTopics(project);
@@ -1037,7 +1040,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // Remove certificates
         try {
           certificatesController.deleteProjectCertificates(project);
@@ -1045,10 +1048,10 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         List<HdfsUsers> usersToClean = getUsersToClean(project);
         List<HdfsGroups> groupsToClean = getGroupsToClean(project);
-        
+
         // Remove project related files
         try {
           removeProjectRelatedFiles(usersToClean, dfso);
@@ -1056,7 +1059,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // Remove quotas
         try {
           removeQuotas(project);
@@ -1064,7 +1067,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // Change owner for files in shared datasets
         try {
           fixSharedDatasets(project, dfso);
@@ -1072,7 +1075,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // 16) Delete Hive database - will automatically cleanup all the Hive's metadata
         try {
           hiveController.dropDatabase(project, dfso, true);
@@ -1080,7 +1083,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Delete elasticsearch template for this project
         try {
           removeElasticsearch(project.getName());
@@ -1088,7 +1091,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // delete project group and users
         try {
           removeGroupAndUsers(groupsToClean, usersToClean);
@@ -1096,7 +1099,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // remove anaconda repos
         try {
           removeJupyter(project);
@@ -1104,7 +1107,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-        
+
         // remove dumy Inode
         try {
           dfso.rm(dummy, true);
@@ -1112,7 +1115,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // remove folder
         try {
           removeProjectFolder(project.getName(), dfso);
@@ -1125,7 +1128,7 @@ public class ProjectController {
         // with the same name at the same time
         cleanupLogger.logSuccess("Project is *NOT* in the database, going to remove as much as possible");
         Date now = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
-        Users user = userBean.getUserByEmail(userEmail);
+        Users user = userFacade.findByEmail(userEmail);
         Project toDeleteProject = new Project(projectName, user, now, PaymentType.PREPAID);
         Path tmpInodePath = new Path(File.separator + "tmp" + File.separator + projectName);
         try {
@@ -1142,8 +1145,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError("Could not create dummy Inode, moving on unsafe");
         }
-  
-  
+
         // Kill jobs
         List<HdfsUsers> projectHdfsUsers = hdfsUsersBean.getAllProjectHdfsUsers(projectName);
         try {
@@ -1152,14 +1154,14 @@ public class ProjectController {
             hdfsUsersStr.add(hdfsUser.getName());
           }
           hdfsUsersStr.add(projectName + "__" + Settings.PROJECT_GENERIC_USER_SUFFIX);
-    
+
           List<ApplicationReport> projectApps = getYarnApplications(hdfsUsersStr, yarnClientWrapper.getYarnClient());
           waitForJobLogs(projectApps, yarnClientWrapper.getYarnClient());
           cleanupLogger.logSuccess("Killed all Yarn Applications");
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Cleanup Jupyter project
         try {
           jupyterProcessFacade.projectCleanup(toDeleteProject);
@@ -1167,7 +1169,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove project related files
         try {
           removeProjectRelatedFiles(projectHdfsUsers, dfso);
@@ -1175,7 +1177,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove Hive database
         try {
           hiveController.dropDatabase(toDeleteProject, dfso, true);
@@ -1183,7 +1185,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove ElasticSearch index
         try {
           removeElasticsearch(projectName);
@@ -1191,7 +1193,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove HDFS Groups and Users
         try {
           List<HdfsGroups> projectHdfsGroups = hdfsUsersBean.getAllProjectHdfsGroups(projectName);
@@ -1200,7 +1202,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove Yarn project quota
         try {
           removeQuotas(toDeleteProject);
@@ -1208,7 +1210,7 @@ public class ProjectController {
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove Certificates
         try {
           LocalhostServices.deleteProjectCertificates(settings.getIntermediateCaDir(), projectName);
@@ -1217,7 +1219,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove root project directory
         try {
           removeProjectFolder(projectName, dfso);
@@ -1225,7 +1227,7 @@ public class ProjectController {
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
         }
-  
+
         // Remove /tmp/project
         try {
           dfso.rm(new Path(File.separator + "tmp" + File.separator + projectName), true);
@@ -1247,43 +1249,43 @@ public class ProjectController {
     logs[1] = cleanupLogger.getErrorLog().toString();
     return logs;
   }
-  
+
   private void sendInbox(String message, String userRequested) {
-    Users to = userBean.findByEmail(userRequested);
-    Users from = userBean.findByEmail(Settings.SITE_EMAIL);
+    Users to = userFacade.findByEmail(userRequested);
+    Users from = userFacade.findByEmail(Settings.SITE_EMAIL);
     messageController.send(to, from, "Force project cleanup", "Status", message, "");
   }
-  
+
   private void removeProjectRelatedFiles(List<HdfsUsers> hdfsUsers, DistributedFileSystemOps dfso)
-    throws IOException {
+      throws IOException {
     String logPath = getYarnAgregationLogPath();
     for (HdfsUsers user : hdfsUsers) {
       // Remove logs
       dfso.rm(new Path(logPath + File.separator + user.getName()), true);
-      
+
       // Change owner of history files
       List<Inode> historyInodes = inodeFacade.findHistoryFileByHdfsUser(user);
       for (Inode inode : historyInodes) {
         dfso.setOwner(new Path(inodeFacade.getPath(inode)),
             UserGroupInformation.getLoginUser().getUserName(), "hadoop");
       }
-      
+
       Path certsHdfsDir = new Path(settings.getHdfsTmpCertDir() + File.separator + user.getName());
       if (dfso.exists(certsHdfsDir.toString())) {
         dfso.rm(certsHdfsDir, true);
       }
     }
   }
-  
+
   private List<ApplicationReport> getYarnApplications(Set<String> hdfsUsers, YarnClient yarnClient)
-    throws YarnException, IOException {
+      throws YarnException, IOException {
     List<ApplicationReport> projectApplications = yarnClient.getApplications(null, hdfsUsers, null,
         EnumSet.of(
             YarnApplicationState.ACCEPTED, YarnApplicationState.NEW, YarnApplicationState.NEW_SAVING,
             YarnApplicationState.RUNNING, YarnApplicationState.SUBMITTED));
     return projectApplications;
   }
-  
+
   private void killYarnJobs(Project project) {
     List<Jobs> running = jobFacade.getRunningJobs(project);
     if (running != null && !running.isEmpty()) {
@@ -1310,9 +1312,9 @@ public class ProjectController {
       }
     }
   }
-  
+
   private void waitForJobLogs(List<ApplicationReport> projectsApps, YarnClient client)
-    throws YarnException, IOException, InterruptedException {
+      throws YarnException, IOException, InterruptedException {
     for (ApplicationReport appReport : projectsApps) {
       FinalApplicationStatus finalState = appReport.getFinalApplicationStatus();
       while (finalState.equals(FinalApplicationStatus.UNDEFINED)) {
@@ -1328,7 +1330,7 @@ public class ProjectController {
       }
     }
   }
-  
+
   private void killZeppelin(Integer projectId, String sessionId) throws AppException {
     Response resp = ClientBuilder.newClient()
         .target(settings.getRestEndpoint()
@@ -1354,11 +1356,11 @@ public class ProjectController {
       }
     }
   }
-  
+
   public void cleanup(Project project, String sessionId) throws AppException {
     cleanup(project, sessionId, null);
   }
-  
+
   public void cleanup(Project project, String sessionId,
       Future<CertificatesController.CertsResult> certsGenerationFuture)
       throws AppException {
@@ -1397,10 +1399,10 @@ public class ProjectController {
 
         //Restart zeppelin so interpreters shut down
         killZeppelin(project.getId(), sessionId);
-        
+
         // try and close all the jupyter jobs
         jupyterProcessFacade.stopProject(project);
-        
+
         try {
           removeAnacondaEnv(project);
         } catch (AppException ex) {
@@ -1432,10 +1434,9 @@ public class ProjectController {
       }
     }
   }
-  
+
   private void removeProjectInt(Project project, List<HdfsUsers> usersToClean,
-      List<HdfsGroups> groupsToClean, Future<CertificatesController
-      .CertsResult> certsGenerationFuture)
+      List<HdfsGroups> groupsToClean, Future<CertificatesController.CertsResult> certsGenerationFuture)
       throws IOException, InterruptedException, ExecutionException,
       AppException {
     DistributedFileSystemOps dfso = null;
@@ -1461,15 +1462,15 @@ public class ProjectController {
       if (certsGenerationFuture != null) {
         certsGenerationFuture.get();
       }
-      
+
       try {
         certificatesController.deleteProjectCertificates(project);
       } catch (IOException ex) {
-        LOGGER.log(Level.SEVERE, "Could not delete certificates during cleanup for project " + project.getName() +
-                ". Manual cleanup is needed!!!", ex);
+        LOGGER.log(Level.SEVERE, "Could not delete certificates during cleanup for project " + project.getName()
+            + ". Manual cleanup is needed!!!", ex);
         throw ex;
       }
-  
+
       removeProjectRelatedFiles(usersToClean, dfso);
 
       //remove quota
@@ -1477,7 +1478,7 @@ public class ProjectController {
 
       //change owner for files in shared datasets
       fixSharedDatasets(project, dfso);
-      
+
       //Delete Hive database - will automatically cleanup all the Hive's metadata
       hiveController.dropDatabase(project, dfso, false);
 
@@ -1503,14 +1504,14 @@ public class ProjectController {
       }
     }
   }
-  
+
   private void changeOwnershipToSuperuser(Path path, DistributedFileSystemOps dfso) throws IOException {
     if (dfso.exists(path.toString())) {
       dfso.setOwner(path, settings.getHdfsSuperUser(), settings.
           getHdfsSuperUser());
     }
   }
-  
+
   @TransactionAttribute(
       TransactionAttributeType.REQUIRES_NEW)
   private List<ProjectTeam> updateProjectTeamRole(Project project,
@@ -1585,27 +1586,25 @@ public class ProjectController {
    *
    *
    * @param project
-   * @param email
+   * @param ownerEmail
    * @param projectTeams
    * @return a list of user names that could not be added to the project team
    * list.
    * @throws io.hops.hopsworks.common.exception.AppException
    */
-  @TransactionAttribute(
-      TransactionAttributeType.NEVER)
-  public List<String> addMembers(Project project, String email,
+  @TransactionAttribute(TransactionAttributeType.NEVER)
+  public List<String> addMembers(Project project, String ownerEmail,
       List<ProjectTeam> projectTeams) throws AppException {
     List<String> failedList = new ArrayList<>();
     if (projectTeams == null) {
       return failedList;
     }
 
-    Users user = userBean.getUserByEmail(email);
+    Users owner = userFacade.findByEmail(ownerEmail);
     Users newMember;
     for (ProjectTeam projectTeam : projectTeams) {
       try {
-        if (!projectTeam.getProjectTeamPK().getTeamMember().equals(user.
-            getEmail())) {
+        if (!projectTeam.getProjectTeamPK().getTeamMember().equals(owner.getEmail())) {
 
           //if the role is not properly set set it to the default role (Data Scientist).
           if (projectTeam.getTeamRole() == null || (!projectTeam.getTeamRole().
@@ -1616,7 +1615,7 @@ public class ProjectController {
           }
 
           projectTeam.setTimestamp(new Date());
-          newMember = userBean.getUserByEmail(projectTeam.getProjectTeamPK().
+          newMember = userFacade.findByEmail(projectTeam.getProjectTeamPK().
               getTeamMember());
           if (newMember != null && !projectTeamFacade.isUserMemberOfProject(
               project, newMember)) {
@@ -1647,11 +1646,10 @@ public class ProjectController {
                 certificatesController.deleteUserSpecificCertificates(project,
                     newMember);
               } catch (IOException | InterruptedException | ExecutionException e) {
-                String failedUser = project.getName() + HdfsUsersController
-                    .USER_NAME_DELIMITER + newMember.getUsername();
+                String failedUser = project.getName() + HdfsUsersController.USER_NAME_DELIMITER + newMember.
+                    getUsername();
                 LOGGER.log(Level.SEVERE,
-                    "Could not delete user certificates for user " +
-                        failedUser + ". Manual cleanup is needed!!! ", e);
+                    "Could not delete user certificates for user " + failedUser + ". Manual cleanup is needed!!! ", e);
               }
               LOGGER.log(Level.SEVERE, "error while creating certificates, jupyter kernel: " + ex.getMessage(), ex);
               projectTeamFacade.removeProjectTeam(project, newMember);
@@ -1673,7 +1671,7 @@ public class ProjectController {
 
             logActivity(ActivityFacade.NEW_MEMBER + projectTeam.
                 getProjectTeamPK().getTeamMember(),
-                ActivityFacade.FLAG_PROJECT, user, project);
+                ActivityFacade.FLAG_PROJECT, owner, project);
           } else if (newMember == null) {
             failedList.add(projectTeam.getProjectTeamPK().getTeamMember()
                 + " was not found in the system.");
@@ -1694,7 +1692,7 @@ public class ProjectController {
 
       }
     }
-    
+
     return failedList;
   }
 
@@ -1798,14 +1796,14 @@ public class ProjectController {
     dfso.setHdfsSpaceQuotaInMBs(new Path(Settings.getProjectPath(project.getName())),
         diskspaceQuotaInMB);
 
-    if (hiveDbSpaceQuotaInMb != null &&
-        projectServicesFacade.isServiceEnabledForProject(project, ProjectServiceEnum.HIVE)) {
+    if (hiveDbSpaceQuotaInMb != null && projectServicesFacade.isServiceEnabledForProject(project,
+        ProjectServiceEnum.HIVE)) {
       dfso.setHdfsSpaceQuotaInMBs(hiveController.getDbPath(project.getName()),
           hiveDbSpaceQuotaInMb);
     }
   }
 
-  public void setPaymentType(Project project, PaymentType paymentType){
+  public void setPaymentType(Project project, PaymentType paymentType) {
     project.setPaymentType(paymentType);
     this.projectFacade.mergeProject(project);
     this.projectFacade.flushEm();
@@ -1851,7 +1849,7 @@ public class ProjectController {
 
     // If the Hive service is enabled, get the quota information for the db directory
     if (projectServicesFacade.isServiceEnabledForProject(project, ProjectServiceEnum.HIVE)) {
-      List<Dataset> datasets = (List<Dataset>)project.getDatasetCollection();
+      List<Dataset> datasets = (List<Dataset>) project.getDatasetCollection();
       for (Dataset ds : datasets) {
         if (ds.getType() == DatasetType.HIVEDB) {
           HdfsInodeAttributes dbInodeAttrs = hdfsInodeAttributesFacade.getInodeAttributes(ds.getInodeId());
@@ -1868,7 +1866,7 @@ public class ProjectController {
     }
 
     return new QuotasDTO(yarnRemainingQuota, yarnTotalQuota, hdfsQuota, hdfsUsage, hdfsNsQuota, hdfsNsCount,
-              dbhdfsQuota, dbhdfsUsage, dbhdfsNsQuota, dbhdfsNsCount);
+        dbhdfsQuota, dbhdfsUsage, dbhdfsNsQuota, dbhdfsNsCount);
   }
 
   /**
@@ -1877,11 +1875,12 @@ public class ProjectController {
    * @param project
    * @param email
    * @param toRemoveEmail
+   * @param sessionId
    * @throws AppException
    */
   public void removeMemberFromTeam(Project project, String email,
       String toRemoveEmail, String sessionId) throws AppException, Exception {
-    Users userToBeRemoved = userBean.getUserByEmail(toRemoveEmail);
+    Users userToBeRemoved = userFacade.findByEmail(toRemoveEmail);
     if (userToBeRemoved == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.USER_DOES_NOT_EXIST);
@@ -1894,7 +1893,7 @@ public class ProjectController {
           ResponseMessages.TEAM_MEMBER_NOT_FOUND);
     }
     projectTeamFacade.removeProjectTeam(project, userToBeRemoved);
-    Users user = userBean.getUserByEmail(email);
+    Users user = userFacade.findByEmail(email);
     String hdfsUser = hdfsUsersController.getHdfsUserName(project, userToBeRemoved);
 
     YarnClientWrapper yarnClientWrapper = ycs.getYarnClientSuper(settings
@@ -1957,14 +1956,12 @@ public class ProjectController {
     } finally {
       ycs.closeYarnClient(yarnClientWrapper);
     }
-    
-    
-    
+
     try {
       kafkaFacade.removeAclsForUser(userToBeRemoved, project.getId());
     } catch (Exception ex) {
-      String errorMsg = "Error while removing Kafka ACL for user " + userToBeRemoved.getUsername() + " from project " +
-          project.getName();
+      String errorMsg = "Error while removing Kafka ACL for user " + userToBeRemoved.getUsername() + " from project "
+          + project.getName();
       LOGGER.log(Level.SEVERE, errorMsg, ex);
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), errorMsg);
     }
@@ -1991,8 +1988,8 @@ public class ProjectController {
   public void updateMemberRole(Project project, String owner,
       String toUpdateEmail, String newRole) throws AppException {
     Users projOwner = project.getOwner();
-    Users opsOwner = userBean.getUserByEmail(owner);
-    Users user = userBean.getUserByEmail(toUpdateEmail);
+    Users opsOwner = userFacade.findByEmail(owner);
+    Users user = userFacade.findByEmail(toUpdateEmail);
     if (projOwner.equals(user)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           "Can not change the role of a project owner.");
@@ -2033,7 +2030,7 @@ public class ProjectController {
    * @return a list of project team
    */
   public List<ProjectTeam> findProjectByUser(String email) {
-    Users user = userBean.getUserByEmail(email);
+    Users user = userFacade.findByEmail(email);
     return projectTeamFacade.findActiveByMember(user);
   }
 
@@ -2046,7 +2043,7 @@ public class ProjectController {
    * @return a list of project names
    */
   public List<String> findProjectNamesByUser(String email, boolean ignoreCase) {
-    Users user = userBean.getUserByEmail(email);
+    Users user = userFacade.findByEmail(email);
     List<ProjectTeam> projectTeams = projectTeamFacade.findActiveByMember(user);
     List<String> projects = null;
     if (projectTeams != null && projectTeams.size() > 0) {
@@ -2101,7 +2098,7 @@ public class ProjectController {
       TourProjectType projectType) throws
       AppException {
 
-    Users user = userBean.getUserByEmail(username);
+    Users user = userFacade.findByEmail(username);
     try {
       datasetController.createDataset(user, project, Settings.HOPS_TOUR_DATASET,
           "files for guide projects", -1, false, true, dfso);
@@ -2468,11 +2465,11 @@ public class ProjectController {
 
   public CertPwDTO getProjectWideCertPw(Users user, String projectGenericUsername,
       String keyStore) throws Exception {
-    ProjectGenericUserCerts projectGenericUserCerts =
-        userCertsFacade.findProjectGenericUserCerts(projectGenericUsername);
+    ProjectGenericUserCerts projectGenericUserCerts = userCertsFacade.
+        findProjectGenericUserCerts(projectGenericUsername);
     if (projectGenericUserCerts == null) {
-      throw new Exception("Found more than one or none project-wide " +
-          "certificates for project " + projectGenericUsername);
+      throw new Exception("Found more than one or none project-wide " + "certificates for project "
+          + projectGenericUsername);
     }
 
     String keypw = HopsUtils.decrypt(user.getPassword(), projectGenericUserCerts.getCertificatePassword(),
@@ -2497,19 +2494,18 @@ public class ProjectController {
    */
   public void validateCert(byte[] keyStore, char[] keyStorePwd, String projectUser, boolean isProjectSpecific)
       throws AppException {
-    String commonName = certificatesController.extractCNFromCertificate
-        (keyStore, keyStorePwd, projectUser);
-  
+    String commonName = certificatesController.extractCNFromCertificate(keyStore, keyStorePwd, projectUser);
+
     if (!projectUser.equals(commonName)) {
       throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
           "Certificate CN does not match the username provided");
     }
-  
+
     byte[] userKey;
-  
+
     if (isProjectSpecific) {
       userKey = userCertsFacade.findUserCert(hdfsUsersBean.
-              getProjectName(commonName),
+          getProjectName(commonName),
           hdfsUsersBean.getUserName(commonName)).getUserKey();
     } else {
       // In that case projectUser is the name of the Project, see Spark
@@ -2522,7 +2518,7 @@ public class ProjectController {
       }
       userKey = projectGenericUserCerts.getKey();
     }
-  
+
     if (!Arrays.equals(userKey, keyStore)) {
       throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
           "Certificate error!");
@@ -2531,9 +2527,11 @@ public class ProjectController {
 
   /**
    * Helper class to log force cleanup operations
+   *
    * @see ProjectController#forceCleanup(String, String, String)
    */
   private class CleanupLogger {
+
     private final String projectName;
     private final StringBuilder successLog;
     private final StringBuilder errorLog;
@@ -2573,6 +2571,7 @@ public class ProjectController {
   /**
    * For HopsFS quotas, both the namespace and the space quotas should be not null
    * at the same time.
+   *
    * @param newProjectState
    * @param quotas
    * @throws IOException
@@ -2582,8 +2581,7 @@ public class ProjectController {
     Project currentProject = projectFacade.findByName(newProjectState.getName());
 
     // Set (un)archived status only if changed
-    if (newProjectState.getArchived() != null &&
-        (currentProject.getArchived() != newProjectState.getArchived())) {
+    if (newProjectState.getArchived() != null && (currentProject.getArchived() != newProjectState.getArchived())) {
       if (newProjectState.getArchived()) {
         projectFacade.archiveProject(currentProject);
       } else {
@@ -2592,8 +2590,8 @@ public class ProjectController {
     }
 
     // Set payment type information
-    if (newProjectState.getPaymentType() != null &&
-        (newProjectState.getPaymentType() != currentProject.getPaymentType())) {
+    if (newProjectState.getPaymentType() != null
+        && (newProjectState.getPaymentType() != currentProject.getPaymentType())) {
       setPaymentType(currentProject, newProjectState.getPaymentType());
     }
 
@@ -2605,9 +2603,9 @@ public class ProjectController {
       boolean quotaChanged = false;
       try {
         // If Hdfs quotas has changed, persist the changes in the database.
-        if (quotas.getHdfsQuotaInBytes() != null && quotas.getHdfsNsQuota() != null &&
-            (!quotas.getHdfsQuotaInBytes().equals(currentQuotas.getHdfsQuotaInBytes()) ||
-                !quotas.getHdfsNsQuota().equals(currentQuotas.getHdfsNsQuota()))) {
+        if (quotas.getHdfsQuotaInBytes() != null && quotas.getHdfsNsQuota() != null && (!quotas.getHdfsQuotaInBytes().
+            equals(currentQuotas.getHdfsQuotaInBytes()) || !quotas.getHdfsNsQuota().equals(currentQuotas.
+            getHdfsNsQuota()))) {
 
           dfso.setHdfsQuotaBytes(new Path(Settings.getProjectPath(currentProject.getName())),
               quotas.getHdfsNsQuota(), quotas.getHdfsQuotaInBytes());
@@ -2616,10 +2614,10 @@ public class ProjectController {
         }
 
         // If Hive quota has changed and the Hive service is enabled, persist the changes in the database.
-        if (quotas.getHiveHdfsQuotaInBytes() != null && quotas.getHiveHdfsNsQuota() != null &&
-            projectServicesFacade.isServiceEnabledForProject(currentProject, ProjectServiceEnum.HIVE) &&
-            (!quotas.getHiveHdfsQuotaInBytes().equals(currentQuotas.getHiveHdfsQuotaInBytes()) ||
-                !quotas.getHiveHdfsNsQuota().equals(currentQuotas.getHiveHdfsNsQuota()))) {
+        if (quotas.getHiveHdfsQuotaInBytes() != null && quotas.getHiveHdfsNsQuota() != null && projectServicesFacade.
+            isServiceEnabledForProject(currentProject, ProjectServiceEnum.HIVE) && (!quotas.getHiveHdfsQuotaInBytes().
+            equals(currentQuotas.getHiveHdfsQuotaInBytes()) || !quotas.getHiveHdfsNsQuota().equals(currentQuotas.
+            getHiveHdfsNsQuota()))) {
 
           dfso.setHdfsQuotaBytes(hiveController.getDbPath(currentProject.getName()),
               quotas.getHiveHdfsNsQuota(), quotas.getHiveHdfsQuotaInBytes());
@@ -2636,7 +2634,7 @@ public class ProjectController {
       }
 
       // If the yarn quota has changed, persist the change in the database
-      if (quotas.getYarnQuotaInSecs() != null &&
+      if (quotas.getYarnQuotaInSecs() != null && 
           !quotas.getYarnQuotaInSecs().equals(currentQuotas.getYarnQuotaInSecs())) {
         yarnProjectsQuotaFacade.changeYarnQuota(currentProject.getName(), quotas.getYarnQuotaInSecs());
         quotaChanged = true;
