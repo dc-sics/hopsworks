@@ -19,7 +19,6 @@
     <module>hopsworks-ear</module>
     <module>hopsworks-ca</module>
     <module>hopsworks-dela</module>
-    <module>hopsworks-ldap</module>
   </modules>
 
   <profiles>

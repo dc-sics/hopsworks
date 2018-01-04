@@ -81,7 +81,7 @@ public class UsersController {
   // To send the user the QR code image
   private byte[] qrCode;
 
-  public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws AppException, SocketException, 
+  public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws AppException, SocketException,
       NoSuchAlgorithmException {
     userValidator.isValidNewUser(newUser);
     Users user = createNewUser(newUser, PeopleAccountStatus.NEW_MOBILE_ACCOUNT, PeopleAccountType.M_ACCOUNT_TYPE);
@@ -97,7 +97,7 @@ public class UsersController {
       }
       // Only register the user if i can send the email
       userFacade.persist(user);
-      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),AuthenticationConstants.ISSUER, user.getSecret());
+      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(), AuthenticationConstants.ISSUER, user.getSecret());
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
           AccountsAuditActions.SUCCESS.name(), "", user, req);
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.QRCODE.name(),
@@ -156,11 +156,10 @@ public class UsersController {
    * @param accountStatus
    * @param accountType
    * @return
-   * @throws AppException
    * @throws NoSuchAlgorithmException
    */
   public Users createNewUser(UserDTO newUser, PeopleAccountStatus accountStatus, PeopleAccountType accountType) throws
-      AppException, NoSuchAlgorithmException {
+      NoSuchAlgorithmException {
     String otpSecret = SecurityUtils.calculateSecretKey();
     String activationKey = SecurityUtils.getRandomPassword(64);
     String uname = generateUsername(newUser.getEmail());
@@ -178,20 +177,18 @@ public class UsersController {
     user.setBbcGroupCollection(groups);
     return user;
   }
-  
+
   /**
    * Creates new agent user with only the not null values set
+   *
    * @param email
    * @param fname
    * @param lname
    * @param pwd
    * @param title
    * @return
-   * @throws AppException
-   * @throws NoSuchAlgorithmException 
    */
-  public Users createNewAgent(String email, String fname, String lname, String pwd, String title) throws
-      AppException, NoSuchAlgorithmException {
+  public Users createNewAgent(String email, String fname, String lname, String pwd, String title) {
     String uname = generateUsername(email);
     List<BbcGroup> groups = new ArrayList<>();
     String salt = authController.generateSalt();
@@ -199,6 +196,26 @@ public class UsersController {
 
     Users user = new Users(uname, password, email, fname, lname, title, PeopleAccountStatus.NEW_MOBILE_ACCOUNT,
         PeopleAccountType.M_ACCOUNT_TYPE, 0, salt);
+    user.setBbcGroupCollection(groups);
+    return user;
+  }
+
+  /**
+   * Create ldap user
+   * @param email
+   * @param fname
+   * @param lname
+   * @param pwd
+   * @return 
+   */
+  public Users createNewLdapUser(String email, String fname, String lname, String pwd) {
+    String uname = generateUsername(email);
+    List<BbcGroup> groups = new ArrayList<>();
+    String salt = authController.generateSalt();
+    String password = authController.getPasswordHash(pwd, salt);
+
+    Users user = new Users(uname, password, email, fname, lname, "-", PeopleAccountStatus.VERIFIED_ACCOUNT,
+        PeopleAccountType.LDAP_ACCOUNT_TYPE, 0, salt);
     user.setBbcGroupCollection(groups);
     return user;
   }

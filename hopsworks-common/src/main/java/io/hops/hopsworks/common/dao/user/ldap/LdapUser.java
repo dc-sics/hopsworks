@@ -7,51 +7,65 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
-import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @Entity
-@Table(name = "ldap_user")
+@Table(name = "hopsworks.ldap_user")
 @XmlRootElement
 @NamedQueries({
   @NamedQuery(name = "LdapUser.findAll",
       query = "SELECT l FROM LdapUser l")
   ,
   @NamedQuery(name = "LdapUser.findByUid",
-      query = "SELECT l FROM LdapUser l WHERE l.uid = :uid")
+    query = "SELECT l FROM LdapUser l WHERE l.uid = :uid")
   ,
-    @NamedQuery(name = "LdapUser.findByUidNumber",
-      query = "SELECT l FROM LdapUser l WHERE l.uidNumber = :uidNumber")})
+  @NamedQuery(name = "LdapUser.findByEntryUuid",
+      query = "SELECT l FROM LdapUser l WHERE l.entryUuid = :entryUuid")})
 public class LdapUser implements Serializable {
 
   private static final long serialVersionUID = 1L;
   @Id
   @Basic(optional = false)
   @NotNull
-  @Column(name = "uidNumber")
-  private Integer uidNumber;
+  @Size(min = 1,
+      max = 128)
+  @Column(name = "entry_uuid")
+  private String entryUuid;
   @JoinColumn(name = "uid",
       referencedColumnName = "uid")
-  @OneToOne(optional = false)
+  @ManyToOne(optional = false)
   private Users uid;
+  @NotNull
+  @Size(min = 1,
+      max = 64)
+  @Column(name = "auth_key")
+  private String authKey;
 
   public LdapUser() {
   }
 
-  public LdapUser(Integer uidNumber) {
-    this.uidNumber = uidNumber;
+  public LdapUser(String entryUuid) {
+    this.entryUuid = entryUuid;
   }
 
-  public Integer getUidNumber() {
-    return uidNumber;
+  public LdapUser(String entryUuid, Users uid, String authKey) {
+    this.entryUuid = entryUuid;
+    this.uid = uid;
+    this.authKey = authKey;
   }
 
-  public void setUidNumber(Integer uidNumber) {
-    this.uidNumber = uidNumber;
+  public String getEntryUuid() {
+    return entryUuid;
+  }
+
+  public void setEntryUuid(String entryUuid) {
+    this.entryUuid = entryUuid;
   }
 
   public Users getUid() {
@@ -62,10 +76,18 @@ public class LdapUser implements Serializable {
     this.uid = uid;
   }
 
+  public String getAuthKey() {
+    return authKey;
+  }
+
+  public void setAuthKey(String authKey) {
+    this.authKey = authKey;
+  }
+
   @Override
   public int hashCode() {
     int hash = 0;
-    hash += (uidNumber != null ? uidNumber.hashCode() : 0);
+    hash += (entryUuid != null ? entryUuid.hashCode() : 0);
     return hash;
   }
 
@@ -76,8 +98,8 @@ public class LdapUser implements Serializable {
       return false;
     }
     LdapUser other = (LdapUser) object;
-    if ((this.uidNumber == null && other.uidNumber != null) ||
-        (this.uidNumber != null && !this.uidNumber.equals(other.uidNumber))) {
+    if ((this.entryUuid == null && other.entryUuid != null) || (this.entryUuid != null && !this.entryUuid.equals(
+        other.entryUuid))) {
       return false;
     }
     return true;
@@ -85,7 +107,7 @@ public class LdapUser implements Serializable {
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.user.ldap.LdapUser[ uidNumber=" + uidNumber + " ]";
+    return "io.hops.hopsworks.common.dao.user.ldap.LdapUser[ entryUuid=" + entryUuid + " ]";
   }
-  
+
 }

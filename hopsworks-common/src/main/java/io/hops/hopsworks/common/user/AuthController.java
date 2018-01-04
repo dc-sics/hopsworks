@@ -80,12 +80,15 @@ public class AuthController {
    * @param otp
    * @param req
    * @return
-   * @throws AppException 
+   * @throws AppException
    */
-  public String preCustomRealmLoginCheck(Users user, String password, String otp, HttpServletRequest req) 
+  public String preCustomRealmLoginCheck(Users user, String password, String otp, HttpServletRequest req)
       throws AppException {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Can not check ldap user.");
     }
     if (isTwoFactorEnabled(user)) {
       if ((otp == null || otp.isEmpty()) && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {
@@ -109,6 +112,17 @@ public class AuthController {
     } else {
       throw new IllegalArgumentException("Could not recognize the account type. Report a bug.");
     }
+    return newPassword;
+  }
+  
+  public String preLdapLoginCheck (Users user, String password, HttpServletRequest req) {
+    if (user == null) {
+      throw new IllegalArgumentException("User not set.");
+    }
+    if (!user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("User is not registerd as ldap user.");
+    }
+    String newPassword = getPasswordPlusSalt(password, user.getSalt()) + AuthenticationConstants.MOBILE_OTP_PADDING;
     return newPassword;
   }
 
@@ -136,13 +150,13 @@ public class AuthController {
   }
 
   /**
-   * Validate security question and update false login attempts   
+   * Validate security question and update false login attempts
    * @param user
    * @param securityQuestion
    * @param securityAnswer
    * @param req
    * @return
-   * @throws AppException 
+   * @throws AppException
    */
   public boolean validateSecurityQA(Users user, String securityQuestion, String securityAnswer, HttpServletRequest req)
       throws AppException {
@@ -164,7 +178,7 @@ public class AuthController {
    * @param password
    * @param req
    * @return
-   * @throws AppException 
+   * @throws AppException
    */
   public boolean checkPasswordAndStatus(Users user, String password, HttpServletRequest req) throws AppException {
     if (user == null) {
@@ -180,7 +194,7 @@ public class AuthController {
    * Validates email validation key. Also updates false key validation attempts.
    * @param key
    * @param req
-   * @throws AppException 
+   * @throws AppException
    */
   public void validateKey(String key, HttpServletRequest req) throws AppException {
     if (key == null) {
@@ -224,7 +238,7 @@ public class AuthController {
    * Sends new activation key to the given user.
    * @param user
    * @param req
-   * @throws MessagingException 
+   * @throws MessagingException
    */
   public void sendNewValidationKey(Users user, HttpServletRequest req) throws MessagingException {
     if (user == null) {
@@ -307,7 +321,7 @@ public class AuthController {
    * Hash password + salt
    * @param password
    * @param salt
-   * @return 
+   * @return
    */
   public String getPasswordHash(String password, String salt) {
     return getHash(getPasswordPlusSalt(password, salt));
@@ -316,7 +330,7 @@ public class AuthController {
   /**
    * Returns the hash of the value
    * @param val
-   * @return 
+   * @return
    */
   public String getHash(String val) {
     return DigestUtils.sha256Hex(val);
@@ -347,7 +361,7 @@ public class AuthController {
    * @param user
    * @param securityQuestion
    * @param securityAnswer
-   * @param req 
+   * @param req
    */
   public void changeSecQA(Users user, String securityQuestion, String securityAnswer, HttpServletRequest req) {
     user.setSecurityQuestion(SecurityQuestion.getQuestion(securityQuestion));
@@ -361,7 +375,7 @@ public class AuthController {
    * Concatenates password and salt
    * @param password
    * @param salt
-   * @return 
+   * @return
    */
   public String getPasswordPlusSalt(String password, String salt) {
     return password + salt;
@@ -391,7 +405,7 @@ public class AuthController {
               + Settings.PROJECT_GENERIC_USER_SUFFIX);
           pguCerts.add(userCertsFacade.findProjectGenericUserCerts(project.getName()
               + Settings.PROJECT_GENERIC_USER_SUFFIX));
-          String pguCertPassword = HopsUtils.decrypt(oldPass, pguCert.getCertificatePassword(), 
+          String pguCertPassword = HopsUtils.decrypt(oldPass, pguCert.getCertificatePassword(),
               masterEncryptionPassword);
           //Encrypt it with new password and store it in the db
           String newPguSecret = HopsUtils.encrypt(p.getPassword(), pguCertPassword, masterEncryptionPassword);
@@ -399,7 +413,7 @@ public class AuthController {
           userCertsFacade.updatePGUCert(pguCert);
         }
       }
-    } catch (Exception ex) { 
+    } catch (Exception ex) {
       LOGGER.log(Level.SEVERE, null, ex);
       throw new EJBException(ex);
     }
@@ -409,7 +423,7 @@ public class AuthController {
   /**
    * Register failed login attempt.
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerFalseLogin(Users user, HttpServletRequest req) {
     if (user != null) {
@@ -436,7 +450,7 @@ public class AuthController {
   /**
    * Registers failed email validation
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerFalseKeyValidation(Users user, HttpServletRequest req) {
     if (user != null) {
@@ -452,11 +466,11 @@ public class AuthController {
           name(), "Wrong validation key retries: " + Integer.toString(count), user, req);
     }
   }
-  
+
   /**
    * Set user online, resets false login attempts and register login audit info
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerLogin(Users user, HttpServletRequest req) {
     resetFalseLogin(user);
@@ -468,18 +482,18 @@ public class AuthController {
   /**
    * Set user offline and register login audit info
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerLogout(Users user, HttpServletRequest req) {
     setUserOnlineStatus(user, AuthenticationConstants.IS_OFFLINE);
     accountAuditFacade.registerLoginInfo(user, UserAuditActions.LOGOUT.name(), UserAuditActions.SUCCESS.name(), req);
     LOGGER.log(Level.INFO, "Logged out user: {0}. ", user.getEmail());
   }
-  
+
   /**
    * Register authentication failure and register login audit info
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerAuthenticationFailure(Users user, HttpServletRequest req) {
     registerFalseLogin(user, req);
@@ -514,7 +528,7 @@ public class AuthController {
 
   /**
    * Generates a salt value with SALT_LENGTH and DIGEST
-   * @return 
+   * @return
    */
   public String generateSalt() {
     byte[] bytes = new byte[SALT_LENGTH];

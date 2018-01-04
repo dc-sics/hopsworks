@@ -1,9 +1,11 @@
 package io.hops.hopsworks.common.dao.user.ldap;
 
 import java.util.List;
+import javax.xml.bind.annotation.XmlRootElement;
 
+@XmlRootElement
 public class LdapUserDTO {
-  private String uidNumber;
+  private String entryUUID;
   private String uid;
   private String givenName;
   private String sn;
@@ -12,20 +14,20 @@ public class LdapUserDTO {
   public LdapUserDTO() {
   }
 
-  public LdapUserDTO(String uidNumber, String uid, String givenName, String sn, List<String> email) {
-    this.uidNumber = uidNumber;
+  public LdapUserDTO(String entryUUID, String uid, String givenName, String sn, List<String> email) {
+    this.entryUUID = entryUUID;
     this.uid = uid;
     this.givenName = givenName;
     this.sn = sn;
     this.email = email;
   }
 
-  public String getUidNumber() {
-    return uidNumber;
+  public String getEntryUUID() {
+    return entryUUID;
   }
 
-  public void setUidNumber(String uidNumber) {
-    this.uidNumber = uidNumber;
+  public void setEntryUUID(String entryUUID) {
+    this.entryUUID = entryUUID;
   }
 
   public String getUid() {
@@ -62,8 +64,8 @@ public class LdapUserDTO {
 
   @Override
   public String toString() {
-    return "LdapUserDTO{" + "uidNumber=" + uidNumber + ", uid=" + uid + ", givenName=" + givenName + ", sn=" + sn +
+    return "LdapUserDTO{" + "entryUUID=" + entryUUID + ", uid=" + uid + ", givenName=" + givenName + ", sn=" + sn +
         ", email=" + email + '}';
-  }  
+  }
   
 }
