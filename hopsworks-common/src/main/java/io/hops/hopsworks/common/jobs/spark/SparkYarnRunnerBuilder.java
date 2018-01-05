@@ -88,6 +88,8 @@ public class SparkYarnRunnerBuilder {
    * @param jobUser
    * @param sparkDir
    * @param services
+   * @param dfsClient
+   * @param yarnClient
    * @param settings
    * @return The YarnRunner instance to launch the Spark job on Yarn.
    * @throws IOException If creation failed.
@@ -233,8 +235,8 @@ public class SparkYarnRunnerBuilder {
 
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
         settings.getHopsUtilFilename());
-    extraClassPathFiles.append(settings.getHopsUtilFilename()).append(
-        File.pathSeparator);
+    extraClassPathFiles.append(settings.getHopsUtilFilename()).append(File.pathSeparator).
+        append(settings.getHopsLeaderElectionJarPath()).append(File.pathSeparator);
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
         "$PWD/" + Settings.SPARK_LOCALIZED_CONF_DIR + File.pathSeparator
         + Settings.SPARK_LOCALIZED_CONF_DIR
@@ -312,15 +314,13 @@ public class SparkYarnRunnerBuilder {
       builder.addToAppMasterEnvironment(key, envVars.get(key));
     }
 
-    if (extraClassPathFiles.toString().length() > 0) {
-      addSystemProperty(Settings.SPARK_EXECUTOR_EXTRACLASSPATH,
-          extraClassPathFiles.toString().substring(0, extraClassPathFiles.
-              length() - 1));
-      if (secondaryJars.length() > 0) {
-        addSystemProperty("spark.yarn.secondary.jars",
-            secondaryJars.toString().substring(0, secondaryJars.
-                length() - 1));
-      }
+    addSystemProperty(Settings.SPARK_EXECUTOR_EXTRACLASSPATH,
+        extraClassPathFiles.toString().substring(0, extraClassPathFiles.length() - 1));
+    addSystemProperty(Settings.SPARK_DRIVER_EXTRACLASSPATH, settings.getHopsLeaderElectionJarPath());
+    
+    if (secondaryJars.length() > 0) {
+      addSystemProperty(Settings.SPARK_YARN_SECONDARY_JARS,
+          secondaryJars.toString().substring(0, secondaryJars.length() - 1));
     }
 
     //If DynamicExecutors are not enabled, set the user defined number 
