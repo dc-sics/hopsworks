@@ -483,9 +483,8 @@ public class ZeppelinConfig {
         + projectNameProp + userProp;
     String hdfsResourceDir = "hdfs://" + resourceDir + File.separator;
     // Comma-separated files to be added as local resources to Spark/Livy interpreter
-    String driverExtraClassPath = Settings.SPARK_DRIVER_EXTRACLASSPATH + "=" + settings.getHopsLeaderElectionJarPath();
-    String executorExtraClassPath = Settings.SPARK_EXECUTOR_EXTRACLASSPATH + "=" + settings.
-        getHopsLeaderElectionJarPath();
+    String driverExtraClassPath = settings.getHopsLeaderElectionJarPath();
+    String executorExtraClassPath = settings.getHopsLeaderElectionJarPath();
     
     StringBuilder distFiles = new StringBuilder();
     distFiles
