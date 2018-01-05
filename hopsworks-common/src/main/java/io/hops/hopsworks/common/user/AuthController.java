@@ -88,7 +88,7 @@ public class AuthController {
       throw new IllegalArgumentException("User not set.");
     }
     if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-      throw new IllegalArgumentException("Can not check ldap user.");
+      throw new IllegalArgumentException("Can not login ldap user. Use LDAP login.");
     }
     if (isTwoFactorEnabled(user)) {
       if ((otp == null || otp.isEmpty()) && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {

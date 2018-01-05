@@ -2,6 +2,7 @@ package io.hops.hopsworks.common.dao.user.ldap;
 
 import java.util.List;
 import javax.xml.bind.annotation.XmlRootElement;
+import org.codehaus.jackson.annotate.JsonIgnore;
 
 @XmlRootElement
 public class LdapUserDTO {
@@ -22,6 +23,7 @@ public class LdapUserDTO {
     this.email = email;
   }
 
+  @JsonIgnore
   public String getEntryUUID() {
     return entryUUID;
   }

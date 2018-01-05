@@ -128,6 +128,7 @@ public class Settings implements Serializable {
 
   private static final String VARIABLE_ADAM_USER = "adam_user";
   private static final String VARIABLE_ADAM_DIR = "adam_dir";
+  private static final String VARIABLE_LDAP_AUTH = "ldap_auth";
   private static final String VARIABLE_TWOFACTOR_AUTH = "twofactor_auth";
   private static final String VARIABLE_TWOFACTOR_EXCLUD = "twofactor-excluded-groups";
   private static final String VARIABLE_KAFKA_DIR = "kafka_dir";
@@ -289,6 +290,7 @@ public class Settings implements Serializable {
     if (!cached) {
       PYTHON_KERNEL = setBoolVar(VARIABLE_PYTHON_KERNEL, PYTHON_KERNEL);
       JAVA_HOME = setVar(VARIABLE_JAVA_HOME, JAVA_HOME);
+      LDAP_AUTH = setVar(VARIABLE_LDAP_AUTH, LDAP_AUTH);
       TWOFACTOR_AUTH = setVar(VARIABLE_TWOFACTOR_AUTH, TWOFACTOR_AUTH);
       TWOFACTOR_EXCLUDE = setVar(VARIABLE_TWOFACTOR_EXCLUD, TWOFACTOR_EXCLUDE);
       HOPSWORKS_USER = setVar(VARIABLE_HOPSWORKS_USER, HOPSWORKS_USER);
@@ -443,6 +445,13 @@ public class Settings implements Serializable {
 
   public static synchronized String getGlassfishDir() {
     return GLASSFISH_DIR;
+  }
+  
+  private String LDAP_AUTH = "false";
+  
+  public synchronized String getLDAPAuthStatus() {
+    checkCache();
+    return LDAP_AUTH;
   }
 
   private String TWOFACTOR_AUTH = "false";

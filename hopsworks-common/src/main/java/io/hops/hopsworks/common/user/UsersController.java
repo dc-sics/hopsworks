@@ -206,16 +206,17 @@ public class UsersController {
    * @param fname
    * @param lname
    * @param pwd
+   * @param accStatus
    * @return 
    */
-  public Users createNewLdapUser(String email, String fname, String lname, String pwd) {
+  public Users createNewLdapUser(String email, String fname, String lname, String pwd, PeopleAccountStatus accStatus) {
     String uname = generateUsername(email);
     List<BbcGroup> groups = new ArrayList<>();
     String salt = authController.generateSalt();
     String password = authController.getPasswordHash(pwd, salt);
 
-    Users user = new Users(uname, password, email, fname, lname, "-", PeopleAccountStatus.VERIFIED_ACCOUNT,
-        PeopleAccountType.LDAP_ACCOUNT_TYPE, 0, salt);
+    Users user = new Users(uname, password, email, fname, lname, "-", accStatus, PeopleAccountType.LDAP_ACCOUNT_TYPE,
+        settings.getMaxNumProjPerUser(), salt);
     user.setBbcGroupCollection(groups);
     return user;
   }

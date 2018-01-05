@@ -10,7 +10,6 @@ public class JsonResponse {
   private Integer statusCode;
   private String errorMsg;
   private String successMessage;
-  private String sessionID;
 
   public JsonResponse() {
   }
@@ -54,14 +53,6 @@ public class JsonResponse {
 
   public void setSuccessMessage(String successMessage) {
     this.successMessage = successMessage;
-  }
-
-  public String getSessionID() {
-    return sessionID;
-  }
-
-  public void setSessionID(String sessionID) {
-    this.sessionID = sessionID;
   }
 
 }

@@ -121,10 +121,10 @@ public class AuthService {
   @POST
   @Path("ldapLogin")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response login(@FormParam("username") String username, @FormParam("password") String password,
+  public Response ldapLogin(@FormParam("username") String username, @FormParam("password") String password,
       @FormParam("chosenEmail") String chosenEmail, @FormParam("consent") boolean consent,
       @Context HttpServletRequest req) throws LoginException, AppException {
-    io.hops.hopsworks.common.util.JsonResponse json = new io.hops.hopsworks.common.util.JsonResponse();
+    JsonResponse json = new JsonResponse();
     if (username == null || username.isEmpty()) {
       throw new IllegalArgumentException("Email can not be empty.");
     }
@@ -154,7 +154,7 @@ public class AuthService {
     //read the user data from db and return to caller
     json.setStatus("SUCCESS");
     json.setSessionID(req.getSession().getId());
-
+    json.setData(user.getEmail());
     return Response.status(Response.Status.OK).entity(json).build();
   }
 
