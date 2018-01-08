@@ -277,8 +277,12 @@ public class SparkYarnRunnerBuilder {
     builder.addToAppMasterEnvironment("SPARK_YARN_MODE", "true");
     builder.addToAppMasterEnvironment("SPARK_YARN_STAGING_DIR", stagingPath);
     builder.addToAppMasterEnvironment("SPARK_USER", jobUser);
+    builder.addToAppMasterEnvironment("HADOOP_USER_NAME", jobUser);
+    builder.addToAppMasterEnvironment("HDFS_USER", jobUser);
     builder.addToAppMasterEnvironment("HADOOP_HOME", settings.getHadoopSymbolicLinkDir());
     builder.addToAppMasterEnvironment("HADOOP_VERSION", settings.getHadoopVersion());
+    addSystemProperty(Settings.SPARK_EXECUTORENV_HADOOP_USER_NAME, jobUser);
+    addSystemProperty(Settings.SPARK_EXECUTORENV_HDFS_USER, jobUser);
 
     //Set TensorFlowOnSpark required environment variables
     if (jobType == JobType.TFSPARK) {
