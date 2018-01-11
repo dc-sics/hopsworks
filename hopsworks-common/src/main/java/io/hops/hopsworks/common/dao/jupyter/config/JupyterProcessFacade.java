@@ -141,10 +141,12 @@ public class JupyterProcessFacade {
         HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
         if (hdfsUser != null) {
           String user = hdfsUser.getUsername();
+          killHardJupyterWithPid(jp.getPid());
         }
       }
     }
     // Kill any processes
+    
 
   }
 
