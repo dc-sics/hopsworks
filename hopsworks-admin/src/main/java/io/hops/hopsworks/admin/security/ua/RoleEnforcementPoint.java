@@ -8,7 +8,7 @@ import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.servlet.http.HttpServletRequest;
 import io.hops.hopsworks.common.dao.user.UserFacade;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.user.AuthController;
 import io.hops.hopsworks.common.user.UsersController;
@@ -109,9 +109,8 @@ public class RoleEnforcementPoint implements Serializable {
   public boolean checkForRequests() {
     if (isAdmin()) {
       //return false if no requests
-      open_requests = !(userFacade.findAllByStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT).isEmpty())
-              || !(userFacade.findAllByStatus(PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT).isEmpty()
-              || !(userFacade.findAllByStatus(PeopleAccountStatus.VERIFIED_ACCOUNT).isEmpty()));
+      open_requests = !(userFacade.findAllByStatus(UserAccountStatus.NEW_MOBILE_ACCOUNT).isEmpty())
+              || !(userFacade.findAllByStatus(UserAccountStatus.VERIFIED_ACCOUNT).isEmpty());
     }
     return open_requests;
   }
@@ -124,9 +123,7 @@ public class RoleEnforcementPoint implements Serializable {
     this.tabIndex = 1;
     if (!userFacade.findAllMobileRequests().isEmpty()) {
       return "mobUsers";
-    } else if (!userFacade.findYubikeyRequests().isEmpty()) {
-      return "yubikeyUsers";
-    } else if (!userFacade.findAllByStatus(PeopleAccountStatus.SPAM_ACCOUNT).isEmpty()) {
+    } else if (!userFacade.findAllByStatus(UserAccountStatus.SPAM_ACCOUNT).isEmpty()) {
       return "spamUsers";
     }
 

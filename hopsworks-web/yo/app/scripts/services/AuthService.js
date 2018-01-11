@@ -41,20 +41,6 @@ angular.module('hopsWorksApp')
 
 
                 return $http(regReq);
-              },
-              registerYubikey: function (user) {
-
-                var regReq = {
-                  method: 'POST',
-                  url: '/api/auth/registerYubikey',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  data: user
-                };
-
-
-                return $http(regReq);
               }
             };
             return service;

@@ -14,7 +14,7 @@ import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
@@ -103,9 +103,6 @@ public class AuthController {
     if (otp.length() == AuthenticationConstants.MOBILE_OTP_PADDING.length() && user.getMode().equals(
         PeopleAccountType.M_ACCOUNT_TYPE)) {
       newPassword = newPassword + otp;
-    } else if (otp.length() == AuthenticationConstants.YUBIKEY_OTP_PADDING.length() && user.getMode().equals(
-        PeopleAccountType.Y_ACCOUNT_TYPE)) {
-      newPassword = newPassword + otp + AuthenticationConstants.YUBIKEY_USER_MARKER;
     } else {
       throw new IllegalArgumentException("Could not recognize the account type. Report a bug.");
     }
@@ -201,8 +198,7 @@ public class AuthController {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Wrong validation key");
     }
 
-    if (!user.getStatus().equals(PeopleAccountStatus.NEW_MOBILE_ACCOUNT) && !user.getStatus().equals(
-        PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT)) {
+    if (!user.getStatus().equals(UserAccountStatus.NEW_MOBILE_ACCOUNT)) {
       switch (user.getStatus()) {
         case VERIFIED_ACCOUNT:
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -214,9 +210,9 @@ public class AuthController {
       }
     }
 
-    user.setStatus(PeopleAccountStatus.VERIFIED_ACCOUNT);
+    user.setStatus(UserAccountStatus.VERIFIED_ACCOUNT);
     userFacade.update(user);
-    accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.VERIFIED_ACCOUNT.name(), RolesAuditActions.SUCCESS.
+    accountAuditFacade.registerRoleChange(user, UserAccountStatus.VERIFIED_ACCOUNT.name(), RolesAuditActions.SUCCESS.
         name(), "Account verification", user, req);
   }
 
@@ -418,14 +414,14 @@ public class AuthController {
 
       // block the user account if more than allowed false logins
       if (count > AuthenticationConstants.ALLOWED_FALSE_LOGINS) {
-        user.setStatus(PeopleAccountStatus.BLOCKED_ACCOUNT);
+        user.setStatus(UserAccountStatus.BLOCKED_ACCOUNT);
         try {
           emailBean.sendEmail(user.getEmail(), Message.RecipientType.TO,
               UserAccountsEmailMessages.ACCOUNT_BLOCKED__SUBJECT, UserAccountsEmailMessages.accountBlockedMessage());
         } catch (MessagingException ex) {
           LOGGER.log(Level.SEVERE, "Failed to send email. ", ex);
         }
-        accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), RolesAuditActions.SUCCESS.
+        accountAuditFacade.registerRoleChange(user, UserAccountStatus.SPAM_ACCOUNT.name(), RolesAuditActions.SUCCESS.
             name(), "False login retries:" + Integer.toString(count), user, req);
       }
       // notify user about the false attempts
@@ -445,10 +441,10 @@ public class AuthController {
 
       // make the user spam account if more than allowed tries
       if (count > AuthenticationConstants.ACCOUNT_VALIDATION_TRIES) {
-        user.setStatus(PeopleAccountStatus.SPAM_ACCOUNT);
+        user.setStatus(UserAccountStatus.SPAM_ACCOUNT);
       }
       userFacade.update(user);
-      accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), RolesAuditActions.SUCCESS.
+      accountAuditFacade.registerRoleChange(user, UserAccountStatus.SPAM_ACCOUNT.name(), RolesAuditActions.SUCCESS.
           name(), "Wrong validation key retries: " + Integer.toString(count), user, req);
     }
   }

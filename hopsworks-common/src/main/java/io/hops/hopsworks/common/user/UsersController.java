@@ -10,13 +10,12 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.Address;
 import io.hops.hopsworks.common.dao.user.security.Organization;
-import io.hops.hopsworks.common.dao.user.security.Yubikey;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
@@ -84,7 +83,7 @@ public class UsersController {
   public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws AppException, SocketException, 
       NoSuchAlgorithmException {
     userValidator.isValidNewUser(newUser);
-    Users user = createNewUser(newUser, PeopleAccountStatus.NEW_MOBILE_ACCOUNT, PeopleAccountType.M_ACCOUNT_TYPE);
+    Users user = createNewUser(newUser, UserAccountStatus.NEW_MOBILE_ACCOUNT, PeopleAccountType.M_ACCOUNT_TYPE);
     addAddress(user);
     addOrg(user);
     //to privent sending email for test user emails
@@ -115,40 +114,6 @@ public class UsersController {
     return qrCode;
   }
 
-  public boolean registerYubikeyUser(UserDTO newUser, HttpServletRequest req)
-      throws AppException, SocketException, NoSuchAlgorithmException {
-
-    userValidator.isValidNewUser(newUser);
-    Users user = createNewUser(newUser, PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT, PeopleAccountType.Y_ACCOUNT_TYPE);
-    addAddress(user);
-    addOrg(user);
-
-    Yubikey yk = new Yubikey();
-    yk.setUid(user);
-    yk.setStatus(PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT);
-    user.setYubikey(yk);
-
-    try {
-      // Notify user about the request
-      emailBean.sendEmail(newUser.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
-          UserAccountsEmailMessages.buildYubikeyRequestMessage(AuditUtil.getUserURL(req), user.getUsername() + user.
-              getValidationKey()));
-      // only register the user if i can send the email to the user
-      userFacade.persist(user);
-      accountAuditFacade.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
-          AccountsAuditActions.SUCCESS.name(), "", user, req);
-    } catch (MessagingException ex) {
-
-      accountAuditFacade.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
-          AccountsAuditActions.FAILED.name(), "", user, req);
-
-      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
-          "Cannot register now due to email service problems");
-
-    }
-    return true;
-  }
-
   /**
    * Create a new user
    *
@@ -159,7 +124,7 @@ public class UsersController {
    * @throws AppException
    * @throws NoSuchAlgorithmException
    */
-  public Users createNewUser(UserDTO newUser, PeopleAccountStatus accountStatus, PeopleAccountType accountType) throws
+  public Users createNewUser(UserDTO newUser, UserAccountStatus accountStatus, PeopleAccountType accountType) throws
       AppException, NoSuchAlgorithmException {
     String otpSecret = SecurityUtils.calculateSecretKey();
     String activationKey = SecurityUtils.getRandomPassword(64);
@@ -197,7 +162,7 @@ public class UsersController {
     String salt = authController.generateSalt();
     String password = authController.getPasswordHash(pwd, salt);
 
-    Users user = new Users(uname, password, email, fname, lname, title, PeopleAccountStatus.NEW_MOBILE_ACCOUNT,
+    Users user = new Users(uname, password, email, fname, lname, title, UserAccountStatus.NEW_MOBILE_ACCOUNT,
         PeopleAccountType.M_ACCOUNT_TYPE, 0, salt);
     user.setBbcGroupCollection(groups);
     return user;
@@ -501,7 +466,7 @@ public class UsersController {
 
   }
 
-  public void changeAccountStatus(int id, String note, PeopleAccountStatus status) {
+  public void changeAccountStatus(int id, String note, UserAccountStatus status) {
     Users p = userFacade.find(id);
     if (p != null) {
       p.setNotes(note);
@@ -526,7 +491,7 @@ public class UsersController {
 
   }
 
-  public void updateStatus(Users id, PeopleAccountStatus stat) throws ApplicationException {
+  public void updateStatus(Users id, UserAccountStatus stat) throws ApplicationException {
     id.setStatus(stat);
     try {
       userFacade.update(id);

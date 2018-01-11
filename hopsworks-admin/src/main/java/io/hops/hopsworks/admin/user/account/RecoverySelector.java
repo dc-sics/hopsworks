@@ -24,8 +24,7 @@ import org.primefaces.model.StreamedContent;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.user.UsersController;
@@ -130,11 +129,7 @@ public class RecoverySelector implements Serializable {
     if (console.equals("Mobile")) {
       return "mobile_recovery";
     }
-
-    if (console.equals("Yubikey")) {
-      return "yubikey_recovery";
-    }
-
+    
     return "";
   }
 
@@ -153,7 +148,7 @@ public class RecoverySelector implements Serializable {
       if (people != null && people.getPassword().equals(DigestUtils.sha256Hex(passwd))) {
 
         // Check the status to see if user is not blocked or deactivate
-        if (people.getStatus().equals(PeopleAccountStatus.BLOCKED_ACCOUNT)) {
+        if (people.getStatus().equals(UserAccountStatus.BLOCKED_ACCOUNT)) {
           MessagesController.addSecurityErrorMessage(
               AccountStatusErrorMessages.BLOCKED_ACCOUNT);
 
@@ -163,20 +158,11 @@ public class RecoverySelector implements Serializable {
           return "";
         }
 
-        if (people.getStatus().equals(PeopleAccountStatus.DEACTIVATED_ACCOUNT)) {
+        if (people.getStatus().equals(UserAccountStatus.DEACTIVATED_ACCOUNT)) {
           MessagesController.addSecurityErrorMessage(
               AccountStatusErrorMessages.DEACTIVATED_ACCOUNT);
           am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
               AccountsAuditActions.FAILED.name(), "", people);
-          return "";
-        }
-
-        if (people.getMode().equals(PeopleAccountType.Y_ACCOUNT_TYPE)) {
-          MessagesController.addSecurityErrorMessage(
-              AccountStatusErrorMessages.YUBIKEY);
-          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
-
           return "";
         }
 
@@ -227,13 +213,13 @@ public class RecoverySelector implements Serializable {
     }
 
     // Check the status to see if user is not blocked or deactivate
-    if (people.getStatus().equals(PeopleAccountStatus.BLOCKED_ACCOUNT)) {
+    if (people.getStatus().equals(UserAccountStatus.BLOCKED_ACCOUNT)) {
       MessagesController.addSecurityErrorMessage(
               AccountStatusErrorMessages.BLOCKED_ACCOUNT);
       return "";
     }
 
-    if (people.getStatus().equals(PeopleAccountStatus.DEACTIVATED_ACCOUNT)) {
+    if (people.getStatus().equals(UserAccountStatus.DEACTIVATED_ACCOUNT)) {
       MessagesController.addSecurityErrorMessage(
               AccountStatusErrorMessages.DEACTIVATED_ACCOUNT);
       return "";
@@ -266,7 +252,7 @@ public class RecoverySelector implements Serializable {
       usersController.increaseLockNum(people.getUid(), val + 1);
       if (val > AuthenticationConstants.ALLOWED_FALSE_LOGINS) {
         usersController.changeAccountStatus(people.getUid(), "",
-                PeopleAccountStatus.BLOCKED_ACCOUNT);
+                UserAccountStatus.BLOCKED_ACCOUNT);
         try {
           am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
                   AccountsAuditActions.SUCCESS.name(),
@@ -280,98 +266,9 @@ public class RecoverySelector implements Serializable {
         }
       }
 
-      MessagesController.addSecurityErrorMessage(
-              AccountStatusErrorMessages.INCCORCT_TMP_PIN);
+      MessagesController.addSecurityErrorMessage(AccountStatusErrorMessages.INCORRECT_TMP_PIN);
 
       return "";
-    }
-    return "";
-  }
-
-  /**
-   * Register lost Yubikey device.
-   * <p>
-   * @return
-   * @throws java.net.SocketException
-   */
-  public String sendYubiReq() throws SocketException {
-
-    people = userFacade.findByEmail(this.uname);
-
-    if (people == null) {
-      MessagesController.addSecurityErrorMessage(
-              AccountStatusErrorMessages.USER_NOT_FOUND);
-
-      return "";
-    }
-
-    if (people.getStatus().equals(PeopleAccountStatus.BLOCKED_ACCOUNT)) {
-      MessagesController.addSecurityErrorMessage(
-              AccountStatusErrorMessages.BLOCKED_ACCOUNT);
-      am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
-      return "";
-    }
-
-    if (!people.getMode().equals(PeopleAccountType.Y_ACCOUNT_TYPE)) {
-      MessagesController.addSecurityErrorMessage(
-              AccountStatusErrorMessages.USER_NOT_FOUND);
-
-      am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
-
-      return "";
-    }
-
-    try {
-      if (people.getPassword().equals(DigestUtils.sha256Hex(passwd))) {
-
-        String message = UserAccountsEmailMessages.buildYubikeyResetMessage();
-        people.
-                setStatus(PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT);
-        people.getYubikey().setStatus(PeopleAccountStatus.LOST_YUBIKEY);
-        userFacade.update(people);
-        email.sendEmail(people.getEmail(), RecipientType.TO,
-                UserAccountsEmailMessages.DEVICE_LOST_SUBJECT, message);
-
-        am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-                AccountsAuditActions.SUCCESS.name(), "", people);
-        return "yubico_reset";
-      } else {
-
-        int val = people.getFalseLogin();
-        usersController.increaseLockNum(people.getUid(), val + 1);
-        if (val > AuthenticationConstants.ALLOWED_FALSE_LOGINS) {
-          usersController.changeAccountStatus(people.getUid(), "",
-                  PeopleAccountStatus.BLOCKED_ACCOUNT);
-          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-                  AccountsAuditActions.SUCCESS.name(),
-                  "Account bloecked due to many false attempts.", people);
-
-          try {
-            email.sendEmail(people.getEmail(), RecipientType.TO,
-                    UserAccountsEmailMessages.ACCOUNT_BLOCKED__SUBJECT,
-                    UserAccountsEmailMessages.accountBlockedMessage());
-          } catch (MessagingException ex1) {
-
-            am.registerAccountChange(people, AccountsAuditActions.RECOVERY.
-                    name(),
-                    AccountsAuditActions.FAILED.name(), "", people);
-
-          }
-        }
-
-        MessagesController.addSecurityErrorMessage(
-                AccountStatusErrorMessages.INCCORCT_CREDENTIALS);
-
-        am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-                AccountsAuditActions.FAILED.name(), "", people);
-
-        return "";
-      }
-    } catch (MessagingException ex) {
-      am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
     }
     return "";
   }

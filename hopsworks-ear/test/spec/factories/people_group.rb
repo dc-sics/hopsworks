@@ -1,5 +1,5 @@
-class PeopleGroup < ActiveRecord::Base
+class UserGroup < ActiveRecord::Base
   def self.table_name
-    "people_group"
+    "user_group"
   end
 end

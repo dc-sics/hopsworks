@@ -28,7 +28,7 @@ import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
@@ -225,13 +225,12 @@ public class AdminProfileAdministration implements Serializable {
 
     status = new ArrayList<>();
 
-    for (PeopleAccountStatus p : PeopleAccountStatus.values()) {
+    for (UserAccountStatus p : UserAccountStatus.values()) {
       status.add(p.name());
     }
 
     // Remove the inactive users
-    status.remove(PeopleAccountStatus.NEW_MOBILE_ACCOUNT.name());
-    status.remove(PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT.name());
+    status.remove(UserAccountStatus.NEW_MOBILE_ACCOUNT.name());
 
     return status;
   }
@@ -283,9 +282,9 @@ public class AdminProfileAdministration implements Serializable {
   public void updateStatusByAdmin() {
     // Update status
     if (!"#!".equals(selectedStatus)) {
-      editingUser.setStatus(PeopleAccountStatus.valueOf(selectedStatus));
+      editingUser.setStatus(UserAccountStatus.valueOf(selectedStatus));
       try {
-        userFacade.updateStatus(editingUser.getEmail(), PeopleAccountStatus.valueOf(selectedStatus));
+        userFacade.updateStatus(editingUser.getEmail(), UserAccountStatus.valueOf(selectedStatus));
         am.registerAccountChange(sessionState.getLoggedInUser(), AccountsAuditActions.CHANGEDSTATUS.name(),
             UserAuditActions.SUCCESS.name(), selectedStatus, editingUser);
         MessagesController.addInfoMessage("Success", "Status updated successfully.");
@@ -369,7 +368,7 @@ public class AdminProfileAdministration implements Serializable {
     if (editingUser.getBbcGroupCollection().isEmpty() == false) {
       return false;
     }
-    if (editingUser.getStatus().equals(PeopleAccountStatus.VERIFIED_ACCOUNT)) {
+    if (editingUser.getStatus().equals(UserAccountStatus.VERIFIED_ACCOUNT)) {
       return false;
     }
     return true;

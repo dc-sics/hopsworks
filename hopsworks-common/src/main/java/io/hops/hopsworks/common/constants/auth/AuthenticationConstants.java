@@ -5,13 +5,6 @@ public final class AuthenticationConstants {
   // Issuer of the QrCode
   public static final String ISSUER = "hops.io";
 
-  // To distinguish Yubikey users
-  public static final String YUBIKEY_USER_MARKER = "YUBIKEY_USER_MARKER";
-
-  // For disabled OTP auth mode: 44 chars
-  public static final String YUBIKEY_OTP_PADDING
-          = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
-
   // For padding when password field is empty: 6 chars
   public static final String MOBILE_OTP_PADDING = "@@@@@@";
 

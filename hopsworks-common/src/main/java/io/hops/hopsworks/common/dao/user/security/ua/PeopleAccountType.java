@@ -21,11 +21,8 @@ public enum PeopleAccountType {
   ZERO(0), ONE(1),TWO(2),THREE(3),FOUR(4),FIVE(5),SIX(6),SEVEN(7),HEIGHT(8),NINE(9),
   // For mobile account types classification
   @XmlEnumValue("M_ACCOUNT_TYPE")
-  M_ACCOUNT_TYPE(10),  //kept number 10 and 11 to keep retrocompatibility
+  M_ACCOUNT_TYPE(10);  //kept number 10 and 11 to keep retrocompatibility
 
-  // For Yubikey account types classification
-  @XmlEnumValue("Y_ACCOUNT_TYPE")
-  Y_ACCOUNT_TYPE(11); //kept number 10 and 11 to keep retrocompatibility
 
   private final int value;
 

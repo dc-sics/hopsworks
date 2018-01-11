@@ -15,18 +15,6 @@
     </navigation-case>
 
     <navigation-case>
-      <from-outcome>activate_yubikey</from-outcome>
-      <to-view-id>/security/protected/admin/activate_yubikey.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-
-    <navigation-case>
-      <from-outcome>yubico_reset</from-outcome>
-      <to-view-id>/security/yubico_reset.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-
-    <navigation-case>
       <from-outcome>qrcode</from-outcome>
       <to-view-id>/security/qrcode.xhtml</to-view-id>
       <redirect/>
@@ -75,12 +63,6 @@
     </navigation-case>
     
     <navigation-case>
-      <from-outcome>mobile_recovery</from-outcome>
-      <to-view-id>/security/yubikey_recovery.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-    
-    <navigation-case>
       <from-outcome>validate_code</from-outcome>
       <to-view-id>/security/validate_code.xhtml</to-view-id>
       <redirect/>
@@ -91,13 +73,6 @@
       <to-view-id>/security/login_issue.xhtml</to-view-id>
       <redirect/>
     </navigation-case>
-
-    <navigation-case>
-      <from-outcome>print_address</from-outcome>
-      <to-view-id>/security/protected/admin/print_address.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-
 
     <navigation-case>
       <from-outcome>profile_password</from-outcome>
@@ -199,11 +174,6 @@
     <navigation-case>
       <from-outcome>spamUsers</from-outcome>
       <to-view-id>/security/protected/admin/spamUsers.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-    <navigation-case>
-      <from-outcome>yubikeyUsers</from-outcome>
-      <to-view-id>/security/protected/admin/yubikeyUers.xhtml</to-view-id>
       <redirect/>
     </navigation-case>
     <navigation-case>

@@ -75,36 +75,6 @@ public class UserAccountsEmailMessages {
           = "Your HopsWorks account has expired";
 
   /**
-   * Build an email message for Yubikey users upon registration.
-   *
-   * @param path
-   * @param key
-   * @return
-   */
-  public static String buildYubikeyRequestMessage(String path, String key) {
-
-    String message;
-
-    String l1 = GREETINGS_HEADER + ",\n\n"
-            + "We receieved your Yubikey account request for HopsWorks.\n\n";
-    String l2
-            = "Please click on the following link to verify your email address. "
-            + "Afterwards we will activate your account within 48 hours and send "
-            + "you a Yubikey stick to your address.\n\n\n";
-
-    String url = path + "/hopsworks-admin/security/validate_account.xhtml?key=" + key;
-
-    String l3 = "To confirm your email click " + url + " \n\n";
-
-    String l4 = "If you have any questions please contact "
-            + HOPSWORKS_SUPPORT_EMAIL;
-
-    message = l1 + l2 + l3 + l4;
-
-    return message;
-  }
-
-  /**
    * Build an email message for mobile users upon registration.
    *
    * @param path

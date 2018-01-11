@@ -36,7 +36,7 @@ import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
@@ -263,7 +263,7 @@ public class PeopleAdministration implements Serializable {
 
     this.status = new ArrayList<>();
 
-    for (PeopleAccountStatus p : PeopleAccountStatus.values()) {
+    for (UserAccountStatus p : UserAccountStatus.values()) {
       status.add(p.name());
     }
 
@@ -318,8 +318,8 @@ public class PeopleAdministration implements Serializable {
       return;
     }
     try {
-      usersController.changeAccountStatus(user1.getUid(), PeopleAccountStatus.SPAM_ACCOUNT.toString(),
-          PeopleAccountStatus.SPAM_ACCOUNT);
+      usersController.changeAccountStatus(user1.getUid(), UserAccountStatus.SPAM_ACCOUNT.toString(),
+          UserAccountStatus.SPAM_ACCOUNT);
       MessagesController.addInfoMessage(user1.getEmail() + " was rejected.");
       spamUsers.add(user1);
     } catch (RuntimeException ex) {
@@ -372,7 +372,7 @@ public class PeopleAdministration implements Serializable {
     }
     try {
       usersController.changeAccountStatus(user.getUid(), "",
-          PeopleAccountStatus.NEW_MOBILE_ACCOUNT);
+          UserAccountStatus.NEW_MOBILE_ACCOUNT);
       MessagesController.addInfoMessage(user.getEmail()
           + " was removed from spam list.");
       spamUsers.remove(user);
@@ -425,18 +425,6 @@ public class PeopleAdministration implements Serializable {
     return requests;
   }
 
-  /**
-   * Get all Yubikey requests
-   *
-   * @return
-   */
-  public List<Users> getAllYubikeyRequests() {
-    if (yRequests == null) {
-      yRequests = userFacade.findYubikeyRequests();
-    }
-    return yRequests;
-  }
-
   public List<Users> getSelectedUsers() {
     return selectedUsers;
   }
@@ -468,7 +456,7 @@ public class PeopleAdministration implements Serializable {
             user1);
       } else {
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
-            PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
+            UserAccountStatus.ACTIVATED_ACCOUNT.name(),
             RolesAuditActions.FAILED.name(), "Role could not be granted.",
             user1);
         MessagesController.addSecurityErrorMessage("Role could not be granted.");
@@ -476,13 +464,13 @@ public class PeopleAdministration implements Serializable {
       }
 
       try {
-        usersController.updateStatus(user1, PeopleAccountStatus.ACTIVATED_ACCOUNT);
+        usersController.updateStatus(user1, UserAccountStatus.ACTIVATED_ACCOUNT);
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
-            PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
+            UserAccountStatus.ACTIVATED_ACCOUNT.name(),
             UserAuditActions.SUCCESS.name(), "", user1);
       } catch (ApplicationException | IllegalArgumentException ex) {
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
-            PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
+            UserAccountStatus.ACTIVATED_ACCOUNT.name(),
             RolesAuditActions.FAILED.name(), "User could not be activated.",
             user1);
         MessagesController.addSecurityErrorMessage(
@@ -496,7 +484,7 @@ public class PeopleAdministration implements Serializable {
       MessagesController.addSecurityErrorMessage("Could not activate user. "
           + e.getMessage());
       auditManager.registerAccountChange(sessionState.getLoggedInUser(),
-          PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
+          UserAccountStatus.ACTIVATED_ACCOUNT.name(),
           UserAuditActions.FAILED.name(), "", user1);
       return;
     }
@@ -523,7 +511,7 @@ public class PeopleAdministration implements Serializable {
         getBbcGroupCollection().isEmpty() == false) {
       return false;
     }
-    if (user.getStatus().equals(PeopleAccountStatus.VERIFIED_ACCOUNT)) {
+    if (user.getStatus().equals(UserAccountStatus.VERIFIED_ACCOUNT)) {
       return false;
     }
     return true;
@@ -557,7 +545,7 @@ public class PeopleAdministration implements Serializable {
   }
 //
   public List<Users> getSpamUsers() {
-    return spamUsers = userFacade.findAllByStatus(PeopleAccountStatus.SPAM_ACCOUNT);
+    return spamUsers = userFacade.findAllByStatus(UserAccountStatus.SPAM_ACCOUNT);
   }
 
   public void setSpamUsers(List<Users> spamUsers) {
@@ -574,11 +562,6 @@ public class PeopleAdministration implements Serializable {
 
   public SecurityQuestion[] getQuestions() {
     return SecurityQuestion.values();
-  }
-
-  public String activateYubikeyUser(Users u) {
-    FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("yUser", u);
-    return "activate_yubikey";
   }
 
   public ClientSessionState getSessionState() {

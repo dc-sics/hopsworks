@@ -4,9 +4,9 @@ import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;
 import javax.xml.bind.annotation.XmlType;
 
-@XmlType(name = "peopleAccountStatus")
+@XmlType(name = "userAccountStatus")
 @XmlEnum
-public enum PeopleAccountStatus {
+public enum UserAccountStatus {
 
   /*
    * 
@@ -21,11 +21,7 @@ public enum PeopleAccountStatus {
   // Status of new Mobile users requests
   @XmlEnumValue("NEW_MOBILE_ACCOUNT")
   NEW_MOBILE_ACCOUNT(1),
-
-  // Status of new Yubikey users requests
-  @XmlEnumValue("NEW_YUBIKEY_ACCOUNT")
-  NEW_YUBIKEY_ACCOUNT(2),
-
+  
   // For new account requests where users should validate their account request
   @XmlEnumValue("VERIFIED_ACCOUNT")
   VERIFIED_ACCOUNT(3),
@@ -48,10 +44,6 @@ public enum PeopleAccountStatus {
   @XmlEnumValue("LOST_MOBILE")
   LOST_MOBILE(7),
 
-  // For scenarios where Yubikey device is compromised/lost
-  @XmlEnumValue("LOST_YUBIKEY")
-  LOST_YUBIKEY(8),
-
   // Mark account as SPAM
   @XmlEnumValue("SPAM_ACCOUNT")
   SPAM_ACCOUNT(9);
@@ -60,7 +52,7 @@ public enum PeopleAccountStatus {
 
   private final int value;
 
-  private PeopleAccountStatus(int value) {
+  private UserAccountStatus(int value) {
     this.value = value;
   }
 
@@ -68,8 +60,8 @@ public enum PeopleAccountStatus {
     return value;
   }
   
-  public static PeopleAccountStatus fromValue(int v) {
-    for (PeopleAccountStatus c : PeopleAccountStatus.values()) {
+  public static UserAccountStatus fromValue(int v) {
+    for (UserAccountStatus c : UserAccountStatus.values()) {
       if (c.value==v) {
         return c;
       }

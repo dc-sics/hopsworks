@@ -185,9 +185,6 @@ angular.module('hopsWorksApp', [
                       templateUrl: 'views/qrCode.html',
                       controller: 'RegCtrl as regCtrl'
                     })
-                    .when('/yubikey', {
-                      templateUrl: 'views/yubikey.html',
-                    })
                     .when('/project/:projectID', {
                       templateUrl: 'views/project.html',
                       controller: 'ProjectCtrl as projectCtrl',

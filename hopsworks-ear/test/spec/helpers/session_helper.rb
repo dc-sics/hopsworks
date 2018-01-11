@@ -84,17 +84,17 @@ module SessionHelper
 
   def create_role(user)
     group = BbcGroup.find_by(group_name: "HOPS_USER")
-    PeopleGroup.create(uid: user.uid, gid: group.gid)
+    UserGroup.create(uid: user.uid, gid: group.gid)
   end
   
   def create_admin_role(user)
     group = BbcGroup.find_by(group_name: "HOPS_ADMIN")
-    PeopleGroup.create(uid: user.uid, gid: group.gid)
+    UserGroup.create(uid: user.uid, gid: group.gid)
   end
   
   def create_agent_role(user)
     group = BbcGroup.find_by(group_name: "AGENT")
-    PeopleGroup.create(uid: user.uid, gid: group.gid)
+    UserGroup.create(uid: user.uid, gid: group.gid)
   end
   
   def create_user(params={})

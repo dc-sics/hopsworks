@@ -10,7 +10,7 @@ public enum AccountsAuditActions {
   PROFILEUPDATE("PROFILE UPDATE"),
   // for approving/changing status of users
   USERMANAGEMENT("USER MANAGEMENT"),
-  // for mobile lost or yubikeyu lost devices
+  // for mobile lost devices
   LOSTDEVICE("LOST DEVICE REPORT"),
   // for adminchange user account status
   CHANGEDSTATUS("CHANGED STATUS"),
