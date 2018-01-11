@@ -38,7 +38,8 @@ public class Cluster {
   @POST
   @Path("register")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response register(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException {
+  public Response register(ClusterDTO cluster, @Context HttpServletRequest req) throws MessagingException, 
+    AppException {
     LOGGER.log(Level.INFO, "Registering : {0}", cluster.getEmail());
     boolean autoValidate = clusterState.bypassActivationLink();
     clusterController.register(cluster, req, autoValidate);

@@ -11,12 +11,12 @@ import io.hops.hopsworks.common.dao.user.cluster.ClusterCertFacade;
 import io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusEnum;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.security.PKIUtils;
 import io.hops.hopsworks.common.user.AuthController;
+import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.Settings;
@@ -37,7 +37,6 @@ import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.security.cert.CertificateException;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.commons.codec.digest.DigestUtils;
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -67,8 +66,11 @@ public class ClusterController {
   private Settings settings;
   @EJB
   private AuthController authController;
+  @EJB
+  private UsersController usersCtrl;
 
-  public void register(ClusterDTO cluster, HttpServletRequest req, boolean autoValidate) throws MessagingException {
+  public void register(ClusterDTO cluster, HttpServletRequest req, boolean autoValidate) throws MessagingException, 
+    AppException {
     isValidNewCluster(cluster);
     ClusterCert clusterCert = clusterCertFacade.getByOrgUnitNameAndOrgName(cluster.getOrganizationName(), cluster.
       getOrganizationalUnitName());
@@ -76,21 +78,8 @@ public class ClusterController {
       throw new IllegalArgumentException(
         "Cluster with the same Organization and Organization unit name already registerd.");
     }
-    Users clusterAgent = userBean.findByEmail(cluster.getEmail());
-    if (clusterAgent != null) {
-      throw new IllegalArgumentException("User email already registerd.");
-    }
-    String agentName = getAgentName();
-    clusterAgent = new Users();
-    clusterAgent.setUsername(agentName);
-    clusterAgent.setEmail(cluster.getEmail());
-    clusterAgent.setFname(CLUSTER_NAME_PREFIX);
-    clusterAgent.setLname("007");
-    clusterAgent.setTitle("Mrs");
-    clusterAgent.setStatus(PeopleAccountStatus.NEW_MOBILE_ACCOUNT);
-    clusterAgent.setMode(PeopleAccountType.M_ACCOUNT_TYPE);
-    clusterAgent.setPassword(DigestUtils.sha256Hex(cluster.getChosenPassword()));
-    clusterAgent.setMaxNumProjects(0);
+    Users clusterAgent = usersCtrl.createNewAgent(cluster.getEmail(), CLUSTER_NAME_PREFIX, "007", 
+      cluster.getChosenPassword(), "Mrs");
 
     BbcGroup group = groupFacade.findByGroupName(CLUSTER_GROUP);
     Integer gid = groupFacade.lastGroupID() + 1;
@@ -103,7 +92,6 @@ public class ClusterController {
     List<BbcGroup> groups = new ArrayList<>();
     groups.add(group);
     clusterAgent.setBbcGroupCollection(groups);
-    userBean.persist(clusterAgent);
 
     String commonName;
     commonName = cluster.getOrganizationName() + "_" + cluster.getOrganizationalUnitName();
@@ -111,7 +99,6 @@ public class ClusterController {
     if (autoValidate) {
       if (clusterAgent.getStatus() == PeopleAccountStatus.NEW_MOBILE_ACCOUNT) {
         clusterAgent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT);
-        userBean.update(clusterAgent);
       }
       clusterCert = new ClusterCert(commonName, cluster.getOrganizationName(), cluster.getOrganizationalUnitName(),
         RegistrationStatusEnum.REGISTERED, clusterAgent);
@@ -123,6 +110,7 @@ public class ClusterController {
       clusterCert.setValidationKey(SecurityUtils.getRandomPassword(VALIDATION_KEY_LEN));
       clusterCert.setValidationKeyDate(new Date());
     }
+    userBean.persist(clusterAgent);
     clusterCertFacade.save(clusterCert);
 
     sendEmail(cluster, req, clusterCert.getId() + clusterCert.getValidationKey(), clusterAgent,
