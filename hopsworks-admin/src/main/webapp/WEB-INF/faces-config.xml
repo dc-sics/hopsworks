@@ -106,11 +106,6 @@
       <redirect/>
     </navigation-case>
     <navigation-case>
-      <from-outcome>consentMgmt</from-outcome>
-      <to-view-id>/security/protected/admin/consentManagement.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-    <navigation-case>
       <from-outcome>adminAuditIndex</from-outcome>
       <to-view-id>/security/protected/audit/adminAuditIndex.xhtml</to-view-id>
       <redirect/>
@@ -128,12 +123,6 @@
     <navigation-case>
       <from-outcome>rolesAudit</from-outcome>
       <to-view-id>/security/protected/audit/rolesAudit.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-
-    <navigation-case>
-      <from-outcome>consentsAudit</from-outcome>
-      <to-view-id>/security/protected/audit/consentsAudit.xhtml</to-view-id>
       <redirect/>
     </navigation-case>
     <navigation-case>

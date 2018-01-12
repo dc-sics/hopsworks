@@ -3,7 +3,6 @@ package io.hops.hopsworks.common.dao.user.security.audit;
 import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.dao.AbstractFacade;
 import io.hops.hopsworks.common.util.AuditUtil;
-import io.hops.hopsworks.common.dao.user.consent.Consents;
 import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Date;
@@ -373,29 +372,6 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
     return ul;
   }
 
-  public List<ConsentsAudit> getConsentsAudit(Date from, Date to,
-          String action) {
-    String sql = null;
-
-    if (action.isEmpty() || action == null || action.equals("ALL")) {
-      sql = "SELECT * FROM hopsworks.consents_audit WHERE ( time >= '" + from
-              + "' AND time <= '" + to + "')";
-    } else {
-      sql = "SELECT * FROM hopsworks.consents_audit WHERE ( time >= '" + from
-              + "' AND time <= '" + to + "' AND action = '"
-              + action + "')";
-    }
-
-    Query query = em.createNativeQuery(sql, ConsentsAudit.class);
-
-    List<ConsentsAudit> ul = query.getResultList();
-
-    if (ul.isEmpty()) {
-      return null;
-    }
-    return ul;
-  }
-
   /**
    * Register the login information into the log storage.
    * <p>
@@ -571,33 +547,6 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
     em.persist(aa);
   }
 
-  /**
-   * Register consent information in audit logs.
-   *
-   * @param user
-   * @param action
-   * @param outcome
-   * @param cons
-   * @param req
-   */
-  public void registerConsentInfo(Users user, String action, String outcome,
-          Consents cons,
-          HttpServletRequest req) {
-
-    ConsentsAudit ca = new ConsentsAudit();
-    ca.setConsentID(cons);
-    ca.setInitiator(user);
-    ca.setBrowser(AuditUtil.getBrowserInfo(req));
-    ca.setIp(AuditUtil.getIPAddress(req));
-    ca.setOs(AuditUtil.getOSInfo(req));
-    ca.setAction(action);
-    ca.setOutcome(outcome);
-    ca.setTime(new Timestamp(new Date().getTime()));
-    ca.setMac(AuditUtil.getMacAddress(AuditUtil.getIPAddress(req)));
-
-    em.persist(ca);
-  }
-  
   public List<AccountAudit> findByInitiator(Users user) {
     TypedQuery<AccountAudit> query = em.createNamedQuery("AccountAudit.findByInitiator", AccountAudit.class);
     query.setParameter("initiator", user);
