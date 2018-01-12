@@ -11,11 +11,9 @@ import javax.faces.bean.ViewScoped;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
-import io.hops.hopsworks.common.dao.user.consent.ConsentStatus;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.ConsentsAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.ProjectAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
@@ -54,13 +52,9 @@ public class AuditTrails implements Serializable {
 
   private UserAuditActions selectedLoginsAuditAction;
 
-  private ConsentStatus selectedConsentAction;
-
   private List<Userlogins> userLogins;
 
   private List<RolesAudit> roleAudit;
-
-  private List<ConsentsAudit> consnetAudit;
 
   private List<AccountAudit> accountAudit;
 
@@ -88,14 +82,6 @@ public class AuditTrails implements Serializable {
 
   public void setTo(Date to) {
     this.to = to;
-  }
-
-  public ConsentStatus getSelectedConsentAction() {
-    return selectedConsentAction;
-  }
-
-  public void setSelectedConsentAction(ConsentStatus selectedConsentAction) {
-    this.selectedConsentAction = selectedConsentAction;
   }
 
   public RolesAuditActions[] getAuditActions() {
@@ -184,18 +170,6 @@ public class AuditTrails implements Serializable {
 
   public void setAd(List<Activity> ad) {
     this.ad = ad;
-  }
-
-  public List<ConsentsAudit> getConsnetAudit() {
-    return consnetAudit;
-  }
-
-  public void setConsnetAudit(List<ConsentsAudit> consnetAudit) {
-    this.consnetAudit = consnetAudit;
-  }
-
-  public ConsentStatus[] getConsentAuditActions() {
-    return ConsentStatus.values();
   }
 
   /**
@@ -374,16 +348,6 @@ public class AuditTrails implements Serializable {
     if (action.equals(ProjectAuditActions.AUDITTRAILS)) {
       ad = activityController.activityDetailOnStudyAudit(username,
               convertTosqlDate(from), convertTosqlDate(to));
-    } else {
-      MessagesController.addSecurityErrorMessage("Audit action not supported.");
-    }
-  }
-
-  public void processConsentsAuditRequest(ConsentStatus action) {
-
-    if (action != null && !action.name().isEmpty()) {
-      consnetAudit = auditManager.getConsentsAudit(convertTosqlDate(from),
-              convertTosqlDate(to), action.name());
     } else {
       MessagesController.addSecurityErrorMessage("Audit action not supported.");
     }
