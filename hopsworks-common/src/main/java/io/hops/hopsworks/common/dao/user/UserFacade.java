@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.dao.user;
 
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import java.util.List;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -13,6 +12,7 @@ import io.hops.hopsworks.common.dao.user.security.UserGroup;
 import io.hops.hopsworks.common.dao.user.security.UserGroupPK;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.util.Settings;
 
 @Stateless
 public class UserFacade extends AbstractFacade<Users> {
@@ -89,7 +89,7 @@ public class UserFacade extends AbstractFacade<Users> {
     Object obj = query.getSingleResult();
 
     if (obj == null) {
-      return AuthenticationConstants.STARTING_USER;
+      return Settings.STARTING_USER;
     }
     return (Integer) obj;
   }

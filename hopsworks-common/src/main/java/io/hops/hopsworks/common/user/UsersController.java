@@ -1,7 +1,6 @@
 package io.hops.hopsworks.common.user;
 
 import com.google.zxing.WriterException;
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.user.BbcGroup;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
@@ -26,8 +25,8 @@ import io.hops.hopsworks.common.dao.user.sshkey.SshKeysPK;
 import io.hops.hopsworks.common.dao.user.sshkey.SshkeysFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.metadata.exception.ApplicationException;
-import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
+import io.hops.hopsworks.common.util.FormatUtils;
 import io.hops.hopsworks.common.util.QRCodeGenerator;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
@@ -91,12 +90,12 @@ public class UsersController {
       if (!newUser.isTestUser()) {
         // Notify user about the request if not test user.
         emailBean.sendEmail(newUser.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
-            UserAccountsEmailMessages.buildMobileRequestMessage(AuditUtil.getUserURL(req), user.getUsername() + user.
+            UserAccountsEmailMessages.buildMobileRequestMessage(FormatUtils.getUserURL(req), user.getUsername() + user.
                 getValidationKey()));
       }
       // Only register the user if i can send the email
       userFacade.persist(user);
-      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),AuthenticationConstants.ISSUER, user.getSecret());
+      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),Settings.ISSUER, user.getSecret());
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
           AccountsAuditActions.SUCCESS.name(), "", user, req);
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.QRCODE.name(),
@@ -373,7 +372,7 @@ public class UsersController {
         user.setTwoFactor(true);
         userFacade.update(user);
         qr_code = QRCodeGenerator.getQRCodeBytes(user.getEmail(),
-            AuthenticationConstants.ISSUER, user.getSecret());
+            Settings.ISSUER, user.getSecret());
         accountAuditFacade.registerAccountChange(user, AccountsAuditActions.TWO_FACTOR.name(),
             AccountsAuditActions.SUCCESS.name(), "Enabled 2-factor", user,
             req);
@@ -412,7 +411,7 @@ public class UsersController {
     }
     if (user.getTwoFactor()) {
       try {
-        qr_code = QRCodeGenerator.getQRCodeBytes(user.getEmail(), AuthenticationConstants.ISSUER, user.getSecret());
+        qr_code = QRCodeGenerator.getQRCodeBytes(user.getEmail(), Settings.ISSUER, user.getSecret());
       } catch (IOException | WriterException ex) {
         LOGGER.log(Level.SEVERE, null, ex);
       }

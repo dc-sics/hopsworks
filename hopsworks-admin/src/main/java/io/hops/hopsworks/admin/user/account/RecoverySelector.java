@@ -3,7 +3,6 @@ package io.hops.hopsworks.admin.user.account;
 import com.google.zxing.WriterException;
 import io.hops.hopsworks.admin.lims.MessagesController;
 import io.hops.hopsworks.common.constants.auth.AccountStatusErrorMessages;
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.util.EmailBean;
 import java.io.IOException;
@@ -18,7 +17,10 @@ import javax.faces.bean.SessionScoped;
 import javax.faces.context.FacesContext;
 import javax.mail.Message.RecipientType;
 import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+
+import io.hops.hopsworks.common.util.Settings;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.primefaces.model.StreamedContent;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -60,7 +62,7 @@ public class RecoverySelector implements Serializable {
   private String tmpCode;
   private String passwd;
 
-  private final int passwordLength = AuthenticationConstants.PASSWORD_MIN_LENGTH;
+  private final int passwordLength = Settings.PASSWORD_MIN_LENGTH;
 
   private int qrEnabled = -1;
 
@@ -142,7 +144,8 @@ public class RecoverySelector implements Serializable {
   public String sendQrCode() throws SocketException {
 
     people = userFacade.findByEmail(this.uname);
-
+    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
+        getCurrentInstance().getExternalContext().getRequest();
     try {
 
       if (people != null && people.getPassword().equals(DigestUtils.sha256Hex(passwd))) {
@@ -152,8 +155,8 @@ public class RecoverySelector implements Serializable {
           MessagesController.addSecurityErrorMessage(
               AccountStatusErrorMessages.BLOCKED_ACCOUNT);
 
-          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
+          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(), AccountsAuditActions.FAILED.name(),
+              "", people, httpServletRequest);
 
           return "";
         }
@@ -161,8 +164,8 @@ public class RecoverySelector implements Serializable {
         if (people.getStatus().equals(UserAccountStatus.DEACTIVATED_ACCOUNT)) {
           MessagesController.addSecurityErrorMessage(
               AccountStatusErrorMessages.DEACTIVATED_ACCOUNT);
-          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
+          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(), AccountsAuditActions.FAILED.name(),
+              "", people, httpServletRequest);
           return "";
         }
 
@@ -173,22 +176,22 @@ public class RecoverySelector implements Serializable {
         email.sendEmail(people.getEmail(), RecipientType.TO,
             UserAccountsEmailMessages.ACCOUNT_PASSWORD_RESET, message);
 
-        am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-            AccountsAuditActions.SUCCESS.name(), "Reset QR code.", people);
+        am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(), AccountsAuditActions.SUCCESS.name(),
+            "Reset QR code.", people, httpServletRequest);
 
         return "validate_code";
       } else {
         MessagesController.addSecurityErrorMessage(
             AccountStatusErrorMessages.INCCORCT_CREDENTIALS);
         if (people != null) {
-          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-              AccountsAuditActions.FAILED.name(), "", people);
+          am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(), AccountsAuditActions.FAILED.name(),
+              "", people, httpServletRequest);
         }
         return "";
       }
     } catch (MessagingException ex) {
-      am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
-          AccountsAuditActions.FAILED.name(), "", people);
+      am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(), AccountsAuditActions.FAILED.name(),
+          "", people, httpServletRequest);
 
     }
 
@@ -225,6 +228,8 @@ public class RecoverySelector implements Serializable {
       return "";
     }
 
+    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
+        getCurrentInstance().getExternalContext().getRequest();
     if (people.getSecret() == null ? tmpCode == null : people.getSecret().
             equals(this.tmpCode)) {
 
@@ -233,30 +238,27 @@ public class RecoverySelector implements Serializable {
 
         usersController.updateSecret(people.getUid(), otpSecret);
         qrCode = new DefaultStreamedContent(QRCodeGenerator.getQRCode(people.
-                getEmail(),
-                AuthenticationConstants.ISSUER, otpSecret), "image/png");
-
+                getEmail(), Settings.ISSUER, otpSecret), "image/png");
         qrEnabled = 1;
-        am.registerAccountChange(people, AccountsAuditActions.QRCODE.name(),
-                AccountsAuditActions.SUCCESS.name(), "QR code reset.", people);
-
+        am.registerAccountChange(people, AccountsAuditActions.QRCODE.name(), AccountsAuditActions.SUCCESS.name(),
+            "QR code reset.", people, httpServletRequest);
         return "qrcode";
 
-      } catch (IOException | WriterException | NoSuchAlgorithmException ex) {
+      } catch (IOException | WriterException | NoSuchAlgorithmException e) {
         Logger.getLogger(RecoverySelector.class.getName()).log(Level.SEVERE,
-                null, ex);
+                null, e);
       }
 
     } else {
       int val = people.getFalseLogin();
       usersController.increaseLockNum(people.getUid(), val + 1);
-      if (val > AuthenticationConstants.ALLOWED_FALSE_LOGINS) {
+      if (val > Settings.ALLOWED_FALSE_LOGINS) {
         usersController.changeAccountStatus(people.getUid(), "",
                 UserAccountStatus.BLOCKED_ACCOUNT);
         try {
           am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(),
                   AccountsAuditActions.SUCCESS.name(),
-                  "Account bloecked due to many false attempts.", people);
+                  "Account bloecked due to many false attempts.", people, httpServletRequest);
 
           email.sendEmail(people.getEmail(), RecipientType.TO,
                   UserAccountsEmailMessages.ACCOUNT_BLOCKED__SUBJECT,
