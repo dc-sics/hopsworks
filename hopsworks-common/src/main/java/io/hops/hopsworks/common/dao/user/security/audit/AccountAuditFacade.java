@@ -2,6 +2,7 @@ package io.hops.hopsworks.common.dao.user.security.audit;
 
 import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.dao.AbstractFacade;
+import io.hops.hopsworks.common.dao.user.UserLoginsFacade;
 import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.dao.user.consent.Consents;
 import java.sql.Timestamp;
@@ -551,7 +552,6 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param message
    * @param target
    * @param req
-   * @return
    */
   public void registerAccountChange(Users init, String action, String outcome,
           String message, Users target, HttpServletRequest req) {
