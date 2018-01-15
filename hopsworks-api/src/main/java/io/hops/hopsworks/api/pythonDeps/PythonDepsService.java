@@ -19,7 +19,6 @@ import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
-import io.hops.hopsworks.common.util.WebCommunication;
 import io.hops.hopsworks.dela.exception.ThirdPartyException;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -63,19 +62,15 @@ public class PythonDepsService {
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
-  private WebCommunication web;
-  @EJB
   private Settings settings;
   @EJB
   private HostsFacade hostsFacade;
-
+  @EJB
   private Project project;
   @EJB
   private JupyterProcessMgr jupyterProcessFacade;
   @EJB
   private HdfsUsersController hdfsUsersController;
-  @EJB
-  private HdfsUsersFacade hdfsUsersFacade;
   @EJB
   private UserFacade userFacade;
 
@@ -102,7 +97,7 @@ public class PythonDepsService {
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response index() throws AppException {
 
     Collection<PythonDep> pythonDeps = project.getPythonDepCollection();
