@@ -28,13 +28,13 @@ import javax.ws.rs.core.Response;
 
 @Stateless
 public class JupyterFacade {
-
+  
   private static final Logger logger = Logger.getLogger(JupyterFacade.class.
-          getName());
-
+      getName());
+  
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
-
+  
   @EJB
   private Settings settings;
   @EJB
@@ -47,15 +47,15 @@ public class JupyterFacade {
   private HdfsUsersFacade hdfsUsersFacade;
   @EJB
   private HdfsLeDescriptorsFacade hdfsLeFacade;
-
+  
   protected EntityManager getEntityManager() {
     return em;
   }
-
+  
   public List<JupyterProject> findNotebooksByProject(Integer projectId) {
     TypedQuery<JupyterProject> query = em.createNamedQuery(
-            "JupyterProject.findByProjectId",
-            JupyterProject.class);
+        "JupyterProject.findByProjectId",
+        JupyterProject.class);
     query.setParameter("projectId", projectId);
     List<JupyterProject> res = query.getResultList();
     List<JupyterProject> notebooks = new ArrayList<>();
@@ -66,15 +66,20 @@ public class JupyterFacade {
     }
     return notebooks;
   }
-
+  
   public boolean removeNotebookServer(String hdfsUsername) {
-
+    
     JupyterProject jp = findByUser(hdfsUsername);
     if (jp == null) {
       return false;
     }
-    em.remove(jp);
-    em.flush();
+    try {
+      em.remove(jp);
+      em.flush();
+    } catch (Exception ex) {
+      logger.warning("Problem removing jupyter notebook entry from hopsworks DB");
+      logger.warning(ex.getMessage());
+    }
     return true;
   }
 
@@ -86,9 +91,9 @@ public class JupyterFacade {
    */
   public boolean deleteProject(Project project) {
     Collection<ProjectTeam> ptc = project.getProjectTeamCollection();
-
+    
     for (ProjectTeam pt : ptc) {
-
+      
     }
 
 //    JupyterConfig conf = hdfsuserConfCache.remove(project.getName());
@@ -105,94 +110,94 @@ public class JupyterFacade {
 //    }
     return false;
   }
-
+  
   public JupyterProject findByUser(String hdfsUser) {
     HdfsUsers res = null;
     TypedQuery<HdfsUsers> query = em.createNamedQuery(
-            "HdfsUsers.findByName", HdfsUsers.class);
+        "HdfsUsers.findByName", HdfsUsers.class);
     query.setParameter("name", hdfsUser);
     try {
       res = query.getSingleResult();
     } catch (EntityNotFoundException | NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
-              e);
+          e);
       return null;
     }
     JupyterProject res2 = null;
     TypedQuery<JupyterProject> query2 = em.createNamedQuery(
-            "JupyterProject.findByHdfsUserId", JupyterProject.class);
+        "JupyterProject.findByHdfsUserId", JupyterProject.class);
     query2.setParameter("hdfsUserId", res.getId());
     try {
       res2 = query2.getSingleResult();
     } catch (EntityNotFoundException | NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
-              e);
+          e);
     }
     return res2;
   }
-
+  
   public void stopServer(String hdfsUser) throws AppException {
-
+    
     if (hdfsUser == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-              "Could not find a Jupyter Notebook server to delete.");
+          "Could not find a Jupyter Notebook server to delete.");
     }
-
+    
     JupyterProject jp = this.findByUser(hdfsUser);
     remove(jp);
   }
-
+  
   public List<JupyterProject> getAllNotebookServers() {
     List<JupyterProject> res = null;
     TypedQuery<JupyterProject> query = em.createNamedQuery(
-            "JupyterProject.findAll", JupyterProject.class);
+        "JupyterProject.findAll", JupyterProject.class);
     try {
       res = query.getResultList();
     } catch (EntityNotFoundException | NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
-              e);
+          e);
       return null;
     }
     return res;
   }
-
+  
   public void stopServers(Project project) {
 
     // delete JupyterProject entity bean
   }
-
+  
   public JupyterProject saveServer(String host,
-          Project project, String secretConfig, int port,
-          int hdfsUserId, String token, long pid)
-          throws AppException {
+      Project project, String secretConfig, int port,
+      int hdfsUserId, String token, long pid)
+      throws AppException {
     JupyterProject jp = null;
     String ip;
     ip = host + ":" + settings.getHopsworksPort();
     jp = new JupyterProject(project, secretConfig, port, hdfsUserId, ip, token,
-            pid);
-
+        pid);
+    
     persist(jp);
     return jp;
   }
-
+  
   private void persist(JupyterProject jp) {
     if (jp != null) {
       em.persist(jp);
     }
   }
-
+  
   public void update(JupyterProject jp) {
     if (jp != null) {
       em.merge(jp);
     }
   }
-
+  
   private void remove(JupyterProject jp) {
     if (jp != null) {
       em.remove(jp);
     }
   }
-
+  
   public void removeProject(Project project) {
     // Find any active jupyter servers
 
@@ -209,11 +214,11 @@ public class JupyterFacade {
     // Kill any processes
 
   }
-
+  
   public String getProjectPath(JupyterProject jp, String projectName,
-          String hdfsUser) {
+      String hdfsUser) {
     return settings.getJupyterDir() + File.separator
-            + Settings.DIR_ROOT + File.separator + projectName
-            + File.separator + hdfsUser + File.separator + jp.getSecret();
+        + Settings.DIR_ROOT + File.separator + projectName
+        + File.separator + hdfsUser + File.separator + jp.getSecret();
   }
 }

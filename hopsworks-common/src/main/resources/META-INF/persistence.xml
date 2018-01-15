@@ -74,7 +74,6 @@
     <class>io.hops.hopsworks.common.dao.jupyter.JupyterProject</class>
     <class>io.hops.hopsworks.common.dao.jupyter.JupyterSettings</class>
     <class>io.hops.hopsworks.common.dao.ndb.NdbBackup</class>
-    <class>io.hops.hopsworks.common.dao.jupyter.config.JupyterInterpreter</class>
     <!-- Converters -->
     <class>io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusConverter</class>
     <class>io.hops.hopsworks.common.jobs.configuration.JsonReduceableConverter</class>
