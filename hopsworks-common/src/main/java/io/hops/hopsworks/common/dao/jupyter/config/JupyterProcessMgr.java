@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
@@ -140,13 +141,11 @@ public class JupyterProcessMgr {
         HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
         if (hdfsUser != null) {
           String user = hdfsUser.getUsername();
-          killHardJupyterWithPid(jp.getPid());
+          killOrphanedWithPid(jp.getPid());
         }
       }
     }
-    // Kill any processes
-    
-
+    // when the project is removed all of the SQL entries will be cleaned up automatically  
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
