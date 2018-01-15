@@ -28,17 +28,8 @@ public class RoleEnforcementPoint implements Serializable {
   @EJB
   private UserFacade userFacade;
 
-  private boolean open_requests = false;
   private int tabIndex;
   private Users user;
-
-  public boolean isOpen_requests() {
-    return checkForRequests();
-  }
-
-  public void setOpen_requests(boolean open_reauests) {
-    this.open_requests = open_reauests;
-  }
 
   public Users getUserFromSession() {
     if (user == null) {
@@ -86,17 +77,6 @@ public class RoleEnforcementPoint implements Serializable {
     return usersController.isUserInRole(p, "HOPS_USER");
   }
 
-  public boolean isAuditorRole() {
-
-    Users p = userFacade.findByEmail(getRequest().getRemoteUser());
-    return (usersController.isUserInRole(p, "AUDITOR") || !usersController.isUserInRole(p, "HOPS_ADMIN"));
-  }
-
-  public boolean isAgentRole() {
-    Users p = userFacade.findByEmail(getRequest().getRemoteUser());
-    return (usersController.isUserInRole(p,"AGENT"));
-  }
-
   public boolean isOnlyAuditorRole() {
     Users p = userFacade.findByEmail(getRequest().getRemoteUser());
     return (usersController.isUserInRole(p,"AUDITOR") && !usersController.isUserInRole(p,"HOPS_ADMIN"));
@@ -109,10 +89,10 @@ public class RoleEnforcementPoint implements Serializable {
   public boolean checkForRequests() {
     if (isAdmin()) {
       //return false if no requests
-      open_requests = !(userFacade.findAllByStatus(UserAccountStatus.NEW_MOBILE_ACCOUNT).isEmpty())
+      return !(userFacade.findAllByStatus(UserAccountStatus.NEW_MOBILE_ACCOUNT).isEmpty())
               || !(userFacade.findAllByStatus(UserAccountStatus.VERIFIED_ACCOUNT).isEmpty());
     }
-    return open_requests;
+    return false;
   }
 
   public boolean isLoggedIn() {
@@ -126,11 +106,9 @@ public class RoleEnforcementPoint implements Serializable {
     } else if (!userFacade.findAllByStatus(UserAccountStatus.SPAM_ACCOUNT).isEmpty()) {
       return "spamUsers";
     }
-
     return "mobUsers";
   }
 
-  // MOVE OUT THIS
   public String logOut() {
     try {
       this.user = getUserFromSession();

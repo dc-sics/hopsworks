@@ -1086,7 +1086,6 @@ public class Settings implements Serializable {
   public static final String DIR_ROOT = "Projects";
   public static final String DIR_SAMPLES = "Samples";
   public static final String DIR_RESULTS = "Results";
-  public static final String DIR_CONSENTS = "consents";
   public static final String DIR_META_TEMPLATES = File.separator + DIR_ROOT + File.separator + "Uploads"
       + File.separator;
   public static final String PROJECT_STAGING_DIR = "Resources";
@@ -1528,6 +1527,33 @@ public class Settings implements Serializable {
     = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
   public static final String SHARED_FILE_SEPARATOR = "::";
   public static final String DOUBLE_UNDERSCORE = "__";
+
+  // Authentication Constants
+  // POSIX compliant usernake length
+  public static final int USERNAME_LENGTH = 8;
+
+  // Strating user id from 1000 to create a POSIX compliant username: meb1000
+  public static int STARTING_USER = 1000;
+  public static int PASSWORD_MIN_LENGTH = 6;
+
+  // POSIX compliant usernake length
+  public static final int ACCOUNT_VALIDATION_TRIES = 5;
+
+  // Issuer of the QrCode
+  public static final String ISSUER = "hops.io";
+
+  // For padding when password field is empty: 6 chars
+  public static final String MOBILE_OTP_PADDING = "@@@@@@";
+
+  // when user is loged in 1 otherwise 0
+  public static final int IS_ONLINE = 1;
+  public static final int IS_OFFLINE = 0;
+
+  public static final int ALLOWED_FALSE_LOGINS = 20;
+
+  //hopsworks user prefix username prefix
+  public static final String USERNAME_PREFIX = "meb";
+
 
   public static final String K_CERTIFICATE = "k_certificate";
   public static final String T_CERTIFICATE = "t_certificate";

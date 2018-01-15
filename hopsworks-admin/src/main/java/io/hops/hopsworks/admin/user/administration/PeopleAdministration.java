@@ -37,13 +37,14 @@ import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.metadata.exception.ApplicationException;
 import io.hops.hopsworks.common.user.UsersController;
-import io.hops.hopsworks.common.util.AuditUtil;
+import io.hops.hopsworks.common.util.FormatUtils;
+
 import javax.faces.bean.RequestScoped;
 
 @ManagedBean
@@ -190,7 +191,7 @@ public class PeopleAdministration implements Serializable {
   }
 
   public boolean mobileAccount(Users u) {
-    return u.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE);
+    return u.getMode().equals(UserAccountType.M_ACCOUNT_TYPE);
   }
 
   public List<String> getActGroups() {
@@ -442,6 +443,8 @@ public class PeopleAdministration implements Serializable {
       this.role = "HOPS_USER";
     }
 
+    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
+        getCurrentInstance().getExternalContext().getRequest();
     try {
 
       BbcGroup bbcGroup = bbcGroupFacade.findByGroupName(this.role);
@@ -453,12 +456,12 @@ public class PeopleAdministration implements Serializable {
         auditManager.registerRoleChange(sessionState.getLoggedInUser(),
             RolesAuditActions.ADDROLE.name(),
             RolesAuditActions.SUCCESS.name(), bbcGroup.getGroupName(),
-            user1);
+            user1, httpServletRequest);
       } else {
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
             UserAccountStatus.ACTIVATED_ACCOUNT.name(),
             RolesAuditActions.FAILED.name(), "Role could not be granted.",
-            user1);
+            user1, httpServletRequest);
         MessagesController.addSecurityErrorMessage("Role could not be granted.");
         return;
       }
@@ -467,12 +470,12 @@ public class PeopleAdministration implements Serializable {
         usersController.updateStatus(user1, UserAccountStatus.ACTIVATED_ACCOUNT);
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
             UserAccountStatus.ACTIVATED_ACCOUNT.name(),
-            UserAuditActions.SUCCESS.name(), "", user1);
+            UserAuditActions.SUCCESS.name(), "", user1, httpServletRequest);
       } catch (ApplicationException | IllegalArgumentException ex) {
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
             UserAccountStatus.ACTIVATED_ACCOUNT.name(),
             RolesAuditActions.FAILED.name(), "User could not be activated.",
-            user1);
+            user1, httpServletRequest);
         MessagesController.addSecurityErrorMessage(
             "Account activation problem not be granted.");
       }
@@ -485,7 +488,7 @@ public class PeopleAdministration implements Serializable {
           + e.getMessage());
       auditManager.registerAccountChange(sessionState.getLoggedInUser(),
           UserAccountStatus.ACTIVATED_ACCOUNT.name(),
-          UserAuditActions.FAILED.name(), "", user1);
+          UserAuditActions.FAILED.name(), "", user1, httpServletRequest);
       return;
     }
 
@@ -525,7 +528,7 @@ public class PeopleAdministration implements Serializable {
 
     String activationKey = SecurityUtils.getRandomPassword(64);
     emailBean.sendEmail(user.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
-        UserAccountsEmailMessages.buildMobileRequestMessage(AuditUtil.getUserURL(request), user.getUsername()
+        UserAccountsEmailMessages.buildMobileRequestMessage(FormatUtils.getUserURL(request), user.getUsername()
             + activationKey));
     user.setValidationKey(activationKey);
     userFacade.update(user);
@@ -537,7 +540,7 @@ public class PeopleAdministration implements Serializable {
     Users user1 = userFacade.findByEmail(userMail);
     FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("editinguser", user1);
 
-    Userlogins login = auditManager.getLastUserLogin(user1.getUid());
+    Userlogins login = auditManager.getLastUserLogin(user1);
     FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("editinguser_logins", login);
 
     MessagesController.addInfoMessage("User successfully modified for " + user1.getEmail());

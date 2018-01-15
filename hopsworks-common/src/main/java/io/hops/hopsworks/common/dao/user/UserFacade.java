@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.dao.user;
 
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import java.util.List;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -12,7 +11,8 @@ import io.hops.hopsworks.common.dao.AbstractFacade;
 import io.hops.hopsworks.common.dao.user.security.UserGroup;
 import io.hops.hopsworks.common.dao.user.security.UserGroupPK;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
+import io.hops.hopsworks.common.util.Settings;
 
 @Stateless
 public class UserFacade extends AbstractFacade<Users> {
@@ -51,12 +51,12 @@ public class UserFacade extends AbstractFacade<Users> {
   public List<Users> findAllMobileRequests() {
     TypedQuery<Users> query = em.createNamedQuery("Users.findByStatusAndMode", Users.class);
     query.setParameter("status", UserAccountStatus.VERIFIED_ACCOUNT);
-    query.setParameter("mode", PeopleAccountType.M_ACCOUNT_TYPE);
+    query.setParameter("mode", UserAccountType.M_ACCOUNT_TYPE);
     List<Users> res = query.getResultList();
     
     query = em.createNamedQuery("Users.findByStatusAndMode", Users.class);
     query.setParameter("status", UserAccountStatus.NEW_MOBILE_ACCOUNT);
-    query.setParameter("mode", PeopleAccountType.M_ACCOUNT_TYPE);
+    query.setParameter("mode", UserAccountType.M_ACCOUNT_TYPE);
     
     res.addAll(query.getResultList());
     return res;
@@ -89,7 +89,7 @@ public class UserFacade extends AbstractFacade<Users> {
     Object obj = query.getSingleResult();
 
     if (obj == null) {
-      return AuthenticationConstants.STARTING_USER;
+      return Settings.STARTING_USER;
     }
     return (Integer) obj;
   }

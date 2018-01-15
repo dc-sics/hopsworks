@@ -1,6 +1,5 @@
 package io.hops.hopsworks.admin.user.account;
 
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
@@ -15,8 +14,9 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.user.UsersController;
+import io.hops.hopsworks.common.util.Settings;
 
 @ManagedBean
 @RequestScoped
@@ -43,9 +43,9 @@ public class AccountVerification {
   @PostConstruct
   public void init() {
     if (key != null) {
-      username = key.substring(0, AuthenticationConstants.USERNAME_LENGTH);
+      username = key.substring(0, Settings.USERNAME_LENGTH);
       // get the 8 char username
-      String secret = key.substring(AuthenticationConstants.USERNAME_LENGTH,
+      String secret = key.substring(Settings.USERNAME_LENGTH,
               key.length());
       valid = validateKey(secret);
     }
@@ -76,10 +76,10 @@ public class AccountVerification {
     }
 
     if (!user.getStatus().equals(UserAccountStatus.NEW_MOBILE_ACCOUNT)
-            && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {
+            && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
       am.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
               AccountsAuditActions.FAILED.name(),
-              "Could not verify the account due to wrong status.", user);
+              "Could not verify the account due to wrong status.", user, req);
 
       if (user.getStatus().equals(UserAccountStatus.ACTIVATED_ACCOUNT)) {
         this.alreadyRegistered = true;
@@ -96,7 +96,7 @@ public class AccountVerification {
               UserAccountStatus.VERIFIED_ACCOUNT);
       am.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
               AccountsAuditActions.SUCCESS.name(),
-              "Verified account email address.", user);
+              "Verified account email address.", user, req);
       usersController.resetKey(user.getUid());
       return true;
     }
@@ -105,14 +105,14 @@ public class AccountVerification {
     usersController.increaseLockNum(user.getUid(), val + 1);
 
     // if more than 5 times false logins set as spam
-    if (val > AuthenticationConstants.ACCOUNT_VALIDATION_TRIES) {
+    if (val > Settings.ACCOUNT_VALIDATION_TRIES) {
       usersController.changeAccountStatus(user.getUid(), UserAccountStatus.SPAM_ACCOUNT.
               toString(),
               UserAccountStatus.SPAM_ACCOUNT);
       usersController.resetKey(user.getUid());
       am.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
               AccountsAuditActions.FAILED.name(),
-              "Too many false activation attemps.", user);
+              "Too many false activation attemps.", user, req);
 
     }
 

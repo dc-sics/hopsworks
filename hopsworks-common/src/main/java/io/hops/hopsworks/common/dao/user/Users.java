@@ -4,7 +4,7 @@ import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.user.security.Address;
 import io.hops.hopsworks.common.dao.user.security.Organization;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import java.io.Serializable;
 import java.util.Collection;
@@ -183,7 +183,7 @@ public class Users implements Serializable {
   @NotNull
   @Enumerated(EnumType.ORDINAL)
   @Column(name = "mode")
-  private PeopleAccountType mode;
+  private UserAccountType mode;
   @Basic(optional = false)
   @NotNull
   @Column(name = "password_changed")
@@ -259,7 +259,7 @@ public class Users implements Serializable {
   }
 
   public Users(Integer uid, String username, String password, Date activated,
-      int falseLogin, int isonline, PeopleAccountType mode,
+      int falseLogin, int isonline, UserAccountType mode,
       Date passwordChanged, UserAccountStatus status, int maxNumProjects) {
     this.uid = uid;
     this.username = username;
@@ -276,7 +276,7 @@ public class Users implements Serializable {
 
   public Users(String username, String password, String email, String fname, String lname, Date activated, String title,
       String orcid, UserAccountStatus status, String secret, String validationKey, SecurityQuestion securityQuestion,
-      String securityAnswer, PeopleAccountType mode, Date passwordChanged, String mobile, Integer maxNumProjects,
+      String securityAnswer, UserAccountType mode, Date passwordChanged, String mobile, Integer maxNumProjects,
       boolean twoFactor, String salt, int toursState) {
     this.username = username;
     this.password = password;
@@ -302,7 +302,7 @@ public class Users implements Serializable {
   }
 
   public Users(String username, String password, String email, String fname, String lname, String title,
-      UserAccountStatus status, PeopleAccountType mode, Integer maxNumProjects, String salt) {
+      UserAccountStatus status, UserAccountType mode, Integer maxNumProjects, String salt) {
     this.username = username;
     this.password = password;
     this.email = email;
@@ -477,11 +477,11 @@ public class Users implements Serializable {
     this.securityAnswer = securityAnswer;
   }
 
-  public PeopleAccountType getMode() {
+  public UserAccountType getMode() {
     return mode;
   }
 
-  public void setMode(PeopleAccountType mode) {
+  public void setMode(UserAccountType mode) {
     this.mode = mode;
   }
 

@@ -1,7 +1,6 @@
 package io.hops.hopsworks.common.user;
 
 import com.google.zxing.WriterException;
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.user.BbcGroup;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
@@ -16,7 +15,7 @@ import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
@@ -26,8 +25,8 @@ import io.hops.hopsworks.common.dao.user.sshkey.SshKeysPK;
 import io.hops.hopsworks.common.dao.user.sshkey.SshkeysFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.metadata.exception.ApplicationException;
-import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
+import io.hops.hopsworks.common.util.FormatUtils;
 import io.hops.hopsworks.common.util.QRCodeGenerator;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
@@ -83,7 +82,7 @@ public class UsersController {
   public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws AppException, SocketException, 
       NoSuchAlgorithmException {
     userValidator.isValidNewUser(newUser);
-    Users user = createNewUser(newUser, UserAccountStatus.NEW_MOBILE_ACCOUNT, PeopleAccountType.M_ACCOUNT_TYPE);
+    Users user = createNewUser(newUser, UserAccountStatus.NEW_MOBILE_ACCOUNT, UserAccountType.M_ACCOUNT_TYPE);
     addAddress(user);
     addOrg(user);
     //to privent sending email for test user emails
@@ -91,12 +90,12 @@ public class UsersController {
       if (!newUser.isTestUser()) {
         // Notify user about the request if not test user.
         emailBean.sendEmail(newUser.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
-            UserAccountsEmailMessages.buildMobileRequestMessage(AuditUtil.getUserURL(req), user.getUsername() + user.
+            UserAccountsEmailMessages.buildMobileRequestMessage(FormatUtils.getUserURL(req), user.getUsername() + user.
                 getValidationKey()));
       }
       // Only register the user if i can send the email
       userFacade.persist(user);
-      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),AuthenticationConstants.ISSUER, user.getSecret());
+      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),Settings.ISSUER, user.getSecret());
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
           AccountsAuditActions.SUCCESS.name(), "", user, req);
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.QRCODE.name(),
@@ -124,7 +123,7 @@ public class UsersController {
    * @throws AppException
    * @throws NoSuchAlgorithmException
    */
-  public Users createNewUser(UserDTO newUser, UserAccountStatus accountStatus, PeopleAccountType accountType) throws
+  public Users createNewUser(UserDTO newUser, UserAccountStatus accountStatus, UserAccountType accountType) throws
       AppException, NoSuchAlgorithmException {
     String otpSecret = SecurityUtils.calculateSecretKey();
     String activationKey = SecurityUtils.getRandomPassword(64);
@@ -163,7 +162,7 @@ public class UsersController {
     String password = authController.getPasswordHash(pwd, salt);
 
     Users user = new Users(uname, password, email, fname, lname, title, UserAccountStatus.NEW_MOBILE_ACCOUNT,
-        PeopleAccountType.M_ACCOUNT_TYPE, 0, salt);
+        UserAccountType.M_ACCOUNT_TYPE, 0, salt);
     user.setBbcGroupCollection(groups);
     return user;
   }
@@ -373,7 +372,7 @@ public class UsersController {
         user.setTwoFactor(true);
         userFacade.update(user);
         qr_code = QRCodeGenerator.getQRCodeBytes(user.getEmail(),
-            AuthenticationConstants.ISSUER, user.getSecret());
+            Settings.ISSUER, user.getSecret());
         accountAuditFacade.registerAccountChange(user, AccountsAuditActions.TWO_FACTOR.name(),
             AccountsAuditActions.SUCCESS.name(), "Enabled 2-factor", user,
             req);
@@ -412,7 +411,7 @@ public class UsersController {
     }
     if (user.getTwoFactor()) {
       try {
-        qr_code = QRCodeGenerator.getQRCodeBytes(user.getEmail(), AuthenticationConstants.ISSUER, user.getSecret());
+        qr_code = QRCodeGenerator.getQRCodeBytes(user.getEmail(), Settings.ISSUER, user.getSecret());
       } catch (IOException | WriterException ex) {
         LOGGER.log(Level.SEVERE, null, ex);
       }
