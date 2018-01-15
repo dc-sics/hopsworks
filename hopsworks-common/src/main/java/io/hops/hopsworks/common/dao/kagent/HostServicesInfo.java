@@ -1,21 +1,21 @@
-package io.hops.hopsworks.common.dao.role;
+package io.hops.hopsworks.common.dao.kagent;
 
 import io.hops.hopsworks.common.dao.host.Status;
 import io.hops.hopsworks.common.dao.host.Health;
 import io.hops.hopsworks.common.dao.host.Hosts;
 
-public class RoleHostInfo {
+public class HostServicesInfo {
 
-  private Roles role;
+  private HostServices hostServices;
   private Hosts host;
 
-  public RoleHostInfo(Roles role, Hosts host) {
-    this.role = role;
+  public HostServicesInfo(HostServices hostServices, Hosts host) {
+    this.hostServices = hostServices;
     this.host = host;
   }
 
-  public Roles getRole() {
-    return role;
+  public HostServices getHostServices() {
+    return hostServices;
   }
 
   public Hosts getHost() {
@@ -23,13 +23,13 @@ public class RoleHostInfo {
   }
 
   public Health getHealth() {
-    if (role.getHealth() == Health.Good) {
+    if (hostServices.getHealth() == Health.Good) {
       return Health.Good;
     }
     return Health.Bad;
   }
 
   public Status getStatus() {
-    return role.getStatus();
+    return hostServices.getStatus();
   }
 }

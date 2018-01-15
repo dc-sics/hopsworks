@@ -9,36 +9,38 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import javax.faces.model.SelectItem;
-import io.hops.hopsworks.common.dao.role.RoleEJB;
-import io.hops.hopsworks.kmon.role.ServiceRoleMapper;
+import io.hops.hopsworks.kmon.role.GroupServiceMapper;
 import io.hops.hopsworks.common.dao.host.Health;
 import io.hops.hopsworks.kmon.struct.InstanceInfo;
-import io.hops.hopsworks.common.dao.role.RoleHostInfo;
-import io.hops.hopsworks.kmon.struct.ServiceType;
+import io.hops.hopsworks.kmon.struct.GroupType;
 import io.hops.hopsworks.common.dao.host.Status;
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
+import io.hops.hopsworks.common.dao.kagent.HostServicesInfo;
 import io.hops.hopsworks.kmon.utils.FilterUtils;
 
 @ManagedBean
 @RequestScoped
 public class ServiceInstancesController {
 
-  @ManagedProperty("#{param.r}")
-  private String role;
   @ManagedProperty("#{param.service}")
   private String service;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
-  @ManagedProperty("#{param.s}")
+  @ManagedProperty("#{param.status}")
   private String status;
   @EJB
-  private RoleEJB roleEjb;
+  private HostServicesFacade hostServicesFacade;
   private static final SelectItem[] statusOptions;
   private static final SelectItem[] healthOptions;
   private List<InstanceInfo> filteredInstances = new ArrayList<>();
   private static final Logger logger = Logger.getLogger(
-          ServiceInstancesController.class.getName());
-  private enum servicesWithMetrics {
-    HDFS, YARN
+      ServiceInstancesController.class.getName());
+
+  private enum groupsWithMetrics {
+    HDFS,
+    YARN
   };
 //   private CookieTools cookie = new CookieTools();
 
@@ -51,26 +53,26 @@ public class ServiceInstancesController {
     logger.info("ServiceInstancesController");
   }
 
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
   public String getService() {
-    return service;
+    return this.service;
   }
 
   public void setService(String service) {
     this.service = service;
   }
 
+  public String getGroup() {
+    return group;
+  }
+
+  public void setGroup(String group) {
+    this.group = group;
+  }
+
   public boolean isYarnService() {
-    if (service != null) {
+    if (group != null) {
       try {
-        if (ServiceType.valueOf(service).equals(ServiceType.YARN)) {
+        if (GroupType.valueOf(group).equals(GroupType.YARN)) {
           return true;
         }
       } catch (IllegalArgumentException ex) {
@@ -80,9 +82,9 @@ public class ServiceInstancesController {
   }
 
   public boolean isHDFSService() {
-    if (service != null) {
+    if (group != null) {
       try {
-        if (ServiceType.valueOf(service).equals(ServiceType.HDFS)) {
+        if (GroupType.valueOf(group).equals(GroupType.HDFS)) {
           return true;
         }
       } catch (IllegalArgumentException ex) {
@@ -90,18 +92,18 @@ public class ServiceInstancesController {
     }
     return false;
   }
-  
+
   public boolean getServiceWithMetrics() {
-    if (service != null) {
+    if (group != null) {
       try {
-        servicesWithMetrics.valueOf(service);
+        groupsWithMetrics.valueOf(group);
         return true;
       } catch (IllegalArgumentException ex) {
       }
     }
     return false;
   }
-  
+
   public void setCluster(String cluster) {
     this.cluster = cluster;
   }
@@ -134,58 +136,56 @@ public class ServiceInstancesController {
     return healthOptions;
   }
 
-  public SelectItem[] getRoleOptions() {
+  public SelectItem[] getServiceOptions() {
     try {
-      return FilterUtils.createFilterOptions(ServiceRoleMapper.getRolesArray(
-              ServiceType.valueOf(service)));
+      return FilterUtils.createFilterOptions(GroupServiceMapper.getServicesArray(GroupType.valueOf(group)));
     } catch (Exception ex) {
       logger.log(Level.WARNING,
-              "Service not found. Returning no option. Error message: {0}", ex.
+          "Service not found. Returning no option. Error message: {0}", ex.
               getMessage());
       return new SelectItem[]{};
     }
   }
 
   public List<InstanceInfo> getInstances() {
-//      With prettyfaces, parameters (clusters, service, role) will not be null.
+//      With prettyfaces, parameters (clusters, service, service) will not be null.
 //      Without prettyfaces, parameters will be null when filter is changed, they
 //      should be stored in cookie
     List<InstanceInfo> instances = new ArrayList<InstanceInfo>();
-    List<RoleHostInfo> roleHostList = new ArrayList<RoleHostInfo>();
-    if (cluster != null && role != null && service != null && status != null) {
-      for (RoleHostInfo roleHostInfo : roleEjb.findRoleHost(cluster, service,
-              role)) {
-        if (roleHostInfo.getStatus() == Status.valueOf(status)) {
-          roleHostList.add(roleHostInfo);
+    List<HostServicesInfo> roleHostList = new ArrayList<HostServicesInfo>();
+    if (cluster != null && group != null && group != null && status != null) {
+      for (HostServicesInfo hostServicesInfo : hostServicesFacade.findHostServices(cluster, group, group)) {
+        if (hostServicesInfo.getStatus() == Status.valueOf(status)) {
+          roleHostList.add(hostServicesInfo);
         }
       }
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);         
-    } else if (cluster != null && service != null && role != null) {
-      roleHostList = roleEjb.findRoleHost(cluster, service, role);
+    } else if (cluster != null && group != null && group != null) {
+      roleHostList = hostServicesFacade.findHostServices(cluster, group, group);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);    
-    } else if (cluster != null && service != null) {
-      roleHostList = roleEjb.findRoleHost(cluster, service);
+    } else if (cluster != null && group != null) {
+      roleHostList = hostServicesFacade.findHostServices(cluster, group);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);          
     } else if (cluster != null) {
-      roleHostList = roleEjb.findRoleHost(cluster);
+      roleHostList = hostServicesFacade.findHostServices(cluster);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);             
     }
 //      else {
 //         roleHostList = roleEjb.findRoleHost(cookie.read("cluster"), cookie.read("service"));
 //      }     
-    for (RoleHostInfo r : roleHostList) {
-      instances.add(new InstanceInfo(r.getRole().getCluster(), r.getRole().
-              getService(), r.getRole().getRole(),
-              r.getRole().getHost().getHostname(), r.getStatus(), r.getHealth().toString()));
+    for (HostServicesInfo r : roleHostList) {
+      instances.add(new InstanceInfo(r.getHostServices().getCluster(), r.getHostServices().
+          getService(), r.getHostServices().getService(),
+          r.getHostServices().getHost().getHostname(), r.getStatus(), r.getHealth().toString()));
     }
     filteredInstances.addAll(instances);
     return instances;
   }
-  
+
   public boolean disableStart() {
     List<InstanceInfo> instances = getInstances();
     if (!instances.isEmpty()) {

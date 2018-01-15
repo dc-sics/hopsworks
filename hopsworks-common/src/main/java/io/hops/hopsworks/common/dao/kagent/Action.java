@@ -1,4 +1,4 @@
-package io.hops.hopsworks.common.dao.role;
+package io.hops.hopsworks.common.dao.kagent;
 
 import javax.xml.bind.annotation.XmlEnum;
 import javax.xml.bind.annotation.XmlEnumValue;

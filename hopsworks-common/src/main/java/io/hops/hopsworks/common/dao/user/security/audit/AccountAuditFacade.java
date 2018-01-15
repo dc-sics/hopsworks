@@ -251,7 +251,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param action
    * @return
    */
-  public List<RolesAudit> getRoletAudit(int uid, Date from, Date to,
+  public List<ServiceStatus> getServicesStatus(int uid, Date from, Date to,
           String action) {
 
     String sql = null;
@@ -268,9 +268,9 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
               + action + "')";
     }
 
-    Query query = em.createNativeQuery(sql, RolesAudit.class);
+    Query query = em.createNativeQuery(sql, ServiceStatus.class);
 
-    List<RolesAudit> ul = query.getResultList();
+    List<ServiceStatus> ul = query.getResultList();
 
     if (ul.isEmpty()) {
       return null;
@@ -286,22 +286,22 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param action
    * @return
    */
-  public List<RolesAudit> getRolesAudit(Date from, Date to,
+  public List<ServiceStatus> getServicesStatus(Date from, Date to,
           String action) {
     String sql = null;
 
     if (action.isEmpty() || action == null || action.equals("ALL")) {
-      sql = "SELECT * FROM hopsworks.roles_audit WHERE ( time >= '" + from
+      sql = "SELECT * FROM hopsworks.service_status WHERE ( time >= '" + from
               + "' AND time <= '" + to + "')";
     } else {
-      sql = "SELECT * FROM hopsworks.roles_audit WHERE ( time >= '" + from
+      sql = "SELECT * FROM hopsworks.service_status WHERE ( time >= '" + from
               + "' AND time <= '" + to + "' AND action = '"
               + action + "')";
     }
 
-    Query query = em.createNativeQuery(sql, RolesAudit.class);
+    Query query = em.createNativeQuery(sql, ServiceStatus.class);
 
-    List<RolesAudit> ul = query.getResultList();
+    List<ServiceStatus> ul = query.getResultList();
 
     if (ul.isEmpty()) {
       return null;
@@ -317,7 +317,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param outcome
    * @return
    */
-  public List<RolesAudit> getRoletAuditOutcome(Date from, Date to,
+  public List<ServiceStatus> getRoletAuditOutcome(Date from, Date to,
           String outcome) {
 
     String sql = null;
@@ -330,9 +330,9 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
               + "' AND time <= '" + to + "' AND outcome = '"
               + outcome + "')";
     }
-    Query query = em.createNativeQuery(sql, RolesAudit.class);
+    Query query = em.createNativeQuery(sql, ServiceStatus.class);
 
-    List<RolesAudit> ul = query.getResultList();
+    List<ServiceStatus> ul = query.getResultList();
 
     if (ul.isEmpty()) {
       return null;
@@ -467,7 +467,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
           String message,
           Users tar, HttpServletRequest req) {
 
-    RolesAudit ra = new RolesAudit();
+    ServiceStatus ra = new ServiceStatus();
     ra.setInitiator(u);
     ra.setBrowser(AuditUtil.getBrowserInfo(req));
     ra.setIp(AuditUtil.getIPAddress(req));
@@ -498,7 +498,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
           String message,
           Users tar) {
 
-    RolesAudit ra = new RolesAudit();
+    ServiceStatus ra = new ServiceStatus();
     ra.setInitiator(u);
     ra.setBrowser(AuditUtil.getBrowserInfo());
     ra.setIp(AuditUtil.getIPAddress());

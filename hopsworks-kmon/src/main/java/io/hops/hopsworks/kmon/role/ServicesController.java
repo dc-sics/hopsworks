@@ -1,6 +1,5 @@
 package io.hops.hopsworks.kmon.role;
 
-import io.hops.hopsworks.common.dao.role.RoleEJB;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -11,16 +10,17 @@ import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import io.hops.hopsworks.common.dao.host.Health;
 import io.hops.hopsworks.kmon.struct.InstanceFullInfo;
-import io.hops.hopsworks.common.dao.role.RoleHostInfo;
 import io.hops.hopsworks.common.dao.host.Status;
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
+import io.hops.hopsworks.common.dao.kagent.HostServicesInfo;
 import io.hops.hopsworks.common.util.FormatUtils;
 
 @ManagedBean
 @RequestScoped
-public class RoleController {
+public class ServicesController {
 
   @EJB
-  private RoleEJB roleEjb;
+  private HostServicesFacade hostServicesFacade;
   @ManagedProperty("#{param.hostid}")
   private String hostId;
   @ManagedProperty("#{param.role}")
@@ -33,10 +33,10 @@ public class RoleController {
   private String health;
 //  private boolean renderWebUi;
   private boolean found;
-  private static final Logger logger = Logger.getLogger(RoleController.class.
+  private static final Logger logger = Logger.getLogger(ServicesController.class.
           getName());
 
-  public RoleController() {
+  public ServicesController() {
   }
 
   @PostConstruct
@@ -48,23 +48,23 @@ public class RoleController {
     instanceInfoList.clear();
     logger.info("init RoleController");
     try {
-      RoleHostInfo roleHost = roleEjb.findRoleHost(cluster, service, role,
+      HostServicesInfo serviceHost = hostServicesFacade.findHostServices(cluster, service, role,
               hostId);
-      String ip = roleHost.getHost().getPublicOrPrivateIp();
-      InstanceFullInfo info = new InstanceFullInfo(roleHost.getRole().
+      String ip = serviceHost.getHost().getPublicOrPrivateIp();
+      InstanceFullInfo info = new InstanceFullInfo(serviceHost.getHostServices().
               getCluster(),
-              roleHost.getRole().getService(), roleHost.getRole().getRole(),
-              roleHost.getRole().getHost().getHostname(), ip, 0,
+              serviceHost.getHostServices().getService(), serviceHost.getHostServices().getService(),
+              serviceHost.getHostServices().getHost().getHostname(), ip, 0,
 //          roleHost.getRole().getWebPort(),
-              roleHost.getStatus(), roleHost.getHealth().toString());
-      info.setPid(roleHost.getRole().getPid());
-      String upTime = roleHost.getHealth() == Health.Good ? FormatUtils.time(
-              roleHost.getRole().getUptime() * 1000) : "";
+              serviceHost.getStatus(), serviceHost.getHealth().toString());
+      info.setPid(serviceHost.getHostServices().getPid());
+      String upTime = serviceHost.getHealth() == Health.Good ? FormatUtils.time(
+              serviceHost.getHostServices().getUptime() * 1000) : "";
       info.setUptime(upTime);
       instanceInfoList.add(info);
 //      renderWebUi = roleHost.getRole().getWebPort() != null && roleHost.
 //              getRole().getWebPort() != 0;
-      health = roleHost.getHealth().toString();
+      health = serviceHost.getHealth().toString();
       found = true;
     } catch (Exception ex) {
       logger.warning("init RoleController: ".concat(ex.getMessage()));

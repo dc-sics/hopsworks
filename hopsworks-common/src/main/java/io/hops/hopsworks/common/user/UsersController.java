@@ -36,8 +36,8 @@ import io.hops.hopsworks.common.dao.user.security.Address;
 import io.hops.hopsworks.common.dao.user.security.Organization;
 import io.hops.hopsworks.common.dao.user.security.Yubikey;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAudit;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAudit;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditFacade;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatus;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusFacade;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.metadata.exception.ApplicationException;
@@ -64,7 +64,7 @@ public class UsersController {
   @EJB
   private AccountAuditFacade accountAuditFacade;
   @EJB
-  private RolesAuditFacade rolesAuditFacade;
+  private ServiceStatusFacade serviceStatusFacade;
   @EJB
   private BbcGroupFacade bbcGroupFacade;
   @EJB
@@ -578,12 +578,12 @@ public class UsersController {
 
   public void deleteUser(Users u) {
     if (u != null) {
-      List<RolesAudit> results1 = rolesAuditFacade.findByInitiator(u);
-      List<RolesAudit> results2 = rolesAuditFacade.findByTarget(u);
+      List<ServiceStatus> results1 = serviceStatusFacade.findByInitiator(u);
+      List<ServiceStatus> results2 = serviceStatusFacade.findByTarget(u);
       results1.addAll(results2);
-      for (Iterator<RolesAudit> iterator = results1.iterator(); iterator.hasNext();) {
-        RolesAudit next = iterator.next();
-        rolesAuditFacade.remove(next);
+      for (Iterator<ServiceStatus> iterator = results1.iterator(); iterator.hasNext();) {
+        ServiceStatus next = iterator.next();
+        serviceStatusFacade.remove(next);
       }
 
       List<AccountAudit> resultsAA1 = accountAuditFacade.findByInitiator(u);

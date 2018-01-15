@@ -13,10 +13,10 @@ public class UrlController {
 
   @ManagedProperty("#{param.hostid}")
   private String hostId;
-  @ManagedProperty("#{param.role}")
-  private String role;
   @ManagedProperty("#{param.service}")
   private String service;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
   @ManagedProperty("#{param.status}")
@@ -30,20 +30,20 @@ public class UrlController {
     logger.info("UrlController");
   }
 
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
   public String getService() {
     return service;
   }
 
-  public void setService(String service) {
-    this.service = service;
+  public void setService(String role) {
+    this.service = role;
+  }
+
+  public String getGroup() {
+    return group;
+  }
+
+  public void setGroup(String group) {
+    this.group = group;
   }
 
   public String getHostId() {
@@ -94,21 +94,21 @@ public class UrlController {
     return "cluster-status?faces-redirect=true&cluster=" + cluster;
   }
   
-  public String serviceInstance() {
+  public String groupInstance() {
     return "services-instances-status?faces-redirect=true&hostid="
-            + hostId + "&cluster=" + cluster + "&role=" + role;
+            + hostId + "&cluster=" + cluster + "&role=" + service;
   }
 
   public String clusterActionHistory() {
     return "cluster-actionhistory?faces-redirect=true&cluster=" + cluster;
   }
 
-  public String serviceStatus() {
+  public String groupStatus() {
     return "service-status?faces-redirect=true&cluster=" + cluster + "&service="
-            + service;
+            + group;
   }
 
-  public String serviceInstances() {
+  public String groupInstances() {
     String url = "service-instances?faces-redirect=true";
     if (hostId != null) {
       url += "&hostid=" + hostId;
@@ -116,11 +116,11 @@ public class UrlController {
     if (cluster != null) {
       url += "&cluster=" + cluster;
     }
-    if (service != null) {
-      url += "&service=" + service;
+    if (group != null) {
+      url += "&service=" + group;
     }
-    if (role != null) {
-      url += "&r=" + role;
+    if (service != null) {
+      url += "&r=" + service;
     }
     if (status != null) {
       url += "&s=" + status;
@@ -128,26 +128,26 @@ public class UrlController {
     return url;
   }
 
-  public String serviceActionHistory() {
+  public String groupActionHistory() {
     return "service-actionhistory?faces-redirect=true&cluster=" + cluster
-            + "&service=" + service;
+            + "&service=" + group;
   }
 
-  public String serviceTerminal() {
+  public String groupTerminal() {
     return "service-terminal?faces-redirect=true&cluster=" + cluster
-            + "&service=" + service;
+            + "&service=" + group;
   }
 
-  public String roleStatus() {
+  public String serviceStatus() {
     return "role-status?faces-redirect=true&hostid=" + hostId + "&cluster="
             + cluster
-            + "&service=" + service + "&role=" + role;
+            + "&service=" + group + "&role=" + service;
   }
 
-  public String roleActionHistory() {
+  public String serviceActionHistory() {
     return "role-actionhistory?faces-redirect=true&hostid=" + hostId
             + "&cluster=" + cluster
-            + "&service=" + service + "&role=" + role;
+            + "&service=" + group + "&role=" + service;
   }
 
   public void redirectToEditGraphs() {

@@ -1,7 +1,7 @@
 package io.hops.hopsworks.common.dao.host;
 
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
-import io.hops.hopsworks.common.dao.role.Roles;
+import io.hops.hopsworks.common.dao.kagent.HostServices;
 import io.hops.hopsworks.common.util.FormatUtils;
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -110,7 +110,7 @@ public class Hosts implements Serializable {
   private Collection<CondaCommands> condaCommandsCollection;
 
   @OneToMany(mappedBy = "host")
-  private Collection<Roles> rolesCollection;
+  private Collection<HostServices> rolesCollection;
   
   public Hosts() {
   }
@@ -360,11 +360,11 @@ public class Hosts implements Serializable {
   
   @XmlTransient
   @JsonIgnore
-  public Collection<Roles> getRolesCollection() {
+  public Collection<HostServices> getRolesCollection() {
     return rolesCollection;
   }
 
-  public void setRolesCollection(Collection<Roles> rolesCollection) {
+  public void setRolesCollection(Collection<HostServices> rolesCollection) {
     this.rolesCollection = rolesCollection;
   }
 

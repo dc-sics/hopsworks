@@ -21,7 +21,7 @@ import io.hops.hopsworks.api.admin.dto.VariablesRequest;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
-import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.exception.AppException;
@@ -75,7 +75,7 @@ public class SystemAdminService {
   @EJB
   private Settings settings;
   @EJB
-  private HostEJB hostsFacade;
+  private HostsFacade hostsFacade;
   
   /**
    * Admin endpoint that changes the master encryption password used to encrypt the certificates' password

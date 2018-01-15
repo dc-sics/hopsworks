@@ -1,6 +1,6 @@
 package io.hops.hopsworks.kmon.host;
 
-import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.host.Hosts;
 import java.io.Serializable;
 import java.util.logging.Level;
@@ -19,7 +19,7 @@ import io.hops.hopsworks.common.dao.command.CommandEJB;
 public class AddHostController implements Serializable {
 
   @EJB
-  private HostEJB hostEJB;
+  private HostsFacade hostEJB;
   @EJB
   private CommandEJB commandEJB;
   private String hostId;

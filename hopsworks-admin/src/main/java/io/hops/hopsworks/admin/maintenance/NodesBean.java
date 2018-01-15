@@ -19,7 +19,7 @@ package io.hops.hopsworks.admin.maintenance;
 
 import io.hops.hopsworks.admin.lims.MessagesController;
 import io.hops.hopsworks.common.dao.host.Hosts;
-import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
 import org.primefaces.context.RequestContext;
 import org.primefaces.event.RowEditEvent;
 import org.primefaces.event.SelectEvent;
@@ -42,7 +42,7 @@ public class NodesBean implements Serializable {
   private final Logger LOG = Logger.getLogger(NodesBean.class.getName());
   
   @EJB
-  private HostEJB hostsFacade;
+  private HostsFacade hostsFacade;
   
   private List<Hosts> allNodes;
   private final Map<String, Object> dialogOptions;

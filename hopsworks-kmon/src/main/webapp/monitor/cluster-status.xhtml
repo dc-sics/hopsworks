@@ -21,7 +21,7 @@
         <p:panelGrid>  
           <p:row>  
             <p:column>
-              <p:commandLink id="services" action="clusters" ajax="false">  
+              <p:commandLink id="groups" action="clusters" ajax="false">  
                 <h:outputText value="Clusters" />
               </p:commandLink> 
               <h:outputText value=" &raquo; "/>
@@ -92,20 +92,20 @@
 
           <p:spacer width="1" height="20" />
 
-          <p:panel header="Services">
-            <p:dataTable id="service" var="service" value="#{clusterStatusController.services}">
+          <p:panel header="Groups">
+            <p:dataTable id="group" var="group" value="#{clusterStatusController.groups}">
               <p:column headerText="Service">
-                <p:commandLink action="#{urlController.serviceStatus}" ajax="false" styleClass="Health-#{service.health}">
-                  <h:outputText value="#{service.name}"/>
+                <p:commandLink action="#{urlController.groupStatus}" ajax="false" styleClass="Health-#{group.health}">
+                  <h:outputText value="#{group.name}"/>
                   <f:param name="cluster" value="#{clusterStatusController.cluster}"/>
-                  <f:param name="service" value="#{service.name}"/>
+                  <f:param name="group" value="#{group.name}"/>
                 </p:commandLink>                         
               </p:column>
 
               <p:column headerText="Roles">
-                <ui:repeat value="#{service.roles}" var="role" varStatus="status">
-                  <p:commandLink styleClass="Health-#{service.roleHealth(role)}" 
-                                 action="#{urlController.serviceInstances}" ajax="false">
+                <ui:repeat value="#{group.roles}" var="role" varStatus="status">
+                  <p:commandLink styleClass="Health-#{group.roleHealth(role)}" 
+                                 action="#{urlController.groupInstances}" ajax="false">
                     <h:outputText value="${service.roleCount(role)} ${role}"/>
                     <f:param name="cluster" value="#{clusterStatusController.cluster}"/>
                     <f:param name="role" value="#{role}"/>
