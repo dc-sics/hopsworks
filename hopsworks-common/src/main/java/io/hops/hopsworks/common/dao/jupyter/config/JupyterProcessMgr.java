@@ -131,21 +131,23 @@ public class JupyterProcessMgr {
     return this.hadoopClasspath;
   }
 
-//  public void removeProject(Project project) {
-//    // Find any active jupyter servers
-//
-//    Collection<JupyterProject> instances = project.getJupyterProjectCollection();
-//    if (instances != null) {
-//      for (JupyterProject jp : instances) {
-//        HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
-//        if (hdfsUser != null) {
-//          String user = hdfsUser.getUsername();
-//        }
-//      }
-//    }
-//    // Kill any processes
-//
-//  }
+  public void removeProject(Project project) {
+    // Find any active jupyter servers
+
+    Collection<JupyterProject> instances = project.getJupyterProjectCollection();
+    if (instances != null) {
+      for (JupyterProject jp : instances) {
+        HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
+        if (hdfsUser != null) {
+          String user = hdfsUser.getUsername();
+          killHardJupyterWithPid(jp.getPid());
+        }
+      }
+    }
+    // Kill any processes
+    
+
+  }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public JupyterDTO startServerAsJupyterUser(Project project, String secretConfig, String hdfsUser,
