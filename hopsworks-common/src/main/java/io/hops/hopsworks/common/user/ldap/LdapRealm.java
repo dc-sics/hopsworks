@@ -84,10 +84,21 @@ public class LdapRealm {
     dynamicGroupTarget = settings.getLdapDynGroupTarget();
     String[] attrs = {entryUUIDField, usernameField, givenNameField, surnameField, emailField};
     returningAttrs = attrs;
-    ldapGroupMapper = new LdapGroupMapper(settings.getLdapGroupMapping());
+    String mStr = settings.getLdapGroupMapping();
+    if (ldapGroupMapper == null || !ldapGroupMapper.getMappingStr().equals(mStr)) {
+      ldapGroupMapper = new LdapGroupMapper(mStr);
+    }
   }
 
+  /**
+   * Find ldap user and try to login, if login succeed gets user attributes from ldap.
+   * @param username
+   * @param password
+   * @return
+   * @throws LoginException 
+   */
   public LdapUserDTO findAndBind(String username, String password) throws LoginException {
+    populateVars();
     StringBuffer sb = new StringBuffer(searchFilter);
     substitute(sb, SUBST_SUBJECT_NAME, username);
     String userid = sb.toString();
@@ -101,7 +112,14 @@ public class LdapRealm {
     return user;
   }
 
+  /**
+   * Authenticate user with ldap
+   * @param username
+   * @param password
+   * @throws LoginException 
+   */
   public void authenticateLdapUser(String username, String password) throws LoginException {
+    populateVars();
     StringBuffer sb = new StringBuffer(searchFilter);
     substitute(sb, SUBST_SUBJECT_NAME, username);
     String userid = sb.toString();
@@ -112,7 +130,14 @@ public class LdapRealm {
     bindAsUser(userDN, password); // try login
   }
 
+  /**
+   * Authenticate user with ldap
+   * @param user
+   * @param password
+   * @throws LoginException 
+   */
   public void authenticateLdapUser(LdapUser user, String password) throws LoginException {
+    populateVars();
     String userid = entryUUIDField + "=" + user.getEntryUuid();
     String userDN = userDNSearch(userid);
     if (userDN == null) {
@@ -121,7 +146,13 @@ public class LdapRealm {
     bindAsUser(userDN, password); // try login
   }
 
+  /**
+   * Get user groups using the mapping provided in ldap settings (ldap_group_mapping).
+   * @param username
+   * @return 
+   */
   public List<String> getUserGroups(String username) {
+    populateVars();
     return ldapGroupMapper.getMappedGroups(getUserLdapGroups(username));
   }
 

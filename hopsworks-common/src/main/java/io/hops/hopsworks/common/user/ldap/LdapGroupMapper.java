@@ -11,9 +11,11 @@ public class LdapGroupMapper {
   private static final String GROUP_SEPARATOR = ",";
   private static final String MAPPING_SEPARATOR = "->";
   private static final String GROUP_MAPPING_SEPARATOR = ";";
+  private final String mappingStr;
   private final Map<String, List<String>> mappings = new HashMap<>();
 
   public LdapGroupMapper(String mappings) {
+    this.mappingStr = mappings;
     parse(mappings);
   }
 
@@ -60,6 +62,10 @@ public class LdapGroupMapper {
       addUnique(this.mappings.get(group), mappedGroups);
     }
     return mappedGroups;
+  }
+
+  public String getMappingStr() {
+    return mappingStr;
   }
 
   private void addUnique(List<String> src, List<String> dest) {
