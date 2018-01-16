@@ -138,7 +138,7 @@ public class UrlController {
             + "&service=" + group;
   }
 
-  public String serviceStatus() {
+  public String serviceAudit() {
     return "role-status?faces-redirect=true&hostid=" + hostId + "&cluster="
             + cluster
             + "&service=" + group + "&role=" + service;

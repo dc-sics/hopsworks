@@ -251,7 +251,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param action
    * @return
    */
-  public List<ServiceStatus> getServicesStatus(int uid, Date from, Date to,
+  public List<ServiceAudit> getServicesStatus(int uid, Date from, Date to,
           String action) {
 
     String sql = null;
@@ -268,9 +268,9 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
               + action + "')";
     }
 
-    Query query = em.createNativeQuery(sql, ServiceStatus.class);
+    Query query = em.createNativeQuery(sql, ServiceAudit.class);
 
-    List<ServiceStatus> ul = query.getResultList();
+    List<ServiceAudit> ul = query.getResultList();
 
     if (ul.isEmpty()) {
       return null;
@@ -286,7 +286,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param action
    * @return
    */
-  public List<ServiceStatus> getServicesStatus(Date from, Date to,
+  public List<ServiceAudit> getServicesStatus(Date from, Date to,
           String action) {
     String sql = null;
 
@@ -299,9 +299,9 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
               + action + "')";
     }
 
-    Query query = em.createNativeQuery(sql, ServiceStatus.class);
+    Query query = em.createNativeQuery(sql, ServiceAudit.class);
 
-    List<ServiceStatus> ul = query.getResultList();
+    List<ServiceAudit> ul = query.getResultList();
 
     if (ul.isEmpty()) {
       return null;
@@ -317,7 +317,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
    * @param outcome
    * @return
    */
-  public List<ServiceStatus> getRoletAuditOutcome(Date from, Date to,
+  public List<ServiceAudit> getRoletAuditOutcome(Date from, Date to,
           String outcome) {
 
     String sql = null;
@@ -330,9 +330,9 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
               + "' AND time <= '" + to + "' AND outcome = '"
               + outcome + "')";
     }
-    Query query = em.createNativeQuery(sql, ServiceStatus.class);
+    Query query = em.createNativeQuery(sql, ServiceAudit.class);
 
-    List<ServiceStatus> ul = query.getResultList();
+    List<ServiceAudit> ul = query.getResultList();
 
     if (ul.isEmpty()) {
       return null;
@@ -467,7 +467,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
           String message,
           Users tar, HttpServletRequest req) {
 
-    ServiceStatus ra = new ServiceStatus();
+    ServiceAudit ra = new ServiceAudit();
     ra.setInitiator(u);
     ra.setBrowser(AuditUtil.getBrowserInfo(req));
     ra.setIp(AuditUtil.getIPAddress(req));
@@ -498,7 +498,7 @@ public class AccountAuditFacade extends AbstractFacade<AccountAudit> {
           String message,
           Users tar) {
 
-    ServiceStatus ra = new ServiceStatus();
+    ServiceAudit ra = new ServiceAudit();
     ra.setInitiator(u);
     ra.setBrowser(AuditUtil.getBrowserInfo());
     ra.setIp(AuditUtil.getIPAddress());
