@@ -21,9 +21,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ws.rs.core.Response;
 
-public class JupyterConfig {
+/**
+ * This class is used to generate the Configuration Files for a Jupyter Notebook Server
+ */
+public class JupyterConfigFilesGenerator {
 
-  private static final Logger LOGGER = Logger.getLogger(JupyterConfig.class.
+  private static final Logger LOGGER = Logger.getLogger(JupyterConfigFilesGenerator.class.
       getName());
   private static final String LOG4J_PROPS = "/log4j.properties";
   private static final String JUPYTER_NOTEBOOK_CONFIG = "/jupyter_notebook_config.py";
@@ -32,7 +35,7 @@ public class JupyterConfig {
   private static final String SPARKMAGIC_CONFIG = "/config.json";
   private static final int DELETE_RETRY = 10;
 
-  public static JupyterConfig COMMON_CONF;
+  public static JupyterConfigFilesGenerator COMMON_CONF;
 
   /**
    * A configuration that is common for all projects.
@@ -51,7 +54,7 @@ public class JupyterConfig {
   private String token;
   private String nameNodeEndpoint;
 
-  JupyterConfig(Project project, String secretConfig, String hdfsUser,
+  JupyterConfigFilesGenerator(Project project, String secretConfig, String hdfsUser,
       String nameNodeEndpoint, Settings settings, int port, String token,
       JupyterSettings js)
       throws AppException {
@@ -263,6 +266,7 @@ public class JupyterConfig {
               "hdfs_user", this.hdfsUser,
               "port", port.toString(),
               "python-kernel", pythonKernel,
+              "umask", js.getUmask(),
               "hadoop_home", this.settings.getHadoopSymbolicLinkDir(),
               "hdfs_home", this.settings.getHadoopSymbolicLinkDir(),
               "secret_dir", this.settings.getStagingDir()
@@ -293,8 +297,8 @@ public class JupyterConfig {
           .append("\"hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
           .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
           .append("__tstore.jks#").append(Settings.T_CERTIFICATE).append("\",")
-          .append("\""+Settings.getSparkLog4JPath(settings.getSparkUser()) + "\"");
-      
+          .append("\"" + Settings.getSparkLog4JPath(settings.getSparkUser()) + "\"");
+
       // If RPC TLS is enabled, password file would be injected by the
       // NodeManagers. We don't need to add it as LocalResource
       if (!settings.getHopsRpcTls()) {
@@ -306,8 +310,8 @@ public class JupyterConfig {
             .append("__cert.key#").append(Settings.CRYPTO_MATERIAL_PASSWORD)
             .append("\"");
       }
-      
-      if(!js.getFiles().equals("")) {
+
+      if (!js.getFiles().equals("")) {
         sparkFiles.append("," + js.getFiles());
       }
 
@@ -347,36 +351,33 @@ public class JupyterConfig {
                   "spark_params", sparkProps,
                   "livy_ip", settings.getLivyIp(),
                   "hdfs_user", this.hdfsUser,
-                  "driver_cores", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "1" :
-                              Integer.toString(js.getAppmasterCores()),
+                  "driver_cores", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "1" : Integer.toString(js.
+                          getAppmasterCores()),
                   "driver_memory", Integer.toString(js.getAppmasterMemory()) + "m",
-                  "num_executors", (isHorovod) ? "1":
-                                   (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()):
-                                   (isSparkDynamic) ? Integer.toString(js.getDynamicMinExecutors()):
-                                   Integer.toString(js.getNumExecutors()),
-                  "executor_cores", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "1" :
-                              Integer.toString(js.getNumExecutorCores()),
+                  "num_executors", (isHorovod) ? "1" : (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors()
+                              + js.getNumTfPs()) : (isSparkDynamic) ? Integer.toString(js.getDynamicMinExecutors())
+                          : Integer.toString(js.getNumExecutors()),
+                  "executor_cores", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "1" : Integer.toString(js.
+                          getNumExecutorCores()),
                   "executor_memory", Integer.toString(js.getExecutorMemory()) + "m",
-                  "dynamic_executors", Boolean.toString(isSparkDynamic || isTensorFlow || isTensorFlowOnSpark ||
-                              isHorovod),
-                  "min_executors", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "0" :
-                                   Integer.toString(js.getDynamicMinExecutors()),
-                  "initial_executors", (isTensorFlow) ? "0" :
-                                   (isHorovod) ? "1" :
-                                   (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()):
-                                   Integer.toString(js.getDynamicMinExecutors()),
-                  "max_executors", (isTensorFlow) ? Integer.toString(js.getNumExecutors()):
-                                   (isHorovod) ? "1" :
-                                   (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()):
-                                   Integer.toString(js.getDynamicMaxExecutors()),
+                  "dynamic_executors", Boolean.toString(isSparkDynamic || isTensorFlow || isTensorFlowOnSpark
+                      || isHorovod),
+                  "min_executors", (isTensorFlow || isTensorFlowOnSpark || isHorovod) ? "0" : Integer.toString(js.
+                          getDynamicMinExecutors()),
+                  "initial_executors", (isTensorFlow) ? "0" : (isHorovod) ? "1" : (isTensorFlowOnSpark) ? Integer.
+                                  toString(js.getNumExecutors() + js.getNumTfPs()) : Integer.toString(js.
+                              getDynamicMinExecutors()),
+                  "max_executors", (isTensorFlow) ? Integer.toString(js.getNumExecutors()) : (isHorovod) ? "1"
+                      : (isTensorFlowOnSpark) ? Integer.toString(js.getNumExecutors() + js.getNumTfPs()) : Integer.
+                          toString(js.getDynamicMaxExecutors()),
                   "archives", js.getArchives(),
                   "jars", js.getJars(),
                   "files", sparkFiles.toString(),
                   "pyFiles", js.getPyFiles(),
                   "yarn_queue", "default",
                   "num_ps", (isTensorFlowOnSpark) ? Integer.toString(js.getNumTfPs()) : "0",
-                  "num_gpus", (isTensorFlow || isTensorFlowOnSpark) ? Integer.toString(js.getNumTfGpus()):
-                              (isHorovod) ? Integer.toString(js.getNumMpiNp()*js.getNumTfGpus()): "0",
+                  "num_gpus", (isTensorFlow || isTensorFlowOnSpark) ? Integer.toString(js.getNumTfGpus()) : (isHorovod)
+                      ? Integer.toString(js.getNumMpiNp() * js.getNumTfGpus()) : "0",
                   "mpi_np", (isHorovod) ? Integer.toString(js.getNumMpiNp()) : "",
                   "tensorflow", Boolean.toString(isTensorFlow || isTensorFlowOnSpark || isHorovod),
                   "jupyter_home", this.confDirPath,

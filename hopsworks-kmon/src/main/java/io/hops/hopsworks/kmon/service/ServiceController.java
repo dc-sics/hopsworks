@@ -1,5 +1,6 @@
 package io.hops.hopsworks.kmon.service;
 
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
@@ -8,7 +9,6 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import javax.faces.context.FacesContext;
-import io.hops.hopsworks.common.dao.role.RoleEJB;
 
 @ManagedBean
 @RequestScoped
@@ -16,16 +16,16 @@ public class ServiceController {
 
   @ManagedProperty("#{param.hostid}")
   private String hostId;
-  @ManagedProperty("#{param.role}")
-  private String role;
   @ManagedProperty("#{param.service}")
   private String service;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
   @ManagedProperty("#{param.status}")
   private String status;
   @EJB
-  private RoleEJB roleEjb;
+  private HostServicesFacade hostServicesFacade;
 
   private static final Logger logger = Logger.getLogger(ServiceController.class.
           getName());
@@ -39,20 +39,20 @@ public class ServiceController {
     logger.info("init ServiceController");
   }
 
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
   public String getService() {
     return service;
   }
 
   public void setService(String service) {
     this.service = service;
+  }
+
+  public String getGroup() {
+    return group;
+  }
+
+  public void setGroup(String group) {
+    this.group = group;
   }
 
   public String getHostId() {
@@ -80,12 +80,11 @@ public class ServiceController {
   }
 
   public boolean isServiceFound() {
-    return roleEjb.countRoles(cluster, service) > 0;
+    return hostServicesFacade.countServices(cluster, group) > 0;
   }
 
   public void addMessage(String summary) {
-    FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary,
-            null);
+    FacesMessage message = new FacesMessage(FacesMessage.SEVERITY_INFO, summary, null);
     FacesContext.getCurrentInstance().addMessage(null, message);
   }
 

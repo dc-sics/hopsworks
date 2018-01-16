@@ -346,7 +346,27 @@
                       </ui-select-choices>
                     </ui-select>
                   </div>
+
+                  <div class="text-right col-md-6">Umask (output files) <i class="fa fa-info-circle"
+                                                                uib-tooltip="022 - Group readable/not-writable : 007 Group readable/writable : 077 - Group not-readable/not-writable" 
+                                                                style="margin-left: 10px"></i>
+                  </div>
+                  <div class="col-md-2 jupyter-left">
+                    <ui-select ng-model="jupyterCtrl.umask" theme="bootstrap"
+                               on-select="jupyterCtrl.changeUmask()">
+                      <ui-select-match >
+                        <span ng-bind="jupyterCtrl.umask.name"></span>
+                      </ui-select-match>
+                      <ui-select-choices repeat="level in (jupyterCtrl.umasks | filter: $select.search) track by level.name">
+                        <span ng-bind="level.name | highlight: $select.search"></span>
+                      </ui-select-choices>
+                    </ui-select>
+                  </div>
+
+
                 </div>
+
+
               </div>
 
               <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">

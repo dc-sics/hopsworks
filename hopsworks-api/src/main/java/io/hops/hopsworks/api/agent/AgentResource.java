@@ -18,9 +18,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import io.hops.hopsworks.common.dao.host.Hosts;
-import io.hops.hopsworks.common.dao.host.HostEJB;
-import io.hops.hopsworks.common.dao.role.Roles;
-import io.hops.hopsworks.common.dao.role.RoleEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
+import io.hops.hopsworks.common.dao.kagent.HostServices;
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import io.hops.hopsworks.common.dao.host.Status;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
@@ -61,9 +61,9 @@ import org.json.simple.JSONArray;
 public class AgentResource {
 
   @EJB
-  private HostEJB hostFacade;
+  private HostsFacade hostFacade;
   @EJB
-  private RoleEJB roleFacade;
+  private HostServicesFacade roleFacade;
   @EJB
   private AlertEJB alertFacade;
   @EJB
@@ -137,7 +137,7 @@ public class AgentResource {
         String cluster = s.getString("cluster");
         String roleName = s.getString("role");
         String service = s.getString("service");
-        Roles role = null;
+        HostServices role = null;
         try {
           role = roleFacade.find(hostname, cluster, service, roleName);
         } catch (Exception ex) {
@@ -146,11 +146,11 @@ public class AgentResource {
         }
 
         if (role == null) {
-          role = new Roles();
+          role = new HostServices();
           role.setHost(host);
           role.setCluster(cluster);
-          role.setService(service);
-          role.setRole(roleName);
+          role.setGroup(service);
+          role.setService(roleName);
           role.setStartTime(agentTime);
         }
 

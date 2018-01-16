@@ -1,24 +1,16 @@
 package io.hops.hopsworks.kmon.struct;
 
-public enum RoleType {
+public enum GroupType {
 
-  namenode,
-  datanode,
-  ndb_mgmd,
-  mysqld,
-  ndbmtd,
-  resourcemanager,
-  nodemanager,
+  HDFS,
+  YARN,
+  MAP_REDUCE,
   zookeeper,
+  NDB,
   influxdb,
   epipe,
   logstash,
-  hiveserver2,
-  hivemetastore,
-  hivecleaner,
-  dela,
   livy,
-  spark,
   historyserver,
   sparkhistoryserver,
   telegraf,
@@ -26,5 +18,7 @@ public enum RoleType {
   grafana,
   kafka,
   kibana,
-  ssh
+  hive,
+  dela,
+  SSH
 }

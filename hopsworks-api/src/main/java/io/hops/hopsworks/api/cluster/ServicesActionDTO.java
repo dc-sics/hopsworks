@@ -1,11 +1,11 @@
 package io.hops.hopsworks.api.cluster;
 
-import io.hops.hopsworks.common.dao.role.Action;
+import io.hops.hopsworks.common.dao.kagent.Action;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class RolesActionDTO {
+public class ServicesActionDTO {
 
   @XmlElement(name = "action",
       required = true)

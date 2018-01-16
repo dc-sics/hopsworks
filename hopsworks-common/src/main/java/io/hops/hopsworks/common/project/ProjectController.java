@@ -38,7 +38,7 @@ import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
-import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessMgr;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLog;
@@ -161,7 +161,7 @@ public class ProjectController {
   @EJB
   private PythonDepsFacade pythonDepsFacade;
   @EJB
-  private JupyterProcessFacade jupyterProcessFacade;
+  private JupyterProcessMgr jupyterProcessFacade;
   @EJB
   private JobFacade jobFacade;
   @EJB
@@ -971,12 +971,14 @@ public class ProjectController {
           projectApps = getYarnApplications(hdfsUsers, yarnClientWrapper.getYarnClient());
           cleanupLogger.logSuccess("Gotten Yarn applications");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when reading YARN apps during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
         // Kill Zeppelin jobs
         try {
           killZeppelin(project.getId(), sessionId);
+          cleanupLogger.logError("Error when killing Zeppelin during project cleanup");
           cleanupLogger.logSuccess("Killed Zeppelin");
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
@@ -987,6 +989,7 @@ public class ProjectController {
           jupyterProcessFacade.stopProject(project);
           cleanupLogger.logSuccess("Stopped Jupyter");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when killing Jupyter during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -995,6 +998,7 @@ public class ProjectController {
           killYarnJobs(project);
           cleanupLogger.logSuccess("Killed Yarn jobs");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when killing YARN jobs during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1003,6 +1007,7 @@ public class ProjectController {
           waitForJobLogs(projectApps, yarnClientWrapper.getYarnClient());
           cleanupLogger.logSuccess("Gotten logs for jobs");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when getting Yarn logs during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1011,6 +1016,7 @@ public class ProjectController {
           logProject(project, OperationType.Delete);
           cleanupLogger.logSuccess("Logged project removal");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when logging project removal during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1021,6 +1027,7 @@ public class ProjectController {
           changeOwnershipToSuperuser(path, dfso);
           cleanupLogger.logSuccess("Changed ownership of root Project dir");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when changing ownership of root Project dir during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1030,6 +1037,7 @@ public class ProjectController {
           changeOwnershipToSuperuser(dummy, dfso);
           cleanupLogger.logSuccess("Changed ownership of dummy inode");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when changing ownership of dummy inode during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1038,6 +1046,7 @@ public class ProjectController {
           removeKafkaTopics(project);
           cleanupLogger.logSuccess("Removed Kafka topics");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing kafka topics during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1046,6 +1055,7 @@ public class ProjectController {
           certificatesController.deleteProjectCertificates(project);
           cleanupLogger.logSuccess("Removed certificates");
         } catch (IOException ex) {
+          cleanupLogger.logError("Error when removing certificates during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1057,6 +1067,7 @@ public class ProjectController {
           removeProjectRelatedFiles(usersToClean, dfso);
           cleanupLogger.logSuccess("Removed project related files");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing project-related files during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1065,6 +1076,7 @@ public class ProjectController {
           removeQuotas(project);
           cleanupLogger.logSuccess("Removed quotas");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing quota during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1073,6 +1085,7 @@ public class ProjectController {
           fixSharedDatasets(project, dfso);
           cleanupLogger.logSuccess("Fixed shared datasets");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when changing ownership during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1081,6 +1094,7 @@ public class ProjectController {
           hiveController.dropDatabase(project, dfso, true);
           cleanupLogger.logSuccess("Removed Hive db");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing hive db during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1089,6 +1103,7 @@ public class ProjectController {
           removeElasticsearch(project.getName());
           cleanupLogger.logSuccess("Removed ElasticSearch");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing elastic during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1097,6 +1112,7 @@ public class ProjectController {
           removeGroupAndUsers(groupsToClean, usersToClean);
           cleanupLogger.logSuccess("Removed HDFS Groups and Users");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing HDFS groups/users during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1105,6 +1121,7 @@ public class ProjectController {
           removeJupyter(project);
           cleanupLogger.logSuccess("Removed Jupyter");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing Anaconda during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1113,6 +1130,7 @@ public class ProjectController {
           dfso.rm(dummy, true);
           cleanupLogger.logSuccess("Removed dummy Inode");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing dummy Inode during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1121,6 +1139,7 @@ public class ProjectController {
           removeProjectFolder(project.getName(), dfso);
           cleanupLogger.logSuccess("Removed root Project folder");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing root Project dir during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
       } else {
@@ -1164,7 +1183,7 @@ public class ProjectController {
 
         // Cleanup Jupyter project
         try {
-          jupyterProcessFacade.projectCleanup(toDeleteProject);
+          jupyterProcessFacade.stopProject(toDeleteProject);
           cleanupLogger.logSuccess("Cleaned Jupyter environment");
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
@@ -2244,7 +2263,7 @@ public class ProjectController {
 
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public void removeJupyter(Project project) throws AppException {
-    jupyterProcessFacade.removeProject(project);
+    jupyterProcessFacade.stopProject(project);
   }
 
   @TransactionAttribute(TransactionAttributeType.NEVER)

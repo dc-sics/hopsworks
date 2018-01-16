@@ -1,6 +1,6 @@
 package io.hops.hopsworks.kmon.terminal;
 
-import io.hops.hopsworks.kmon.struct.ServiceType;
+import io.hops.hopsworks.kmon.struct.GroupType;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -11,8 +11,8 @@ import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import io.hops.hopsworks.common.util.WebCommunication;
 import io.hops.hopsworks.common.dao.host.Hosts;
-import io.hops.hopsworks.common.dao.host.HostEJB;
-import io.hops.hopsworks.kmon.struct.RoleType;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
+import io.hops.hopsworks.kmon.struct.ServiceType;
 import io.hops.hopsworks.common.dao.host.Status;
 
 @ManagedBean
@@ -26,7 +26,7 @@ public class TerminalController {
   @ManagedProperty("#{param.service}")
   private String service;
   @EJB
-  private HostEJB hostEjb;
+  private HostsFacade hostEjb;
   @EJB
   private WebCommunication web;
   private static final Logger logger = Logger.getLogger(
@@ -86,24 +86,24 @@ public class TerminalController {
   public String handleCommand(String command, String[] params) {
 //      TODO: Check special characters like ";" to avoid injection
     String roleName;
-    if (service.equalsIgnoreCase(ServiceType.HDFS.toString())) {
+    if (service.equalsIgnoreCase(GroupType.HDFS.toString())) {
       if (command.equals("hdfs")) {
-        roleName = RoleType.datanode.toString();
+        roleName = ServiceType.datanode.toString();
       } else {
         return "Unknown command. Accepted commands are: hdfs";
       }
 
-    } else if (service.equalsIgnoreCase(ServiceType.NDB.toString())) {
+    } else if (service.equalsIgnoreCase(GroupType.NDB.toString())) {
       if (command.equals("mysql")) {
-        roleName = RoleType.mysqld.toString();
+        roleName = ServiceType.mysqld.toString();
       } else if (command.equals("ndb_mgm")) {
-        roleName = RoleType.ndb_mgmd.toString();
+        roleName = ServiceType.ndb_mgmd.toString();
       } else {
         return "Unknown command. Accepted commands are: mysql, ndb_mgm";
       }
-    } else if (service.equalsIgnoreCase(ServiceType.YARN.toString())) {
+    } else if (service.equalsIgnoreCase(GroupType.YARN.toString())) {
       if (command.equals("yarn")) {
-        roleName = RoleType.resourcemanager.toString();
+        roleName = ServiceType.resourcemanager.toString();
       } else {
         return "Unknown command. Accepted commands are: yarn";
       }

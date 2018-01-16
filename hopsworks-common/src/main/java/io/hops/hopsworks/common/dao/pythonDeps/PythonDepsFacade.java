@@ -1,7 +1,7 @@
 package io.hops.hopsworks.common.dao.pythonDeps;
 
 import io.hops.hopsworks.common.dao.host.Hosts;
-import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.exception.AppException;
@@ -51,7 +51,7 @@ public class PythonDepsFacade {
   @EJB
   ProjectFacade projectFacade;
   @EJB
-  HostEJB hostsFacade;
+  HostsFacade hostsFacade;
   @EJB
   private WebCommunication web;
   @Resource(lookup = "concurrent/kagentExecutorService")

@@ -5,27 +5,27 @@ import io.hops.hopsworks.common.dao.host.Health;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-public class RoleInstancesInfo {
+public class ServiceInstancesInfo {
 
   private String fullName;
   private String roleName;
-  private SortedMap<Status, Integer> statusMap = new TreeMap<Status, Integer>();
-  private SortedMap<Health, Integer> healthMap = new TreeMap<Health, Integer>();
+  private SortedMap<Status, Integer> statusMap = new TreeMap<>();
+  private SortedMap<Health, Integer> healthMap = new TreeMap<>();
 
-  public RoleInstancesInfo(String fullName, RoleType role) {
+  public ServiceInstancesInfo(String fullName, ServiceType service) {
     this.fullName = fullName;
-    this.roleName = role.toString();
+    this.roleName = service.toString();
   }
 
   public String getFullName() {
     return fullName;
   }
 
-  public String getRoleName() {
+  public String getServiceName() {
     return roleName;
   }
 
-  public Health getRoleHealth() {
+  public Health getServiceHealth() {
     if (!healthMap.containsKey(Health.Bad)) {
       return Health.Good;
     }

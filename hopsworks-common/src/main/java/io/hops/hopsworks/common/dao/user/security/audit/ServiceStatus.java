@@ -20,34 +20,34 @@ import javax.xml.bind.annotation.XmlRootElement;
 import io.hops.hopsworks.common.dao.user.Users;
 
 @Entity
-@Table(name = "hopsworks.roles_audit")
+@Table(name = "hopsworks.service_status")
 @XmlRootElement
 @NamedQueries({
-  @NamedQuery(name = "RolesAudit.findAll",
-          query = "SELECT r FROM RolesAudit r"),
-  @NamedQuery(name = "RolesAudit.findByLogId",
-          query = "SELECT r FROM RolesAudit r WHERE r.logId = :logId"),
-  @NamedQuery(name = "RolesAudit.findByInitiator",
-          query = "SELECT r FROM RolesAudit r WHERE r.initiator = :initiator"),
-  @NamedQuery(name = "RolesAudit.findByTarget",
-          query = "SELECT r FROM RolesAudit r WHERE r.target = :target"),
-  @NamedQuery(name = "RolesAudit.findByAction",
-          query = "SELECT r FROM RolesAudit r WHERE r.action = :action"),
-  @NamedQuery(name = "RolesAudit.findByTime",
-          query = "SELECT r FROM RolesAudit r WHERE r.time = :time"),
-  @NamedQuery(name = "RolesAudit.findByMessage",
-          query = "SELECT r FROM RolesAudit r WHERE r.message = :message"),
-  @NamedQuery(name = "RolesAudit.findByIp",
-          query = "SELECT r FROM RolesAudit r WHERE r.ip = :ip"),
-  @NamedQuery(name = "RolesAudit.findByOs",
-          query = "SELECT r FROM RolesAudit r WHERE r.os = :os"),
-  @NamedQuery(name = "RolesAudit.findByOutcome",
-          query = "SELECT r FROM RolesAudit r WHERE r.outcome = :outcome"),
-  @NamedQuery(name = "RolesAudit.findByBrowser",
-          query = "SELECT r FROM RolesAudit r WHERE r.browser = :browser"),
-  @NamedQuery(name = "RolesAudit.findByMac",
-          query = "SELECT r FROM RolesAudit r WHERE r.mac = :mac")})
-public class RolesAudit implements Serializable {
+  @NamedQuery(name = "ServiceStatus.findAll",
+          query = "SELECT r FROM ServiceStatus r"),
+  @NamedQuery(name = "ServiceStatus.findByLogId",
+          query = "SELECT r FROM ServiceStatus r WHERE r.logId = :logId"),
+  @NamedQuery(name = "ServiceStatus.findByInitiator",
+          query = "SELECT r FROM ServiceStatus r WHERE r.initiator = :initiator"),
+  @NamedQuery(name = "ServiceStatus.findByTarget",
+          query = "SELECT r FROM ServiceStatus r WHERE r.target = :target"),
+  @NamedQuery(name = "ServiceStatus.findByAction",
+          query = "SELECT r FROM ServiceStatus r WHERE r.action = :action"),
+  @NamedQuery(name = "ServiceStatus.findByTime",
+          query = "SELECT r FROM ServiceStatus r WHERE r.time = :time"),
+  @NamedQuery(name = "ServiceStatus.findByMessage",
+          query = "SELECT r FROM ServiceStatus r WHERE r.message = :message"),
+  @NamedQuery(name = "ServiceStatus.findByIp",
+          query = "SELECT r FROM ServiceStatus r WHERE r.ip = :ip"),
+  @NamedQuery(name = "ServiceStatus.findByOs",
+          query = "SELECT r FROM ServiceStatus r WHERE r.os = :os"),
+  @NamedQuery(name = "ServiceStatus.findByOutcome",
+          query = "SELECT r FROM ServiceStatus r WHERE r.outcome = :outcome"),
+  @NamedQuery(name = "ServiceStatus.findByBrowser",
+          query = "SELECT r FROM ServiceStatus r WHERE r.browser = :browser"),
+  @NamedQuery(name = "ServiceStatus.findByMac",
+          query = "SELECT r FROM ServiceStatus r WHERE r.mac = :mac")})
+public class ServiceStatus implements Serializable {
 
   private static final long serialVersionUID = 1L;
   @Id
@@ -92,10 +92,10 @@ public class RolesAudit implements Serializable {
   @ManyToOne
   private Users initiator;
 
-  public RolesAudit() {
+  public ServiceStatus() {
   }
 
-  public RolesAudit(Long logId) {
+  public ServiceStatus(Long logId) {
     this.logId = logId;
   }
 
@@ -205,10 +205,10 @@ public class RolesAudit implements Serializable {
   @Override
   public boolean equals(Object object) {
     // TODO: Warning - this method won't work in the case the id fields are not set
-    if (!(object instanceof RolesAudit)) {
+    if (!(object instanceof ServiceStatus)) {
       return false;
     }
-    RolesAudit other = (RolesAudit) object;
+    ServiceStatus other = (ServiceStatus) object;
     if ((this.logId == null && other.logId != null) || (this.logId != null
             && !this.logId.equals(other.logId))) {
       return false;
@@ -218,7 +218,7 @@ public class RolesAudit implements Serializable {
 
   @Override
   public String toString() {
-    return "se.kth.bb.security.audit.model.RolesAudit[ logId=" + logId + " ]";
+    return "se.kth.bb.security.audit.model.ServiceStatus[ logId=" + logId + " ]";
   }
 
 }

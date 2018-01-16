@@ -50,7 +50,6 @@
     <class>io.hops.hopsworks.common.dao.project.Project</class>
     <class>io.hops.hopsworks.common.dao.project.service.ProjectServices</class>
     <class>io.hops.hopsworks.common.dao.project.team.ProjectTeam</class>
-    <class>io.hops.hopsworks.common.dao.role.Roles</class>
     <class>io.hops.hopsworks.common.dao.user.BbcGroup</class>
     <class>io.hops.hopsworks.common.dao.user.Users</class>
     <class>io.hops.hopsworks.common.dao.user.cluster.ClusterCert</class>
@@ -63,7 +62,6 @@
     <class>io.hops.hopsworks.common.dao.user.security.Yubikey</class>
     <class>io.hops.hopsworks.common.dao.user.security.audit.AccountAudit</class>
     <class>io.hops.hopsworks.common.dao.user.security.audit.ConsentsAudit</class>
-    <class>io.hops.hopsworks.common.dao.user.security.audit.RolesAudit</class>
     <class>io.hops.hopsworks.common.dao.user.security.audit.Userlogins</class>
     <class>io.hops.hopsworks.common.dao.user.sshkey.AuthorizedSshkeys</class>
     <class>io.hops.hopsworks.common.dao.user.sshkey.SshKeys</class>
@@ -74,7 +72,6 @@
     <class>io.hops.hopsworks.common.dao.jupyter.JupyterProject</class>
     <class>io.hops.hopsworks.common.dao.jupyter.JupyterSettings</class>
     <class>io.hops.hopsworks.common.dao.ndb.NdbBackup</class>
-    <class>io.hops.hopsworks.common.dao.jupyter.config.JupyterInterpreter</class>
     <!-- Converters -->
     <class>io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusConverter</class>
     <class>io.hops.hopsworks.common.jobs.configuration.JsonReduceableConverter</class>
@@ -82,6 +79,8 @@
     <class>io.hops.hopsworks.common.dao.jobs.description.Jobs</class>
     <class>io.hops.hopsworks.common.dao.dela.certs.ClusterCertificate</class>
     <class>io.hops.hopsworks.common.dao.host.Hosts</class>
+    <class>io.hops.hopsworks.common.dao.user.security.audit.ServiceStatus</class>
+    <class>io.hops.hopsworks.common.dao.kagent.HostServices</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <shared-cache-mode>NONE</shared-cache-mode>
     <validation-mode>NONE</validation-mode>

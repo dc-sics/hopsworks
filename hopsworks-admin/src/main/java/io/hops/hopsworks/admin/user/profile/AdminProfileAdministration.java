@@ -25,7 +25,7 @@ import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
@@ -217,7 +217,7 @@ public class AdminProfileAdministration implements Serializable {
     address = editingUser.getAddress();
 
     login = (Userlogins) FacesContext.getCurrentInstance().getExternalContext()
-            .getSessionMap().get("editinguser_logins");
+        .getSessionMap().get("editinguser_logins");
 
   }
 
@@ -308,13 +308,15 @@ public class AdminProfileAdministration implements Serializable {
     // Register a new group
     if (!"#!".equals(newGroup)) {
       usersController.registerGroup(editingUser, bbcGroup.getGid());
-      am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditActions.ADDROLE.name(), RolesAuditActions.SUCCESS.
-          name(), bbcGroup.getGroupName(), editingUser);
+      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceStatusAction.SERVICE_ADDED.name(),
+          ServiceStatusAction.SUCCESS.
+              name(), bbcGroup.getGroupName(), editingUser);
       MessagesController.addInfoMessage("Success", "Role updated successfully.");
 
     } else {
-      am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditActions.ADDROLE.name(), RolesAuditActions.FAILED.
-          name(), bbcGroup.getGroupName(), editingUser);
+      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceStatusAction.SERVICE_ADDED.name(),
+          ServiceStatusAction.FAILED.
+              name(), bbcGroup.getGroupName(), editingUser);
       MessagesController.addErrorMessage("Error", "No selection made!!");
     }
 
@@ -328,18 +330,18 @@ public class AdminProfileAdministration implements Serializable {
       userFacade.removeGroup(editingUser.getEmail(), bbcGroup.getGid());
 
       am.registerRoleChange(sessionState.getLoggedInUser(),
-              RolesAuditActions.REMOVEROLE.name(), RolesAuditActions.SUCCESS.
-              name(), bbcGroup.getGroupName(), editingUser);
+          ServiceStatusAction.SERVICE_REMOVED.name(), ServiceStatusAction.SUCCESS.
+          name(), bbcGroup.getGroupName(), editingUser);
       MessagesController.addInfoMessage("Success", "User updated successfully.");
     }
 
     if ("#!".equals(selectedGroup)) {
 
       if (("#!".equals(selectedStatus))
-              || "#!".equals(newGroup)) {
+          || "#!".equals(newGroup)) {
         am.registerRoleChange(sessionState.getLoggedInUser(),
-                RolesAuditActions.REMOVEROLE.name(), RolesAuditActions.FAILED.
-                name(), bbcGroup.getGroupName(), editingUser);
+            ServiceStatusAction.SERVICE_REMOVED.name(), ServiceStatusAction.FAILED.
+            name(), bbcGroup.getGroupName(), editingUser);
         MessagesController.addErrorMessage("Error", "No selection made!");
       }
     }
@@ -356,7 +358,7 @@ public class AdminProfileAdministration implements Serializable {
 
   public String getMaxNumProjs() {
     return userFacade.findByEmail(editingUser.getEmail()).getMaxNumProjects().
-            toString();
+        toString();
   }
 
   public void setMaxNumProjs(String maxNumProjs) {
@@ -378,14 +380,14 @@ public class AdminProfileAdministration implements Serializable {
   public void resendAccountVerificationEmail() throws MessagingException {
     FacesContext context = FacesContext.getCurrentInstance();
     HttpServletRequest request = (HttpServletRequest) context.
-            getExternalContext().getRequest();
+        getExternalContext().getRequest();
 
     String activationKey = SecurityUtils.getRandomPassword(64);
     emailBean.sendEmail(editingUser.getEmail(), RecipientType.TO,
-            UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
-            UserAccountsEmailMessages.buildMobileRequestMessage(
-                    AuditUtil.getUserURL(request), user.getUsername()
-                    + activationKey));
+        UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
+        UserAccountsEmailMessages.buildMobileRequestMessage(
+            AuditUtil.getUserURL(request), user.getUsername()
+            + activationKey));
     editingUser.setValidationKey(activationKey);
     userFacade.persist(editingUser);
 

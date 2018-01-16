@@ -10,12 +10,12 @@ import javax.persistence.TypedQuery;
 import javax.persistence.NonUniqueResultException;
 
 @Stateless
-public class HostEJB implements Serializable {
+public class HostsFacade implements Serializable {
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
 
-  public HostEJB() {
+  public HostsFacade() {
   }
 
   public List<Hosts> find() {

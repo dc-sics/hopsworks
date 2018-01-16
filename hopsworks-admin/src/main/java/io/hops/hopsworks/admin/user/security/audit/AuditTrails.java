@@ -17,8 +17,8 @@ import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.ConsentsAudit;
 import io.hops.hopsworks.common.dao.user.security.audit.ProjectAuditActions;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAudit;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatus;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
 import io.hops.hopsworks.common.user.UsersController;
@@ -48,7 +48,7 @@ public class AuditTrails implements Serializable {
 
   private AccountsAuditActions selectedAccountsAuditAction;
 
-  private RolesAuditActions selectdeRolesAuditAction;
+  private ServiceStatusAction selectedServiceStatusAction;
 
   private ProjectAuditActions selectedProjectAuditAction;
 
@@ -58,7 +58,7 @@ public class AuditTrails implements Serializable {
 
   private List<Userlogins> userLogins;
 
-  private List<RolesAudit> roleAudit;
+  private List<ServiceStatus> serviceStatuses;
 
   private List<ConsentsAudit> consnetAudit;
 
@@ -98,8 +98,8 @@ public class AuditTrails implements Serializable {
     this.selectedConsentAction = selectedConsentAction;
   }
 
-  public RolesAuditActions[] getAuditActions() {
-    return RolesAuditActions.values();
+  public ServiceStatusAction[] getAuditActions() {
+    return ServiceStatusAction.values();
   }
 
   public List<Userlogins> getUserLogins() {
@@ -110,12 +110,12 @@ public class AuditTrails implements Serializable {
     this.userLogins = userLogins;
   }
 
-  public List<RolesAudit> getRoleAudit() {
-    return roleAudit;
+  public List<ServiceStatus> getServiceStatuses() {
+    return serviceStatuses;
   }
 
-  public void setRoleAudit(List<RolesAudit> roleAudit) {
-    this.roleAudit = roleAudit;
+  public void setServiceStatuses(List<ServiceStatus> serviceStatus) {
+    this.serviceStatuses = serviceStatus;
   }
 
   public List<AccountAudit> getAccountAudit() {
@@ -130,8 +130,8 @@ public class AuditTrails implements Serializable {
     return AccountsAuditActions.values();
   }
 
-  public RolesAuditActions[] getRolesAuditActions() {
-    return RolesAuditActions.values();
+  public ServiceStatusAction[] getServiceStatusActions() {
+    return ServiceStatusAction.values();
   }
 
   public UserAuditActions[] getLoginsAuditActions() {
@@ -151,13 +151,13 @@ public class AuditTrails implements Serializable {
     this.selectedAccountsAuditAction = selectedAccountsAuditAction;
   }
 
-  public RolesAuditActions getSelectdeRolesAuditAction() {
-    return selectdeRolesAuditAction;
+  public ServiceStatusAction getSelectdeServiceStatusAction() {
+    return selectedServiceStatusAction;
   }
 
-  public void setSelectdeRolesAuditAction(
-          RolesAuditActions selectdeRolesAuditAction) {
-    this.selectdeRolesAuditAction = selectdeRolesAuditAction;
+  public void setSelectedServiceStatusAction(
+          ServiceStatusAction selectdeRolesAuditAction) {
+    this.selectedServiceStatusAction = selectdeRolesAuditAction;
   }
 
   public ProjectAuditActions getSelectedProjectAuditAction() {
@@ -234,16 +234,16 @@ public class AuditTrails implements Serializable {
    * @param action
    * @return
    */
-  public List<RolesAudit> getRoleAudit(String username, Date from, Date to,
+  public List<ServiceStatus> getServiceStatus(String username, Date from, Date to,
           String action) {
 
     Users u = userFacade.findByEmail(username);
 
     if (u == null) {
-      return auditManager.getRolesAudit(convertTosqlDate(from),
+      return auditManager.getServicesStatus(convertTosqlDate(from),
               convertTosqlDate(to), action);
     } else {
-      return auditManager.getRoletAudit(u.getUid(), convertTosqlDate(from),
+      return auditManager.getServicesStatus(u.getUid(), convertTosqlDate(from),
               convertTosqlDate(to), action);
     }
   }
@@ -345,19 +345,18 @@ public class AuditTrails implements Serializable {
    * <p>
    * @param action
    */
-  public void processRoleAuditRequest(RolesAuditActions action) {
-    if (action.equals(RolesAuditActions.ADDROLE)) {
-      roleAudit = getRoleAudit(username, convertTosqlDate(from),
+  public void processRoleAuditRequest(ServiceStatusAction action) {
+    if (action.equals(ServiceStatusAction.SERVICE_ADDED)) {
+      serviceStatuses = getServiceStatus(username, convertTosqlDate(from),
               convertTosqlDate(to), action.name());
-    } else if (action.equals(RolesAuditActions.REMOVEROLE)) {
-      roleAudit = getRoleAudit(username, convertTosqlDate(from),
+    } else if (action.equals(ServiceStatusAction.SERVICE_REMOVED)) {
+      serviceStatuses = getServiceStatus(username, convertTosqlDate(from),
               convertTosqlDate(to), action.name());
-    } else if (action.equals(RolesAuditActions.ALLROLEASSIGNMENTS)) {
-      roleAudit = getRoleAudit(username, convertTosqlDate(from),
+    } else if (action.equals(ServiceStatusAction.ALL_SERVICE_STATUSES)) {
+      serviceStatuses = getServiceStatus(username, convertTosqlDate(from),
               convertTosqlDate(to), action.getValue());
-    } else if (action.equals(RolesAuditActions.SUCCESS) || action.equals(
-            RolesAuditActions.FAILED)) {
-      roleAudit = auditManager.getRoletAuditOutcome(convertTosqlDate(from),
+    } else if (action.equals(ServiceStatusAction.SUCCESS) || action.equals(ServiceStatusAction.FAILED)) {
+      serviceStatuses = auditManager.getRoletAuditOutcome(convertTosqlDate(from),
               convertTosqlDate(to), action.name());
     } else {
       MessagesController.addSecurityErrorMessage("Audit action not supported.");
