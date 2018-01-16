@@ -10,6 +10,8 @@ import io.hops.hopsworks.common.dao.user.ldap.LdapUser;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.user.UsersController;
+import io.hops.hopsworks.common.util.Settings;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -33,6 +35,8 @@ public class LdapUserController {
   private BbcGroupFacade groupFacade;
   @EJB
   private UserFacade userFacade;
+  @EJB
+  private Settings settings;
 
   public LdapUserState login(String username, String password, boolean consent, String chosenEmail) throws
       LoginException {
@@ -43,7 +47,7 @@ public class LdapUserController {
     }
     LdapUser ladpUser = ldapUserFacade.findByLdapUid(userDTO.getEntryUUID());
     LdapUserState ldapUserState;
-    if (ladpUser == null) {       
+    if (ladpUser == null) {
       if (consent) {
         ladpUser = createNewLdapUser(userDTO, chosenEmail);
         persistLdapUser(ladpUser);
@@ -73,9 +77,15 @@ public class LdapUserController {
     }
     String authKey = SecurityUtils.getRandomPassword(16);
     Users user = userController.createNewLdapUser(email, userDTO.getGivenName(), userDTO.getSn(), authKey,
-        PeopleAccountStatus.ACTIVATED_ACCOUNT);
-    BbcGroup group = groupFacade.findByGroupName("HOPS_USER");
-    user.getBbcGroupCollection().add(group);
+        PeopleAccountStatus.fromValue(settings.getLdapAccountStatus()));
+    List<String> groups = ldapRealm.getUserGroups(userDTO.getUid());
+    BbcGroup group;
+    for (String grp : groups) {
+      group = groupFacade.findByGroupName(grp);
+      if (group != null) {
+        user.getBbcGroupCollection().add(group);
+      }
+    }
     return new LdapUser(userDTO.getEntryUUID(), user, authKey);
   }
 

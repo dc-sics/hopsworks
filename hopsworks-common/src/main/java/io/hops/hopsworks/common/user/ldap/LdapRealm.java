@@ -1,13 +1,18 @@
 package io.hops.hopsworks.common.user.ldap;
 
+import io.hops.hopsworks.common.dao.user.ldap.LdapUser;
 import io.hops.hopsworks.common.dao.user.ldap.LdapUserDTO;
+import io.hops.hopsworks.common.util.Settings;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.naming.CompositeName;
 import javax.naming.Context;
@@ -19,6 +24,8 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import javax.security.auth.login.LoginException;
 
 @Singleton
@@ -26,13 +33,12 @@ public class LdapRealm {
 
   private final static Logger LOGGER = Logger.getLogger(LdapRealm.class.getName());
   private static final String[] DN_ONLY = {"dn"};
-  private static final String LOGIN_NAME_FIELD_DEFAULT = "uid";
-  private static final String GIVEN_NAME_FIELD_DEFAULT = "givenName";
-  private static final String SURNAME_FIELD_DEFAULT = "sn";
-  private static final String EMAIL_FIELD_DEFAULT = "mail";
-  private static final String SEARCH_FILTER_DEFAULT = LOGIN_NAME_FIELD_DEFAULT + "=%s";
+  private static final String SUBST_SUBJECT_NAME = "%s";
+  private static final String SUBST_SUBJECT_DN = "%d";
   private static final String JNDICF_DEFAULT = "com.sun.jndi.ldap.LdapCtxFactory";
-  private static final String LDAP_ATTR_BINARY = "java.naming.ldap.attributes.binary";
+
+  @EJB
+  private Settings settings;
 
   private String entryUUIDField;
   private String usernameField;
@@ -40,8 +46,15 @@ public class LdapRealm {
   private String surnameField;
   private String emailField;
   private String searchFilter;
+  private String groupSearchFilter;
+  private String groupTarget;
+  private String baseDN;
+  private String groupDN;
+  private String dynamicGroupSearchFilter;
+  private String dynamicGroupTarget;
   private String[] returningAttrs;
   private Hashtable ldapProperties;
+  private LdapGroupMapper ldapGroupMapper;
 
   @Resource(name = "ldap/LdapResource")
   private DirContext dirContext;
@@ -49,42 +62,89 @@ public class LdapRealm {
   @PostConstruct
   public void init() {
     ldapProperties = getLdapBindProps();
-    entryUUIDField = (String) ldapProperties.get(LDAP_ATTR_BINARY);
+    String attrBinary = settings.getLdapAttrBinary();
+    entryUUIDField = (String) ldapProperties.get(attrBinary);
     if (entryUUIDField == null || entryUUIDField.isEmpty()) {
-      throw new IllegalStateException("No UUID set for resource. Set java.naming.ldap.attributes.binary property.");
+      throw new IllegalStateException("No UUID set for resource. Try setting " + attrBinary);
     }
-    usernameField = LOGIN_NAME_FIELD_DEFAULT;
-    givenNameField = GIVEN_NAME_FIELD_DEFAULT;
-    surnameField = SURNAME_FIELD_DEFAULT;
-    emailField = EMAIL_FIELD_DEFAULT;
-    searchFilter = SEARCH_FILTER_DEFAULT;
-    String[] attrs = {entryUUIDField, usernameField, givenNameField, surnameField, emailField};
-    returningAttrs = attrs;
+    populateVars();
   }
 
-  public void test() throws NamingException, LoginException {
-    LdapUserDTO user = findAndBind("ermias", "ermiasldap");
-    LOGGER.log(Level.INFO, "user: {0}", user);
+  private void populateVars() {
+    usernameField = settings.getLdapUserId();
+    givenNameField = settings.getLdapUserGivenName();
+    surnameField = settings.getLdapUserSurname();
+    emailField = settings.getLdapUserMail();
+    searchFilter = settings.getLdapUserSearchFilter();
+    groupSearchFilter = settings.getLdapGroupSearchFilter();
+    groupTarget = settings.getLdapGroupTarget();
+    baseDN = settings.getLdapUserDN();
+    groupDN = settings.getLdapGroupDN();
+    dynamicGroupSearchFilter = settings.getLdapUserSearchFilter();
+    dynamicGroupTarget = settings.getLdapDynGroupTarget();
+    String[] attrs = {entryUUIDField, usernameField, givenNameField, surnameField, emailField};
+    returningAttrs = attrs;
+    ldapGroupMapper = new LdapGroupMapper(settings.getLdapGroupMapping());
   }
 
   public LdapUserDTO findAndBind(String username, String password) throws LoginException {
-    String userid = String.format(searchFilter, username);
+    StringBuffer sb = new StringBuffer(searchFilter);
+    substitute(sb, SUBST_SUBJECT_NAME, username);
+    String userid = sb.toString();
     String userDN = userDNSearch(userid);
     if (userDN == null) {
       throw new LoginException("User not found.");
     }
     bindAsUser(userDN, password); // try login
     LdapUserDTO user = createLdapUser(userid);
+    validateLdapUser(user);
     return user;
   }
 
   public void authenticateLdapUser(String username, String password) throws LoginException {
-    String userid = String.format(searchFilter, username);
+    StringBuffer sb = new StringBuffer(searchFilter);
+    substitute(sb, SUBST_SUBJECT_NAME, username);
+    String userid = sb.toString();
     String userDN = userDNSearch(userid);
     if (userDN == null) {
       throw new LoginException("User not found.");
     }
     bindAsUser(userDN, password); // try login
+  }
+
+  public void authenticateLdapUser(LdapUser user, String password) throws LoginException {
+    String userid = entryUUIDField + "=" + user.getEntryUuid();
+    String userDN = userDNSearch(userid);
+    if (userDN == null) {
+      throw new LoginException("User not found.");
+    }
+    bindAsUser(userDN, password); // try login
+  }
+
+  public List<String> getUserGroups(String username) {
+    return ldapGroupMapper.getMappedGroups(getUserLdapGroups(username));
+  }
+
+  private List<String> getUserLdapGroups(String username) {
+    StringBuffer sb = new StringBuffer(searchFilter);
+    substitute(sb, SUBST_SUBJECT_NAME, username);
+    String userid = sb.toString();
+    String userDN = userDNSearch(userid);
+    if (userDN == null) {
+      throw new IllegalArgumentException("User not found.");
+    }
+    sb = new StringBuffer(groupSearchFilter);
+    StringBuffer dynsb = new StringBuffer(dynamicGroupSearchFilter);
+    substitute(sb, SUBST_SUBJECT_NAME, username);
+    substitute(sb, SUBST_SUBJECT_DN, userDN);
+    substitute(dynsb, SUBST_SUBJECT_NAME, username);
+    substitute(dynsb, SUBST_SUBJECT_DN, userDN);
+    String srchFilter = sb.toString();
+    String dynSearchFilter = dynsb.toString();
+    List<String> groupsList = new ArrayList<>();
+    groupsList.addAll(groupSearch(groupDN, srchFilter, groupTarget));
+    groupsList.addAll(dynamicGroupSearch(groupDN, dynamicGroupTarget, dynSearchFilter, groupTarget));
+    return groupsList;
   }
 
   private String userDNSearch(String filter) {
@@ -97,7 +157,7 @@ public class LdapRealm {
     ctls.setCountLimit(1);
 
     try {
-      answer = dirContext.search("", filter, ctls);
+      answer = dirContext.search(baseDN, filter, ctls);
       if (answer.hasMore()) {
         SearchResult res = (SearchResult) answer.next();
         CompositeName compDN = new CompositeName(res.getNameInNamespace());
@@ -120,27 +180,18 @@ public class LdapRealm {
 
   private LdapUserDTO createLdapUser(String filter) {
     NamingEnumeration answer = null;
-    String uuid;
-    String uid;
-    String givenName;
-    String sn;
-    List<String> email;
     LdapUserDTO ldapUserDTO = null;
     SearchControls ctls = new SearchControls();
     ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
     ctls.setReturningAttributes(returningAttrs);
     ctls.setCountLimit(1);
     try {
-      answer = dirContext.search("", filter, ctls);
+      answer = dirContext.search(baseDN, filter, ctls);
       if (answer.hasMore()) {
         SearchResult res = (SearchResult) answer.next();
         Attributes attrs = res.getAttributes();
-        uuid = getUUIDAttribute(attrs, entryUUIDField);
-        uid = getAttribute(attrs, usernameField);
-        givenName = getAttribute(attrs, givenNameField);
-        sn = getAttribute(attrs, surnameField);
-        email = getAttrList(attrs, emailField);
-        ldapUserDTO = new LdapUserDTO(uuid, uid, givenName, sn, email);
+        ldapUserDTO = new LdapUserDTO(getUUIDAttribute(attrs, entryUUIDField), getAttribute(attrs, usernameField),
+            getAttribute(attrs, givenNameField), getAttribute(attrs, surnameField), getAttrList(attrs, emailField));
       }
     } catch (Exception e) {
       LOGGER.log(Level.WARNING, "Ldaprealm search error: {0}", filter);
@@ -181,6 +232,64 @@ public class LdapRealm {
     return bindSuccessful;
   }
 
+  private List groupSearch(String groupDN, String searchFilter, String groupTarget) {
+    List groupList = new ArrayList();
+    String[] targets = new String[]{groupTarget};
+    try {
+      SearchControls ctls = new SearchControls();
+      ctls.setReturningAttributes(targets);
+      ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+      NamingEnumeration e = dirContext.search(groupDN, searchFilter.replaceAll(Matcher.quoteReplacement("\\"),
+          Matcher.quoteReplacement("\\\\")), ctls);
+
+      while (e.hasMore()) {
+        SearchResult result = (SearchResult) e.next();
+        Attribute grpAttr = result.getAttributes().get(groupTarget);
+        for (int i = 0; i < grpAttr.size(); i++) {
+          String s = (String) grpAttr.get(i);
+          groupList.add(s);
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.log(Level.INFO, "Error in group search: {0}", searchFilter);
+    }
+    return groupList;
+  }
+
+  private List dynamicGroupSearch(String groupDN, String dynamicGroupTarget, String dynSearchFilter,
+      String groupTarget) {
+    List groupList = new ArrayList();
+    String[] targets = new String[]{dynamicGroupTarget};
+    try {
+      SearchControls ctls = new SearchControls();
+      ctls.setReturningAttributes(targets);
+      ctls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+      ctls.setReturningObjFlag(false);
+
+      NamingEnumeration e = dirContext.search(groupDN, dynSearchFilter, ctls);
+      while (e.hasMore()) {
+        SearchResult result = (SearchResult) e.next();
+        Attribute isMemberOf = result.getAttributes().get(dynamicGroupTarget);
+        if (isMemberOf != null) {
+          for (Enumeration values = isMemberOf.getAll(); values.hasMoreElements();) {
+            String grpDN = (String) values.nextElement();
+            LdapName dn = new LdapName(grpDN);
+            for (Rdn rdn : dn.getRdns()) {
+              if (rdn.getType().equalsIgnoreCase(groupTarget)) {
+                groupList.add(rdn.getValue());
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.log(Level.INFO, "Error in dynamic group search: {0}", dynSearchFilter);
+    }
+
+    return groupList;
+  }
+
   private String getUUIDAttribute(Attributes attrs, String key) throws NamingException {
     Attribute attr = attrs.remove(key);
     byte[] guid = attr != null ? (byte[]) attr.get() : "".getBytes();
@@ -212,9 +321,35 @@ public class LdapRealm {
     } catch (NamingException ex) {
       LOGGER.log(Level.SEVERE, null, ex);
     }
-    for (Object key : ldapProperties.keySet()) {
-      LOGGER.log(Level.INFO, "{0}:{1}", new Object[]{key, ldapProperties.get(key)});
-    }
     return ldapProperties;
   }
+
+  private static void substitute(StringBuffer sb, String target, String value) {
+    int i = sb.indexOf(target);
+    while (i >= 0) {
+      sb.replace(i, i + target.length(), value);
+      i = sb.indexOf(target);
+    }
+  }
+
+  private void validateLdapUser(LdapUserDTO user) throws LoginException {
+    if (user.getEntryUUID() == null || user.getEntryUUID().isEmpty()) {
+      LOGGER.log(Level.SEVERE, "Could not find UUID for Ldap user. Check LDAP configuration.");
+      throw new LoginException("Could not find UUID for Ldap user.");
+    }
+    if (user.getEmail() == null || user.getEmail().isEmpty()) {
+      LOGGER.log(Level.SEVERE, "Could not find email for Ldap user. Check LDAP configuration.");
+      throw new LoginException("Could not find email for Ldap user.");
+    }
+    if (user.getGivenName() == null || user.getGivenName().isEmpty()) {
+      LOGGER.log(Level.SEVERE, "Could not find givenName for Ldap user. Check LDAP configuration.");
+      throw new LoginException("Could not find givenName for Ldap user.");
+    }
+    if (user.getSn() == null || user.getSn().isEmpty()) {
+      LOGGER.log(Level.SEVERE, "Could not find surname for Ldap user. Check LDAP configuration.");
+      throw new LoginException("Could not find surname for Ldap user.");
+    }
+
+  }
+
 }

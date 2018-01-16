@@ -10,6 +10,8 @@ import io.hops.hopsworks.common.dao.user.BbcGroup;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUser;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
@@ -21,6 +23,7 @@ import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
+import io.hops.hopsworks.common.user.ldap.LdapRealm;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
@@ -41,6 +44,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -72,9 +76,14 @@ public class AuthController {
   private ProjectFacade projectFacade;
   @EJB
   private CertificatesMgmService certificatesMgmService;
+  @EJB
+  private LdapRealm ldapRealm;
+  @EJB
+  private LdapUserFacade ldapUserFacade;
 
   /**
    * Pre check for custom realm login.
+   *
    * @param user
    * @param password
    * @param otp
@@ -114,8 +123,8 @@ public class AuthController {
     }
     return newPassword;
   }
-  
-  public String preLdapLoginCheck (Users user, String password, HttpServletRequest req) {
+
+  public String preLdapLoginCheck(Users user, String password, HttpServletRequest req) {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
     }
@@ -138,6 +147,21 @@ public class AuthController {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
     }
+    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
+      LdapUser ldapUser = ldapUserFacade.findByUsers(user);
+      if (ldapUser == null) {
+        return false;
+      }
+      try {
+        ldapRealm.authenticateLdapUser(ldapUser, password);
+        return true;
+      } catch (LoginException ex) {
+        registerFalseLogin(user, req);
+        LOGGER.log(Level.WARNING, "False login attempt by ldap user: {0}", user.getEmail());
+        LOGGER.log(Level.WARNING, null, ex.getMessage());
+        return false;
+      }
+    }
     String userPwdHash = user.getPassword();
     String pwdHash = getPasswordHash(password, user.getSalt());
     if (!userPwdHash.equals(pwdHash)) {
@@ -151,6 +175,7 @@ public class AuthController {
 
   /**
    * Validate security question and update false login attempts
+   *
    * @param user
    * @param securityQuestion
    * @param securityAnswer
@@ -174,6 +199,7 @@ public class AuthController {
 
   /**
    * Checks password and user status. Also updates false login attempts
+   *
    * @param user
    * @param password
    * @param req
@@ -192,6 +218,7 @@ public class AuthController {
 
   /**
    * Validates email validation key. Also updates false key validation attempts.
+   *
    * @param key
    * @param req
    * @throws AppException
@@ -236,6 +263,7 @@ public class AuthController {
 
   /**
    * Sends new activation key to the given user.
+   *
    * @param user
    * @param req
    * @throws MessagingException
@@ -319,6 +347,7 @@ public class AuthController {
 
   /**
    * Hash password + salt
+   *
    * @param password
    * @param salt
    * @return
@@ -329,6 +358,7 @@ public class AuthController {
 
   /**
    * Returns the hash of the value
+   *
    * @param val
    * @return
    */
@@ -358,6 +388,7 @@ public class AuthController {
 
   /**
    * Change security question and adds account audit for the operation.
+   *
    * @param user
    * @param securityQuestion
    * @param securityAnswer
@@ -373,6 +404,7 @@ public class AuthController {
 
   /**
    * Concatenates password and salt
+   *
    * @param password
    * @param salt
    * @return
@@ -422,6 +454,7 @@ public class AuthController {
 
   /**
    * Register failed login attempt.
+   *
    * @param user
    * @param req
    */
@@ -449,6 +482,7 @@ public class AuthController {
 
   /**
    * Registers failed email validation
+   *
    * @param user
    * @param req
    */
@@ -469,6 +503,7 @@ public class AuthController {
 
   /**
    * Set user online, resets false login attempts and register login audit info
+   *
    * @param user
    * @param req
    */
@@ -481,6 +516,7 @@ public class AuthController {
 
   /**
    * Set user offline and register login audit info
+   *
    * @param user
    * @param req
    */
@@ -492,6 +528,7 @@ public class AuthController {
 
   /**
    * Register authentication failure and register login audit info
+   *
    * @param user
    * @param req
    */
@@ -528,6 +565,7 @@ public class AuthController {
 
   /**
    * Generates a salt value with SALT_LENGTH and DIGEST
+   *
    * @return
    */
   public String generateSalt() {

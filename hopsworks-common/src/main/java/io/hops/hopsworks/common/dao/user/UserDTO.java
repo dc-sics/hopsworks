@@ -28,6 +28,7 @@ public class UserDTO {
   private int maxNumProjects;
   private int numCreatedProjects;
   private boolean testUser;
+  private String userAccountType;
 
   public UserDTO() {
   }
@@ -52,6 +53,7 @@ public class UserDTO {
     this.numCreatedProjects = user.getNumCreatedProjects();
     this.twoFactor = user.getTwoFactor();
     this.toursState = user.getToursState();
+    this.userAccountType = user.getMode().toString();
   }
 
   public String getUsername() { return username; }
@@ -232,6 +234,14 @@ public class UserDTO {
 
   public void setTestUser(boolean testUser) {
     this.testUser = testUser;
+  }
+
+  public String getUserAccountType() {
+    return userAccountType;
+  }
+
+  public void setUserAccountType(String userAccountType) {
+    this.userAccountType = userAccountType;
   }
 
   @Override
