@@ -5,7 +5,9 @@ import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.dela.AddressJSON;
+import io.hops.hopsworks.common.dela.DelaClientType;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -34,8 +36,6 @@ import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.ws.rs.core.Response;
-
-import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -141,6 +141,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_DRELEPHANT_PORT = "drelephant_port";
   private static final String VARIABLE_YARN_WEB_UI_IP = "yarn_ui_ip";
   private static final String VARIABLE_HDFS_WEB_UI_IP = "hdfs_ui_ip";
+  private static final String VARIABLE_HDFS_WEB_UI_PORT = "hdfs_ui_port";
   private static final String VARIABLE_YARN_WEB_UI_PORT = "yarn_ui_port";
   private static final String VARIABLE_FILE_PREVIEW_IMAGE_SIZE
       = "file_preview_image_size";
@@ -362,6 +363,7 @@ public class Settings implements Serializable {
           YARN_DEFAULT_QUOTA);
       YARN_WEB_UI_IP = setIpVar(VARIABLE_YARN_WEB_UI_IP, YARN_WEB_UI_IP);
       HDFS_WEB_UI_IP = setIpVar(VARIABLE_HDFS_WEB_UI_IP, HDFS_WEB_UI_IP);
+      HDFS_WEB_UI_PORT = setIntVar(VARIABLE_HDFS_WEB_UI_PORT, HDFS_WEB_UI_PORT);
       YARN_WEB_UI_PORT = setIntVar(VARIABLE_YARN_WEB_UI_PORT, YARN_WEB_UI_PORT);
       HDFS_DEFAULT_QUOTA_MBs = setDirVar(VARIABLE_HDFS_DEFAULT_QUOTA,
           HDFS_DEFAULT_QUOTA_MBs);
@@ -514,10 +516,10 @@ public class Settings implements Serializable {
       = "spark.shuffle.service.enabled";
   public static final String SPARK_DRIVER_MEMORY_ENV = "spark.driver.memory";
   public static final String SPARK_DRIVER_CORES_ENV = "spark.driver.cores";
+  public static final String SPARK_DRIVER_EXTRACLASSPATH = "spark.driver.extraClassPath";
   public static final String SPARK_EXECUTOR_MEMORY_ENV = "spark.executor.memory";
   public static final String SPARK_EXECUTOR_CORES_ENV = "spark.executor.cores";
-  public static final String SPARK_EXECUTOR_EXTRACLASSPATH
-      = "spark.executor.extraClassPath";
+  public static final String SPARK_EXECUTOR_EXTRACLASSPATH = "spark.executor.extraClassPath";
   public static final String SPARK_DRIVER_STAGINGDIR_ENV
       = "spark.yarn.stagingDir";
   public static final String SPARK_JAVA_LIBRARY_PROP = "java.library.path";
@@ -525,11 +527,12 @@ public class Settings implements Serializable {
   public static final String SPARK_MAX_APP_ATTEMPTS = "spark.yarn.maxAppAttempts";
   //PySpark properties
   public static final String SPARK_APP_NAME_ENV = "spark.app.name";
-  public static final String SPARK_EXECUTORENV_PYTHONPATH
-      = "spark.executorEnv.PYTHONPATH";
-  public static final String SPARK_EXECUTORENV_LD_LIBRARY_PATH
-      = "spark.executorEnv.LD_LIBRARY_PATH";
+  public static final String SPARK_EXECUTORENV_PYTHONPATH = "spark.executorEnv.PYTHONPATH";
+  public static final String SPARK_EXECUTORENV_LD_LIBRARY_PATH = "spark.executorEnv.LD_LIBRARY_PATH";
+  public static final String SPARK_EXECUTORENV_HDFS_USER = "spark.executorEnv.HDFS_USER";
+  public static final String SPARK_EXECUTORENV_HADOOP_USER_NAME = "spark.executorEnv.HADOOP_USER_NAME";
   public static final String SPARK_YARN_IS_PYTHON_ENV = "spark.yarn.isPython";
+  public static final String SPARK_YARN_SECONDARY_JARS = "spark.yarn.secondary.jars";
   public static final String SPARK_PYTHONPATH = "PYTHONPATH";
   public static final String SPARK_PYSPARK_PYTHON = "PYSPARK_PYTHON";
   //TFSPARK properties
@@ -878,6 +881,11 @@ public class Settings implements Serializable {
   public static String getYarnConfDir(String hadoopDir) {
     return hadoopConfDir(hadoopDir);
   }
+  
+  public String getHopsLeaderElectionJarPath() {
+    return getHadoopSymbolicLinkDir() + "/share/hadoop/hdfs/lib/hops-leader-election-" + getHadoopVersion() + ".jar";
+  }
+  
   //Default configuration file names
   public static final String DEFAULT_YARN_CONFFILE_NAME = "yarn-site.xml";
   public static final String DEFAULT_HADOOP_CONFFILE_NAME = "core-site.xml";
@@ -1948,6 +1956,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_HOPSSITE_BASE_URI_HOST = "hops_site_host";
   private static final String VARIABLE_CLUSTER_CERT = "hopsworks_certificate";
   private static final String VARIABLE_DELA_ENABLED = "dela_enabled";
+  private static final String VARIABLE_DELA_CLIENT_TYPE = "dela_client_type";
   private static final String VARIABLE_HOPSSITE_HEARTBEAT_INTERVAL = "hopssite_heartbeat_interval";
 
   public static final String VARIABLE_DELA_CLUSTER_ID = "cluster_id";
@@ -1961,6 +1970,7 @@ public class Settings implements Serializable {
   private String HOPSSITE_HOST = "hops.site";
   private String HOPSSITE = "http://hops.site:5081/hops-site/api";
   private Boolean DELA_ENABLED = false; // set to false if not found in variables table
+  private DelaClientType DELA_CLIENT_TYPE = DelaClientType.FULL_CLIENT;
 
   private long HOPSSITE_HEARTBEAT_RETRY = 10 * 1000l; //10s
   private long HOPSSITE_HEARTBEAT_INTERVAL = 10 * 60 * 1000l;//10min
@@ -1982,6 +1992,7 @@ public class Settings implements Serializable {
 
   private void populateDelaCache() {
     DELA_ENABLED = setBoolVar(VARIABLE_DELA_ENABLED, DELA_ENABLED);
+    DELA_CLIENT_TYPE = DelaClientType.from(setVar(VARIABLE_DELA_CLIENT_TYPE, DELA_CLIENT_TYPE.type));
     HOPSSITE_CLUSTER_NAME = setVar(VARIABLE_HOPSSITE_CLUSTER_NAME, HOPSSITE_CLUSTER_NAME);
     HOPSSITE_CLUSTER_PSWD = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD, HOPSSITE_CLUSTER_PSWD);
     HOPSSITE_CLUSTER_PSWD_AUX = setVar(VARIABLE_HOPSSITE_CLUSTER_PSWD_AUX, HOPSSITE_CLUSTER_PSWD_AUX);
@@ -2000,6 +2011,10 @@ public class Settings implements Serializable {
   public synchronized Boolean isDelaEnabled() {
     checkCache();
     return DELA_ENABLED;
+  }
+  
+  public synchronized DelaClientType getDelaClientType() {
+    return DELA_CLIENT_TYPE;
   }
 
   public synchronized String getHOPSSITE_HOST() {
@@ -2120,6 +2135,7 @@ public class Settings implements Serializable {
     }
     return null;
   }
+  //********************************************************************************************************************
 
   public final static String PROJECT_GENERIC_USER_SUFFIX = HdfsUsersController.USER_NAME_DELIMITER
       + "PROJECTGENERICUSER";
