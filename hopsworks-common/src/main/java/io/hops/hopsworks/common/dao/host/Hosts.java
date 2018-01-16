@@ -34,14 +34,14 @@ import org.codehaus.jackson.annotate.JsonIgnore;
           query = "SELECT h FROM Hosts h WHERE h.hostname = :hostname"),
   @NamedQuery(name = "Hosts.findBy-HostIp",
           query = "SELECT h FROM Hosts h WHERE h.hostIp = :hostIp"),
-  @NamedQuery(name = "Hosts.findBy-Cluster.Service.Role.Status",
+  @NamedQuery(name = "Hosts.findBy-Cluster.Group.Service.Status",
           query
-          = "SELECT h FROM Hosts h, Roles r WHERE h = r.host AND r.cluster "
-          + "= :cluster AND r.service = :service AND r.role = :role AND r.status = :status"),
-  @NamedQuery(name = "Hosts.findBy-Cluster.Service.Role",
+          = "SELECT h FROM Hosts h, HostServices r WHERE h = r.host AND r.cluster "
+          + "= :cluster AND r.group = :group AND r.service = :service AND r.status = :status"),
+  @NamedQuery(name = "Hosts.findBy-Cluster.Group.Service",
           query
-          = "SELECT h FROM Hosts h, Roles r WHERE h = r.host AND r.cluster "
-          + "= :cluster AND r.service = :service AND r.role = :role"),})
+          = "SELECT h FROM Hosts h, HostServices r WHERE h = r.host AND r.cluster "
+          + "= :cluster AND r.group = :group AND r.service = :service"),})
 public class Hosts implements Serializable {
 
   private static final int HEARTBEAT_INTERVAL = 10;
@@ -110,7 +110,7 @@ public class Hosts implements Serializable {
   private Collection<CondaCommands> condaCommandsCollection;
 
   @OneToMany(mappedBy = "host")
-  private Collection<HostServices> rolesCollection;
+  private Collection<HostServices> hostServices;
   
   public Hosts() {
   }
@@ -360,12 +360,12 @@ public class Hosts implements Serializable {
   
   @XmlTransient
   @JsonIgnore
-  public Collection<HostServices> getRolesCollection() {
-    return rolesCollection;
+  public Collection<HostServices> getHostServicesCollection() {
+    return hostServices;
   }
 
-  public void setRolesCollection(Collection<HostServices> rolesCollection) {
-    this.rolesCollection = rolesCollection;
+  public void setHostServicesCollection(Collection<HostServices> hostServicesCollection) {
+    this.hostServices = hostServicesCollection;
   }
 
   @Override

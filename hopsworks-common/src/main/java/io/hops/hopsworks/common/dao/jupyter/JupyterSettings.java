@@ -32,7 +32,7 @@ import javax.xml.bind.annotation.XmlRootElement;
   ,
     @NamedQuery(name = "JupyterSettings.findByTeamMember",
       query
-      = "SELECT j FROM JupyterSettings j WHERE j.jupyterSettingsPK.teamMember = :teamMember")
+      = "SELECT j FROM JupyterSettings j WHERE j.jupyterSettingsPK.email = :email")
   ,
     @NamedQuery(name = "JupyterSettings.findByNumTfPs",
       query
@@ -270,8 +270,8 @@ public class JupyterSettings implements Serializable {
     this.umask = umask;
   }
 
-  public JupyterSettings(int projectId, String teamMember) {
-    this.jupyterSettingsPK = new JupyterSettingsPK(projectId, teamMember);
+  public JupyterSettings(int projectId, String email) {
+    this.jupyterSettingsPK = new JupyterSettingsPK(projectId, email);
   }
 
   public JupyterSettingsPK getJupyterSettingsPK() {

@@ -47,7 +47,7 @@ import javax.validation.constraints.Size;
       query
       = "SELECT r FROM HostServices r WHERE r.host.hostname = :hostname ORDER BY r.cluster, r.group, r.service")
   ,
-  @NamedQuery(name = "HostServices.findBy-Cluster-Group-Role",
+  @NamedQuery(name = "HostServices.findBy-Cluster-Group-Service",
       query
       = "SELECT r FROM HostServices r WHERE r.cluster = :cluster AND r.group = :group "
       + "AND r.service = :service")
@@ -55,10 +55,10 @@ import javax.validation.constraints.Size;
   @NamedQuery(name = "HostServices.findBy-Group",
       query = "SELECT r FROM HostServices r WHERE r.group = :group ")
   ,
-  @NamedQuery(name = "HostServices.findBy-Group-Role",
+  @NamedQuery(name = "HostServices.findBy-Group-Service",
       query = "SELECT r FROM HostServices r WHERE r.group = :group AND r.service = :service")
   ,
-  @NamedQuery(name = "HostServices.findBy-Role",
+  @NamedQuery(name = "HostServices.findBy-Service",
       query
       = "SELECT r FROM HostServices r WHERE r.service = :service")
   ,
@@ -71,29 +71,29 @@ import javax.validation.constraints.Size;
       query
       = "SELECT count(DISTINCT r.host) FROM HostServices r WHERE r.cluster = :cluster")
   ,
-  @NamedQuery(name = "HostServices.Count-roles",
+  @NamedQuery(name = "HostServices.Count-services",
       query
       = "SELECT COUNT(r) FROM HostServices r WHERE r.cluster = :cluster AND r.group = :group")
   ,
   @NamedQuery(name = "HostServices.findHostGroupsBy-Cluster",
       query
-      = "SELECT NEW io.hops.hopsworks.common.dao.role.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
+      = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
       + "WHERE r.host = h AND r.cluster = :cluster")
   ,
   @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Service",
       query
-      = "SELECT NEW io.hops.hopsworks.common.dao.role.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
+      = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
       + "WHERE r.host.hostname = h.hostname AND r.cluster = :cluster AND r.group = :group")
   ,
-  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group-Role",
+  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group-Service",
       query
-      = "SELECT NEW io.hops.hopsworks.common.dao.role.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
+      = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
       + "WHERE r.host = h AND r.cluster = :cluster AND r.group = :group "
       + "AND r.service = :service")
   ,
-  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group-Role-Host",
+  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group-Service-Host",
       query
-      = "SELECT NEW io.hops.hopsworks.common.dao.role.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
+      = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
       + "WHERE r.host = h AND r.cluster = :cluster AND r.group = :group "
       + "AND r.service = :service AND r.host.hostname = :hostname")
   ,
@@ -298,7 +298,7 @@ public class HostServices implements Serializable {
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.role.Roles[ id=" + id + " ]";
+    return "io.hops.hopsworks.common.dao.kagent.Services[ id=" + id + " ]";
   }
 
   public Health getHealth() {
