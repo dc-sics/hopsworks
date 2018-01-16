@@ -129,29 +129,29 @@ public class AgentResource {
       for (int i = 0; i < roles.size(); i++) {
         JsonObject s = roles.getJsonObject(i);
 
-        if (!s.containsKey("cluster") || !s.containsKey("service") || !s.
-            containsKey("role")) {
+        if (!s.containsKey("cluster") || !s.containsKey("group") || !s.
+            containsKey("service")) {
           logger.warning("Badly formed JSON object describing a service.");
           continue;
         }
         String cluster = s.getString("cluster");
-        String roleName = s.getString("role");
-        String service = s.getString("service");
-        HostServices role = null;
+        String serviceName = s.getString("service");
+        String group = s.getString("group");
+        HostServices hostService = null;
         try {
-          role = roleFacade.find(hostname, cluster, service, roleName);
+          hostService = roleFacade.find(hostname, cluster, group, serviceName);
         } catch (Exception ex) {
           logger.log(Level.FINE, "Could not find a role for the kagent heartbeat.");
           continue;
         }
 
-        if (role == null) {
-          role = new HostServices();
-          role.setHost(host);
-          role.setCluster(cluster);
-          role.setGroup(service);
-          role.setService(roleName);
-          role.setStartTime(agentTime);
+        if (hostService == null) {
+          hostService = new HostServices();
+          hostService.setHost(host);
+          hostService.setCluster(cluster);
+          hostService.setGroup(group);
+          hostService.setService(serviceName);
+          hostService.setStartTime(agentTime);
         }
 
         String webPort = s.containsKey("web-port") ? s.getString("web-port")
@@ -159,35 +159,36 @@ public class AgentResource {
         String pid = s.containsKey("pid") ? s.getString("pid") : "-1";
         try {
 //          role.setWebPort(Integer.parseInt(webPort));
-          role.setPid(Integer.parseInt(pid));
+          hostService.setPid(Integer.parseInt(pid));
         } catch (NumberFormatException ex) {
-          logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", role);
+          logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", hostService);
           continue;
         }
         if (s.containsKey("status")) {
-          if ((role.getStatus() == null || !role.getStatus().equals(Status.Started)) && Status.valueOf(s.getString(
-              "status")).equals(Status.Started)) {
-            role.setStartTime(agentTime);
+          if ((hostService.getStatus() == null || !hostService.getStatus().equals(Status.Started)) && Status.valueOf(s.
+              getString(
+                  "status")).equals(Status.Started)) {
+            hostService.setStartTime(agentTime);
           }
-          role.setStatus(Status.valueOf(s.getString("status")));
+          hostService.setStatus(Status.valueOf(s.getString("status")));
         } else {
-          role.setStatus(Status.None);
+          hostService.setStatus(Status.None);
         }
 
-        Long startTime = role.getStartTime();
+        Long startTime = hostService.getStartTime();
         Status status = Status.valueOf(s.getString("status"));
         if (status.equals(Status.Started)) {
-          role.setStopTime(agentTime);
+          hostService.setStopTime(agentTime);
         }
-        Long stopTime = role.getStopTime();
+        Long stopTime = hostService.getStopTime();
 
         if (startTime != null && stopTime != null) {
-          role.setUptime(stopTime - startTime);
+          hostService.setUptime(stopTime - startTime);
         } else {
-          role.setUptime(0);
+          hostService.setUptime(0);
         }
 
-        roleFacade.store(role);
+        roleFacade.store(hostService);
       }
 
       if (json.containsKey("conda-ops")) {

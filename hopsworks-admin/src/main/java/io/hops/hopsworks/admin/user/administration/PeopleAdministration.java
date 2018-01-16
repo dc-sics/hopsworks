@@ -33,7 +33,7 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
@@ -463,13 +463,13 @@ public class PeopleAdministration implements Serializable {
       if (bbcGroup != null) {
         usersController.registerGroup(user1, bbcGroup.getGid());
         auditManager.registerRoleChange(sessionState.getLoggedInUser(),
-            ServiceStatusAction.SERVICE_ADDED.name(),
-            ServiceStatusAction.SUCCESS.name(), bbcGroup.getGroupName(),
+            ServiceAuditAction.ROLE_ADDED.name(),
+            ServiceAuditAction.SUCCESS.name(), bbcGroup.getGroupName(),
             user1);
       } else {
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
             PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
-            ServiceStatusAction.FAILED.name(), "Role could not be granted.",
+            ServiceAuditAction.FAILED.name(), "Role could not be granted.",
             user1);
         MessagesController.addSecurityErrorMessage("Role could not be granted.");
         return;
@@ -483,7 +483,7 @@ public class PeopleAdministration implements Serializable {
       } catch (ApplicationException | IllegalArgumentException ex) {
         auditManager.registerAccountChange(sessionState.getLoggedInUser(),
             PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
-            ServiceStatusAction.FAILED.name(), "User could not be activated.",
+            ServiceAuditAction.FAILED.name(), "User could not be activated.",
             user1);
         MessagesController.addSecurityErrorMessage(
             "Account activation problem not be granted.");

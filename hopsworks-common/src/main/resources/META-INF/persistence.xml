@@ -79,8 +79,8 @@
     <class>io.hops.hopsworks.common.dao.jobs.description.Jobs</class>
     <class>io.hops.hopsworks.common.dao.dela.certs.ClusterCertificate</class>
     <class>io.hops.hopsworks.common.dao.host.Hosts</class>
-    <class>io.hops.hopsworks.common.dao.user.security.audit.ServiceStatus</class>
     <class>io.hops.hopsworks.common.dao.kagent.HostServices</class>
+    <class>io.hops.hopsworks.common.dao.user.security.audit.ServiceAudit</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <shared-cache-mode>NONE</shared-cache-mode>
     <validation-mode>NONE</validation-mode>

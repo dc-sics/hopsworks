@@ -31,7 +31,7 @@ import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
@@ -167,8 +167,8 @@ public class YubikeyActivator implements Serializable {
           BbcGroup bbcGroup = bbcGroupFacade.findByGroupName(this.sgroup);
           usersController.registerGroup(this.selectedYubikyUser, bbcGroup.getGid());
           auditManager.registerRoleChange(sessionState.getLoggedInUser(),
-                  ServiceStatusAction.SERVICE_ADDED.name(),
-                  ServiceStatusAction.SUCCESS.name(), bbcGroup.getGroupName(),
+                  ServiceAuditAction.ROLE_ADDED.name(),
+                  ServiceAuditAction.SUCCESS.name(), bbcGroup.getGroupName(),
                   this.selectedYubikyUser);
         } else {
           MessagesController.addSecurityErrorMessage(

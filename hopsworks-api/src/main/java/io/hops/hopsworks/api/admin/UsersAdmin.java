@@ -7,7 +7,7 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
@@ -126,7 +126,7 @@ public class UsersAdmin {
         String initiatorEmail = sc.getUserPrincipal().getName();
         Users initiator = userFacade.findByEmail(initiatorEmail);
         auditManager.registerRoleChange(initiator,
-            ServiceStatusAction.SERVICES_UPDATED.name(), ServiceStatusAction.SUCCESS.
+            ServiceAuditAction.ROLE_UPDATED.name(), ServiceAuditAction.SUCCESS.
             name(), result, u, req);
       }
       if (user.getMaxNumProjects() != null) {
@@ -166,7 +166,7 @@ public class UsersAdmin {
         String initiatorEmail = sc.getUserPrincipal().getName();
         Users initiator = userFacade.findByEmail(initiatorEmail);
         auditManager.registerRoleChange(initiator,
-            ServiceStatusAction.SERVICES_UPDATED.name(), ServiceStatusAction.SUCCESS.
+            ServiceAuditAction.ROLE_UPDATED.name(), ServiceAuditAction.SUCCESS.
             name(), result, u, req);
         auditManager.registerRoleChange(initiator, PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
             AccountsAuditActions.SUCCESS.name(), "", u, req);

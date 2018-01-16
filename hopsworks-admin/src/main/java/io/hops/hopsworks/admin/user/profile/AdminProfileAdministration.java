@@ -25,7 +25,7 @@ import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
@@ -308,14 +308,14 @@ public class AdminProfileAdministration implements Serializable {
     // Register a new group
     if (!"#!".equals(newGroup)) {
       usersController.registerGroup(editingUser, bbcGroup.getGid());
-      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceStatusAction.SERVICE_ADDED.name(),
-          ServiceStatusAction.SUCCESS.
+      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceAuditAction.ROLE_ADDED.name(),
+          ServiceAuditAction.SUCCESS.
               name(), bbcGroup.getGroupName(), editingUser);
       MessagesController.addInfoMessage("Success", "Role updated successfully.");
 
     } else {
-      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceStatusAction.SERVICE_ADDED.name(),
-          ServiceStatusAction.FAILED.
+      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceAuditAction.ROLE_ADDED.name(),
+          ServiceAuditAction.FAILED.
               name(), bbcGroup.getGroupName(), editingUser);
       MessagesController.addErrorMessage("Error", "No selection made!!");
     }
@@ -330,7 +330,7 @@ public class AdminProfileAdministration implements Serializable {
       userFacade.removeGroup(editingUser.getEmail(), bbcGroup.getGid());
 
       am.registerRoleChange(sessionState.getLoggedInUser(),
-          ServiceStatusAction.SERVICE_REMOVED.name(), ServiceStatusAction.SUCCESS.
+          ServiceAuditAction.ROLE_REMOVED.name(), ServiceAuditAction.SUCCESS.
           name(), bbcGroup.getGroupName(), editingUser);
       MessagesController.addInfoMessage("Success", "User updated successfully.");
     }
@@ -340,7 +340,7 @@ public class AdminProfileAdministration implements Serializable {
       if (("#!".equals(selectedStatus))
           || "#!".equals(newGroup)) {
         am.registerRoleChange(sessionState.getLoggedInUser(),
-            ServiceStatusAction.SERVICE_REMOVED.name(), ServiceStatusAction.FAILED.
+            ServiceAuditAction.ROLE_REMOVED.name(), ServiceAuditAction.FAILED.
             name(), bbcGroup.getGroupName(), editingUser);
         MessagesController.addErrorMessage("Error", "No selection made!");
       }

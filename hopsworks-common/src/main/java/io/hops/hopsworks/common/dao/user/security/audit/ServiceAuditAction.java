@@ -1,13 +1,13 @@
 package io.hops.hopsworks.common.dao.user.security.audit;
 
-public enum ServiceStatusAction {
+public enum ServiceAuditAction {
 
   // for adding role by the admin
-  SERVICE_ADDED("ADDED ROLE"),
+  ROLE_ADDED("ADDED ROLE"),
   // for removing role by the admin
-  SERVICE_REMOVED("REMOVED ROLE"),
+  ROLE_REMOVED("REMOVED ROLE"),
 
-  SERVICES_UPDATED("UPDATED ROLES"),
+  ROLE_UPDATED("UPDATED ROLES"),
   
   SUCCESS("SUCCESS"),
 
@@ -18,7 +18,7 @@ public enum ServiceStatusAction {
 
   private final String value;
 
-  private ServiceStatusAction(String value) {
+  private ServiceAuditAction(String value) {
     this.value = value;
   }
 
@@ -26,9 +26,9 @@ public enum ServiceStatusAction {
     return value;
   }
 
-  public static ServiceStatusAction getServiceStatusAction(String text) {
+  public static ServiceAuditAction getServiceAuditAction(String text) {
     if (text != null) {
-      for (ServiceStatusAction b : ServiceStatusAction.values()) {
+      for (ServiceAuditAction b : ServiceAuditAction.values()) {
         if (text.equalsIgnoreCase(b.value)) {
           return b;
         }

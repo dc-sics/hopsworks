@@ -36,7 +36,7 @@ public class GroupStatusController {
 
   @PostConstruct
   public void init() {
-    logger.info("init ServiceStatusController");
+    logger.info("init ServiceAuditController");
 //        loadRoles();
   }
 

@@ -12,7 +12,7 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceStatusAction;
+import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
@@ -221,7 +221,7 @@ public class AuthController {
     user.setStatus(PeopleAccountStatus.VERIFIED_ACCOUNT);
     userFacade.update(user);
     accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.VERIFIED_ACCOUNT.name(),
-        ServiceStatusAction.SUCCESS.name(), "Account verification", user, req);
+        ServiceAuditAction.SUCCESS.name(), "Account verification", user, req);
   }
 
   /**
@@ -436,7 +436,7 @@ public class AuthController {
           LOGGER.log(Level.SEVERE, "Failed to send email. ", ex);
         }
         accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(),
-            ServiceStatusAction.SUCCESS.
+            ServiceAuditAction.SUCCESS.
                 name(), "False login retries:" + Integer.toString(count), user, req);
       }
       // notify user about the false attempts
@@ -460,7 +460,7 @@ public class AuthController {
         user.setStatus(PeopleAccountStatus.SPAM_ACCOUNT);
       }
       userFacade.update(user);
-      accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), ServiceStatusAction.SUCCESS.
+      accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), ServiceAuditAction.SUCCESS.
           name(), "Wrong validation key retries: " + Integer.toString(count), user, req);
     }
   }
