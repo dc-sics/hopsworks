@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.ejb.EJB;
-import javax.ejb.Singleton;
+import javax.ejb.Stateless;
 import javax.naming.CompositeName;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -28,10 +28,10 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.security.auth.login.LoginException;
 
-@Singleton
+@Stateless
 public class LdapRealm {
 
-  private final static Logger LOGGER = Logger.getLogger(LdapRealm.class.getName());
+  private static final Logger LOGGER = Logger.getLogger(LdapRealm.class.getName());
   private static final String[] DN_ONLY = {"dn"};
   private static final String SUBST_SUBJECT_NAME = "%s";
   private static final String SUBST_SUBJECT_DN = "%d";
@@ -282,7 +282,7 @@ public class LdapRealm {
         }
       }
     } catch (Exception e) {
-      LOGGER.log(Level.INFO, "Error in group search: {0}", searchFilter);
+      LOGGER.log(Level.WARNING, "Error in group search: {0}", searchFilter);
     }
     return groupList;
   }
@@ -315,7 +315,7 @@ public class LdapRealm {
         }
       }
     } catch (Exception e) {
-      LOGGER.log(Level.INFO, "Error in dynamic group search: {0}", dynSearchFilter);
+      LOGGER.log(Level.WARNING, "Error in dynamic group search: {0}", dynSearchFilter);
     }
 
     return groupList;

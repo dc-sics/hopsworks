@@ -46,7 +46,7 @@ public class LdapUser implements Serializable {
   private String authKey;
   @JoinColumn(name = "uid",
       referencedColumnName = "uid")
-  @OneToOne(optional = false, cascade = CascadeType.ALL)
+  @OneToOne(optional = false, cascade = CascadeType.PERSIST)
   private Users uid;
 
   public LdapUser() {

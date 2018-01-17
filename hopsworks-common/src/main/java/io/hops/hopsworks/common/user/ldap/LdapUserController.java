@@ -70,6 +70,10 @@ public class LdapUserController {
       LOGGER.log(Level.WARNING, "Could not register user. Email not chosen.");
       throw new LoginException("Could not register user. Email not chosen.");
     }
+    if (!userDTO.getEmail().contains(chosenEmail)) {
+      LOGGER.log(Level.WARNING, "Could not register user. Chosen email not in ldap user email list.");
+      throw new LoginException("Could not register user. Chosen email not in ldap user email list.");
+    }
     String email = userDTO.getEmail().size() == 1 ? userDTO.getEmail().get(0) : chosenEmail;
     Users u = userFacade.findByEmail(email);
     if (u != null) {
@@ -90,6 +94,9 @@ public class LdapUserController {
   }
 
   private boolean ldapUserUpdated(LdapUserDTO user, Users uid) {
+    if (user == null || uid == null) {
+      return false;
+    }
     return !uid.getFname().equals(user.getGivenName()) || !uid.getLname().equals(user.getSn());
   }
 
