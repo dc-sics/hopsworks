@@ -47,20 +47,20 @@ public class HostsFacade implements Serializable {
     }
   }
 
-  public List<Hosts> find(String cluster, String service, String role,
+  public List<Hosts> find(String cluster, String group, String service,
           Status status) {
     TypedQuery<Hosts> query = em.createNamedQuery(
             "Hosts.findBy-Cluster.Service.Role.Status", Hosts.class)
-            .setParameter("cluster", cluster).setParameter("service", service)
-            .setParameter("role", role).setParameter("status", status);
+            .setParameter("cluster", cluster).setParameter("group", group)
+            .setParameter("service", service).setParameter("status", status);
     return query.getResultList();
   }
 
-  public List<Hosts> find(String cluster, String service, String role) {
+  public List<Hosts> find(String cluster, String group, String service) {
     TypedQuery<Hosts> query = em.createNamedQuery(
             "Hosts.findBy-Cluster.Service.Role", Hosts.class)
-            .setParameter("cluster", cluster).setParameter("service", service)
-            .setParameter("role", role);
+            .setParameter("cluster", cluster).setParameter("group", group)
+            .setParameter("service", service);
     return query.getResultList();
   }
 

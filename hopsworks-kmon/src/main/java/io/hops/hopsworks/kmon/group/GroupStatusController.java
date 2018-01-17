@@ -1,4 +1,4 @@
-package io.hops.hopsworks.kmon.service;
+package io.hops.hopsworks.kmon.group;
 
 import io.hops.hopsworks.kmon.struct.GroupType;
 import java.util.ArrayList;
@@ -10,7 +10,7 @@ import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
-import io.hops.hopsworks.kmon.role.GroupServiceMapper;
+import io.hops.hopsworks.kmon.service.GroupServiceMapper;
 import io.hops.hopsworks.kmon.struct.ServiceType;
 import io.hops.hopsworks.common.dao.host.Health;
 import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
@@ -27,7 +27,7 @@ public class GroupStatusController {
   private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
-  private Health groupHealth;
+  private Health health;
   private List<ServiceInstancesInfo> groupServices = new ArrayList<ServiceInstancesInfo>();
   private static final Logger logger = Logger.getLogger(GroupStatusController.class.getName());
 
@@ -37,7 +37,7 @@ public class GroupStatusController {
   @PostConstruct
   public void init() {
     logger.info("init ServiceAuditController");
-//        loadRoles();
+    loadServices();
   }
 
   public String getGroup() {
@@ -57,7 +57,7 @@ public class GroupStatusController {
   }
 
   public Health getHealth() {
-    return groupHealth;
+    return health;
   }
 
   public List<ServiceInstancesInfo> getServices() {
@@ -88,28 +88,28 @@ public class GroupStatusController {
   }
 
   private void loadServices() {
-    groupHealth = Health.Good;
+    health = Health.Good;
     try {
-      for (ServiceType role : GroupServiceMapper.getServices(group)) {
-        groupServices.add(createRoleInstancesInfo(cluster, group, role));
+      for (ServiceType service : GroupServiceMapper.getServices(group)) {
+        groupServices.add(createServiceInstancesInfo(cluster, group, service));
       }
     } catch (Exception ex) {
       logger.log(Level.SEVERE, "Invalid service type: {0}", group);
     }
   }
 
-  private ServiceInstancesInfo createRoleInstancesInfo(String cluster,
-      String service, ServiceType role) {
+  private ServiceInstancesInfo createServiceInstancesInfo(String cluster,
+      String group, ServiceType service) {
 
-    ServiceInstancesInfo roleInstancesInfo = 
-        new ServiceInstancesInfo(GroupServiceMapper.getServiceFullName(role), role);
-    List<HostServicesInfo> serviceHosts = hostServicesFacade.findHostServices(cluster, service, role.toString());
+    ServiceInstancesInfo groupInstancesInfo = 
+        new ServiceInstancesInfo(GroupServiceMapper.getServiceFullName(service), service);
+    List<HostServicesInfo> serviceHosts = hostServicesFacade.findHostServices(cluster, group, service.toString());
     for (HostServicesInfo serviceHost : serviceHosts) {
-      roleInstancesInfo.addInstanceInfo(serviceHost.getStatus(), serviceHost.getHealth());
+      groupInstancesInfo.addInstanceInfo(serviceHost.getStatus(), serviceHost.getHealth());
     }
-    if (roleInstancesInfo.getOverallHealth() == Health.Bad) {
-      groupHealth = Health.Bad;
+    if (groupInstancesInfo.getOverallHealth() == Health.Bad) {
+      health = Health.Bad;
     }
-    return roleInstancesInfo;
+    return groupInstancesInfo;
   }
 }

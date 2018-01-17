@@ -21,10 +21,10 @@ public class TerminalController {
 
   @ManagedProperty("#{param.cluster}")
   private String cluster;
-  @ManagedProperty("#{param.role}")
-  private String role;
   @ManagedProperty("#{param.service}")
   private String service;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @EJB
   private HostsFacade hostEjb;
   @EJB
@@ -55,20 +55,20 @@ public class TerminalController {
     logger.info("init TerminalController");
   }
 
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
   public String getService() {
     return service;
   }
 
   public void setService(String service) {
     this.service = service;
+  }
+
+  public String getGroup() {
+    return group;
+  }
+
+  public void setGroup(String group) {
+    this.group = group;
   }
 
   public void setCluster(String cluster) {
@@ -85,25 +85,25 @@ public class TerminalController {
 
   public String handleCommand(String command, String[] params) {
 //      TODO: Check special characters like ";" to avoid injection
-    String roleName;
-    if (service.equalsIgnoreCase(GroupType.HDFS.toString())) {
+    String serviceName;
+    if (group.equalsIgnoreCase(GroupType.HDFS.toString())) {
       if (command.equals("hdfs")) {
-        roleName = ServiceType.datanode.toString();
+        serviceName = ServiceType.datanode.toString();
       } else {
         return "Unknown command. Accepted commands are: hdfs";
       }
 
-    } else if (service.equalsIgnoreCase(GroupType.NDB.toString())) {
+    } else if (group.equalsIgnoreCase(GroupType.NDB.toString())) {
       if (command.equals("mysql")) {
-        roleName = ServiceType.mysqld.toString();
+        serviceName = ServiceType.mysqld.toString();
       } else if (command.equals("ndb_mgm")) {
-        roleName = ServiceType.ndb_mgmd.toString();
+        serviceName = ServiceType.ndb_mgmd.toString();
       } else {
         return "Unknown command. Accepted commands are: mysql, ndb_mgm";
       }
-    } else if (service.equalsIgnoreCase(GroupType.YARN.toString())) {
+    } else if (group.equalsIgnoreCase(GroupType.YARN.toString())) {
       if (command.equals("yarn")) {
-        roleName = ServiceType.resourcemanager.toString();
+        serviceName = ServiceType.resourcemanager.toString();
       } else {
         return "Unknown command. Accepted commands are: yarn";
       }
@@ -113,13 +113,13 @@ public class TerminalController {
     try {
 //          TODO: get only one host
       List<Hosts> hosts = hostEjb.
-              find(cluster, service, roleName, Status.Started);
+              find(cluster, group, serviceName, Status.Started);
       if (hosts.isEmpty()) {
         throw new RuntimeException("No live node available.");
       }
       String result = web.executeRun(hosts.get(0).getPublicOrPrivateIp(), hosts.
               get(0).getAgentPassword(),
-              cluster, service, roleName, command, params);
+              cluster, group, serviceName, command, params);
       return result;
     } catch (Exception ex) {
       logger.log(Level.SEVERE, null, ex);

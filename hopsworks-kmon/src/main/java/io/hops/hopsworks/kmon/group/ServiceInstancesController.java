@@ -1,4 +1,4 @@
-package io.hops.hopsworks.kmon.service;
+package io.hops.hopsworks.kmon.group;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import javax.faces.model.SelectItem;
-import io.hops.hopsworks.kmon.role.GroupServiceMapper;
+import io.hops.hopsworks.kmon.service.GroupServiceMapper;
 import io.hops.hopsworks.common.dao.host.Health;
 import io.hops.hopsworks.kmon.struct.InstanceInfo;
 import io.hops.hopsworks.kmon.struct.GroupType;
@@ -152,32 +152,32 @@ public class ServiceInstancesController {
 //      Without prettyfaces, parameters will be null when filter is changed, they
 //      should be stored in cookie
     List<InstanceInfo> instances = new ArrayList<InstanceInfo>();
-    List<HostServicesInfo> roleHostList = new ArrayList<HostServicesInfo>();
+    List<HostServicesInfo> serviceHostList = new ArrayList<HostServicesInfo>();
     if (cluster != null && group != null && group != null && status != null) {
       for (HostServicesInfo hostServicesInfo : hostServicesFacade.findHostServices(cluster, group, group)) {
         if (hostServicesInfo.getStatus() == Status.valueOf(status)) {
-          roleHostList.add(hostServicesInfo);
+          serviceHostList.add(hostServicesInfo);
         }
       }
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);         
     } else if (cluster != null && group != null && group != null) {
-      roleHostList = hostServicesFacade.findHostServices(cluster, group, group);
+      serviceHostList = hostServicesFacade.findHostServices(cluster, group, group);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);    
     } else if (cluster != null && group != null) {
-      roleHostList = hostServicesFacade.findHostServices(cluster, group);
+      serviceHostList = hostServicesFacade.findHostServicesByGroup(cluster, group);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);          
     } else if (cluster != null) {
-      roleHostList = hostServicesFacade.findHostServices(cluster);
+      serviceHostList = hostServicesFacade.findHostServicesByCluster(cluster);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);             
     }
 //      else {
 //         roleHostList = roleEjb.findRoleHost(cookie.read("cluster"), cookie.read("service"));
 //      }     
-    for (HostServicesInfo r : roleHostList) {
+    for (HostServicesInfo r : serviceHostList) {
       instances.add(new InstanceInfo(r.getHostServices().getCluster(), r.getHostServices().
           getService(), r.getHostServices().getService(),
           r.getHostServices().getHost().getHostname(), r.getStatus(), r.getHealth().toString()));

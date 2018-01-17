@@ -11,16 +11,13 @@
   <ui:composition template="layout.xhtml">
 
     <ui:define name="title">
-      #{settingsController.name} - Service Instances
+      #{settingsController.name} - Service Status
+    </ui:define>
+
+    <ui:define name="css">
     </ui:define>
 
     <ui:define name="scripts">
-      <script>
-        jQuery(document).ready(function () {
-          jQuery('select[id*="Name"]').val('#{serviceInstancesController.service}');
-          jQuery('select[id*="Status1"]').val('#{serviceInstancesController.status}');
-        });
-      </script>
     </ui:define>
 
     <ui:define name="content">
@@ -30,27 +27,20 @@
         <p:panelGrid>  
           <p:row>  
             <p:column>
-              <p:commandLink action="clusters" ajax="false">  
+              <p:commandLink action="#{urlController.clustersStatus}" ajax="false">
                 <h:outputText value="Clusters" />
               </p:commandLink> 
               <h:outputText value=" &raquo; "/>
-              <p:commandLink action="#{urlController.clusterStatus(serviceInstancesController.cluster)}" ajax="false">  
-                <h:outputText value="#{serviceInstancesController.cluster}" />
+              <p:commandLink action="#{urlController.clusterStatus(groupStatusController.cluster)}" ajax="false">  
+                <h:outputText value="#{groupStatusController.cluster}" />
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
               </p:commandLink> 
               <h:outputText value=" &raquo; "/>
-              <p:commandLink action="#{urlController.groupStatus}" ajax="false">  
+              <p:commandLink action="#{urlController.serviceAudit}" ajax="false">  
                 <h:outputText value="#{serviceInstancesController.group}" />
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>                          
-              </p:commandLink>                      
-              <h:outputText value=" &raquo; " rendered="#{not empty serviceInstancesController.service}"/>
-              <p:commandLink action="#{urlController.groupStatus}" ajax="false" rendered="#{not empty serviceInstancesController.service}">  
-                <h:outputText value="#{serviceInstancesController.service}" />
-                <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
-                <f:param name="group" value="#{serviceInstancesController.group}"/>
-                <f:param name="service" value="#{serviceInstancesController.service}"/>
-              </p:commandLink>                     
+              </p:commandLink>                       
             </p:column>
           </p:row>
         </p:panelGrid>
@@ -62,22 +52,21 @@
         <p:panel header="Error" style="width: 300px; margin: 0 auto;">
           <p align="center">Service not found!</p>   
         </p:panel>
-      </p:outputPanel>     
+      </p:outputPanel>         
 
-      <p:outputPanel rendered="#{serviceController.serviceFound}">           
-
+      <p:outputPanel rendered="#{serviceController.serviceFound}">         
         <!-- Second Toolbar-->
         <h:form>  
-          <p:toolbar styleClass="SecondToolbar#{serviceStatusController.health}">
+          <p:toolbar styleClass="SecondToolbar#{groupStatusController.health}">
             <p:toolbarGroup align="left">  
-              
+
               <p:commandButton value="Status" icon="ui-icon-home" 
-                               action="#{urlController.groupStatus}" ajax="false">
+                               action="#{urlController.serviceAudit}" ajax="false">
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>
               </p:commandButton>  
               <p:commandButton styleClass="Selected" value="Instances" icon="ui-icon-note" 
-                               rendered="#{serviceStatusController.renderInstancesLink()}"                                                 
+                               rendered="#{groupStatusController.renderInstancesLink()}"                                                 
                                action="#{urlController.groupInstances}">
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>
@@ -118,70 +107,81 @@
           </p:toolbar>  
         </h:form>
 
-        <!-- Progress Dialog -->
-        <p:ajaxStatus onstart="PF('dlgAction').show()" onsuccess="PF('dlgAction').hide()" />
-
-        <p:dialog widgetVar="dlgAction" header="Ongoing Operation" modal="true" draggable="false" closable="false" resizable="false" showHeader="false">
-          <p:graphicImage library="images"  name="ajaxloadingbar.gif" />
-        </p:dialog>           
-
-        <!-- Progress Dialog - End -->
-
-        <p:spacer width="1" height="10" />       
-
-        <h:form styleClass="styleInfoPanel" id="formInstances">
+        <!-- Second Toolbar - End -->        
 
 
-            <p:dataTable id="instances" var="instance" value="#{serviceInstancesController.instances}">
+        <p:dialog modal="true" widgetVar="dlgAction" header="Action in progress..." draggable="false" closable="false" resizable="false">  
+          <p:graphicImage library="images" name="ajaxloadingbar.gif" />  
+        </p:dialog>             
 
-              <p:column id="Name" headerText="Role">
+        <p:spacer width="1" height="10" />
 
-                <p:commandLink action="#{urlController.groupStatus}" ajax="false">
-                  <h:outputText value="#{instance.name}"/>
-                  <f:param name="hostname" value="#{instance.host}"/>
-                  <f:param name="cluster" value="#{instance.cluster}"/>
-                  <f:param name="service" value="#{instance.role}"/>
-                  <f:param name="group" value="#{instance.group}"/>
-                </p:commandLink>                    
+        <h:form styleClass="styleInfoPanel">
+          <p:panel header="Roles Status and Health Summary">
 
+            <p:dataTable id="service" var="service" value="#{groupStatusController.services}">
+
+              <p:column headerText="Role name">
+
+                <p:commandLink styleClass="Health-#{service.serviceHealth}" action="#{urlController.serviceInstances}" ajax="false">
+                  <h:outputText value="#{service.fullName}"/>
+                  <f:param name="cluster" value="#{groupStatusController.cluster}"/>
+                  <f:param name="service" value="#{groupStatusController.service}"/>                        
+                  <f:param name="service" value="#{service.serviceName}"/>
+                </p:commandLink>                         
+              </p:column>  
+
+              <p:column headerText="Status">
+                <ui:repeat value="#{service.statusMap.entrySet().toArray()}" var="item" varStatus="status">
+                  <p:commandLink styleClass="Status-${item.key}" action="#{urlController.serviceInstances}" ajax="false">
+                    <h:outputText value="${item.value} ${item.key}"/>
+                    <!--<p:tooltip for="statuslink" value="#{settingsController.tooltip(item.key, item.value)}" showEffect="fade" hideEffect="fade" />-->
+                    <f:param name="cluster" value="#{groupStatusController.cluster}"/>
+                    <f:param name="group" value="#{groupStatusController.group}"/>
+                    <f:param name="service" value="#{service.serviceName}"/>
+                    <f:param name="status" value="${item.key}"/>                           
+                  </p:commandLink>
+                  <p:spacer width="6" height="0" rendered="#{!status.last}"/>
+                </ui:repeat> 
+                <p:outputLabel rendered="#{empty service.statusMap.entrySet()}">No service instance running</p:outputLabel>
               </p:column>
 
-              <p:column id="Host" headerText="Host">
-                <p:commandLink action="#{urlController.host}" ajax="false">
-                  <h:outputText value="#{instance.host}"/>
-                  <f:param name="hostname" value="#{instance.host}"/>
-                  <f:param name="cluster" value="#{instance.cluster}"/>
-                  <f:param name="service" value="#{instance.role}"/>
-                  <f:param name="group" value="#{instance.group}"/>
-                </p:commandLink> 
-              </p:column>
-
-              <p:column id="Status1" styleClass="Status-#{instance.status}" headerText="Status">
-                <h:outputText id="status" value="#{instance.status}"/>
-                <p:tooltip for="status" value="#{settingsController.tooltip(instance.status)}"/>
-              </p:column>
-
-              <p:column id="Health" headerText="Health">
-                <div class="Health-#{instance.health}">
-                  <h:outputText value="#{instance.health}"/>
-                </div>
+              <p:column headerText="Health">
+                <ui:repeat value="#{service.healthMap.entrySet().toArray()}" var="item" varStatus="status">
+                  <h:outputText value="${item.value} ${item.key}" styleClass="Health-${item.key}"/>
+                  <h:outputText value=", " rendered="#{!status.last}"/>
+                </ui:repeat>
               </p:column>
 
             </p:dataTable> 
-          <!--</p:panel>-->                    
+
+          </p:panel>                    
         </h:form>
+      </p:outputPanel>
+      <!--<p:spacer width="1" height="10" />-->
 
-        <p:panel>
-          <c:if test="#{serviceInstancesController.serviceWithMetrics}">
-            <iframe id="grafana_iframe"  src="/hopsworks-api/grafana/dashboard/script/admin.js?hostname=#{clustersController.nameNodesString}&amp;service=#{serviceInstancesController.service}" width="98%" height="1500px" align="middle"></iframe>
-          </c:if>
-        </p:panel>
+      <h:form>
+        <p:commandLink value="Yarn UI" action="#{facesContext.externalContext.redirect('/hopsworks-api/yarnui')}" rendered="#{serviceInstancesController.isYarnService()}">
+          <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
+          <f:param name="service" value="#{serviceInstancesController.service}"/>   
+        </p:commandLink>
+        <p:commandLink value="HDFS UI" action="#{facesContext.externalContext.redirect('/hopsworks-api/hdfsui')}" rendered="#{serviceInstancesController.isHDFSService()}">
+          <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
+          <f:param name="service" value="#{serviceInstancesController.service}"/>   
+        </p:commandLink>
+      </h:form>
 
-      </p:outputPanel>           
+      <p:spacer width="1" height="25" />
+
+
+      <c:if test="#{serviceInstancesController.serviceWithMetrics}">
+        <p:outputPanel>
+          <iframe id="grafana_iframe"  src="/hopsworks-api/grafana/dashboard/script/admin.js?hostname=#{clustersController.nameNodesString}&amp;services=#{serviceInstancesController.service}" width="98%" height="1500px" align="middle"></iframe> 
+        </p:outputPanel>
+      </c:if>
 
     </ui:define>
 
   </ui:composition>
 
 </html>
-

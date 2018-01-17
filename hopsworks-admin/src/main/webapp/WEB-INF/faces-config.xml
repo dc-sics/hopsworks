@@ -14,17 +14,6 @@
       <redirect/>
     </navigation-case>
 
-    <navigation-case>
-      <from-outcome>activate_yubikey</from-outcome>
-      <to-view-id>/security/protected/admin/activate_yubikey.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
-
-    <navigation-case>
-      <from-outcome>yubico_reset</from-outcome>
-      <to-view-id>/security/yubico_reset.xhtml</to-view-id>
-      <redirect/>
-    </navigation-case>
 
     <navigation-case>
       <from-outcome>qrcode</from-outcome>

@@ -66,9 +66,9 @@ public class Monitor {
   @GET
   @Path("/hosts/{hostId}/services")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response getHostRoles(@PathParam("hostId") String hostId, @Context SecurityContext sc,
+  public Response getHostRoles(@PathParam("hostId") String hostname, @Context SecurityContext sc,
       @Context HttpServletRequest req) {
-    List<HostServices> list = hostServicesFacade.findHostRoles(hostId);
+    List<HostServices> list = hostServicesFacade.findHostServiceByHostname(hostname);
     GenericEntity<List<HostServices>> services = new GenericEntity<List<HostServices>>(list) {
     };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(services).build();
@@ -79,7 +79,7 @@ public class Monitor {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getRoles(@PathParam("groupName") String groupName, @PathParam("serviceName") String serviceName,
       @Context SecurityContext sc, @Context HttpServletRequest req) {
-    List<HostServices> list = hostServicesFacade.findServices(groupName, serviceName);
+    List<HostServices> list = hostServicesFacade.findGroups(groupName, serviceName);
     GenericEntity<List<HostServices>> services = new GenericEntity<List<HostServices>>(list) {
     };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(services).build();

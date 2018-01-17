@@ -1,5 +1,6 @@
 package io.hops.hopsworks.kmon.cluster;
 
+import io.hops.hopsworks.common.dao.kagent.HostServices;
 import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,20 +41,20 @@ public class ClustersController {
       clusterInfo.setTotalCores(hostServicesFacade.totalCores(cluster));
       clusterInfo.setTotalMemoryCapacity(hostServicesFacade.totalMemoryCapacity(cluster));
       clusterInfo.setTotalDiskCapacity(hostServicesFacade.totalDiskCapacity(cluster));
-      clusterInfo.addServices(hostServicesFacade.findHostServices(cluster));
+      clusterInfo.addServices(hostServicesFacade.findHostServicesByCluster(cluster));
       clusters.add(clusterInfo);
     }
   }
  
-//  public String getNameNodesString() {
-//    String hosts = "";
-//    List<HostServices> hostServices = hostServicesFacade.findServices("namenode");
-//    if (hostServices != null && !hostServices.isEmpty()) {
-//      hosts = hosts + hostServices.get(0).getHost();
-//      for (int i = 1; i < hostServices.size(); i++) {
-//        hosts = hosts + "," + hostServices.get(i).getHost();
-//      }
-//    }
-//    return hosts;
-//  }
+  public String getNameNodesString() {
+    String hosts = "";
+    List<HostServices> hostServices = hostServicesFacade.findServices("namenode");
+    if (hostServices != null && !hostServices.isEmpty()) {
+      hosts = hosts + hostServices.get(0).getHost();
+      for (int i = 1; i < hostServices.size(); i++) {
+        hosts = hosts + "," + hostServices.get(i).getHost();
+      }
+    }
+    return hosts;
+  }
 }

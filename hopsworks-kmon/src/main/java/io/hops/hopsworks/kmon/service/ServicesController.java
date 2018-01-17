@@ -1,4 +1,4 @@
-package io.hops.hopsworks.kmon.role;
+package io.hops.hopsworks.kmon.service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,12 +21,12 @@ public class ServicesController {
 
   @EJB
   private HostServicesFacade hostServicesFacade;
-  @ManagedProperty("#{param.hostid}")
-  private String hostId;
-  @ManagedProperty("#{param.role}")
-  private String role;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
   @ManagedProperty("#{param.service}")
   private String service;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
   private List<InstanceFullInfo> instanceInfoList = new ArrayList<>();
@@ -48,22 +48,22 @@ public class ServicesController {
     instanceInfoList.clear();
     logger.info("init RoleController");
     try {
-      HostServicesInfo serviceHost = hostServicesFacade.findHostServices(cluster, service, role,
-              hostId);
+      HostServicesInfo serviceHost = hostServicesFacade.findHostServices(cluster, group, service,
+              hostname);
       String ip = serviceHost.getHost().getPublicOrPrivateIp();
       InstanceFullInfo info = new InstanceFullInfo(serviceHost.getHostServices().
               getCluster(),
               serviceHost.getHostServices().getService(), serviceHost.getHostServices().getService(),
               serviceHost.getHostServices().getHost().getHostname(), ip, 0,
-//          roleHost.getRole().getWebPort(),
+//          roleHost.getGroup().getWebPort(),
               serviceHost.getStatus(), serviceHost.getHealth().toString());
       info.setPid(serviceHost.getHostServices().getPid());
       String upTime = serviceHost.getHealth() == Health.Good ? FormatUtils.time(
               serviceHost.getHostServices().getUptime() * 1000) : "";
       info.setUptime(upTime);
       instanceInfoList.add(info);
-//      renderWebUi = roleHost.getRole().getWebPort() != null && roleHost.
-//              getRole().getWebPort() != 0;
+//      renderWebUi = roleHost.getGroup().getWebPort() != null && roleHost.
+//              getGroup().getWebPort() != 0;
       health = serviceHost.getHealth().toString();
       found = true;
     } catch (Exception ex) {
@@ -76,15 +76,6 @@ public class ServicesController {
     return health;
   }
 
-  public String getRole() {
-    loadRoles();
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
   public String getService() {
     loadRoles();
     return service;
@@ -94,13 +85,22 @@ public class ServicesController {
     this.service = service;
   }
 
-  public String getHostId() {
+  public String getGroup() {
     loadRoles();
-    return hostId;
+    return group;
   }
 
-  public void setHostId(String hostId) {
-    this.hostId = hostId;
+  public void setGroup(String group) {
+    this.group = group;
+  }
+
+  public String getHostname() {
+    loadRoles();
+    return hostname;
+  }
+
+  public void setHostname(String hostname) {
+    this.hostname = hostname;
   }
 
   public void setCluster(String cluster) {
@@ -128,7 +128,7 @@ public class ServicesController {
     return instanceInfoList;
   }
 
-  public String roleLongName() {
+  public String serviceLongName() {
     if (!instanceInfoList.isEmpty()) {
       return instanceInfoList.get(0).getName();
     }

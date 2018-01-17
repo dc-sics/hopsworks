@@ -1,4 +1,4 @@
-package io.hops.hopsworks.kmon.role;
+package io.hops.hopsworks.kmon.service;
 
 import io.hops.hopsworks.kmon.struct.ServiceType;
 import java.util.Arrays;
@@ -75,15 +75,15 @@ public class GroupServiceMapper {
 
   public static String[] getServicesArray(GroupType serviceType) {
 
-    List<ServiceType> rolesList = groupServiceMap.get(serviceType);
-    String[] servicesArray = new String[rolesList.size()];
-    for (int i = 0; i < rolesList.size(); i++) {
-      servicesArray[i] = rolesList.get(i).toString();
+    List<ServiceType> servicesList = groupServiceMap.get(serviceType);
+    String[] servicesArray = new String[servicesList.size()];
+    for (int i = 0; i < servicesList.size(); i++) {
+      servicesArray[i] = servicesList.get(i).toString();
     }
     return servicesArray;
   }
 
-  public static String getServiceFullName(ServiceType role) {
-    return serviceFullNames.get(role);
+  public static String getServiceFullName(ServiceType service) {
+    return serviceFullNames.get(service);
   }
 }

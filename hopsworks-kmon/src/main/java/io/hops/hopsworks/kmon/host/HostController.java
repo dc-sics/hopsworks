@@ -47,8 +47,8 @@ public class HostController implements Serializable {
 
   @ManagedProperty("#{param.cluster}")
   private String cluster;
-  @ManagedProperty("#{param.hostid}")
-  private String hostId;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
   @ManagedProperty("#{param.command}")
   private String command;
   @ManagedProperty("#{param.group}")
@@ -87,8 +87,12 @@ public class HostController implements Serializable {
     return service;
   }
 
-  public void setHostId(String hostId) {
-    this.hostId = hostId;
+  public String getHostname() {
+    return hostname;
+  }
+
+  public void setHostname(String hostname) {
+    this.hostname = hostname;
   }
 
   public void setGroup(String group) {
@@ -97,10 +101,6 @@ public class HostController implements Serializable {
 
   public String getGroup() {
     return group;
-  }
-
-  public String getHostId() {
-    return hostId;
   }
 
   public void setCluster(String cluster) {
@@ -126,24 +126,24 @@ public class HostController implements Serializable {
 
   private void loadHost() {
     try {
-      host = hostsFacade.findByHostname(hostId);
+      host = hostsFacade.findByHostname(hostname);
       if (host != null) {
         found = true;
       }
     } catch (Exception ex) {
-      logger.log(Level.WARNING, "Host {0} not found.", hostId);
+      logger.log(Level.WARNING, "Host {0} not found.", hostname);
     }
   }
 
   private void loadHostServices() {
-    services = hostServicesFacade.findHostRoles(hostId);
+    services = hostServicesFacade.findHostServiceByHostname(hostname);
   }
 
   public void doCommand() throws Exception {
     //  TODO: If the web application server crashes, status will remain 'Running'.
-    Command c = new Command(command, hostId, group, service, cluster);
+    Command c = new Command(command, hostname, group, service, cluster);
     commandEJB.persistCommand(c);
-    Hosts h = hostsFacade.findByHostname(hostId);
+    Hosts h = hostsFacade.findByHostname(hostname);
     FacesContext context = FacesContext.getCurrentInstance();
 //    CommandThread r = new CommandThread(context, h.getPublicOrPrivateIp(), c);
 //    Thread t = new Thread(r);
@@ -180,7 +180,7 @@ public class HostController implements Serializable {
 //        if (response.getClientResponseStatus().getFamily() == Family.SUCCESSFUL) {
 //          c.succeeded();
 //          String messageText = "";
-//          Role r = roleEjb.find(hostId, cluster, group, service);
+//          Role r = roleEjb.find(hostname, cluster, group, service);
 //
 //          if (command.equalsIgnoreCase("start")) {
 //            JsonObject json
@@ -253,7 +253,7 @@ public class HostController implements Serializable {
         if (res == Response.Status.Family.SUCCESSFUL) {
           c.succeeded();
           String messageText = "";
-          HostServices hs = hostServicesFacade.find(hostId, cluster, group, service);
+          HostServices hs = hostServicesFacade.find(hostname, cluster, group, service);
 
           if (command.equalsIgnoreCase("start")) {
             JsonObject json

@@ -43,9 +43,9 @@ public class HostServicesFacade {
     return query.getResultList();
   }
 
-  public List<HostServices> findServices(String service, String role) {
+  public List<HostServices> findGroups(String group, String service) {
     TypedQuery<HostServices> query = em.createNamedQuery("HostServices.findBy-Group-Service", HostServices.class)
-        .setParameter("service", service).setParameter("role", role);
+        .setParameter("group", group).setParameter("service", service);
     return query.getResultList();
   }
 
@@ -55,31 +55,30 @@ public class HostServicesFacade {
     return query.getResultList();
   }
 
-  public List<String> findServices(String cluster) {
+  public List<String> findGroups(String cluster) {
     TypedQuery<String> query = em.
-        createNamedQuery("HostServices.findServicesBy-Cluster", String.class)
+        createNamedQuery("HostServices.findGroupsBy-Cluster", String.class)
         .setParameter("cluster", cluster);
     return query.getResultList();
   }
 
-  public List<String> findServices() {
-    TypedQuery<String> query = em.createNamedQuery("HostServices.findServices",
-        String.class);
-    return query.getResultList();
-  }
+//  public List<String> findServices() {
+//    TypedQuery<String> query = em.createNamedQuery("HostServices.findServices",
+//        String.class);
+//    return query.getResultList();
+//  }
 
-  public List<HostServices> findServiceOnHost(String hostname, String group, String role) {
-
+  public List<HostServices> findServiceOnHost(String hostname, String group, String service) {
     TypedQuery<HostServices> query = em.createNamedQuery("HostServices.findOnHost", HostServices.class)
-        .setParameter("hostname", hostname).setParameter("service", group).setParameter("role", role);
+        .setParameter("hostname", hostname).setParameter("group", group).setParameter("service", service);
     return query.getResultList();
   }
 
-  public HostServices find(String hostname, String cluster, String group, String role) {
+  public HostServices find(String hostname, String cluster, String group, String service) {
 
     TypedQuery<HostServices> query = em.createNamedQuery("HostServices.find", HostServices.class)
         .setParameter("hostname", hostname).setParameter("cluster", cluster)
-        .setParameter("service", group).setParameter("role", role);
+        .setParameter("group", group).setParameter("service", service);
     List results = query.getResultList();
     if (results.isEmpty()) {
       return null;
@@ -89,14 +88,14 @@ public class HostServicesFacade {
     throw new NonUniqueResultException();
   }
 
-  public List<HostServices> findHostRoles(String hostname) {
+  public List<HostServices> findHostServiceByHostname(String hostname) {
     TypedQuery<HostServices> query = em.createNamedQuery("HostServices.findBy-HostId",
         HostServices.class)
         .setParameter("hostname", hostname);
     return query.getResultList();
   }
 
-  public List<HostServices> findRoles(String cluster, String group, String service) {
+  public List<HostServices> findServices(String cluster, String group, String service) {
     TypedQuery<HostServices> query = em.createNamedQuery(
         "HostServices.findBy-Cluster-Group-Service", HostServices.class)
         .setParameter("cluster", cluster).setParameter("group", group).
@@ -104,7 +103,7 @@ public class HostServicesFacade {
     return query.getResultList();
   }
 
-  public List<HostServices> findRoles(String service) {
+  public List<HostServices> findServices(String service) {
     TypedQuery<HostServices> query = em.createNamedQuery(
         "HostServices.findBy-Service", HostServices.class)
         .setParameter("service", service);
@@ -125,7 +124,7 @@ public class HostServicesFacade {
   }
 
   public Long countServices(String cluster, String service) {
-    TypedQuery<Long> query = em.createNamedQuery("HostServices.Count-roles", Long.class)
+    TypedQuery<Long> query = em.createNamedQuery("HostServices.Count-services", Long.class)
         .setParameter("cluster", cluster).setParameter("service", service);
     return query.getSingleResult();
   }
@@ -151,16 +150,16 @@ public class HostServicesFacade {
     return query.getSingleResult();
   }
 
-  public List<HostServicesInfo> findHostServices(String cluster) {
+  public List<HostServicesInfo> findHostServicesByCluster(String cluster) {
     TypedQuery<HostServicesInfo> query = em.createNamedQuery(
         "HostServices.findHostServicesBy-Cluster", HostServicesInfo.class)
         .setParameter("cluster", cluster);
     return query.getResultList();
   }
 
-  public List<HostServicesInfo> findHostServices(String cluster, String group) {
+  public List<HostServicesInfo> findHostServicesByGroup(String cluster, String group) {
     TypedQuery<HostServicesInfo> query = em.createNamedQuery(
-        "HostServices.findHostServicesBy-Cluster-Service", HostServicesInfo.class)
+        "HostServices.findHostServicesBy-Cluster-Group", HostServicesInfo.class)
         .setParameter("cluster", cluster).setParameter("group", group);
     return query.getResultList();
   }
@@ -214,7 +213,7 @@ public class HostServicesFacade {
     TypedQuery<HostServices> query = em.createNamedQuery("HostServices.find", HostServices.class)
         .setParameter("hostname", service.getHost().getHostname()).setParameter("cluster",
         service.getCluster())
-        .setParameter("service", service.getGroup()).setParameter("service",
+        .setParameter("group", service.getGroup()).setParameter("service",
         service.getService());
     List<HostServices> s = query.getResultList();
 
@@ -232,7 +231,7 @@ public class HostServicesFacade {
   }
 
   public String serviceOp(String service, String serviceName, Action action) throws AppException {
-    return webOp(action, findServices(service, serviceName));
+    return webOp(action, HostServicesFacade.this.findGroups(service, serviceName));
   }
 
   public String serviceOp(String service, Action action) throws AppException {
@@ -252,7 +251,7 @@ public class HostServicesFacade {
     }
     if (services == null || services.isEmpty()) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-          "role not found");
+          "service not found");
     }
     String result = "";
     boolean success = false;

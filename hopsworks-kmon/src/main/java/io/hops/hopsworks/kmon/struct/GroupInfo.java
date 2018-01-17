@@ -10,18 +10,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-public class ServiceInfo {
+public class GroupInfo {
 
-  private String name;
+  private final String name;
   private Health health;
-  private Set<String> services = new HashSet<>();
-  private Map<String, Integer> servicesCount = new HashMap<>();
-  private Set<String> badServices = new HashSet<>();
+  private final Set<String> services = new HashSet<>();
+  private final Map<String, Integer> servicesCount = new HashMap<>();
+  private final Set<String> badServices = new HashSet<>();
   private int started;
   private int stopped;
   private int timedOut;
 
-  public ServiceInfo(String name) {
+  public GroupInfo(String name) {
     started = 0;
     stopped = 0;
     timedOut = 0;
@@ -51,7 +51,7 @@ public class ServiceInfo {
     return health;
   }
 
-  public Integer servicesCount(String service) {
+  public Integer serviceCount(String service) {
     return servicesCount.get(service);
   }
 
@@ -59,11 +59,10 @@ public class ServiceInfo {
     return services.toArray(new String[servicesCount.size()]);
   }
 
-  public Health serviceHealth(String role) {
-    if (badServices.contains(role)) {
+  public Health serviceHealth(String service) {
+    if (badServices.contains(service)) {
       return Health.Bad;
     }
-//      return Health.None;
     return Health.Good;
   }
 

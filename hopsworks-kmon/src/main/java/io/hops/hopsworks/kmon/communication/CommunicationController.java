@@ -13,7 +13,7 @@ import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import io.hops.hopsworks.common.util.NodesTableItem;
-import io.hops.hopsworks.kmon.service.ServiceInstancesController;
+import io.hops.hopsworks.kmon.group.ServiceInstancesController;
 import io.hops.hopsworks.kmon.struct.InstanceInfo;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
@@ -34,8 +34,8 @@ public class CommunicationController {
   @ManagedProperty(value="#{serviceInstancesController}")
   private ServiceInstancesController serviceInstancesController;
   
-  @ManagedProperty("#{param.hostid}")
-  private String hostId;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
   @ManagedProperty("#{param.service}")
   private String service;
   @ManagedProperty("#{param.group}")
@@ -60,8 +60,8 @@ public class CommunicationController {
     return service;
   }
 
-  public void setService(String role) {
-    this.service = role;
+  public void setService(String service) {
+    this.service = service;
   }
 
   public String getGroup() {
@@ -80,36 +80,36 @@ public class CommunicationController {
     return cluster;
   }
 
-  public String getHostId() {
-    return hostId;
+  public String getHostname() {
+    return hostname;
   }
 
-  public void setHostId(String hostId) {
-    this.hostId = hostId;
+  public void setHostname(String hostname) {
+    this.hostname = hostname;
   }
 
   public void setServiceInstancesController(ServiceInstancesController serviceInstancesController) {
     this.serviceInstancesController = serviceInstancesController;
   }
 
-  private Hosts findHostById(String hostId) throws Exception {
+  private Hosts findHostByName(String hostname) throws Exception {
     try {
-      Hosts host = hostEJB.findByHostname(hostId);
+      Hosts host = hostEJB.findByHostname(hostname);
       return host;
     } catch (Exception ex) {
-      throw new RuntimeException("HostId " + hostId + " not found.");
+      throw new RuntimeException("Hostname " + hostname + " not found.");
     }
   }
 
   private Hosts findHostByService(String cluster, String group, String service)
           throws Exception {
-    String id = hostServicesFacade.findRoles(cluster, group, service).get(0).getHost().getHostname();
-    return findHostById(id);
+    String id = hostServicesFacade.findServices(cluster, group, service).get(0).getHost().getHostname();
+    return findHostByName(id);
   }
 
 
   public String mySqlClusterConfig() throws Exception {
-    // Finds hostId of mgmserver
+    // Finds hostname of mgmserver
     // Role=mgmserver , Service=MySQLCluster, Cluster=cluster
     String mgmserverRole = "ndb_mgmd";
     Hosts h = findHostByService(cluster, group, mgmserverRole);
@@ -120,7 +120,7 @@ public class CommunicationController {
 
   public String getServiceLog(int lines) {
     try {
-      Hosts h = findHostById(hostId);
+      Hosts h = findHostByName(hostname);
       String ip = h.getPublicOrPrivateIp();
       String agentPassword = h.getAgentPassword();
       return web.getServiceLog(ip, agentPassword, cluster, group, service, lines);
@@ -143,29 +143,29 @@ public class CommunicationController {
   }
 
   public void serviceStart() {
-    uiMsg(serviceOperation("startRole"));
+    uiMsg(serviceOperation("startService"));
 
   }
 
   public void serviceStartAll() {
-    uiMsg(serviceOperationAll("startRole"));
+    uiMsg(serviceOperationAll("startService"));
   }
   
   public void serviceRestart() {
-    uiMsg(serviceOperation("restartRole"));
+    uiMsg(serviceOperation("restartService"));
   }
 
   public void serviceRestartAll() {
-    uiMsg(serviceOperationAll("restartRole"));
+    uiMsg(serviceOperationAll("restartService"));
   }
   
   public void serviceStop() {
-    uiMsg(serviceOperation("stopRole"));
+    uiMsg(serviceOperation("stopService"));
   }
 
   public void serviceStopAll() {
     logger.log(Level.SEVERE, "serviceStopAll 1");
-    uiMsg(serviceOperationAll("stopRole"));
+    uiMsg(serviceOperationAll("stopService"));
   }
   
   private String serviceOperationAll(String operation) {
@@ -173,9 +173,9 @@ public class CommunicationController {
     List<Future<String>> results = new ArrayList<>();
     String result = "";
     for (InstanceInfo instance : instances) {
-      if (instance.getRole().equals(service)) {
+      if (instance.getService().equals(service)) {
         try {
-          Hosts h = findHostById(instance.getHost());
+          Hosts h = findHostByName(instance.getHost());
           String ip = h.getPublicOrPrivateIp();
           String agentPassword = h.getAgentPassword();
           results.add(web.asyncServiceOp(operation, ip, agentPassword, cluster, group, service));
@@ -196,7 +196,7 @@ public class CommunicationController {
   
   private String serviceOperation(String operation) {
     try {
-      Hosts h = findHostById(hostId);
+      Hosts h = findHostByName(hostname);
       String ip = h.getPublicOrPrivateIp();
       String agentPassword = h.getAgentPassword();
       return web.serviceOp(operation, ip, agentPassword, cluster, group, service);
@@ -207,7 +207,7 @@ public class CommunicationController {
 
   public String getAgentLog(int lines) {
     try {
-      Hosts h = findHostById(hostId);
+      Hosts h = findHostByName(hostname);
       String ip = h.getPublicOrPrivateIp();
       String agentPassword = h.getAgentPassword();
       return web.getAgentLog(ip, agentPassword, lines);
@@ -223,8 +223,8 @@ public class CommunicationController {
     final String ROLE = "mysqld";
     List<NodesTableItem> results;
     try {
-      String id = hostServicesFacade.findRoles(cluster, group, ROLE).get(0).getHost().getHostname();
-      Hosts h = findHostById(hostId);
+      String id = hostServicesFacade.findServices(cluster, group, ROLE).get(0).getHost().getHostname();
+      Hosts h = findHostByName(hostname);
       String ip = h.getPublicOrPrivateIp();
       String agentPassword = h.getAgentPassword();
       results = web.getNdbinfoNodesTable(ip, agentPassword);

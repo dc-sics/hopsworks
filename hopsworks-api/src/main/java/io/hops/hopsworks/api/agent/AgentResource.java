@@ -63,7 +63,7 @@ public class AgentResource {
   @EJB
   private HostsFacade hostFacade;
   @EJB
-  private HostServicesFacade roleFacade;
+  private HostServicesFacade hostServiceFacade;
   @EJB
   private AlertEJB alertFacade;
   @EJB
@@ -139,9 +139,9 @@ public class AgentResource {
         String group = s.getString("group");
         HostServices hostService = null;
         try {
-          hostService = roleFacade.find(hostname, cluster, group, serviceName);
+          hostService = hostServiceFacade.find(hostname, cluster, group, serviceName);
         } catch (Exception ex) {
-          logger.log(Level.FINE, "Could not find a role for the kagent heartbeat.");
+          logger.log(Level.FINE, "Could not find a service for the kagent heartbeat.");
           continue;
         }
 
@@ -188,7 +188,7 @@ public class AgentResource {
           hostService.setUptime(0);
         }
 
-        roleFacade.store(hostService);
+        hostServiceFacade.store(hostService);
       }
 
       if (json.containsKey("conda-ops")) {

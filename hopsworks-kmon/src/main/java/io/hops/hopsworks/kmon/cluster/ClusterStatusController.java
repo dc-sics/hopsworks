@@ -11,7 +11,7 @@ import javax.faces.bean.RequestScoped;
 import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import io.hops.hopsworks.kmon.struct.ClusterInfo; 
 import io.hops.hopsworks.common.dao.host.Health;
-import io.hops.hopsworks.kmon.struct.ServiceInfo;
+import io.hops.hopsworks.kmon.struct.GroupInfo;
 
 @ManagedBean
 @RequestScoped
@@ -22,7 +22,7 @@ public class ClusterStatusController {
   @ManagedProperty("#{param.cluster}")
   private String cluster;
   private static final Logger logger = Logger.getLogger(ClusterStatusController.class.getName());
-  private List<ServiceInfo> services = new ArrayList<>();
+  private List<GroupInfo> group = new ArrayList<>();
   private Health clusterHealth;
   private boolean found;
   private ClusterInfo clusterInfo;
@@ -53,8 +53,8 @@ public class ClusterStatusController {
     this.found = found;
   }
 
-  public List<ServiceInfo> getServices() {
-    return services;
+  public List<GroupInfo> getGroup() {
+    return group;
   }
 
   public Health getClusterHealth() {
@@ -64,17 +64,17 @@ public class ClusterStatusController {
 
   public void loadServices() {
     clusterHealth = Health.Good;
-    List<String> servicesList = hostServicesFacade.findServices(cluster);
-    if (!servicesList.isEmpty()) {
+    List<String> groupList = hostServicesFacade.findGroups(cluster);
+    if (!groupList.isEmpty()) {
       found = true;
     }
-    for (String s : servicesList) {
-      ServiceInfo serviceInfo = new ServiceInfo(s);
-      Health health = serviceInfo.addServices(hostServicesFacade.findHostServices(cluster, s));
+    for (String s : groupList) {
+      GroupInfo groupInfo = new GroupInfo(s);
+      Health health = groupInfo.addServices(hostServicesFacade.findHostServicesByGroup(cluster, s));
       if (health == Health.Bad) {
         clusterHealth = Health.Bad;
       }
-      services.add(serviceInfo);
+      group.add(groupInfo);
     }
   }
 
@@ -87,7 +87,7 @@ public class ClusterStatusController {
     clusterInfo.setTotalCores(hostServicesFacade.totalCores(cluster));
     clusterInfo.setTotalMemoryCapacity(hostServicesFacade.totalMemoryCapacity(cluster));
     clusterInfo.setTotalDiskCapacity(hostServicesFacade.totalDiskCapacity(cluster));
-    clusterInfo.addServices(hostServicesFacade.findHostServices(cluster));
+    clusterInfo.addServices(hostServicesFacade.findHostServicesByCluster(cluster));
     found = true;
   }
 

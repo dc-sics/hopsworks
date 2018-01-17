@@ -73,14 +73,14 @@ import javax.validation.constraints.Size;
   ,
   @NamedQuery(name = "HostServices.Count-services",
       query
-      = "SELECT COUNT(r) FROM HostServices r WHERE r.cluster = :cluster AND r.group = :group")
+      = "SELECT COUNT(r) FROM HostServices r WHERE r.cluster = :cluster AND r.service = :service")
   ,
-  @NamedQuery(name = "HostServices.findHostGroupsBy-Cluster",
+  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster",
       query
       = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
       + "WHERE r.host = h AND r.cluster = :cluster")
   ,
-  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Service",
+  @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group",
       query
       = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
       + "WHERE r.host.hostname = h.hostname AND r.cluster = :cluster AND r.group = :group")
@@ -88,8 +88,7 @@ import javax.validation.constraints.Size;
   @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group-Service",
       query
       = "SELECT NEW io.hops.hopsworks.common.dao.kagent.HostServicesInfo(r, h) FROM HostServices r, Hosts h "
-      + "WHERE r.host = h AND r.cluster = :cluster AND r.group = :group "
-      + "AND r.service = :service")
+      + "WHERE r.host = h AND r.cluster = :cluster AND r.group = :group " + "AND r.service = :service")
   ,
   @NamedQuery(name = "HostServices.findHostServicesBy-Cluster-Group-Service-Host",
       query
@@ -146,7 +145,7 @@ public class HostServices implements Serializable {
   @NotNull
   @Size(min = 1,
       max = 48)
-  @Column(name = "group")
+  @Column(name = "group_name")
   private String group;
   @Basic(optional = false)
   @NotNull

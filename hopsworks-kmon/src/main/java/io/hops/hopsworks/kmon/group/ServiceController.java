@@ -1,4 +1,4 @@
-package io.hops.hopsworks.kmon.service;
+package io.hops.hopsworks.kmon.group;
 
 import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import java.util.logging.Logger;
@@ -14,8 +14,8 @@ import javax.faces.context.FacesContext;
 @RequestScoped
 public class ServiceController {
 
-  @ManagedProperty("#{param.hostid}")
-  private String hostId;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
   @ManagedProperty("#{param.service}")
   private String service;
   @ManagedProperty("#{param.group}")
@@ -55,12 +55,12 @@ public class ServiceController {
     this.group = group;
   }
 
-  public String getHostId() {
-    return hostId;
+  public String getHostname() {
+    return hostname;
   }
 
-  public void setHostId(String hostId) {
-    this.hostId = hostId;
+  public void setHostname(String hostname) {
+    this.hostname = hostname;
   }
 
   public void setCluster(String cluster) {
@@ -80,7 +80,7 @@ public class ServiceController {
   }
 
   public boolean isServiceFound() {
-    return hostServicesFacade.countServices(cluster, group) > 0;
+    return hostServicesFacade.countServices(cluster, service) > 0;
   }
 
   public void addMessage(String summary) {

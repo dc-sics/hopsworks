@@ -8,13 +8,13 @@ import java.util.TreeMap;
 public class ServiceInstancesInfo {
 
   private String fullName;
-  private String roleName;
+  private String serviceName;
   private SortedMap<Status, Integer> statusMap = new TreeMap<>();
   private SortedMap<Health, Integer> healthMap = new TreeMap<>();
 
   public ServiceInstancesInfo(String fullName, ServiceType service) {
     this.fullName = fullName;
-    this.roleName = service.toString();
+    this.serviceName = service.toString();
   }
 
   public String getFullName() {
@@ -22,7 +22,7 @@ public class ServiceInstancesInfo {
   }
 
   public String getServiceName() {
-    return roleName;
+    return serviceName;
   }
 
   public Health getServiceHealth() {
