@@ -75,7 +75,6 @@ public class HostServicesFacade {
   }
 
   public HostServices find(String hostname, String cluster, String group, String service) {
-
     TypedQuery<HostServices> query = em.createNamedQuery("HostServices.find", HostServices.class)
         .setParameter("hostname", hostname).setParameter("cluster", cluster)
         .setParameter("group", group).setParameter("service", service);
@@ -89,7 +88,7 @@ public class HostServicesFacade {
   }
 
   public List<HostServices> findHostServiceByHostname(String hostname) {
-    TypedQuery<HostServices> query = em.createNamedQuery("HostServices.findBy-HostId",
+    TypedQuery<HostServices> query = em.createNamedQuery("HostServices.findBy-Hostname",
         HostServices.class)
         .setParameter("hostname", hostname);
     return query.getResultList();
@@ -230,17 +229,17 @@ public class HostServicesFacade {
         executeUpdate();
   }
 
-  public String serviceOp(String service, String serviceName, Action action) throws AppException {
-    return webOp(action, HostServicesFacade.this.findGroups(service, serviceName));
+  public String serviceOp(String group, String serviceName, Action action) throws AppException {
+    return webOp(action, findGroups(group, serviceName));
   }
 
   public String serviceOp(String service, Action action) throws AppException {
     return webOp(action, findGroupServices(service));
   }
 
-  public String roleOnHostOp(String service, String roleName, String hostname,
+  public String serviceOnHostOp(String group, String serviceName, String hostname,
       Action action) throws AppException {
-    return webOp(action, findServiceOnHost(hostname, service, roleName));
+    return webOp(action, findServiceOnHost(hostname, group, serviceName));
   }
 
   private String webOp(Action operation, List<HostServices> services) throws AppException {

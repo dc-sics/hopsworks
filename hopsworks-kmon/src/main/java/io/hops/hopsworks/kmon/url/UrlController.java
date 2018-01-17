@@ -108,7 +108,7 @@ public class UrlController {
   }
 
   public String groupInstances() {
-    String url = "group-instances?faces-redirect=true";
+    String url = "service-instances?faces-redirect=true";
     if (hostname != null) {
       url += "&hostname=" + hostname;
     }
@@ -135,7 +135,7 @@ public class UrlController {
     return "group-terminal?faces-redirect=true&cluster=" + cluster + "&group=" + group;
   }
 
-  public String serviceAudit() {
+  public String serviceStatus() {
     return "service-status?faces-redirect=true&hostname=" + hostname + "&cluster="
             + cluster + "&group=" + group + "&service=" + service;
   }

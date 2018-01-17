@@ -43,7 +43,7 @@ import javax.validation.constraints.Size;
       = "SELECT r FROM HostServices r WHERE r.group = :group "
       + "AND r.service = :service AND r.host.hostname = :hostname")
   ,
-  @NamedQuery(name = "HostServices.findBy-HostId",
+  @NamedQuery(name = "HostServices.findBy-Hostname",
       query
       = "SELECT r FROM HostServices r WHERE r.host.hostname = :hostname ORDER BY r.cluster, r.group, r.service")
   ,

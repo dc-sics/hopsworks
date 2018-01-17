@@ -57,20 +57,20 @@
               </ui:repeat>
             </p:column>
 
-            <p:column headerText="Roles">
+            <p:column headerText="Services">
               <ui:repeat value="#{cluster.services}" var="service" varStatus="status">
                 <p:commandLink styleClass="Health-#{cluster.serviceHealth(service)}" 
                                action="#{urlController.groupInstances()}" ajax="false">
                   <h:outputText value="${cluster.serviceCount(service)} ${service}" style="white-space: nowrap"/>
                   <f:param name="cluster" value="#{cluster.name}"/>
-                  <f:param name="service" value="#{service}"/>
                   <f:param name="group" value="#{cluster.serviceGroup(service)}"/>
+                  <f:param name="service" value="#{service}"/>
                 </p:commandLink>
                 <p:spacer width="6" height="0" rendered="#{!status.last}"/>
               </ui:repeat>
             </p:column>                                    
 
-            <p:column headerText="Roles Status">
+            <p:column headerText="Service Status">
               <ui:repeat value="#{cluster.status.entrySet().toArray()}" var="item" varStatus="status">
                 <h:outputText value="${item.value} ${item.key}" styleClass="Status-${item.key}" style="white-space: nowrap"/>
                 <h:outputText value=", " rendered="#{!status.last}"/>

@@ -45,7 +45,8 @@
                 <f:param name="group" value="#{serviceInstancesController.group}"/>                          
               </p:commandLink>                      
               <h:outputText value=" &raquo; " rendered="#{not empty serviceInstancesController.service}"/>
-              <p:commandLink action="#{urlController.groupStatus}" ajax="false" rendered="#{not empty serviceInstancesController.service}">  
+              <p:commandLink action="#{urlController.groupStatus}" ajax="false" 
+                             rendered="#{not empty serviceInstancesController.service}">  
                 <h:outputText value="#{serviceInstancesController.service}" />
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>
@@ -134,14 +135,14 @@
 
             <p:dataTable id="instances" var="instance" value="#{serviceInstancesController.instances}">
 
-              <p:column id="Name" headerText="Role">
+              <p:column id="Name" headerText="Service">
 
-                <p:commandLink action="#{urlController.groupStatus}" ajax="false">
+                <p:commandLink action="#{urlController.serviceStatus}" ajax="false">
                   <h:outputText value="#{instance.name}"/>
-                  <f:param name="hostname" value="#{instance.host}"/>
                   <f:param name="cluster" value="#{instance.cluster}"/>
-                  <f:param name="service" value="#{instance.role}"/>
                   <f:param name="group" value="#{instance.group}"/>
+                  <f:param name="service" value="#{instance.service}"/>
+                  <f:param name="hostname" value="#{instance.host}"/>
                 </p:commandLink>                    
 
               </p:column>
@@ -149,10 +150,10 @@
               <p:column id="Host" headerText="Host">
                 <p:commandLink action="#{urlController.host}" ajax="false">
                   <h:outputText value="#{instance.host}"/>
-                  <f:param name="hostname" value="#{instance.host}"/>
                   <f:param name="cluster" value="#{instance.cluster}"/>
-                  <f:param name="service" value="#{instance.role}"/>
                   <f:param name="group" value="#{instance.group}"/>
+                  <f:param name="service" value="#{instance.service}"/>
+                  <f:param name="hostname" value="#{instance.host}"/>
                 </p:commandLink> 
               </p:column>
 

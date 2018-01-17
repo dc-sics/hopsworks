@@ -43,10 +43,10 @@ public class ServicesController {
   public void init() {
   }
 
-  public void loadRoles() {
+  public void loadServices() {
 
     instanceInfoList.clear();
-    logger.info("init RoleController");
+    logger.info("init ServicesController");
     try {
       HostServicesInfo serviceHost = hostServicesFacade.findHostServices(cluster, group, service,
               hostname);
@@ -67,7 +67,7 @@ public class ServicesController {
       health = serviceHost.getHealth().toString();
       found = true;
     } catch (Exception ex) {
-      logger.warning("init RoleController: ".concat(ex.getMessage()));
+      logger.warning("init ServicesController: ".concat(ex.getMessage()));
     }
 
   }
@@ -77,7 +77,7 @@ public class ServicesController {
   }
 
   public String getService() {
-    loadRoles();
+    loadServices();
     return service;
   }
 
@@ -86,7 +86,7 @@ public class ServicesController {
   }
 
   public String getGroup() {
-    loadRoles();
+    loadServices();
     return group;
   }
 
@@ -95,7 +95,7 @@ public class ServicesController {
   }
 
   public String getHostname() {
-    loadRoles();
+    loadServices();
     return hostname;
   }
 
@@ -124,7 +124,7 @@ public class ServicesController {
 //  }
 
   public List<InstanceFullInfo> getInstanceFullInfo() {
-    loadRoles();
+    loadServices();
     return instanceInfoList;
   }
 

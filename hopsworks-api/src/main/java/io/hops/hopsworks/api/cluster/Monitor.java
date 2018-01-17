@@ -148,7 +148,7 @@ public class Monitor {
       @PathParam("hostId") String hostId, @Context SecurityContext sc, @Context HttpServletRequest req,
       ServicesActionDTO action) throws AppException {
     JsonResponse json = new JsonResponse();
-    json.setSuccessMessage(hostServicesFacade.roleOnHostOp(groupName, serviceName, hostId, action.getAction()));
+    json.setSuccessMessage(hostServicesFacade.serviceOnHostOp(groupName, serviceName, hostId, action.getAction()));
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
   }
 }

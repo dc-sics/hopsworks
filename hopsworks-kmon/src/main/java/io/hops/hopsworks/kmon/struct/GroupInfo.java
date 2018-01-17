@@ -68,7 +68,7 @@ public class GroupInfo {
 
   public Health addServices(List<HostServicesInfo> services) {
     for (HostServicesInfo serviceHostInfo : services) {
-      if (serviceHostInfo.getHostServices().equals("")) {
+      if (serviceHostInfo.getHostServices().getService().equals("")) {
         continue;
       }
       this.services.add(serviceHostInfo.getHostServices().getService());

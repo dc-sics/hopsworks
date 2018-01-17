@@ -21,12 +21,14 @@ import io.hops.hopsworks.kmon.struct.ServiceInstancesInfo;
 @RequestScoped
 public class GroupStatusController {
 
-  @EJB
-  private HostServicesFacade hostServicesFacade;
   @ManagedProperty("#{param.group}")
   private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
+
+  @EJB
+  private HostServicesFacade hostServicesFacade;
+
   private Health health;
   private List<ServiceInstancesInfo> groupServices = new ArrayList<ServiceInstancesInfo>();
   private static final Logger logger = Logger.getLogger(GroupStatusController.class.getName());
@@ -37,7 +39,7 @@ public class GroupStatusController {
   @PostConstruct
   public void init() {
     logger.info("init ServiceAuditController");
-    loadServices();
+//    loadServices();
   }
 
   public String getGroup() {
@@ -98,9 +100,7 @@ public class GroupStatusController {
     }
   }
 
-  private ServiceInstancesInfo createServiceInstancesInfo(String cluster,
-      String group, ServiceType service) {
-
+  private ServiceInstancesInfo createServiceInstancesInfo(String cluster, String group, ServiceType service) {
     ServiceInstancesInfo groupInstancesInfo = 
         new ServiceInstancesInfo(GroupServiceMapper.getServiceFullName(service), service);
     List<HostServicesInfo> serviceHosts = hostServicesFacade.findHostServices(cluster, group, service.toString());
@@ -112,4 +112,14 @@ public class GroupStatusController {
     }
     return groupInstancesInfo;
   }
+
+  public HostServicesFacade getHostServicesFacade() {
+    return hostServicesFacade;
+  }
+
+  public void setHostServicesFacade(HostServicesFacade hostServicesFacade) {
+    this.hostServicesFacade = hostServicesFacade;
+  }
+  
+  
 }

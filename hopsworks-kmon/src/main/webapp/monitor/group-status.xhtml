@@ -36,7 +36,7 @@
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
               </p:commandLink> 
               <h:outputText value=" &raquo; "/>
-              <p:commandLink action="#{urlController.serviceAudit}" ajax="false">  
+              <p:commandLink action="#{urlController.serviceStatus}" ajax="false">  
                 <h:outputText value="#{serviceInstancesController.group}" />
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>                          
@@ -61,7 +61,7 @@
             <p:toolbarGroup align="left">  
 
               <p:commandButton value="Status" icon="ui-icon-home" 
-                               action="#{urlController.serviceAudit}" ajax="false">
+                               action="#{urlController.serviceStatus}" ajax="false">
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>
               </p:commandButton>  

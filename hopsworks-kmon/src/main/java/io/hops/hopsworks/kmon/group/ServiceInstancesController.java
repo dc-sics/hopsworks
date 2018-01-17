@@ -22,12 +22,12 @@ import io.hops.hopsworks.kmon.utils.FilterUtils;
 @RequestScoped
 public class ServiceInstancesController {
 
-  @ManagedProperty("#{param.service}")
-  private String service;
-  @ManagedProperty("#{param.group}")
-  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
+  @ManagedProperty("#{param.group}")
+  private String group;
+  @ManagedProperty("#{param.service}")
+  private String service;
   @ManagedProperty("#{param.status}")
   private String status;
   @EJB
@@ -35,8 +35,7 @@ public class ServiceInstancesController {
   private static final SelectItem[] statusOptions;
   private static final SelectItem[] healthOptions;
   private List<InstanceInfo> filteredInstances = new ArrayList<>();
-  private static final Logger logger = Logger.getLogger(
-      ServiceInstancesController.class.getName());
+  private static final Logger logger = Logger.getLogger(ServiceInstancesController.class.getName());
 
   private enum groupsWithMetrics {
     HDFS,
@@ -140,9 +139,7 @@ public class ServiceInstancesController {
     try {
       return FilterUtils.createFilterOptions(GroupServiceMapper.getServicesArray(GroupType.valueOf(group)));
     } catch (Exception ex) {
-      logger.log(Level.WARNING,
-          "Service not found. Returning no option. Error message: {0}", ex.
-              getMessage());
+      logger.log(Level.WARNING,"Service not found. Returning no option. Error message: {0}", ex.getMessage());
       return new SelectItem[]{};
     }
   }
@@ -153,16 +150,16 @@ public class ServiceInstancesController {
 //      should be stored in cookie
     List<InstanceInfo> instances = new ArrayList<InstanceInfo>();
     List<HostServicesInfo> serviceHostList = new ArrayList<HostServicesInfo>();
-    if (cluster != null && group != null && group != null && status != null) {
-      for (HostServicesInfo hostServicesInfo : hostServicesFacade.findHostServices(cluster, group, group)) {
+    if (cluster != null && group != null && service != null && status != null) {
+      for (HostServicesInfo hostServicesInfo : hostServicesFacade.findHostServices(cluster, group, service)) {
         if (hostServicesInfo.getStatus() == Status.valueOf(status)) {
           serviceHostList.add(hostServicesInfo);
         }
       }
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);         
-    } else if (cluster != null && group != null && group != null) {
-      serviceHostList = hostServicesFacade.findHostServices(cluster, group, group);
+    } else if (cluster != null && group != null && service != null) {
+      serviceHostList = hostServicesFacade.findHostServices(cluster, group, service);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);    
     } else if (cluster != null && group != null) {
@@ -177,10 +174,10 @@ public class ServiceInstancesController {
 //      else {
 //         roleHostList = roleEjb.findRoleHost(cookie.read("cluster"), cookie.read("service"));
 //      }     
-    for (HostServicesInfo r : serviceHostList) {
-      instances.add(new InstanceInfo(r.getHostServices().getCluster(), r.getHostServices().
-          getService(), r.getHostServices().getService(),
-          r.getHostServices().getHost().getHostname(), r.getStatus(), r.getHealth().toString()));
+    for (HostServicesInfo hsi : serviceHostList) {
+      instances.add(new InstanceInfo(hsi.getHostServices().getCluster(), hsi.getHostServices().
+          getGroup(), hsi.getHostServices().getService(), hsi.getHostServices().getHost().getHostname(), 
+          hsi.getStatus(), hsi.getHealth().toString()));
     }
     filteredInstances.addAll(instances);
     return instances;
