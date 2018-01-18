@@ -30,6 +30,8 @@ c.NotebookApp.iopub_data_rate_limit=10000000
 
 c.NotebookApp.base_url='/hopsworks-api/jupyter/%%port%%/'
 
+c.Application.log_level="WARN"
+
 
 c.JupyterConsoleApp.kernel_name="PySpark"
 
