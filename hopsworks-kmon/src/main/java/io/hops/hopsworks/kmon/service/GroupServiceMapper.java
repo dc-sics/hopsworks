@@ -22,23 +22,18 @@ public class GroupServiceMapper {
             ServiceType.mysqld, ServiceType.ndb_mgmd));
     groupServiceMap.put(GroupType.YARN, Arrays.asList(ServiceType.resourcemanager,
             ServiceType.nodemanager));
-    groupServiceMap.put(GroupType.MAP_REDUCE, Arrays.asList(ServiceType.historyserver));
-    groupServiceMap.put(GroupType.zookeeper, Arrays.asList(ServiceType.zookeeper));
-    groupServiceMap.put(GroupType.influxdb, Arrays.asList(ServiceType.influxdb));
-    groupServiceMap.put(GroupType.epipe, Arrays.asList(ServiceType.epipe));
-    groupServiceMap.put(GroupType.logstash, Arrays.asList(ServiceType.logstash));
-    groupServiceMap.put(GroupType.livy, Arrays.asList(ServiceType.livy));
-    groupServiceMap.put(GroupType.historyserver, Arrays.asList(ServiceType.historyserver));
-    groupServiceMap.put(GroupType.sparkhistoryserver, Arrays.asList(ServiceType.sparkhistoryserver));
-    groupServiceMap.put(GroupType.telegraf, Arrays.asList(ServiceType.telegraf));
-    groupServiceMap.put(GroupType.elasticsearch, Arrays.asList(ServiceType.elasticsearch));
-    groupServiceMap.put(GroupType.grafana, Arrays.asList(ServiceType.grafana));
-    groupServiceMap.put(GroupType.kafka, Arrays.asList(ServiceType.kafka));
-    groupServiceMap.put(GroupType.kibana, Arrays.asList(ServiceType.kibana));
-    groupServiceMap.put(GroupType.hive, Arrays.asList(ServiceType.hiveserver2));
-    groupServiceMap.put(GroupType.hive, Arrays.asList(ServiceType.hivemetastore));
-    groupServiceMap.put(GroupType.hive, Arrays.asList(ServiceType.hivecleaner));
-    groupServiceMap.put(GroupType.dela, Arrays.asList(ServiceType.dela));
+    groupServiceMap.put(GroupType.HISTORY_SERVERS, Arrays.asList(ServiceType.historyserver,
+            ServiceType.sparkhistoryserver));
+    groupServiceMap.put(GroupType.Kafka, Arrays.asList(ServiceType.kafka,
+            ServiceType.zookeeper));
+    groupServiceMap.put(GroupType.ELK, Arrays.asList(ServiceType.elasticsearch,
+            ServiceType.logstash, ServiceType.kibana));
+    groupServiceMap.put(GroupType.Monitoring, Arrays.asList(ServiceType.influxdb,
+            ServiceType.grafana, ServiceType.telegraf));
+    groupServiceMap.put(GroupType.Hive, Arrays.asList(ServiceType.hivemetastore,
+            ServiceType.hiveserver2, ServiceType.hivecleaner));
+    groupServiceMap.put(GroupType.Hops, Arrays.asList(ServiceType.epipe,
+            ServiceType.dela));
     
     serviceFullNames.put(ServiceType.namenode, "NameNode");
     serviceFullNames.put(ServiceType.datanode, "DataNode");
@@ -59,6 +54,7 @@ public class GroupServiceMapper {
     serviceFullNames.put(ServiceType.grafana, "Grafana");
     serviceFullNames.put(ServiceType.kafka, "Kafka");
     serviceFullNames.put(ServiceType.kibana, "Kibana");
+    serviceFullNames.put(ServiceType.filebeat, "Filebeat");
     serviceFullNames.put(ServiceType.hiveserver2, "HiveServer2");
     serviceFullNames.put(ServiceType.hivemetastore, "HiveMetastore");
     serviceFullNames.put(ServiceType.hivecleaner, "HiveCleaner");

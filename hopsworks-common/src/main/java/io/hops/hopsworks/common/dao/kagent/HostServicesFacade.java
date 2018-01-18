@@ -122,9 +122,9 @@ public class HostServicesFacade {
     return query.getSingleResult();
   }
 
-  public Long countServices(String cluster, String service) {
+  public Long countServices(String cluster, String group) {
     TypedQuery<Long> query = em.createNamedQuery("HostServices.Count-services", Long.class)
-        .setParameter("cluster", cluster).setParameter("service", service);
+        .setParameter("cluster", cluster).setParameter("group", group);
     return query.getSingleResult();
   }
 
@@ -225,8 +225,7 @@ public class HostServicesFacade {
   }
 
   public void deleteServicesByHostname(String hostname) {
-    em.createNamedQuery("HostServices.DeleteBy-HostId").setParameter("hostname", hostname).
-        executeUpdate();
+    em.createNamedQuery("HostServices.DeleteBy-Hostname").setParameter("hostname", hostname).executeUpdate();
   }
 
   public String serviceOp(String group, String serviceName, Action action) throws AppException {

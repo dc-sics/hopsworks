@@ -36,7 +36,8 @@ public class ServiceController {
 
   @PostConstruct
   public void init() {
-    logger.info("init ServiceController");
+    logger.info("ServiceController: status: " + status + " ; cluster: " + cluster + "; group: " + group
+        + " ; service: " + service + " ; hostname: " + hostname);
   }
 
   public String getService() {
@@ -80,7 +81,7 @@ public class ServiceController {
   }
 
   public boolean isServiceFound() {
-    return hostServicesFacade.countServices(cluster, service) > 0;
+    return hostServicesFacade.countServices(cluster, group) > 0;
   }
 
   public void addMessage(String summary) {

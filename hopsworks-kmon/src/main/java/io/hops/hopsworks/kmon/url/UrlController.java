@@ -23,11 +23,11 @@ public class UrlController {
   private String status;
   @ManagedProperty("#{param.target}")
   private String target;
-  private static final Logger logger = Logger.getLogger(UrlController.class.
-          getName());
+  private static final Logger logger = Logger.getLogger(UrlController.class.getName());
 
   public UrlController() {
-    logger.info("UrlController");
+    logger.info("UrlController - hostname: " + hostname + " ; cluster: " + cluster + "; group: " + group
+        + " ; service: " + service + " ; status: " + status + " ; target: " + target);
   }
 
   public String getService() {
@@ -95,8 +95,8 @@ public class UrlController {
   }
   
   public String groupInstance() {
-    return "services-instances-status?faces-redirect=true&hostname="
-            + hostname + "&cluster=" + cluster + "&group=" + group;
+    return "services-instances-status?faces-redirect=true&hostname=" 
+        + hostname + "&cluster=" + cluster + "&group=" + group;
   }
 
   public String clusterActionHistory() {

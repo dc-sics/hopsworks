@@ -21,10 +21,10 @@ import io.hops.hopsworks.kmon.struct.ServiceInstancesInfo;
 @RequestScoped
 public class GroupStatusController {
 
-  @ManagedProperty("#{param.group}")
-  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
+  @ManagedProperty("#{param.group}")
+  private String group;
 
   @EJB
   private HostServicesFacade hostServicesFacade;
@@ -38,8 +38,8 @@ public class GroupStatusController {
 
   @PostConstruct
   public void init() {
-    logger.info("init ServiceAuditController");
-//    loadServices();
+    logger.info("GroupStatusController: cluster: " + cluster + "; group: " + group);
+    loadServices();
   }
 
   public String getGroup() {
@@ -63,7 +63,6 @@ public class GroupStatusController {
   }
 
   public List<ServiceInstancesInfo> getServices() {
-    loadServices();
     return groupServices;
   }
 
@@ -101,8 +100,8 @@ public class GroupStatusController {
   }
 
   private ServiceInstancesInfo createServiceInstancesInfo(String cluster, String group, ServiceType service) {
-    ServiceInstancesInfo groupInstancesInfo = 
-        new ServiceInstancesInfo(GroupServiceMapper.getServiceFullName(service), service);
+    ServiceInstancesInfo groupInstancesInfo = new ServiceInstancesInfo(GroupServiceMapper.getServiceFullName(service),
+        service);
     List<HostServicesInfo> serviceHosts = hostServicesFacade.findHostServices(cluster, group, service.toString());
     for (HostServicesInfo serviceHost : serviceHosts) {
       groupInstancesInfo.addInstanceInfo(serviceHost.getStatus(), serviceHost.getHealth());
@@ -113,13 +112,4 @@ public class GroupStatusController {
     return groupInstancesInfo;
   }
 
-  public HostServicesFacade getHostServicesFacade() {
-    return hostServicesFacade;
-  }
-
-  public void setHostServicesFacade(HostServicesFacade hostServicesFacade) {
-    this.hostServicesFacade = hostServicesFacade;
-  }
-  
-  
 }

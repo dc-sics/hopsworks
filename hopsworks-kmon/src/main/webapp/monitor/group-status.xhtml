@@ -11,7 +11,7 @@
   <ui:composition template="layout.xhtml">
 
     <ui:define name="title">
-      #{settingsController.name} - Service Status
+      #{settingsController.name} - Group Status
     </ui:define>
 
     <ui:define name="css">
@@ -36,7 +36,7 @@
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
               </p:commandLink> 
               <h:outputText value=" &raquo; "/>
-              <p:commandLink action="#{urlController.serviceStatus}" ajax="false">  
+              <p:commandLink action="#{urlController.groupStatus}" ajax="false">  
                 <h:outputText value="#{serviceInstancesController.group}" />
                 <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                 <f:param name="group" value="#{serviceInstancesController.group}"/>                          
@@ -81,21 +81,18 @@
                     <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                     <f:param name="group" value="#{serviceInstancesController.group}"/>
                     <f:param name="service" value="#{serviceInstancesController.service}"/>
-                    <f:param name="r" value="#{serviceInstancesController.service}"/>
                   </p:menuitem>
                   <p:menuitem id="startall_service" value="Start All" action="#{communicationController.serviceStartAll()}" process="@this"
                               icon="ui-icon-play" disabled="#{serviceInstancesController.disableStart()}" ajax ="true" update="@all">
                     <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                     <f:param name="group" value="#{serviceInstancesController.group}"/>
                     <f:param name="service" value="#{serviceInstancesController.service}"/>
-                    <f:param name="r" value="#{serviceInstancesController.service}"/>
                   </p:menuitem>
                   <p:menuitem id="stopall_service" value="Stop All" action="#{communicationController.serviceStopAll()}" process="@this"
                               disabled="#{serviceInstancesController.disableStop()}" ajax ="true" update="@all">
                     <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
                     <f:param name="group" value="#{serviceInstancesController.group}"/>
                     <f:param name="service" value="#{serviceInstancesController.service}"/>
-                    <f:param name="r" value="#{serviceInstancesController.service}"/>
                   </p:menuitem>
                 </p:menuButton> 
                 <p:tooltip for="startall_service" rendered="#{serviceInstancesController.disableStart()}" 
@@ -117,23 +114,23 @@
         <p:spacer width="1" height="10" />
 
         <h:form styleClass="styleInfoPanel">
-          <p:panel header="Roles Status and Health Summary">
+          <p:panel header="Services' Status and Health Summary">
 
             <p:dataTable id="service" var="service" value="#{groupStatusController.services}">
 
-              <p:column headerText="Role name">
+              <p:column headerText="Service name">
 
-                <p:commandLink styleClass="Health-#{service.serviceHealth}" action="#{urlController.serviceInstances}" ajax="false">
+                <p:commandLink styleClass="Health-#{service.serviceHealth}" action="#{urlController.groupInstances}" ajax="false">
                   <h:outputText value="#{service.fullName}"/>
                   <f:param name="cluster" value="#{groupStatusController.cluster}"/>
-                  <f:param name="service" value="#{groupStatusController.service}"/>                        
+                  <f:param name="group" value="#{groupStatusController.group}"/>                        
                   <f:param name="service" value="#{service.serviceName}"/>
                 </p:commandLink>                         
               </p:column>  
 
               <p:column headerText="Status">
                 <ui:repeat value="#{service.statusMap.entrySet().toArray()}" var="item" varStatus="status">
-                  <p:commandLink styleClass="Status-${item.key}" action="#{urlController.serviceInstances}" ajax="false">
+                  <p:commandLink styleClass="Status-${item.key}" action="#{urlController.groupInstances}" ajax="false">
                     <h:outputText value="${item.value} ${item.key}"/>
                     <!--<p:tooltip for="statuslink" value="#{settingsController.tooltip(item.key, item.value)}" showEffect="fade" hideEffect="fade" />-->
                     <f:param name="cluster" value="#{groupStatusController.cluster}"/>
@@ -159,17 +156,6 @@
         </h:form>
       </p:outputPanel>
       <!--<p:spacer width="1" height="10" />-->
-
-      <h:form>
-        <p:commandLink value="Yarn UI" action="#{facesContext.externalContext.redirect('/hopsworks-api/yarnui')}" rendered="#{serviceInstancesController.isYarnService()}">
-          <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
-          <f:param name="service" value="#{serviceInstancesController.service}"/>   
-        </p:commandLink>
-        <p:commandLink value="HDFS UI" action="#{facesContext.externalContext.redirect('/hopsworks-api/hdfsui')}" rendered="#{serviceInstancesController.isHDFSService()}">
-          <f:param name="cluster" value="#{serviceInstancesController.cluster}"/>
-          <f:param name="service" value="#{serviceInstancesController.service}"/>   
-        </p:commandLink>
-      </h:form>
 
       <p:spacer width="1" height="25" />
 

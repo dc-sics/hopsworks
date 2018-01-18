@@ -26,5 +26,6 @@ public enum ServiceType {
   grafana,
   kafka,
   kibana,
+  filebeat,
   ssh
 }

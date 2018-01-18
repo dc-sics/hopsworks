@@ -73,7 +73,7 @@ import javax.validation.constraints.Size;
   ,
   @NamedQuery(name = "HostServices.Count-services",
       query
-      = "SELECT COUNT(r) FROM HostServices r WHERE r.cluster = :cluster AND r.service = :service")
+      = "SELECT COUNT(r) FROM HostServices r WHERE r.cluster = :cluster AND r.group = :group")
   ,
   @NamedQuery(name = "HostServices.findHostServicesBy-Cluster",
       query
@@ -96,7 +96,7 @@ import javax.validation.constraints.Size;
       + "WHERE r.host = h AND r.cluster = :cluster AND r.group = :group "
       + "AND r.service = :service AND r.host.hostname = :hostname")
   ,
-  @NamedQuery(name = "HostServices.DeleteBy-HostId",
+  @NamedQuery(name = "HostServices.DeleteBy-Hostname",
       query = "DELETE FROM HostServices r WHERE r.host.hostname = :hostname")
   ,
   @NamedQuery(name = "HostServices.find.ClusterBy-Ip.WebPort",

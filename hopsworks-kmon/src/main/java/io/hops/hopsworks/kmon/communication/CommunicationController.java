@@ -30,26 +30,26 @@ public class CommunicationController {
   private HostServicesFacade hostServicesFacade;
   @EJB
   private WebCommunication web;
-  
-  @ManagedProperty(value="#{serviceInstancesController}")
+
+  @ManagedProperty(value = "#{serviceInstancesController}")
   private ServiceInstancesController serviceInstancesController;
-  
-  @ManagedProperty("#{param.hostname}")
-  private String hostname;
-  @ManagedProperty("#{param.service}")
-  private String service;
-  @ManagedProperty("#{param.group}")
-  private String group;
+
   @ManagedProperty("#{param.cluster}")
   private String cluster;
+  @ManagedProperty("#{param.group}")
+  private String group; 
+  @ManagedProperty("#{param.service}")
+  private String service;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
 
   private List<InstanceInfo> instances;
-  
-  private static final Logger logger = Logger.getLogger(
-          CommunicationController.class.getName());
+
+  private static final Logger logger = Logger.getLogger(CommunicationController.class.getName());
 
   public CommunicationController() {
-    logger.info("CommunicationController");
+    logger.info("CommunicationController: hostname: " + hostname + " ; cluster: " + cluster + "; group: " + group
+        + " ; service: " + service);
   }
 
   @PostConstruct
@@ -85,6 +85,9 @@ public class CommunicationController {
   }
 
   public void setHostname(String hostname) {
+    if (hostname == null || hostname.compareTo("null")==0) {
+      return;
+    }
     this.hostname = hostname;
   }
 
@@ -102,11 +105,10 @@ public class CommunicationController {
   }
 
   private Hosts findHostByService(String cluster, String group, String service)
-          throws Exception {
+      throws Exception {
     String id = hostServicesFacade.findServices(cluster, group, service).get(0).getHost().getHostname();
     return findHostByName(id);
   }
-
 
   public String mySqlClusterConfig() throws Exception {
     // Finds hostname of mgmserver
@@ -134,10 +136,10 @@ public class CommunicationController {
     FacesMessage msg = null;
     if (res.contains("Error")) {
       msg = new FacesMessage(FacesMessage.SEVERITY_ERROR, res,
-              "There was a problem when executing the operation.");
+          "There was a problem when executing the operation.");
     } else {
       msg = new FacesMessage(FacesMessage.SEVERITY_INFO, res,
-              "Successfully executed the operation.");
+          "Successfully executed the operation.");
     }
     context.addMessage(null, msg);
   }
@@ -150,7 +152,7 @@ public class CommunicationController {
   public void serviceStartAll() {
     uiMsg(serviceOperationAll("startService"));
   }
-  
+
   public void serviceRestart() {
     uiMsg(serviceOperation("restartService"));
   }
@@ -158,7 +160,7 @@ public class CommunicationController {
   public void serviceRestartAll() {
     uiMsg(serviceOperationAll("restartService"));
   }
-  
+
   public void serviceStop() {
     uiMsg(serviceOperation("stopService"));
   }
@@ -167,7 +169,7 @@ public class CommunicationController {
     logger.log(Level.SEVERE, "serviceStopAll 1");
     uiMsg(serviceOperationAll("stopService"));
   }
-  
+
   private String serviceOperationAll(String operation) {
     instances = serviceInstancesController.getInstances();
     List<Future<String>> results = new ArrayList<>();
@@ -184,7 +186,7 @@ public class CommunicationController {
         }
       }
     }
-    for(Future<String> r: results){
+    for (Future<String> r : results) {
       try {
         result = result + r.get() + "\n";
       } catch (Exception ex) {
@@ -193,7 +195,7 @@ public class CommunicationController {
     }
     return result;
   }
-  
+
   private String serviceOperation(String operation) {
     try {
       Hosts h = findHostByName(hostname);

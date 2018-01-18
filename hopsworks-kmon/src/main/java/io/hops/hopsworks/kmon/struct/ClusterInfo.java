@@ -63,8 +63,10 @@ public class ClusterInfo {
     return servicesCount.get(service);
   }
 
-  public String serviceGroup(String group) {
-    return servicesGroupsMap.get(group);
+  /** Returns the group for a service 
+   **/
+  public String serviceGroup(String service) {
+    return servicesGroupsMap.get(service);
   }
 
   public Health getClusterHealth() {
@@ -105,13 +107,13 @@ public class ClusterInfo {
 
   public void addServices(List<HostServicesInfo> serviceHostList) {
     for (HostServicesInfo serviceHost : serviceHostList) {
-      groups.add(serviceHost.getHostServices().getService());
+      groups.add(serviceHost.getHostServices().getGroup());
       if (serviceHost.getHostServices().getService().toString().equals("")) {
         continue;
       }
       services.add(serviceHost.getHostServices().getService());
       servicesGroupsMap.put(serviceHost.getHostServices().getService(), serviceHost.getHostServices().
-          getService());
+          getGroup());
       if (serviceHost.getStatus() == Status.Started) {
         started += 1;
       } else {

@@ -49,7 +49,9 @@ public class ServiceInstancesController {
   }
 
   public ServiceInstancesController() {
-    logger.info("ServiceInstancesController");
+    logger.info("ServiceInstancesController: status: " + status + " ; cluster: " + cluster + "; group: " + group
+        + " ; service: " + service);
+
   }
 
   public String getService() {
@@ -158,7 +160,7 @@ public class ServiceInstancesController {
       }
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);         
-    } else if (cluster != null && group != null && service != null) {
+    } else if (cluster != null && group != null && service != null && service.compareTo("null") != 0) {
       serviceHostList = hostServicesFacade.findHostServices(cluster, group, service);
 //         cookie.write("cluster", cluster);
 //         cookie.write("service", service);    
@@ -176,7 +178,7 @@ public class ServiceInstancesController {
 //      }     
     for (HostServicesInfo hsi : serviceHostList) {
       instances.add(new InstanceInfo(hsi.getHostServices().getCluster(), hsi.getHostServices().
-          getGroup(), hsi.getHostServices().getService(), hsi.getHostServices().getHost().getHostname(), 
+          getGroup(), hsi.getHostServices().getService(), hsi.getHost().getHostname(), 
           hsi.getStatus(), hsi.getHealth().toString()));
     }
     filteredInstances.addAll(instances);
