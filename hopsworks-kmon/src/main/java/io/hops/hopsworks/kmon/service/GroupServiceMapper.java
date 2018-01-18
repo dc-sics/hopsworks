@@ -24,7 +24,7 @@ public class GroupServiceMapper {
             ServiceType.nodemanager));
     groupServiceMap.put(GroupType.HISTORY_SERVERS, Arrays.asList(ServiceType.historyserver,
             ServiceType.sparkhistoryserver));
-    groupServiceMap.put(GroupType.Kafka, Arrays.asList(ServiceType.kafka,
+    groupServiceMap.put(GroupType.kafka, Arrays.asList(ServiceType.kafka,
             ServiceType.zookeeper));
     groupServiceMap.put(GroupType.ELK, Arrays.asList(ServiceType.elasticsearch,
             ServiceType.logstash, ServiceType.kibana));

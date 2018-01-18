@@ -5,7 +5,7 @@ public enum GroupType {
   HDFS,
   YARN,
   HISTORY_SERVERS,
-  Kafka,
+  kafka,
   NDB,
   Monitoring,
   ELK,

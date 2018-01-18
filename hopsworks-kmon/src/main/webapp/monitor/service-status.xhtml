@@ -81,20 +81,23 @@
                     <f:param name="cluster" value="#{serviceInstancesController.cluster}" />
                     <f:param name="service" value="#{serviceInstancesController.service}" />
                     <f:param name="command" value="restart" />
+                    <f:param name="hostname" value="#{communicationController.hostname}"/>                      
                   </p:menuitem>
                   <p:menuitem id="start_service" value="Start" action="#{communicationController.serviceStart()}" process="@this"
                               icon="ui-icon-play" disabled="#{serviceInstancesController.disableStart()}" ajax ="true" update="@all">
                     <f:param name="cluster" value="#{serviceInstancesController.cluster}" />
-                    <f:param name="service" value="#{serviceInstancesController.service}" />
-                    <f:param name="status" value="#{serviceInstancesController.status}"/>                                   
                     <f:param name="group" value="#{serviceInstancesController.group}"/>                                   
+                    <f:param name="service" value="#{serviceInstancesController.service}" />
+                    <f:param name="status" value="#{serviceInstancesController.status}"/>    
+                    <f:param name="hostname" value="#{communicationController.hostname}"/>                      
                   </p:menuitem>
                   <p:menuitem id="stop_service" value="Stop" action="#{communicationController.serviceStop()}" process="@this"
                               icon="ui-icon-stop" disabled="#{serviceInstancesController.disableStop()}" ajax ="true" update="@all">
                     <f:param name="cluster" value="#{serviceInstancesController.cluster}" />
+                    <f:param name="group" value="#{serviceInstancesController.group}"/>                                  
                     <f:param name="service" value="#{serviceInstancesController.service}" />
                     <f:param name="status" value="#{serviceInstancesController.status}"/>                                   
-                    <f:param name="group" value="#{serviceInstancesController.group}"/>                                  
+                    <f:param name="hostname" value="#{communicationController.hostname}"/>                                  
                   </p:menuitem>
                 </p:menuButton> 
                 <p:tooltip for="start_service" rendered="#{serviceInstancesController.disableStart()}" 
