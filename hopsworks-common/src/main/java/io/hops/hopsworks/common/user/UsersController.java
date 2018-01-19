@@ -194,7 +194,7 @@ public class UsersController {
     String salt = authController.generateSalt();
     String password = authController.getPasswordHash(pwd, salt);
 
-    Users user = new Users(uname, password, email, fname, lname, title, PeopleAccountStatus.NEW_MOBILE_ACCOUNT,
+    Users user = new Users(uname, password, email, fname, lname, title, "-", PeopleAccountStatus.NEW_MOBILE_ACCOUNT,
         PeopleAccountType.M_ACCOUNT_TYPE, 0, salt);
     user.setBbcGroupCollection(groups);
     return user;
@@ -215,9 +215,11 @@ public class UsersController {
     String salt = authController.generateSalt();
     String password = authController.getPasswordHash(pwd, salt);
 
-    Users user = new Users(uname, password, email, fname, lname, "-", accStatus, PeopleAccountType.LDAP_ACCOUNT_TYPE,
-        settings.getMaxNumProjPerUser(), salt);
+    Users user = new Users(uname, password, email, fname, lname, "-", "-", accStatus, 
+        PeopleAccountType.LDAP_ACCOUNT_TYPE, settings.getMaxNumProjPerUser(), salt);
     user.setBbcGroupCollection(groups);
+    addAddress(user);
+    addOrg(user);
     return user;
   }
 
@@ -272,9 +274,6 @@ public class UsersController {
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
     }
-    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Operation not allowed for LDAP account.");
-    }
     if (!authController.validatePassword(user, oldPassword, req)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.PASSWORD_INCORRECT);
     }
@@ -297,9 +296,6 @@ public class UsersController {
 
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
-    }
-    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Operation not allowed for LDAP account.");
     }
     if (!authController.validatePassword(user, oldPassword, req)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.PASSWORD_INCORRECT);
@@ -417,9 +413,6 @@ public class UsersController {
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
     }
-    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Operation not allowed for LDAP account.");
-    }
     if (!authController.validatePassword(user, password, req)) {
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.TWO_FACTOR.name(),
           AccountsAuditActions.FAILED.name(), "Incorrect password", user,
@@ -475,9 +468,6 @@ public class UsersController {
     byte[] qr_code = null;
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
-    }
-    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Operation not allowed for LDAP account.");
     }
     if (!authController.validatePassword(user, password, req)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.PASSWORD_INCORRECT);

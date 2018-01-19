@@ -44,6 +44,7 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.naming.NamingException;
 import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
@@ -136,7 +137,7 @@ public class AuthController {
   }
 
   /**
-   * Validates password and update account audit
+   * Validates password and update account audit. Use validatePwd if ldap user.
    *
    * @param user
    * @param password
@@ -144,6 +145,31 @@ public class AuthController {
    * @return
    */
   public boolean validatePassword(Users user, String password, HttpServletRequest req) {
+    if (user == null) {
+      throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Operation not allowed for LDAP account.");
+    }
+    String userPwdHash = user.getPassword();
+    String pwdHash = getPasswordHash(password, user.getSalt());
+    if (!userPwdHash.equals(pwdHash)) {
+      registerFalseLogin(user, req);
+      LOGGER.log(Level.WARNING, "False login attempt by user: {0}", user.getEmail());
+      return false;
+    }
+    resetFalseLogin(user);
+    return true;
+  }
+  
+  /**
+   * Validate password works both for hopsworks and ldap user
+   * @param user
+   * @param password
+   * @param req
+   * @return
+   */
+  public boolean validatePwd(Users user, String password, HttpServletRequest req) {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
     }
@@ -156,10 +182,12 @@ public class AuthController {
         ldapRealm.authenticateLdapUser(ldapUser, password);
         return true;
       } catch (LoginException ex) {
-        registerFalseLogin(user, req);
         LOGGER.log(Level.WARNING, "False login attempt by ldap user: {0}", user.getEmail());
         LOGGER.log(Level.WARNING, null, ex.getMessage());
         return false;
+      } catch (EJBException | NamingException ee) {
+        LOGGER.log(Level.WARNING, "Could not reach LDAP server. {0}", ee.getMessage());
+        throw new IllegalStateException("Could not reach LDAP server.");
       }
     }
     String userPwdHash = user.getPassword();

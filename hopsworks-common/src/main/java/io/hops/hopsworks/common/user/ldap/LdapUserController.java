@@ -11,13 +11,16 @@ import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.Settings;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
+import javax.ejb.EJBException;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.naming.NamingException;
 import javax.security.auth.login.LoginException;
 
 @Stateless
@@ -38,9 +41,24 @@ public class LdapUserController {
   @EJB
   private Settings settings;
 
+  /**
+   * Try to login ldap user. 
+   * @param username
+   * @param password
+   * @param consent
+   * @param chosenEmail
+   * @return
+   * @throws LoginException 
+   */
   public LdapUserState login(String username, String password, boolean consent, String chosenEmail) throws
       LoginException {
-    LdapUserDTO userDTO = ldapRealm.findAndBind(username, password);// login user
+    LdapUserDTO userDTO = null;
+    try {
+      userDTO = ldapRealm.findAndBind(username, password);// login user
+    } catch (EJBException | NamingException ee) {
+      LOGGER.log(Level.WARNING, "Could not reach LDAP server. {0}", ee.getMessage());
+      throw new LoginException("Could not reach LDAP server.");
+    }
     if (userDTO == null) {
       LOGGER.log(Level.WARNING, "User not found, or wrong LDAP configuration.");
       throw new LoginException("User not found.");
@@ -82,7 +100,13 @@ public class LdapUserController {
     String authKey = SecurityUtils.getRandomPassword(16);
     Users user = userController.createNewLdapUser(email, userDTO.getGivenName(), userDTO.getSn(), authKey,
         PeopleAccountStatus.fromValue(settings.getLdapAccountStatus()));
-    List<String> groups = ldapRealm.getUserGroups(userDTO.getUid());
+    List<String> groups = new ArrayList<>();
+    try {
+      groups = ldapRealm.getUserGroups(userDTO.getUid());
+    } catch (NamingException ex) {
+      LOGGER.log(Level.WARNING, "Could not reach LDAP server. {0}", ex.getMessage());
+      throw new LoginException("Could not reach LDAP server.");
+    }
     BbcGroup group;
     for (String grp : groups) {
       group = groupFacade.findByGroupName(grp);

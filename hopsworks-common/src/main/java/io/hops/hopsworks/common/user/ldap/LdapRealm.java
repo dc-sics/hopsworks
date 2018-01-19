@@ -16,6 +16,7 @@ import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.naming.CompositeName;
 import javax.naming.Context;
+import javax.naming.InvalidNameException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -61,6 +62,9 @@ public class LdapRealm {
 
   @PostConstruct
   public void init() {
+    if (Boolean.parseBoolean(settings.getLDAPAuthStatus()) == false) {
+      throw new IllegalStateException("LDAP not enabled.");
+    }
     ldapProperties = getLdapBindProps();
     String attrBinary = settings.getLdapAttrBinary();
     entryUUIDField = (String) ldapProperties.get(attrBinary);
@@ -96,8 +100,9 @@ public class LdapRealm {
    * @param password
    * @return
    * @throws LoginException 
+   * @throws javax.naming.NamingException 
    */
-  public LdapUserDTO findAndBind(String username, String password) throws LoginException {
+  public LdapUserDTO findAndBind(String username, String password) throws LoginException, NamingException {
     populateVars();
     StringBuffer sb = new StringBuffer(searchFilter);
     substitute(sb, SUBST_SUBJECT_NAME, username);
@@ -117,8 +122,9 @@ public class LdapRealm {
    * @param username
    * @param password
    * @throws LoginException 
+   * @throws javax.naming.NamingException 
    */
-  public void authenticateLdapUser(String username, String password) throws LoginException {
+  public void authenticateLdapUser(String username, String password) throws LoginException, NamingException {
     populateVars();
     StringBuffer sb = new StringBuffer(searchFilter);
     substitute(sb, SUBST_SUBJECT_NAME, username);
@@ -135,8 +141,9 @@ public class LdapRealm {
    * @param user
    * @param password
    * @throws LoginException 
+   * @throws javax.naming.NamingException 
    */
-  public void authenticateLdapUser(LdapUser user, String password) throws LoginException {
+  public void authenticateLdapUser(LdapUser user, String password) throws LoginException, NamingException {
     populateVars();
     String userid = entryUUIDField + "=" + user.getEntryUuid();
     String userDN = userDNSearch(userid);
@@ -150,13 +157,14 @@ public class LdapRealm {
    * Get user groups using the mapping provided in ldap settings (ldap_group_mapping).
    * @param username
    * @return 
+   * @throws javax.naming.NamingException 
    */
-  public List<String> getUserGroups(String username) {
+  public List<String> getUserGroups(String username) throws NamingException {
     populateVars();
     return ldapGroupMapper.getMappedGroups(getUserLdapGroups(username));
   }
 
-  private List<String> getUserLdapGroups(String username) {
+  private List<String> getUserLdapGroups(String username) throws NamingException {
     StringBuffer sb = new StringBuffer(searchFilter);
     substitute(sb, SUBST_SUBJECT_NAME, username);
     String userid = sb.toString();
@@ -178,7 +186,7 @@ public class LdapRealm {
     return groupsList;
   }
 
-  private String userDNSearch(String filter) {
+  private String userDNSearch(String filter) throws NamingException {
     String distinguishedName = null;
     NamingEnumeration answer = null;
 
@@ -194,9 +202,9 @@ public class LdapRealm {
         CompositeName compDN = new CompositeName(res.getNameInNamespace());
         distinguishedName = compDN.get(0);
       }
-    } catch (Exception e) {
+    } catch (InvalidNameException ex) {
       LOGGER.log(Level.WARNING, "Ldaprealm search error: {0}", filter);
-      LOGGER.log(Level.WARNING, "Ldaprealm security exception: {0}", e.toString());
+      LOGGER.log(Level.WARNING, "Ldaprealm security exception: {0}", ex.toString());
     } finally {
       if (answer != null) {
         try {
