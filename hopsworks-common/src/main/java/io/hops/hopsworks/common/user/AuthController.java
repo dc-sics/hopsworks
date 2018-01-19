@@ -216,6 +216,9 @@ public class AuthController {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
     }
+    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Operation not allowed for LDAP account.");
+    }
     if (!user.getSecurityQuestion().getValue().equalsIgnoreCase(securityQuestion)
         || !user.getSecurityAnswer().equals(DigestUtils.sha256Hex(securityAnswer.toLowerCase()))) {
       registerFalseLogin(user, req);

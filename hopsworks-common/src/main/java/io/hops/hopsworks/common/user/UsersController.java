@@ -257,9 +257,6 @@ public class UsersController {
       if (user == null) {
         throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_DOES_NOT_EXIST);
       }
-      if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-        throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Operation not allowed for LDAP account.");
-      }
       if (!authController.validateSecurityQA(user, securityQuestion, securityAnswer, req)) {
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.SEC_QA_INCORRECT);
       }
@@ -312,9 +309,6 @@ public class UsersController {
 
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
-    }
-    if (user.getMode().equals(PeopleAccountType.LDAP_ACCOUNT_TYPE)) {
-      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Operation not allowed for LDAP account.");
     }
     if (firstName != null) {
       user.setFname(firstName);
