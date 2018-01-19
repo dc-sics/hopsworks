@@ -73,6 +73,15 @@ public class BannerService {
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
   }
+  
+  @GET
+  @Path("firstlogin")
+  @Produces(MediaType.TEXT_PLAIN)
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
+  public Response firstLogin(@Context HttpServletRequest req) throws AppException {
+    settings.updateVariable("first_time_login", "0");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }  
 
   @GET
   @Path("admin_pwd_changed")

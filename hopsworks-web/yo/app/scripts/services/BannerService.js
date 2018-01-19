@@ -15,6 +15,9 @@ angular.module('hopsWorksApp')
             isFirstTime: function () {
                 return $http.get('/api/banner/firsttime');
             },
+            firstSuccessfulLogin: function () {
+                return $http.get('/api/banner/firstlogin');
+            },
             isAdminPasswordChanged: function () {
                 return $http.get('/api/banner/admin_pwd_changed');
             }
