@@ -3,6 +3,8 @@ package io.hops.hopsworks.common.util;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
+import io.hops.hopsworks.common.dao.user.UserFacade;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.dela.DelaClientType;
@@ -29,6 +31,7 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
+import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
@@ -51,6 +54,9 @@ public class Settings implements Serializable {
 
   private static final Logger logger = Logger.getLogger(Settings.class.
       getName());
+  
+  @EJB
+  private UserFacade userFacade;
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -182,6 +188,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_RECOVERY_PATH = "recovery_endpoint";
   private static final String VARIABLE_VERIFICATION_PATH = "verification_endpoint";
   private static final String VARIABLE_ALERT_EMAIL_ADDRS = "alert_email_addrs";
+  private static final String VARIABLE_FIRST_TIME_LOGIN = "first_time_login";
 
   private String setVar(String varName, String defaultValue) {
     Variables userName = findById(varName);
@@ -400,10 +407,16 @@ public class Settings implements Serializable {
       WHITELIST_USERS_LOGIN = setStrVar(VARIABLE_WHITELIST_USERS_LOGIN,
           WHITELIST_USERS_LOGIN);
       RECOVERY_PATH = setStrVar(VARIABLE_RECOVERY_PATH, RECOVERY_PATH);
+      FIRST_TIME_LOGIN = setStrVar(VARIABLE_FIRST_TIME_LOGIN, FIRST_TIME_LOGIN);
       VERIFICATION_PATH = setStrVar(VARIABLE_VERIFICATION_PATH, VERIFICATION_PATH);
       populateDelaCache();
       //Set Zeppelin Default Interpreter
       zeppelinDefaultInterpreter = getZeppelinDefaultInterpreter(ZEPPELIN_INTERPRETERS);
+      
+      Users user = userFacade.findByEmail("admin@kth.se");
+      if (user != null) {
+        ADMIN_PWD=user.getPassword();
+      }
       cached = true;
     }
   }
@@ -1435,7 +1448,24 @@ public class Settings implements Serializable {
     checkCache();
     return "http://" + HOPSWORKS_REST_ENDPOINT;
   }
+  
+  private String FIRST_TIME_LOGIN = "0";
 
+  public synchronized String getFirstTimeLogin() {
+    checkCache();
+    return FIRST_TIME_LOGIN;
+  }
+  
+  private final String DEFAULT_ADMIN_PWD = "12fa520ec8f65d3a6feacfa97a705e622e1fea95b80b521ec016e43874dfed5a";
+  private String ADMIN_PWD = DEFAULT_ADMIN_PWD;
+
+  public synchronized boolean isDefaultAdminPasswordChanged() {
+    checkCache();
+    return ADMIN_PWD.compareTo(DEFAULT_ADMIN_PWD) == 0;
+  }
+ 
+  
+  
   private String HOPSWORKS_DEFAULT_SSL_MASTER_PASSWORD = "adminpw";
 
   public synchronized String getHopsworksMasterPasswordSsl() {

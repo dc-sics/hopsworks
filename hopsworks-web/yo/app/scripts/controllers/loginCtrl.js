@@ -8,6 +8,14 @@ angular.module('hopsWorksApp')
 
             self.announcement = "";
             self.secondFactorRequired = false;
+            self.firstTime = false;
+            self.isAdminPasswordChanged = true;
+
+
+            self.working = false;
+            self.otp = $cookies.get('otp');
+            self.user = {email: '', password: '', otp: ''};
+            self.emailHash = md5.createHash(self.user.email || '');
             
             var getAnnouncement = function () {
               BannerService.findBanner().then(
@@ -22,12 +30,25 @@ angular.module('hopsWorksApp')
               });
             };           
 
-
-            self.working = false;
-            self.otp = $cookies.get('otp');
-            self.user = {email: '', password: '', otp: ''};
-            self.emailHash = md5.createHash(self.user.email || '');
-            getAnnouncement();
+            var isFirstTime = function () {
+              BannerService.isFirstTime().then(
+                function (success) {
+                  self.firstTime = true;
+                  self.user.email="admin@kth.se"
+                  self.user.password="admin"
+                }, function (error) {
+                  self.firstTime = false;
+              });
+            };              
+            var isAdminPasswordChanged = function () {
+              BannerService.isAdminPasswordChanged().then(
+                function (success) {
+                  self.isAdminPasswordChanged = true;
+                }, function (error) {
+                  self.isAdminPasswordChanged = false;
+                  self.announcement = "Security risk: change the current default password for the 'admin@kth.se' account."
+              });
+            };      
             
             self.login = function () {
               self.working = true;
@@ -44,6 +65,13 @@ angular.module('hopsWorksApp')
                           self.errorMessage = "";
                           self.emailHash = md5.createHash(self.user.email || '');
                           self.secondFactorRequired = true;
+                        } else if (error.data !== undefined && error.data.statusCode === 412  &&
+                            error.data.errorMsg === "First time login") {
+                            self.user.email = "admin@kth.se";
+                            self.user.password = "admin";
+                            self.login();
+                            // self.turnOffFirstTimeLogin()
+                            // Set
                         } else if (error.data !== undefined && 
                                    error.data !== null && 
                                    error.data.errorMsg !== undefined &&
@@ -54,4 +82,10 @@ angular.module('hopsWorksApp')
               });
             };
 
+
+            isAdminPasswordChanged();
+            isFirstTime();
+            getAnnouncement();
+
+            
           }]);

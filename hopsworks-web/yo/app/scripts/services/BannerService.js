@@ -11,6 +11,12 @@ angular.module('hopsWorksApp')
             },
             findUserBanner: function () {
                 return $http.get('/api/banner/user');
+            },
+            isFirstTime: function () {
+                return $http.get('/api/banner/firsttime');
+            },
+            isAdminPasswordChanged: function () {
+                return $http.get('/api/banner/admin_pwd_changed');
             }
         };
         return service;
