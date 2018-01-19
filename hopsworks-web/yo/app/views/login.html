@@ -98,4 +98,18 @@
 
     </div>
   </div>
+  
+  <tour class="ng-scope" step="loginCtrl.tourService.currentStep_TourOne" post-tour="closeTour()" ng-if="loginCtrl.firstTime">
+    <virtual-step
+      class="ng-scope"
+      tourtip="Enter the admin account password: admin"
+      tourtip-step="0"
+      tourtip-element="#true.list-group-item"
+      tourtip-placement="left"
+      tourtip-next-label="Ok"
+      on-proceed="loginCtrl.enterAdminPassword()"
+      tourtip-offset-vertical="-17"
+      tourtip-offset-horizontal="13"
+      ></virtual-step>
+  </tour>  
 </div>

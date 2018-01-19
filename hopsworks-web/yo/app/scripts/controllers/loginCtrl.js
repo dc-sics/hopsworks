@@ -2,7 +2,7 @@
 
 angular.module('hopsWorksApp')
         .controller('LoginCtrl', ['$location', '$cookies', 'growl', 'AuthService', 'BannerService', 'md5',
-          function ($location, $cookies, growl, AuthService, BannerService, md5) {
+          function ($location, $cookies, growl, TourService, AuthService, BannerService, md5) {
 
             var self = this;
 
@@ -10,12 +10,17 @@ angular.module('hopsWorksApp')
             self.secondFactorRequired = false;
             self.firstTime = false;
             self.isAdminPasswordChanged = true;
-
-
+            self.tourService = TourService;
             self.working = false;
             self.otp = $cookies.get('otp');
             self.user = {email: '', password: '', otp: ''};
             self.emailHash = md5.createHash(self.user.email || '');
+            self.getTours = function () {
+              self.tours = [
+                {'name': 'Login', 'tip': 'The password for the admin account is: admin'},
+              ];
+            };
+
 
             var getAnnouncement = function () {
               BannerService.findBanner().then(
@@ -34,8 +39,9 @@ angular.module('hopsWorksApp')
               BannerService.isFirstTime().then(
                       function (success) {
                         self.firstTime = true;
-                        self.user.email = "admin@kth.se"
-                        self.user.password = "admin"
+                        self.user.email = "admin@kth.se";
+//                        self.user.password = "admin";
+                        self.user.toursState = 0;
                       }, function (error) {
                 self.firstTime = false;
               });
@@ -48,6 +54,10 @@ angular.module('hopsWorksApp')
                 self.isAdminPasswordChanged = false;
                 self.announcement = "Security risk: change the current default password for the 'admin@kth.se' account."
               });
+            };
+            self.enterAdminPassword = function () {
+              self.user.password = "admin";
+              self.tourService.resetTours();
             };
 
             self.login = function () {
