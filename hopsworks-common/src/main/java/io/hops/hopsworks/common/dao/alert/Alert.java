@@ -85,7 +85,7 @@ public class Alert implements Serializable {
   @Column(name = "data_source")
   private String dataSource;
   @Size(max = 256)
-  @Column(name = "hostid")
+  @Column(name = "host_id")
   private String hostid;
   @Basic(optional = false)
   @NotNull
