@@ -126,7 +126,7 @@ public class AuthService {
       @Context HttpServletRequest req) throws LoginException, AppException {
     JsonResponse json = new JsonResponse();
     if (username == null || username.isEmpty()) {
-      throw new IllegalArgumentException("Email can not be empty.");
+      throw new IllegalArgumentException("Username can not be empty.");
     }
     if (password == null || password.isEmpty()) {
       throw new IllegalArgumentException("Password can not be empty.");
