@@ -66,7 +66,6 @@ public class BannerService {
   @GET
   @Path("firsttime")
   @Produces(MediaType.TEXT_PLAIN)
-  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response isFirstTimeLogin(@Context HttpServletRequest req) throws AppException {
     if (maintenanceController.isFirstTimeLogin()) {
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
@@ -84,9 +83,8 @@ public class BannerService {
   }  
 
   @GET
-  @Path("admin_pwd_changed")
+  @Path("admin_pwd_changed")  
   @Produces(MediaType.TEXT_PLAIN)
-  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response adminPwdChanged(@Context HttpServletRequest req) throws AppException {
     if (settings.isDefaultAdminPasswordChanged()) {
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();

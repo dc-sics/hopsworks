@@ -167,7 +167,7 @@ public class JupyterSettings implements Serializable {
   @Size(min = 1,
       max = 255)
   @Column(name = "secret")
-  private String secret = "";
+  private String secret;
   @Size(max = 32)
   @Column(name = "log_level")
   private String logLevel = "INFO";
@@ -183,38 +183,38 @@ public class JupyterSettings implements Serializable {
   private boolean advanced = false;
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1,
+  @Size(min = 0,
       max = 1500)
   @Column(name = "archives")
-  private String archives = "";
+  private String archives;
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1,
+  @Size(min = 0,
       max = 1500)
   @Column(name = "jars")
-  private String jars = "";
+  private String jars;
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1,
+  @Size(min = 0,
       max = 1500)
   @Column(name = "files")
-  private String files = "";
+  private String files;
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1,
+  @Size(min = 0,
       max = 1500)
   @Column(name = "py_files")
-  private String pyFiles = "";
+  private String pyFiles;
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1,
+  @Size(min = 0,
       max = 6500)
   @Column(name = "spark_params")
-  private String sparkParams = "";
+  private String sparkParams;
   @Basic(optional = false)
   @NotNull
-  @Size(min = 1,
-      max = 32)
+  @Size(min = 3,
+      max = 4)
   @Column(name = "umask")
   private String umask = "022";
   @JoinColumn(name = "team_member",

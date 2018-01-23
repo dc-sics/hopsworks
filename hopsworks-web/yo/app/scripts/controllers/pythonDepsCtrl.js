@@ -45,8 +45,8 @@ angular.module('hopsWorksApp')
 
 
 //            https://repo.continuum.io/pkgs/free/linux-64/
-            self.condaChannel = "default";
-            self.condaUrl = "default";
+            self.condaChannel = "defaults";
+            self.condaUrl = "defaults";
             self.selectedLibs = {};
 
             self.selectedLib = {"channelUrl": self.condaChannel,

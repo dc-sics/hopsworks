@@ -1461,7 +1461,7 @@ public class Settings implements Serializable {
 
   public synchronized boolean isDefaultAdminPasswordChanged() {
     checkCache();
-    return ADMIN_PWD.compareTo(DEFAULT_ADMIN_PWD) == 0;
+    return ADMIN_PWD.compareTo(DEFAULT_ADMIN_PWD) != 0;
   }
  
   

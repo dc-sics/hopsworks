@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('LoginCtrl', ['$location', '$cookies', 'growl', 'AuthService', 'BannerService', 'md5',
+        .controller('LoginCtrl', ['$location', '$cookies', 'growl', 'TourService', 'AuthService', 'BannerService', 'md5', 
           function ($location, $cookies, growl, TourService, AuthService, BannerService, md5) {
 
             var self = this;
@@ -9,7 +9,7 @@ angular.module('hopsWorksApp')
             self.announcement = "";
             self.secondFactorRequired = false;
             self.firstTime = false;
-            self.isAdminPasswordChanged = true;
+            self.adminPasswordChanged = true;
             self.tourService = TourService;
             self.working = false;
             self.otp = $cookies.get('otp');
@@ -20,7 +20,14 @@ angular.module('hopsWorksApp')
                 {'name': 'Login', 'tip': 'The password for the admin account is: admin'},
               ];
             };
-
+ 
+            self.showDefaultPassword = function() {
+              if (self.firstTime === false || self.adminPasswordChanged === true ||
+                      self.user.email !== 'admin@kth.se') {
+                return false;
+              }
+              return true;
+            };
 
             var getAnnouncement = function () {
               BannerService.findBanner().then(
@@ -47,11 +54,11 @@ angular.module('hopsWorksApp')
               });
             };
             var isAdminPasswordChanged = function () {
-              BannerService.isAdminPasswordChanged().then(
+              BannerService.hasAdminPasswordChanged().then(
                       function (success) {
-                        self.isAdminPasswordChanged = true;
+                        self.adminPasswordChanged = true;
                       }, function (error) {
-                self.isAdminPasswordChanged = false;
+                self.adminPasswordChanged = false;
                 self.announcement = "Security risk: change the current default password for the 'admin@kth.se' account."
               });
             };

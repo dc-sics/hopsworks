@@ -5,7 +5,6 @@
 angular.module('hopsWorksApp')
     .factory('BannerService', ['$http', function ($http) {
         var service = {
-
             findBanner: function () {
                 return $http.get('/api/banner');
             },
@@ -18,7 +17,7 @@ angular.module('hopsWorksApp')
             firstSuccessfulLogin: function () {
                 return $http.get('/api/banner/firstlogin');
             },
-            isAdminPasswordChanged: function () {
+            hasAdminPasswordChanged: function () {
                 return $http.get('/api/banner/admin_pwd_changed');
             }
         };

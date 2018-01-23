@@ -4,10 +4,12 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
+import io.hops.hopsworks.common.dao.kagent.ServiceStatusDTO;
 import io.hops.hopsworks.common.dao.kagent.HostServices;
 import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import io.swagger.annotations.Api;
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
@@ -58,8 +60,12 @@ public class Monitor {
   public Response getServiceRoles(@PathParam("groupName") String groupName, @Context SecurityContext sc,
       @Context HttpServletRequest req) {
     List<HostServices> list = hostServicesFacade.findGroupServices(groupName);
-    GenericEntity<List<HostServices>> services = new GenericEntity<List<HostServices>>(list) {
-    };
+    // Do not leak Host data back to clients!
+    List<ServiceStatusDTO> groupStatus = new ArrayList<>();
+    for (HostServices h : list) {
+      groupStatus.add(new ServiceStatusDTO(h.getGroup(), h.getService(), h.getStatus()));
+    }
+    GenericEntity<List<ServiceStatusDTO>> services = new GenericEntity<List<ServiceStatusDTO>>(groupStatus) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(services).build();
   }
 

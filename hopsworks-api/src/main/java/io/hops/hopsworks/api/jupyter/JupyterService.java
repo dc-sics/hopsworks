@@ -91,6 +91,7 @@ public class JupyterService {
   private YarnProjectsQuotaFacade yarnProjectsQuotaFacade;
 
   private Integer projectId;
+  // No @EJB annotation for Project, it's injected explicitly in ProjectService.
   private Project project;
 
   public JupyterService() {

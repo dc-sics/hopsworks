@@ -64,7 +64,7 @@ public class PythonDepsService {
   private Settings settings;
   @EJB
   private HostsFacade hostsFacade;
-  @EJB
+  // No @EJB annotation for Project, it's injected explicitly in ProjectService.
   private Project project;
   @EJB
   private JupyterProcessMgr jupyterProcessFacade;
@@ -390,6 +390,7 @@ public class PythonDepsService {
         String value = libVersion[1];
         // if the key starts with a letter, it is a library name, otherwise it's a version number
         // Output searching for 'pandas' looks like this:
+        // Loading,channels:
         // pandas-datareader,0.2.0
         // 0.2.0,py34_0
         //....
@@ -398,6 +399,10 @@ public class PythonDepsService {
         //....
         // 0.4.2,np18py33_0
         // 
+        // Skip the first line
+        if (key.compareToIgnoreCase("Loading") == 0 || value.compareToIgnoreCase("channels:")==0) {
+          continue;
+        }
         char c = key.charAt(0);
         if (c >= 'a' && c <= 'z') {
           foundLib = key;
