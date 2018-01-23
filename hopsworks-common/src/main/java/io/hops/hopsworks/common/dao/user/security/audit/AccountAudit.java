@@ -30,7 +30,7 @@ import io.hops.hopsworks.common.dao.user.Users;
   @NamedQuery(name = "AccountAudit.findByInitiator",
           query = "SELECT a FROM AccountAudit a WHERE a.initiator = :initiator"),
   @NamedQuery(name = "AccountAudit.findByTarget",
-          query = "SELECT r FROM ServiceAudit r WHERE r.target = :target"),
+          query = "SELECT a FROM AccountAudit a WHERE a.target = :target"),
   @NamedQuery(name = "AccountAudit.findByAction",
           query = "SELECT a FROM AccountAudit a WHERE a.action = :action"),
   @NamedQuery(name = "AccountAudit.findByTime",
