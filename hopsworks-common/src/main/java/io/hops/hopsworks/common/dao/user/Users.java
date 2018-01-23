@@ -309,7 +309,8 @@ public class Users implements Serializable {
     this.numActiveProjects = 0;
   }
 
-  public Users(String username, String password, String email, String fname, String lname, String title,
+
+  public Users(String username, String password, String email, String fname, String lname, String title, String orcid,
       UserAccountStatus status, UserAccountType mode, Integer maxNumProjects, String salt) {
     this.username = username;
     this.password = password;
@@ -317,6 +318,7 @@ public class Users implements Serializable {
     this.fname = fname;
     this.lname = lname;
     this.title = title;
+    this.orcid = orcid;
     this.status = status;
     this.mode = mode;
     this.maxNumProjects = maxNumProjects;

@@ -79,7 +79,7 @@ public class UsersController {
   // To send the user the QR code image
   private byte[] qrCode;
 
-  public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws AppException, SocketException, 
+  public byte[] registerUser(UserDTO newUser, HttpServletRequest req) throws AppException, SocketException,
       NoSuchAlgorithmException {
     userValidator.isValidNewUser(newUser);
     Users user = createNewUser(newUser, UserAccountStatus.NEW_MOBILE_ACCOUNT, UserAccountType.M_ACCOUNT_TYPE);
@@ -95,7 +95,7 @@ public class UsersController {
       }
       // Only register the user if i can send the email
       userFacade.persist(user);
-      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(),Settings.ISSUER, user.getSecret());
+      qrCode = QRCodeGenerator.getQRCodeBytes(newUser.getEmail(), Settings.ISSUER, user.getSecret());
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.REGISTRATION.name(),
           AccountsAuditActions.SUCCESS.name(), "", user, req);
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.QRCODE.name(),
@@ -120,9 +120,9 @@ public class UsersController {
    * @param accountStatus
    * @param accountType
    * @return
-   * @throws AppException
    * @throws NoSuchAlgorithmException
    */
+
   public Users createNewUser(UserDTO newUser, UserAccountStatus accountStatus, UserAccountType accountType) throws
       AppException, NoSuchAlgorithmException {
     String otpSecret = SecurityUtils.calculateSecretKey();
@@ -142,28 +142,48 @@ public class UsersController {
     user.setBbcGroupCollection(groups);
     return user;
   }
-  
+
   /**
    * Creates new agent user with only the not null values set
+   *
    * @param email
    * @param fname
    * @param lname
    * @param pwd
    * @param title
    * @return
-   * @throws AppException
-   * @throws NoSuchAlgorithmException 
    */
-  public Users createNewAgent(String email, String fname, String lname, String pwd, String title) throws
-      AppException {
+  public Users createNewAgent(String email, String fname, String lname, String pwd, String title) {
+    String uname = generateUsername(email);
+    List<BbcGroup> groups = new ArrayList<>();
+    String salt = authController.generateSalt();
+    String password = authController.getPasswordHash(pwd, salt);
+    Users user = new Users(uname, password, email, fname, lname, title, "-", UserAccountStatus.NEW_MOBILE_ACCOUNT,
+        UserAccountType.M_ACCOUNT_TYPE, 0, salt);
+    user.setBbcGroupCollection(groups);
+    return user;
+  }
+
+  /**
+   * Create ldap user
+   * @param email
+   * @param fname
+   * @param lname
+   * @param pwd
+   * @param accStatus
+   * @return 
+   */
+  public Users createNewLdapUser(String email, String fname, String lname, String pwd, UserAccountStatus accStatus) {
     String uname = generateUsername(email);
     List<BbcGroup> groups = new ArrayList<>();
     String salt = authController.generateSalt();
     String password = authController.getPasswordHash(pwd, salt);
 
-    Users user = new Users(uname, password, email, fname, lname, title, UserAccountStatus.NEW_MOBILE_ACCOUNT,
-        UserAccountType.M_ACCOUNT_TYPE, 0, salt);
+    Users user = new Users(uname, password, email, fname, lname, "-", "-", accStatus, 
+        UserAccountType.LDAP_ACCOUNT_TYPE, settings.getMaxNumProjPerUser(), salt);
     user.setBbcGroupCollection(groups);
+    addAddress(user);
+    addOrg(user);
     return user;
   }
 
@@ -199,8 +219,7 @@ public class UsersController {
     if (userValidator.isValidEmail(email) && userValidator.isValidsecurityQA(securityQuestion, securityAnswer)) {
       Users user = userFacade.findByEmail(email);
       if (user == null) {
-        throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-            ResponseMessages.USER_DOES_NOT_EXIST);
+        throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_DOES_NOT_EXIST);
       }
       if (!authController.validateSecurityQA(user, securityQuestion, securityAnswer, req)) {
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.SEC_QA_INCORRECT);
@@ -350,8 +369,7 @@ public class UsersController {
    */
   public byte[] changeTwoFactor(Users user, String password, HttpServletRequest req) throws AppException {
     if (user == null) {
-      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-          ResponseMessages.USER_WAS_NOT_FOUND);
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
     }
     if (!authController.validatePassword(user, password, req)) {
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.TWO_FACTOR.name(),
@@ -406,6 +424,9 @@ public class UsersController {
    */
   public byte[] getQRCode(Users user, String password, HttpServletRequest req) throws AppException {
     byte[] qr_code = null;
+    if (user == null) {
+      throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
+    }
     if (!authController.validatePassword(user, password, req)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.PASSWORD_INCORRECT);
     }

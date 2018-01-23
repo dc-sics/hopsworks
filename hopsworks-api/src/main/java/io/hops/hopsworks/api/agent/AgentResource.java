@@ -392,11 +392,10 @@ public class AgentResource {
     }
 
     Collections.sort(commands, new CondaCommandsComparator());
-    GenericEntity<List<CondaCommands>> commandsForKagent
-        = new GenericEntity<List<CondaCommands>>(commands) {
+    GenericEntity<List<CondaCommands>> kcs = new GenericEntity<List<CondaCommands>>(commands) {
     };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        commandsForKagent).build();
+        kcs).build();
   }
 
   @POST

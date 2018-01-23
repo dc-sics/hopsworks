@@ -20,7 +20,12 @@ angular.module('hopsWorksApp')
                 {'name': 'Login', 'tip': 'The password for the admin account is: admin'},
               ];
             };
- 
+            self.ldapEnabled = $cookies.get('ldap') === 'true';
+
+            isAdminPasswordChanged();
+            isFirstTime();
+            getAnnouncement();
+
             self.showDefaultPassword = function() {
               if (self.firstTime === false || self.adminPasswordChanged === true ||
                       self.user.email !== 'admin@kth.se') {
@@ -106,11 +111,6 @@ angular.module('hopsWorksApp')
                 growl.error(error.data.errorMsg, {title: 'Cannot Login at this moment. Does your Internet work?', ttl: 4000});
               });
             };
-
-
-            isAdminPasswordChanged();
-            isFirstTime();
-            getAnnouncement();
 
 
           }]);

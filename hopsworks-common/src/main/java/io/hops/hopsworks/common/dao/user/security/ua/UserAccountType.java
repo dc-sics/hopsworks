@@ -7,11 +7,11 @@ import javax.xml.bind.annotation.XmlType;
 @XmlType(name = "userAccountType")
 @XmlEnum
 public enum UserAccountType {
-  
-  // For mobile account types classification
-  @XmlEnumValue("M_ACCOUNT_TYPE")
-  M_ACCOUNT_TYPE(0);
 
+  @XmlEnumValue("M_ACCOUNT_TYPE")
+  M_ACCOUNT_TYPE(0),
+  @XmlEnumValue("LDAP_ACCOUNT")
+  LDAP_ACCOUNT_TYPE(1);
 
   private final int value;
 

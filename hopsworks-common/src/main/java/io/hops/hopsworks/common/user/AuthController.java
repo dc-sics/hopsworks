@@ -9,6 +9,8 @@ import io.hops.hopsworks.common.dao.user.BbcGroup;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUser;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditAction;
@@ -20,6 +22,7 @@ import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
+import io.hops.hopsworks.common.user.ldap.LdapRealm;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
@@ -40,6 +43,8 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.naming.NamingException;
+import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -71,6 +76,10 @@ public class AuthController {
   private ProjectFacade projectFacade;
   @EJB
   private CertificatesMgmService certificatesMgmService;
+  @EJB
+  private LdapRealm ldapRealm;
+  @EJB
+  private LdapUserFacade ldapUserFacade;
 
   /**
    * Pre check for custom realm login.
@@ -86,6 +95,9 @@ public class AuthController {
       throws AppException {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Can not login ldap user. Use LDAP login.");
     }
     if (isTwoFactorEnabled(user)) {
       if ((otp == null || otp.isEmpty()) && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
@@ -108,8 +120,19 @@ public class AuthController {
     return newPassword;
   }
 
+  public String preLdapLoginCheck(Users user, String password, HttpServletRequest req) {
+    if (user == null) {
+      throw new IllegalArgumentException("User not set.");
+    }
+    if (!user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("User is not registerd as ldap user.");
+    }
+    String newPassword = getPasswordPlusSalt(password, user.getSalt()) + Settings.MOBILE_OTP_PADDING;
+    return newPassword;
+  }
+
   /**
-   * Validates password and update account audit
+   * Validates password and update account audit. Use validatePwd if ldap user.
    *
    * @param user
    * @param password
@@ -119,6 +142,48 @@ public class AuthController {
   public boolean validatePassword(Users user, String password, HttpServletRequest req) {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Operation not allowed for LDAP account.");
+    }
+    String userPwdHash = user.getPassword();
+    String pwdHash = getPasswordHash(password, user.getSalt());
+    if (!userPwdHash.equals(pwdHash)) {
+      registerFalseLogin(user, req);
+      LOGGER.log(Level.WARNING, "False login attempt by user: {0}", user.getEmail());
+      return false;
+    }
+    resetFalseLogin(user);
+    return true;
+  }
+  
+  /**
+   * Validate password works both for hopsworks and ldap user
+   * @param user
+   * @param password
+   * @param req
+   * @return
+   */
+  public boolean validatePwd(Users user, String password, HttpServletRequest req) {
+    if (user == null) {
+      throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      LdapUser ldapUser = ldapUserFacade.findByUsers(user);
+      if (ldapUser == null) {
+        return false;
+      }
+      try {
+        ldapRealm.authenticateLdapUser(ldapUser, password);
+        return true;
+      } catch (LoginException ex) {
+        LOGGER.log(Level.WARNING, "False login attempt by ldap user: {0}", user.getEmail());
+        LOGGER.log(Level.WARNING, null, ex.getMessage());
+        return false;
+      } catch (EJBException | NamingException ee) {
+        LOGGER.log(Level.WARNING, "Could not reach LDAP server. {0}", ee.getMessage());
+        throw new IllegalStateException("Could not reach LDAP server.");
+      }
     }
     String userPwdHash = user.getPassword();
     String pwdHash = getPasswordHash(password, user.getSalt());
@@ -145,6 +210,9 @@ public class AuthController {
       throws AppException {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Operation not allowed for LDAP account.");
     }
     if (!user.getSecurityQuestion().getValue().equalsIgnoreCase(securityQuestion)
         || !user.getSecurityAnswer().equals(DigestUtils.sha256Hex(securityAnswer.toLowerCase()))) {
