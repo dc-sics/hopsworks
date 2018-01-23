@@ -16,6 +16,9 @@ angular.module('hopsWorksApp')
               enable: function (projectId, version, pythonKernel) {
                 return $http.get('/api/project/' + projectId + '/pythonDeps/enable/' + version + "/" + pythonKernel);
               },
+              destroyAnaconda: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/pythonDeps/destroyAnaconda');
+              },
               enabled: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/pythonDeps/enabled');
               },

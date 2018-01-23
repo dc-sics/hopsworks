@@ -209,6 +209,14 @@
                       <!--Number of hosts left: {{pythonDepsCtrl.numEnvsNotEnabled}}-->
                     </div>
                   </div>
+                  <div class="col-md-offset-2 col-md-2" >
+                    <button tooltip-placement="auto top"
+                            uib-tooltip="Destroy Anaconda Environment (Can be recreated)." 
+                            ng-click="pythonDepsCtrl.destroyAnaconda()" 
+                            type="button" class="btn btn-danger btn-sm" >
+                      <span class="glyphicon glyphicon-off" ></span>
+                    </button>
+                  </div>
                 </div>
 
                 <fieldset>

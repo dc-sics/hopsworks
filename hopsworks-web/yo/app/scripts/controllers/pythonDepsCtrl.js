@@ -183,6 +183,22 @@ angular.module('hopsWorksApp')
             };
 
 
+            self.destroyAnaconda = function () {
+              
+              self.enabling = true;
+            PythonDepsService.destroyAnaconda(self.projectId).then(
+                      function (success) {
+                        self.enabled = true;
+                        self.enabling = false;
+                        self.getInstallationStatus();
+                        growl.success("Anaconda removed for this project.", {title: 'Done', ttl: 5000});
+                      }, function (error) {
+                self.enabling = false;
+                growl.error("Could not remove Anaconda", {title: 'Error', ttl: 5000});
+              });              
+              
+              
+            };
             self.getInstalled = function () {
 
               PythonDepsService.index(self.projectId).then(

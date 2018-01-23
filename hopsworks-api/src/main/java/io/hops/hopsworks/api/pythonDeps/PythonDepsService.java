@@ -86,7 +86,7 @@ public class PythonDepsService {
   public PythonDepsService() {
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "pydoop", "0.4", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "tfspark", "0.1.5", "true", "Installed"));
-    preInstalledPythonDeps.add(new PythonDepJson("pip installed", "tensorflow", "1.3.0", "true", "Installed"));
+    preInstalledPythonDeps.add(new PythonDepJson("pip installed", "tensorflow", "1.4.0", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "hops", "1.4.3", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "hopsfacets", "0.0.1", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("conda installed", "protobuf", "3.4.0", "true", "Installed"));
@@ -125,6 +125,22 @@ public class PythonDepsService {
     }
     return hdfsUsersController.getHdfsUserName(project, user);
   }
+  
+  
+  @GET
+  @Path("/destroyAnaconda")
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  public Response destroyAnaconda(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
+
+    pythonDepsFacade.removeProject(project);
+    
+    project.setPythonVersion("");
+    project.setConda(false);
+    projectFacade.update(project);
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
 
   @GET
   @Path("/enable/{version}/{pythonKernelEnable}")
