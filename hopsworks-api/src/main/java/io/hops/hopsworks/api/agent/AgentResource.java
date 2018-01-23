@@ -415,7 +415,9 @@ public class AgentResource {
       alert.setSeverity(Alert.Severity.valueOf(json.getString("Severity")).toString());
       alert.setAgentTime(json.getJsonNumber("Time").bigIntegerValue());
       alert.setMessage(json.getString("Message"));
-      alert.setHostid(json.getString("host-id"));
+      String hostname = json.getString("host-id");
+      Hosts h = hostFacade.findByHostname(hostname);
+      alert.setHost(h);
       alert.setPlugin(json.getString("Plugin"));
       if (json.containsKey("PluginInstance")) {
         alert.setPluginInstance(json.getString("PluginInstance"));
