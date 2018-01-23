@@ -103,7 +103,8 @@
              class="list-group-item"
              context-menu
              data-target="menu-{{$index}}"
-             id="{{project.project.name.substr(0, 5) === 'demo_'}}">
+             id="{{project.project.name.substr(0, 5) === 'demo_'}}"
+             title="{{project.project.name.length > 17 ? project.project.name:''}}">
             <div ng-if="project.teamRole === 'Data scientist'">
               <i style="width: 20px; margin-right: 10px; font-size: 20px;" class="fa fa-lock fa-2 pull-left"></i>
             </div>
