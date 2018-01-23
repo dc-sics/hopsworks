@@ -58,7 +58,6 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
-import io.hops.hopsworks.common.dao.user.consent.ConsentStatus;
 import io.hops.hopsworks.common.dataset.DatasetController;
 import io.hops.hopsworks.common.dataset.FolderNameValidator;
 import io.hops.hopsworks.common.elastic.ElasticController;
@@ -484,9 +483,6 @@ public class ProjectController {
     Project project = new Project(projectName, user, now, PaymentType.PREPAID);
     project.setDescription(projectDescription);
 
-    // make ethical status pending
-    project.setEthicalStatus(ConsentStatus.PENDING.name());
-
     // set retention period to next 10 years by default
     Calendar cal = Calendar.getInstance();
     cal.setTime(now);
@@ -684,22 +680,6 @@ public class ProjectController {
     } catch (IOException e) {
       throw new ProjectInternalFoldersFailedException(
           "Could not create project resources ", e);
-    }
-  }
-
-  public void createProjectConsentFolder(String username, Project project,
-      DistributedFileSystemOps dfso, DistributedFileSystemOps udfso)
-      throws
-      ProjectInternalFoldersFailedException, AppException {
-
-    Users user = userFacade.findByEmail(username);
-
-    try {
-      datasetController.createDataset(user, project, "consents",
-          "Biobanking consent forms", -1, false, false, dfso);
-    } catch (IOException | EJBException e) {
-      throw new ProjectInternalFoldersFailedException(
-          "Could not create project consents folder ", e);
     }
   }
 

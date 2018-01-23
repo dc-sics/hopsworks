@@ -7,7 +7,7 @@ import javax.persistence.Embeddable;
 import javax.validation.constraints.NotNull;
 
 @Embeddable
-public class PeopleGroupPK implements Serializable {
+public class UserGroupPK implements Serializable {
 
   @Basic(optional = false)
   @NotNull
@@ -18,10 +18,10 @@ public class PeopleGroupPK implements Serializable {
   @Column(name = "gid")
   private int gid;
 
-  public PeopleGroupPK() {
+  public UserGroupPK() {
   }
 
-  public PeopleGroupPK(int uid, int gid) {
+  public UserGroupPK(int uid, int gid) {
     this.uid = uid;
     this.gid = gid;
   }
@@ -53,10 +53,10 @@ public class PeopleGroupPK implements Serializable {
   @Override
   public boolean equals(Object object) {
     // TODO: Warning - this method won't work in the case the id fields are not set
-    if (!(object instanceof PeopleGroupPK)) {
+    if (!(object instanceof UserGroupPK)) {
       return false;
     }
-    PeopleGroupPK other = (PeopleGroupPK) object;
+    UserGroupPK other = (UserGroupPK) object;
     if (this.uid != other.uid) {
       return false;
     }
@@ -68,7 +68,7 @@ public class PeopleGroupPK implements Serializable {
 
   @Override
   public String toString() {
-    return "se.kth.bbc.security.ua.model.PeopleGroupPK[ uid=" + uid + ", gid="
+    return "se.kth.bbc.security.ua.model.UserGroupPK[ uid=" + uid + ", gid="
             + gid + " ]";
   }
 

@@ -25,15 +25,16 @@ import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
+import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.user.UsersController;
-import io.hops.hopsworks.common.util.AuditUtil;
+import io.hops.hopsworks.common.util.FormatUtils;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,8 +71,6 @@ public class AdminProfileAdministration implements Serializable {
   // to assign a new stauts
   private String selectedStatus;
 
-  // maxNumProjs
-//  private String maxNumProjs;
   // to assign a new group
   private String newGroup;
 
@@ -130,7 +129,7 @@ public class AdminProfileAdministration implements Serializable {
   }
 
   public boolean mobileAccount() {
-    return this.editingUser.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE);
+    return this.editingUser.getMode().equals(UserAccountType.M_ACCOUNT_TYPE);
   }
 
   public List<String> getUserRole(Users p) {
@@ -225,13 +224,12 @@ public class AdminProfileAdministration implements Serializable {
 
     status = new ArrayList<>();
 
-    for (PeopleAccountStatus p : PeopleAccountStatus.values()) {
+    for (UserAccountStatus p : UserAccountStatus.values()) {
       status.add(p.name());
     }
 
     // Remove the inactive users
-    status.remove(PeopleAccountStatus.NEW_MOBILE_ACCOUNT.name());
-    status.remove(PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT.name());
+    status.remove(UserAccountStatus.NEW_MOBILE_ACCOUNT.name());
 
     return status;
   }
@@ -281,13 +279,15 @@ public class AdminProfileAdministration implements Serializable {
    * Update user roles from profile by admin.
    */
   public void updateStatusByAdmin() {
+    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
+        getCurrentInstance().getExternalContext().getRequest();
     // Update status
     if (!"#!".equals(selectedStatus)) {
-      editingUser.setStatus(PeopleAccountStatus.valueOf(selectedStatus));
+      editingUser.setStatus(UserAccountStatus.valueOf(selectedStatus));
       try {
-        userFacade.updateStatus(editingUser.getEmail(), PeopleAccountStatus.valueOf(selectedStatus));
+        userFacade.updateStatus(editingUser.getEmail(), UserAccountStatus.valueOf(selectedStatus));
         am.registerAccountChange(sessionState.getLoggedInUser(), AccountsAuditActions.CHANGEDSTATUS.name(),
-            UserAuditActions.SUCCESS.name(), selectedStatus, editingUser);
+            UserAuditActions.SUCCESS.name(), selectedStatus, editingUser, httpServletRequest);
         MessagesController.addInfoMessage("Success", "Status updated successfully.");
       } catch (Exception ex) {
         MessagesController.addInfoMessage("Problem", "Could not update account status.");
@@ -295,7 +295,7 @@ public class AdminProfileAdministration implements Serializable {
       }
     } else {
       am.registerAccountChange(sessionState.getLoggedInUser(), AccountsAuditActions.CHANGEDSTATUS.name(),
-          UserAuditActions.FAILED.name(), selectedStatus, editingUser);
+          UserAuditActions.FAILED.name(), selectedStatus, editingUser, httpServletRequest);
       MessagesController.addErrorMessage("Error", "No selection made!");
 
     }
@@ -305,18 +305,18 @@ public class AdminProfileAdministration implements Serializable {
   public void addRoleByAdmin() {
     BbcGroup bbcGroup = bbcGroupFacade.findByGroupName(newGroup);
 
+    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().
+        getRequest();
     // Register a new group
     if (!"#!".equals(newGroup)) {
       usersController.registerGroup(editingUser, bbcGroup.getGid());
-      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceAuditAction.ROLE_ADDED.name(),
-          ServiceAuditAction.SUCCESS.
-              name(), bbcGroup.getGroupName(), editingUser);
+      am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditAction.ROLE_ADDED.name(),
+          RolesAuditAction.SUCCESS.name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
       MessagesController.addInfoMessage("Success", "Role updated successfully.");
 
     } else {
-      am.registerRoleChange(sessionState.getLoggedInUser(), ServiceAuditAction.ROLE_ADDED.name(),
-          ServiceAuditAction.FAILED.
-              name(), bbcGroup.getGroupName(), editingUser);
+      am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditAction.ROLE_ADDED.name(), RolesAuditAction.FAILED.
+          name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
       MessagesController.addErrorMessage("Error", "No selection made!!");
     }
 
@@ -325,13 +325,16 @@ public class AdminProfileAdministration implements Serializable {
   public void removeRoleByAdmin() {
     BbcGroup bbcGroup = bbcGroupFacade.findByGroupName(selectedGroup);
 
+    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().
+        getRequest();
+
     // Remove a group
     if (!"#!".equals(selectedGroup)) {
       userFacade.removeGroup(editingUser.getEmail(), bbcGroup.getGid());
 
       am.registerRoleChange(sessionState.getLoggedInUser(),
-          ServiceAuditAction.ROLE_REMOVED.name(), ServiceAuditAction.SUCCESS.
-          name(), bbcGroup.getGroupName(), editingUser);
+          RolesAuditAction.ROLE_REMOVED.name(), RolesAuditAction.SUCCESS.
+          name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
       MessagesController.addInfoMessage("Success", "User updated successfully.");
     }
 
@@ -340,8 +343,8 @@ public class AdminProfileAdministration implements Serializable {
       if (("#!".equals(selectedStatus))
           || "#!".equals(newGroup)) {
         am.registerRoleChange(sessionState.getLoggedInUser(),
-            ServiceAuditAction.ROLE_REMOVED.name(), ServiceAuditAction.FAILED.
-            name(), bbcGroup.getGroupName(), editingUser);
+            RolesAuditAction.ROLE_REMOVED.name(), RolesAuditAction.FAILED.
+            name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
         MessagesController.addErrorMessage("Error", "No selection made!");
       }
     }
@@ -371,7 +374,7 @@ public class AdminProfileAdministration implements Serializable {
     if (editingUser.getBbcGroupCollection().isEmpty() == false) {
       return false;
     }
-    if (editingUser.getStatus().equals(PeopleAccountStatus.VERIFIED_ACCOUNT)) {
+    if (editingUser.getStatus().equals(UserAccountStatus.VERIFIED_ACCOUNT)) {
       return false;
     }
     return true;
@@ -386,7 +389,7 @@ public class AdminProfileAdministration implements Serializable {
     emailBean.sendEmail(editingUser.getEmail(), RecipientType.TO,
         UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
         UserAccountsEmailMessages.buildMobileRequestMessage(
-            AuditUtil.getUserURL(request), user.getUsername()
+            FormatUtils.getUserURL(request), user.getUsername()
             + activationKey));
     editingUser.setValidationKey(activationKey);
     userFacade.persist(editingUser);

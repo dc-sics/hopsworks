@@ -9,7 +9,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
 @Stateless
-public class ServiceAuditFacade extends AbstractFacade<ServiceAudit> {
+public class RolesAuditFacade extends AbstractFacade<RolesAudit> {
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -19,19 +19,19 @@ public class ServiceAuditFacade extends AbstractFacade<ServiceAudit> {
     return em;
   }
 
-  public ServiceAuditFacade() {
-    super(ServiceAudit.class);
+  public RolesAuditFacade() {
+    super(RolesAudit.class);
   }
 
-  public List<ServiceAudit> findByInitiator(Users user) {
-    TypedQuery<ServiceAudit> query = em.createNamedQuery("ServiceAudit.findByInitiator", ServiceAudit.class);
+  public List<RolesAudit> findByInitiator(Users user) {
+    TypedQuery<RolesAudit> query = em.createNamedQuery("RolesAudit.findByInitiator", RolesAudit.class);
     query.setParameter("initiator", user);
 
     return query.getResultList();
   }
 
-  public List<ServiceAudit> findByTarget(Users user) {
-    TypedQuery<ServiceAudit> query = em.createNamedQuery("ServiceAudit.findByTarget", ServiceAudit.class);
+  public List<RolesAudit> findByTarget(Users user) {
+    TypedQuery<RolesAudit> query = em.createNamedQuery("RolesAudit.findByTarget", RolesAudit.class);
     query.setParameter("target", user);
 
     return query.getResultList();

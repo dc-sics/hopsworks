@@ -55,13 +55,10 @@
     <class>io.hops.hopsworks.common.dao.user.cluster.ClusterCert</class>
     <class>io.hops.hopsworks.common.dao.user.activity.Activity</class>
     <class>io.hops.hopsworks.common.dao.user.activity.ActivityDetail</class>
-    <class>io.hops.hopsworks.common.dao.user.consent.Consents</class>
     <class>io.hops.hopsworks.common.dao.user.security.Address</class>
     <class>io.hops.hopsworks.common.dao.user.security.Organization</class>
-    <class>io.hops.hopsworks.common.dao.user.security.PeopleGroup</class>
-    <class>io.hops.hopsworks.common.dao.user.security.Yubikey</class>
     <class>io.hops.hopsworks.common.dao.user.security.audit.AccountAudit</class>
-    <class>io.hops.hopsworks.common.dao.user.security.audit.ConsentsAudit</class>
+    <class>io.hops.hopsworks.common.dao.user.security.audit.RolesAudit</class>
     <class>io.hops.hopsworks.common.dao.user.security.audit.Userlogins</class>
     <class>io.hops.hopsworks.common.dao.user.sshkey.AuthorizedSshkeys</class>
     <class>io.hops.hopsworks.common.dao.user.sshkey.SshKeys</class>
@@ -72,15 +69,14 @@
     <class>io.hops.hopsworks.common.dao.jupyter.JupyterProject</class>
     <class>io.hops.hopsworks.common.dao.jupyter.JupyterSettings</class>
     <class>io.hops.hopsworks.common.dao.ndb.NdbBackup</class>
-    <!-- Converters -->
-    <class>io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusConverter</class>
-    <class>io.hops.hopsworks.common.jobs.configuration.JsonReduceableConverter</class>
-    <class>io.hops.hopsworks.common.dao.workflow.NodeDataConverter</class>
     <class>io.hops.hopsworks.common.dao.jobs.description.Jobs</class>
     <class>io.hops.hopsworks.common.dao.dela.certs.ClusterCertificate</class>
     <class>io.hops.hopsworks.common.dao.host.Hosts</class>
     <class>io.hops.hopsworks.common.dao.kagent.HostServices</class>
-    <class>io.hops.hopsworks.common.dao.user.security.audit.ServiceAudit</class>
+    <class>io.hops.hopsworks.common.dao.user.security.UserGroup</class>
+    <!-- Converters -->
+    <class>io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusConverter</class>
+    <class>io.hops.hopsworks.common.jobs.configuration.JsonReduceableConverter</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>
     <shared-cache-mode>NONE</shared-cache-mode>
     <validation-mode>NONE</validation-mode>

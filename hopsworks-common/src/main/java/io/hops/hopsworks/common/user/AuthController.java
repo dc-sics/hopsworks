@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.user;
 
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.certificates.ProjectGenericUserCerts;
 import io.hops.hopsworks.common.dao.certificates.UserCerts;
@@ -12,10 +11,10 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
-import io.hops.hopsworks.common.dao.user.security.audit.ServiceAuditAction;
+import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
@@ -89,7 +88,7 @@ public class AuthController {
       throw new IllegalArgumentException("User not set.");
     }
     if (isTwoFactorEnabled(user)) {
-      if ((otp == null || otp.isEmpty()) && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {
+      if ((otp == null || otp.isEmpty()) && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
         if (checkPasswordAndStatus(user, password, req)) {
           throw new IllegalStateException("Second factor required.");
         }
@@ -97,16 +96,12 @@ public class AuthController {
     }
 
     // Add padding if custom realm is disabled
-    if (otp == null || otp.isEmpty() && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {
-      otp = AuthenticationConstants.MOBILE_OTP_PADDING;
+    if (otp == null || otp.isEmpty() && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
+      otp = Settings.MOBILE_OTP_PADDING;
     }
     String newPassword = getPasswordPlusSalt(password, user.getSalt());
-    if (otp.length() == AuthenticationConstants.MOBILE_OTP_PADDING.length() && user.getMode().equals(
-        PeopleAccountType.M_ACCOUNT_TYPE)) {
+    if (otp.length() == Settings.MOBILE_OTP_PADDING.length() && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
       newPassword = newPassword + otp;
-    } else if (otp.length() == AuthenticationConstants.YUBIKEY_OTP_PADDING.length() && user.getMode().equals(
-        PeopleAccountType.Y_ACCOUNT_TYPE)) {
-      newPassword = newPassword + otp + AuthenticationConstants.YUBIKEY_USER_MARKER;
     } else {
       throw new IllegalArgumentException("Could not recognize the account type. Report a bug.");
     }
@@ -190,12 +185,12 @@ public class AuthController {
     if (key == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "the validation key should not be null");
     }
-    if (key.length() <= AuthenticationConstants.USERNAME_LENGTH) {
+    if (key.length() <= Settings.USERNAME_LENGTH) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "The validation key is invalid");
     }
-    String userName = key.substring(0, AuthenticationConstants.USERNAME_LENGTH);
+    String userName = key.substring(0, Settings.USERNAME_LENGTH);
     // get the 8 char username
-    String secret = key.substring(AuthenticationConstants.USERNAME_LENGTH);
+    String secret = key.substring(Settings.USERNAME_LENGTH);
     Users user = userFacade.findByUsername(userName);
     if (user == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "The user does not exist");
@@ -205,8 +200,7 @@ public class AuthController {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Wrong validation key");
     }
 
-    if (!user.getStatus().equals(PeopleAccountStatus.NEW_MOBILE_ACCOUNT) && !user.getStatus().equals(
-        PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT)) {
+    if (!user.getStatus().equals(UserAccountStatus.NEW_MOBILE_ACCOUNT)) {
       switch (user.getStatus()) {
         case VERIFIED_ACCOUNT:
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -218,10 +212,10 @@ public class AuthController {
       }
     }
 
-    user.setStatus(PeopleAccountStatus.VERIFIED_ACCOUNT);
+    user.setStatus(UserAccountStatus.VERIFIED_ACCOUNT);
     userFacade.update(user);
-    accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.VERIFIED_ACCOUNT.name(),
-        ServiceAuditAction.SUCCESS.name(), "Account verification", user, req);
+    accountAuditFacade.registerRoleChange(user, UserAccountStatus.VERIFIED_ACCOUNT.name(), RolesAuditAction.SUCCESS.
+        name(), "Account verification", user, req);
   }
 
   /**
@@ -427,17 +421,16 @@ public class AuthController {
       user.setFalseLogin(count);
 
       // block the user account if more than allowed false logins
-      if (count > AuthenticationConstants.ALLOWED_FALSE_LOGINS) {
-        user.setStatus(PeopleAccountStatus.BLOCKED_ACCOUNT);
+      if (count > Settings.ALLOWED_FALSE_LOGINS) {
+        user.setStatus(UserAccountStatus.BLOCKED_ACCOUNT);
         try {
           emailBean.sendEmail(user.getEmail(), Message.RecipientType.TO,
               UserAccountsEmailMessages.ACCOUNT_BLOCKED__SUBJECT, UserAccountsEmailMessages.accountBlockedMessage());
         } catch (MessagingException ex) {
           LOGGER.log(Level.SEVERE, "Failed to send email. ", ex);
         }
-        accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(),
-            ServiceAuditAction.SUCCESS.
-                name(), "False login retries:" + Integer.toString(count), user, req);
+        accountAuditFacade.registerRoleChange(user, UserAccountStatus.SPAM_ACCOUNT.name(), RolesAuditAction.SUCCESS.
+            name(), "False login retries:" + Integer.toString(count), user, req);
       }
       // notify user about the false attempts
       userFacade.update(user);
@@ -456,11 +449,11 @@ public class AuthController {
       user.setFalseLogin(count);
 
       // make the user spam account if more than allowed tries
-      if (count > AuthenticationConstants.ACCOUNT_VALIDATION_TRIES) {
-        user.setStatus(PeopleAccountStatus.SPAM_ACCOUNT);
+      if (count > Settings.ACCOUNT_VALIDATION_TRIES) {
+        user.setStatus(UserAccountStatus.SPAM_ACCOUNT);
       }
       userFacade.update(user);
-      accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), ServiceAuditAction.SUCCESS.
+      accountAuditFacade.registerRoleChange(user, UserAccountStatus.SPAM_ACCOUNT.name(), RolesAuditAction.SUCCESS.
           name(), "Wrong validation key retries: " + Integer.toString(count), user, req);
     }
   }
@@ -473,7 +466,7 @@ public class AuthController {
    */
   public void registerLogin(Users user, HttpServletRequest req) {
     resetFalseLogin(user);
-    setUserOnlineStatus(user, AuthenticationConstants.IS_ONLINE);
+    setUserOnlineStatus(user, Settings.IS_ONLINE);
     accountAuditFacade.registerLoginInfo(user, UserAuditActions.LOGIN.name(), UserAuditActions.SUCCESS.name(), req);
     LOGGER.log(Level.INFO, "Logged in user: {0}. ", user.getEmail());
   }
@@ -485,7 +478,7 @@ public class AuthController {
    * @param req
    */
   public void registerLogout(Users user, HttpServletRequest req) {
-    setUserOnlineStatus(user, AuthenticationConstants.IS_OFFLINE);
+    setUserOnlineStatus(user, Settings.IS_OFFLINE);
     accountAuditFacade.registerLoginInfo(user, UserAuditActions.LOGOUT.name(), UserAuditActions.SUCCESS.name(), req);
     LOGGER.log(Level.INFO, "Logged out user: {0}. ", user.getEmail());
   }
