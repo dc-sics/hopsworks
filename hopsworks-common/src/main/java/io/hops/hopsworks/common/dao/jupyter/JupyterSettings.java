@@ -119,47 +119,36 @@ public class JupyterSettings implements Serializable {
   @EmbeddedId
   protected JupyterSettingsPK jupyterSettingsPK;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "num_tf_ps")
   private int numTfPs = 0;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "num_tf_gpus")
   private int numTfGpus = 0;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "num_mpi_np")
   private int numMpiNp = 0;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "appmaster_cores")
   private int appmasterCores = 1;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "appmaster_memory")
   private int appmasterMemory = 1024;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "num_executors")
   private int numExecutors = 1;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "num_executor_cores")
   private int numExecutorCores = 1;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "executor_memory")
   private int executorMemory = 1024;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "dynamic_initial_executors")
   private int dynamicInitialExecutors = 1;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "dynamic_min_executors")
   private int dynamicMinExecutors = 1;
   @Basic(optional = false)
-  @NotNull
   @Column(name = "dynamic_max_executors")
   private int dynamicMaxExecutors = 100;
   @Basic(optional = false)
@@ -178,7 +167,6 @@ public class JupyterSettings implements Serializable {
   @Column(name = "mode")
   private String mode = "dynamicSpark";
   @Basic(optional = false)
-  @NotNull
   @Column(name = "advanced")
   private boolean advanced = false;
   @Basic(optional = false)
@@ -207,7 +195,6 @@ public class JupyterSettings implements Serializable {
   @Column(name = "spark_params")
   private String sparkParams= "";
   @Basic(optional = false)
-  @NotNull
   @Size(min = 3,
       max = 4)
   @Column(name = "umask")
