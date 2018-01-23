@@ -331,19 +331,24 @@ public class PythonDepsFacade {
     return depVers;
   }
 
+  public void removeCommandsForProject(Project proj) throws AppException {
+    TypedQuery<CondaCommands> query = em.createNamedQuery("CondaCommands.findByProj", CondaCommands.class);
+    query.setParameter("projectId", proj);
+    List<CondaCommands> commands = query.getResultList();
+    for (CondaCommands cc : commands) {
+      // First, remove any old commands for the project in conda_commands
+      em.remove(cc);
+    }
+
+  }
+
   /**
    *
    * @param proj
    * @throws AppException
    */
   public void removeProject(Project proj) throws AppException {
-    // First, remove any old commands for the project in conda_commands
-    TypedQuery<CondaCommands> query = em.createNamedQuery(
-        "deleteByProjectId",
-        CondaCommands.class);
-    query.setParameter("projectId", proj);
-    query.executeUpdate();
-
+    removeCommandsForProject(proj);
     if (proj.getConda()) {
       condaEnvironmentOp(CondaOp.REMOVE, "", proj, "", getHosts());
     }

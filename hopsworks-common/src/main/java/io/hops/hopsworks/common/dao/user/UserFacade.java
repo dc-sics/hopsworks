@@ -124,7 +124,7 @@ public class UserFacade extends AbstractFacade<Users> {
       return em.createNamedQuery("Users.findByEmail", Users.class).setParameter(
               "email", email)
               .getSingleResult();
-    } catch (NoResultException e) {
+    } catch (Exception e) {
       return null;
     }
   }

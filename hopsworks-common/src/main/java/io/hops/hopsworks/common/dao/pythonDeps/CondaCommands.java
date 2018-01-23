@@ -59,9 +59,6 @@ import javax.xml.bind.annotation.XmlRootElement;
   @NamedQuery(name = "CondaCommands.findByStatus",
           query
           = "SELECT c FROM CondaCommands c WHERE c.status = :status"),
-  @NamedQuery(name = "CondaCommands.deleteByProjectId",
-          query
-          = "DELETE FROM CondaCommands WHERE c.projectId = :projectId"),
   @NamedQuery(name = "CondaCommands.findByCreated",
           query
           = "SELECT c FROM CondaCommands c WHERE c.created = :created")})
