@@ -87,22 +87,17 @@ public class Alert implements Serializable {
   @Size(max = 128)
   @Column(name = "data_source")
   private String dataSource;
-//  @Size(max = 256)
-//  @Column(name = "host_id")
-//  private String hostid;
-  
   @JoinColumn(name = "host_id",
       referencedColumnName = "id")
   @ManyToOne
   private Hosts host;
-  
-  
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
           max = 1024)
   @Column(name = "message")
   private String message;
+    
   @Size(max = 128)
   @Column(name = "plugin")
   private String plugin;

@@ -22,9 +22,6 @@ angular.module('hopsWorksApp')
             };
             self.ldapEnabled = $cookies.get('ldap') === 'true';
 
-            isAdminPasswordChanged();
-            isFirstTime();
-            getAnnouncement();
 
             self.showDefaultPassword = function() {
               if (self.firstTime === false || self.adminPasswordChanged === true ||
@@ -112,5 +109,8 @@ angular.module('hopsWorksApp')
               });
             };
 
+            isAdminPasswordChanged();
+            isFirstTime();
+            getAnnouncement();
 
           }]);

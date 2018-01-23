@@ -3,6 +3,7 @@ package io.hops.hopsworks.api.agent;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.alert.Alert;
 import io.hops.hopsworks.common.dao.alert.AlertEJB;
+import io.hops.hopsworks.common.dao.host.Health;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -133,10 +134,16 @@ public class AgentResource {
       host.setLoad1(json.getJsonNumber("load1").doubleValue());
       host.setLoad5(json.getJsonNumber("load5").doubleValue());
       host.setLoad15(json.getJsonNumber("load15").doubleValue());
+      long previousDiskUsed = host.getDiskUsed();
       host.setDiskUsed(json.getJsonNumber("disk-used").longValue());
       host.setMemoryUsed(json.getJsonNumber("memory-used").longValue());
       host.setPrivateIp(json.getString("private-ip"));
       host.setDiskCapacity(json.getJsonNumber("disk-capacity").longValue());
+      if (previousDiskUsed < host.getDiskUsed() && ((float) host.getDiskUsed()) / host.getDiskCapacity() > 0.8) {
+        String subject = "alert: hard drive full on " + host.getHostname();
+        String body = host.getHostname() + " hard drive utilisation is " + host.getDiskUsageInfo();
+        emailAlert(subject, body);
+      }
       host.setMemoryCapacity(json.getJsonNumber("memory-capacity").longValue());
       host.setCores(json.getInt("cores"));
       hostFacade.storeHost(host, false);
@@ -180,6 +187,7 @@ public class AgentResource {
           logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", hostService);
           continue;
         }
+        Health previousHealthOfService = hostService.getHealth();
         if (s.containsKey("status")) {
           if ((hostService.getStatus() == null || !hostService.getStatus().equals(Status.Started)) && Status.valueOf(s.
               getString(
@@ -203,8 +211,15 @@ public class AgentResource {
         } else {
           hostService.setUptime(0);
         }
-
         hostServiceFacade.store(hostService);
+        if (!hostService.getHealth().equals(previousHealthOfService) && hostService.getHealth().equals(Health.Bad)) {
+          String subject = "alert: " + hostService.getGroup() + "." + hostService.getService() + "@" + hostService.
+              getHost().getHostname();
+          String body = hostService.getGroup() + "." + hostService.getService() + "@" + hostService.getHost().
+              getHostname() + " transitioned from state " + previousHealthOfService + " to " + hostService.getHealth();
+          emailAlert(subject, body);
+        }
+
       }
 
       if (json.containsKey("conda-ops")) {
@@ -396,6 +411,14 @@ public class AgentResource {
     };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         kcs).build();
+  }
+
+  private void emailAlert(String subject, String body) {
+    try {
+      emailBean.sendEmails(settings.getAlertEmailAddrs(), subject, body);
+    } catch (MessagingException ex) {
+      logger.log(Level.SEVERE, ex.getMessage());
+    }
   }
 
   @POST
