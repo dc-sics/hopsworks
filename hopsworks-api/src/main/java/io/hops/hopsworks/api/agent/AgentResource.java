@@ -40,6 +40,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +80,20 @@ public class AgentResource {
   private EmailBean emailBean;
 
   final static Logger logger = Logger.getLogger(AgentResource.class.getName());
+
+  public class CondaCommandsComparator implements Comparator<CondaCommands> {
+
+    @Override
+    public int compare(CondaCommands c1, CondaCommands c2) {
+      if (c1.getId() > c2.getId()) {
+        return 1;
+      } else if (c1.getId() < c2.getId()) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  }
 
   @GET
   @Path("ping")
@@ -375,8 +391,10 @@ public class AgentResource {
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
 
-    GenericEntity<Collection<CondaCommands>> commandsForKagent
-        = new GenericEntity<Collection<CondaCommands>>(commands) { };
+    Collections.sort(commands, new CondaCommandsComparator());
+    GenericEntity<List<CondaCommands>> commandsForKagent
+        = new GenericEntity<List<CondaCommands>>(commands) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         commandsForKagent).build();
   }
