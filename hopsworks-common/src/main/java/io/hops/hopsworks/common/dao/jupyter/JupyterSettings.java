@@ -182,31 +182,26 @@ public class JupyterSettings implements Serializable {
   @Column(name = "advanced")
   private boolean advanced = false;
   @Basic(optional = false)
-  @NotNull
   @Size(min = 0,
       max = 1500)
   @Column(name = "archives")
   private String archives;
   @Basic(optional = false)
-  @NotNull
   @Size(min = 0,
       max = 1500)
   @Column(name = "jars")
   private String jars;
   @Basic(optional = false)
-  @NotNull
   @Size(min = 0,
       max = 1500)
   @Column(name = "files")
   private String files;
   @Basic(optional = false)
-  @NotNull
   @Size(min = 0,
       max = 1500)
   @Column(name = "py_files")
   private String pyFiles;
   @Basic(optional = false)
-  @NotNull
   @Size(min = 0,
       max = 6500)
   @Column(name = "spark_params")
