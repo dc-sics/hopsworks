@@ -1718,7 +1718,8 @@ public class Settings implements Serializable {
 
   public static enum ServiceDataset {
     ZEPPELIN("notebook", "Contains Zeppelin notebooks."),
-    JUPYTER("Jupyter", "Contains Jupyter notebooks.");
+    JUPYTER("Jupyter", "Contains Jupyter notebooks."),
+    SERVING("Models", "Contains models to be used for serving.");
 
     private final String name;
     private final String description;
