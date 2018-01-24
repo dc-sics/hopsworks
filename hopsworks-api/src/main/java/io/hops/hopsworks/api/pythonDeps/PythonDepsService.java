@@ -110,8 +110,8 @@ public class PythonDepsService {
       jsonDeps.add(pdj);
     }
 
-    GenericEntity<Collection<PythonDepJson>> deps
-        = new GenericEntity<Collection<PythonDepJson>>(jsonDeps) { };
+    GenericEntity<Collection<PythonDepJson>> deps = new GenericEntity<Collection<PythonDepJson>>(jsonDeps) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         deps).build();
   }
@@ -125,22 +125,17 @@ public class PythonDepsService {
     }
     return hdfsUsersController.getHdfsUserName(project, user);
   }
-  
-  
+
   @GET
   @Path("/destroyAnaconda")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public Response destroyAnaconda(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
+  public Response removeAnacondEnv(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
 
     pythonDepsFacade.removeProject(project);
-    
-    project.setPythonVersion("");
-    project.setConda(false);
-    projectFacade.update(project);
+
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
-
 
   @GET
   @Path("/enable/{version}/{pythonKernelEnable}")
@@ -205,7 +200,19 @@ public class PythonDepsService {
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response remove(PythonDepJson library) throws AppException {
 
-    pythonDepsFacade.removeLibrary(project,
+    pythonDepsFacade.uninstallLibrary(project,
+        library.getChannelUrl(),
+        library.getLib(), library.getVersion());
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  @POST
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/clearCondaOps")
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  public Response clearCondaOps(PythonDepJson library) throws AppException {
+
+    pythonDepsFacade.clearCondaOps(project,
         library.getChannelUrl(),
         library.getLib(), library.getVersion());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
@@ -246,8 +253,7 @@ public class PythonDepsService {
       @PathParam("hostId") String hostId,
       PythonDepJson library) throws AppException {
     pythonDepsFacade.blockingCondaOp(Integer.parseInt(hostId),
-        PythonDepsFacade.CondaOp.INSTALL, project,
-        library.getChannelUrl(), library.getLib(), library.getVersion());
+        PythonDepsFacade.CondaOp.INSTALL, project, library.getChannelUrl(), library.getLib(), library.getVersion());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
@@ -257,27 +263,9 @@ public class PythonDepsService {
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response upgrade(PythonDepJson library) throws AppException {
 
-    pythonDepsFacade.upgradeLibrary(project,
-        library.getChannelUrl(),
-        library.getLib(), library.getVersion());
+    pythonDepsFacade.upgradeLibrary(project, library.getChannelUrl(), library.getLib(), library.getVersion());
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-  }
-
-  @POST
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/status")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public Response status() throws AppException {
-
-    List<OpStatus> response = pythonDepsFacade.opStatus(project);
-
-    GenericEntity<Collection<OpStatus>> opsFound
-        = new GenericEntity<Collection<OpStatus>>(response) { };
-
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        opsFound).build();
-
   }
 
   @GET
@@ -286,24 +274,18 @@ public class PythonDepsService {
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public Response doClone(
       @PathParam("projectName") String srcProject,
-      @PathParam("projectName") String destProject,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
 
-    Project src = projectFacade.findByName(srcProject);
-
-    pythonDepsFacade.cloneProject(src, destProject);
-
+//    pythonDepsFacade.cloneProject(srcProject, project);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
   @GET
-  @Path("/createenv/{projectName}")
+  @Path("/createenv")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public Response createEnv(@PathParam("projectName") String projectName,
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) throws AppException {
+  public Response createEnv(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
 
     pythonDepsFacade.getPreInstalledLibs(project);
 
@@ -311,18 +293,56 @@ public class PythonDepsService {
   }
 
   @GET
-
-  @Path("/removeenv/{projectName}")
+  @Path("/removeenv")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public Response removeEnv(@PathParam("projectName") String projectName,
-      @Context SecurityContext sc,
-      @Context HttpServletRequest req) throws AppException {
+  public Response removeEnv(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
 
-    Project proj = projectFacade.findByName(projectName);
-    pythonDepsFacade.removeProject(proj);
+    pythonDepsFacade.removeProject(project);
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/status")
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  public Response status() throws AppException {
+
+    List<OpStatus> response = pythonDepsFacade.opStatus(project);
+
+    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(response) { };
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(opsFound).build();
+
+  }
+
+  @GET
+  @Path("/failedCondaOps")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  public Response getFailedCondaOps(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
+
+    List<OpStatus> failedOps = pythonDepsFacade.getFailedCondaOpsProject(project);
+    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(failedOps) {  };
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(opsFound).build();
+  }
+
+  @GET
+  @Path("/retryFailedCondaOps")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  public Response retryFailedCondaOps(@Context SecurityContext sc, @Context HttpServletRequest req)
+      throws AppException {
+
+    pythonDepsFacade.retryFailedCondaOpsProject(project);
+
+    List<OpStatus> response = pythonDepsFacade.opStatus(project);
+    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(response) {
+    };
+
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(opsFound).build();
   }
 
   /**
@@ -416,7 +436,14 @@ public class PythonDepsService {
         // 0.4.2,np18py33_0
         // 
         // Skip the first line
-        if (key.compareToIgnoreCase("Loading") == 0 || value.compareToIgnoreCase("channels:")==0) {
+        if (key.compareToIgnoreCase("Loading") == 0 || value.compareToIgnoreCase("channels:") == 0) {
+          continue;
+        }
+        // First row is sometimes empty
+        if (key.isEmpty()) {
+          continue;
+        }
+        if (key.compareToIgnoreCase("Name") == 0) {
           continue;
         }
         char c = key.charAt(0);

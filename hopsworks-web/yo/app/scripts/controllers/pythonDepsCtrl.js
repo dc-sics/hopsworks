@@ -5,8 +5,9 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('PythonDepsCtrl', ['$scope', '$routeParams', 'growl', '$location', 'PythonDepsService', '$interval', '$mdDialog',
-          function ($scope, $routeParams, growl, $location, PythonDepsService, $interval, $mdDialog) {
+        .controller('PythonDepsCtrl', ['$scope', '$route', '$routeParams', 'growl', '$location', 'PythonDepsService',
+          'ModalService', '$interval', '$mdDialog',
+          function ($scope, $route, $routeParams, growl, $location, PythonDepsService, ModalService, $interval, $mdDialog) {
 
 
             var self = this;
@@ -40,6 +41,8 @@ angular.module('hopsWorksApp')
             self.selectedInstallStatus = {};
             self.numEnvsNotEnabled = 0;
             self.numEnvs = 0;
+
+            self.isRetryingFailedCondaOps = false;
 
             self.pythonKernelEnabled = "true";
 
@@ -170,7 +173,7 @@ angular.module('hopsWorksApp')
 
             self.enable = function (version) {
               self.enabling = true;
-            PythonDepsService.enable(self.projectId, version, self.pythonKernelEnabled).then(
+              PythonDepsService.enable(self.projectId, version, self.pythonKernelEnabled).then(
                       function (success) {
                         self.enabled = true;
                         self.enabling = false;
@@ -184,21 +187,28 @@ angular.module('hopsWorksApp')
 
 
             self.destroyAnaconda = function () {
-              
-              self.enabling = true;
-            PythonDepsService.destroyAnaconda(self.projectId).then(
-                      function (success) {
-                        self.enabled = true;
-                        self.enabling = false;
-                        self.getInstallationStatus();
-                        growl.success("Anaconda removed for this project.", {title: 'Done', ttl: 5000});
+
+              ModalService.confirm('sm', 'Remove Conda Environment?',
+                      'You can re-create it again later.')
+                      .then(function (success) {
+                        self.enabling = true;
+                        growl.success("Removing Anaconda for this project.....", {title: 'Done', ttl: 2000});
+                        PythonDepsService.destroyAnaconda(self.projectId).then(
+                                function (success) {
+                                  self.enabled = true;
+                                  self.enabling = false;
+                                  self.getInstallationStatus();
+                                  growl.success("Anaconda removed for this project.", {title: 'Done', ttl: 5000});
+                                  $route.reload();
+                                }, function (error) {
+                          self.enabling = false;
+                          growl.error("Could not remove Anaconda", {title: 'Error', ttl: 5000});
+                        });
                       }, function (error) {
-                self.enabling = false;
-                growl.error("Could not remove Anaconda", {title: 'Error', ttl: 5000});
-              });              
-              
-              
-            };
+
+                      });
+            }
+
             self.getInstalled = function () {
 
               PythonDepsService.index(self.projectId).then(
@@ -206,6 +216,36 @@ angular.module('hopsWorksApp')
                         self.installedLibs = success.data;
                       }, function (error) {
                 growl.error(error.data.errorMsg, {title: 'Error', ttl: 3000});
+              });
+            };
+
+            self.failedHosts = function (opStatus) {
+
+              var hostsJson = JSON.stringify(opStatus.hosts);
+
+              if (hostsJson === '') {
+                growl.error("Cant find any problemtic conda ops on the hosts.", {title: 'Error', ttl: 3000});
+              } else {
+                ModalService.viewJson('md', 'Problematic Hosts for Conda Operations',
+                        hostsJson)
+                        .then(function (success) {
+                        }, function (error) {
+
+                        });
+              }
+            };
+
+
+            self.retryFailedCondaOps = function () {
+              self.isRetryingFailedCondaOps = true;
+              PythonDepsService.retryFailedCondaOps(self.projectId).then(
+                      function (success) {
+                        self.isRetryingFailedCondaOps = false;
+                        self.getInstallationStatus();
+                        growl.success("Retried failed conda ops for this project.", {title: 'Done', ttl: 3000});
+                      }, function (error) {
+                self.isRetryingFailedCondaOps = false;
+                growl.error("Could not retry failed conda ops for this project.", {title: 'Error', ttl: 5000});
               });
             };
 
@@ -293,17 +333,26 @@ angular.module('hopsWorksApp')
 
             self.uninstall = function (condaChannel, lib, version) {
               self.uninstalling[lib] = true;
-
               var data = {"channelUrl": condaChannel, "lib": lib, "version": version};
-              PythonDepsService.uninstall(self.projectId, data).then(
+
+              PythonDepsService.clearCondaOps(self.projectId, data).then(
                       function (success) {
                         self.getInstalled();
-                        self.uninstalling[lib] = false;
+                        PythonDepsService.uninstall(self.projectId, data).then(
+                                function (success) {
+                                  self.getInstalled();
+                                  self.uninstalling[lib] = false;
+                                }, function (error) {
+                          self.uninstalling[lib] = false;
+                          growl.error(error.data.errorMsg, {title: 'Error', ttl: 3000});
+                        });
                       }, function (error) {
                 self.uninstalling[lib] = false;
                 growl.error(error.data.errorMsg, {title: 'Error', ttl: 3000});
               });
             };
+
+
 
             self.upgrade = function (condaChannel, lib, version) {
               self.upgrading[lib] = true;
