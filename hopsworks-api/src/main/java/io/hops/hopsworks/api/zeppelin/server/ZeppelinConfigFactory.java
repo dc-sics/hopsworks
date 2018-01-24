@@ -8,7 +8,6 @@ import io.hops.hopsworks.common.dao.zeppelin.ZeppelinInterpreterConfFacade;
 import io.hops.hopsworks.common.dao.zeppelin.ZeppelinInterpreterConfs;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
-import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.ConfigFileGenerator;
 import io.hops.hopsworks.common.util.Settings;
@@ -44,8 +43,6 @@ public class ZeppelinConfigFactory {
   @EJB
   private ProjectFacade projectBean;
   @EJB
-  private UserFacade userFacade;
-  @EJB
   private HdfsUsersController hdfsUsername;
   @EJB
   private ZeppelinResource zeppelinResource;
@@ -79,8 +76,12 @@ public class ZeppelinConfigFactory {
    * server
    * connection is needed to create those.
    *
-   * @param projectName
-   * @return
+   * @param projectName project name
+   * @param nbs NotebookServer
+   * @return ZeppelinConfig object.
+   * @throws java.io.IOException IOException
+   * @throws org.sonatype.aether.RepositoryException RepositoryException
+   * @throws com.github.eirslett.maven.plugins.frontend.lib.TaskRunnerException TaskRunnerException
    */
   public ZeppelinConfig getZeppelinConfig(String projectName, NotebookServerImpl nbs) throws IOException,
       RepositoryException, TaskRunnerException {

@@ -23,6 +23,7 @@ public class ProjectDTO {
   private List<InodeView> datasets;
   private Integer inodeid;
   private QuotasDTO quotas;
+  private String hopsExamples;
 
   public ProjectDTO() {
   }
@@ -34,7 +35,7 @@ public class ProjectDTO {
   }
 
   public ProjectDTO(Project project, Integer inodeid, List<String> services,
-      List<ProjectTeam> projectTeam, QuotasDTO quotas) {
+      List<ProjectTeam> projectTeam, QuotasDTO quotas, String hopsExamples) {
     this.projectId = project.getId();
     this.inodeid = inodeid;
     this.projectName = project.getName();
@@ -47,6 +48,7 @@ public class ProjectDTO {
     this.services = services;
     this.projectTeam = projectTeam;
     this.quotas = quotas;
+    this.hopsExamples = hopsExamples;
   }
 
   public ProjectDTO(Project project, Integer inodeid, List<String> services,
@@ -184,6 +186,14 @@ public class ProjectDTO {
 
   public void setQuotas(QuotasDTO quotas) {
     this.quotas = quotas;
+  }
+
+  public String getHopsExamples() {
+    return hopsExamples;
+  }
+
+  public void setHopsExamples(String hopsExamples) {
+    this.hopsExamples = hopsExamples;
   }
 
   @Override

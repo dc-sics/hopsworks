@@ -166,6 +166,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_ANACONDA_INSTALLED = "anaconda_enabled";
 
   private static final String VARIABLE_HOPSUTIL_VERSION = "hopsutil_version";
+  private static final String VARIABLE_HOPSEXAMPLES_VERSION = "hopsexamples_version";
 
   private static final String VARIABLE_INFLUXDB_IP = "influxdb_ip";
   private static final String VARIABLE_INFLUXDB_PORT = "influxdb_port";
@@ -302,6 +303,7 @@ public class Settings implements Serializable {
       FLINK_DIR = setDirVar(VARIABLE_FLINK_DIR, FLINK_DIR);
       STAGING_DIR = setDirVar(VARIABLE_STAGING_DIR, STAGING_DIR);
       HOPSUTIL_VERSION = setVar(VARIABLE_HOPSUTIL_VERSION, HOPSUTIL_VERSION);
+      HOPS_EXAMPLES_VERSION = setVar(VARIABLE_HOPSEXAMPLES_VERSION, HOPS_EXAMPLES_VERSION);
       HIVE_SERVER_HOSTNAME = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME,
           HIVE_SERVER_HOSTNAME);
       HIVE_SERVER_HOSTNAME_EXT = setStrVar(VARIABLE_HIVE_SERVER_HOSTNAME_EXT,
@@ -925,8 +927,6 @@ public class Settings implements Serializable {
   public static final String SPARK_LOCALIZED_CONF_DIR = "__spark_conf__";
   public static final String SPARK_LOCALIZED_PYTHON_DIR = "__pyfiles__";
   public static final String SPARK_LOCRSC_APP_JAR = "__app__.jar";
-  public static final String HOPSUTIL_JAR = "hops-util.jar";
-  public static final String HOPS_KAFKA_TOUR_JAR = "hops-spark.jar";
 
   public static final String HOPS_TOUR_DATASET = "TestJob";
   public static final String HOPS_TOUR_DATASET_JUPYTER = "Jupyter";
@@ -1426,7 +1426,7 @@ public class Settings implements Serializable {
     return REST_PORT;
   }
 
-  private String HOPSWORKS_REST_ENDPOINT = "http://192.168.56.101:8080";
+  private String HOPSWORKS_REST_ENDPOINT = "192.168.56.101:8080";
 
   /**
    * Generates the Endpoint for kafka.
@@ -1435,7 +1435,7 @@ public class Settings implements Serializable {
    */
   public synchronized String getRestEndpoint() {
     checkCache();
-    return "http://" + HOPSWORKS_REST_ENDPOINT;
+    return "https://" + HOPSWORKS_REST_ENDPOINT;
   }
 
   private String HOPSWORKS_DEFAULT_SSL_MASTER_PASSWORD = "adminpw";
@@ -1919,23 +1919,22 @@ public class Settings implements Serializable {
     return PYTHON_KERNEL;
   }
 
-  private static String HOPSUTIL_VERSION = "0.1.1";
+  private static String HOPSUTIL_VERSION = "0.3.0";
 
-  public synchronized String getHopsUtilHdfsPath(String sparkUser) {
+  public String getHopsUtilHdfsPath(String sparkUser) {
     return "hdfs:///user/" + sparkUser + "/" + getHopsUtilFilename();
   }
 
   public synchronized String getHopsUtilFilename() {
     checkCache();
-//    return "hops-util-" + HOPSUTIL_VERSION + ".jar";
-    return "hops-util.jar";
+    return "hops-util-" + HOPSUTIL_VERSION + ".jar";
   }
 
-  public synchronized String getKafkaTourFilename() {
+  private static String HOPS_EXAMPLES_VERSION = "0.3.0";
+  
+  public synchronized String getHopsExamplesFilename() {
     checkCache();
-//    return "hops-spark-" + HOPSUTIL_VERSION + ".jar";
-    return "hops-spark.jar";
-
+    return "hops-examples-spark-" + HOPS_EXAMPLES_VERSION + ".jar";
   }
 
   private String RECOVERY_PATH = "hopsworks-api/api/auth/recover";
