@@ -338,10 +338,18 @@ angular.module('hopsWorksApp')
               PythonDepsService.clearCondaOps(self.projectId, data).then(
                       function (success) {
                         self.getInstalled();
+                        growl.info("Clearing conda operations", {title: 'Clearing Conda Commands and Uninstalling Library', ttl: 3000});
                         PythonDepsService.uninstall(self.projectId, data).then(
                                 function (success) {
-                                  self.getInstalled();
+//                                  self.getInstalled();
                                   self.uninstalling[lib] = false;
+//                                  growl.info("Uninstalling conda library", {title: 'Uninstalling', ttl: 2000});
+                                  PythonDepsService.clearCondaOps(self.projectId, data).then(
+                                          function (success) {
+                                            self.getInstalled();
+                                          }, function (error) {
+                                    // do nothing
+                                  });
                                 }, function (error) {
                           self.uninstalling[lib] = false;
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 3000});

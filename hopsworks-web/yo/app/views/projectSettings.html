@@ -209,12 +209,12 @@
                       <!--Number of hosts left: {{pythonDepsCtrl.numEnvsNotEnabled}}-->
                     </div>
                   </div>
-                  <div class="col-md-offset-2 col-md-2 pull-right" style="margin-right: 50px">
+                  <div class="col-md-offset-2 col-md-2 pull-right" style="margin-right: 60px">
                     <button tooltip-placement="auto top"
-                            uib-tooltip="Remove the Anaconda Environment (Can be recreated)." 
+                            uib-tooltip="The project's Anaconda Environment will be deleted (but it can be recreated again)." 
                             ng-click="pythonDepsCtrl.destroyAnaconda()" 
                             type="button" class="btn btn-danger btn-sm" >
-                      Delete
+                      Remove Anaconda
                     </button>
                   </div>
                 </div>
@@ -419,9 +419,12 @@
                       </td>
                       <td class="col-sm-2">{{row.version}}
                       </td>
-                      <td class="col-sm-2">{{row.status}}
+                      <td class="col-sm-2">
+                        <span ng-if="row.status === 'FAILED'"
+                          style="color: #880000 ">{{row.status}}</span>
+                        <span ng-if="row.status !== 'FAILED'">{{row.status}}</span>
                       </td>
-                      <td class="col-sm-2" >
+                      <td class="col-md-2" >
                           <button ng-show="row.status === 'FAILED'" type="submit" class="btn btn-info"
                                   tooltip-placement="auto left"
                                   uib-tooltip="Show the hosts that this conda command failed on "                                  
@@ -429,11 +432,11 @@
                             More Info</button>                                          
                       </td>
                       <td class="col-sm-2" >
-                          <button ng-show="row.status === 'FAILED'" type="submit" class="btn btn-danger"
+                          <button ng-show="row.status === 'FAILED'" type="submit" class="btn btn-md btn-danger"
                                   tooltip-placement="auto left"
                                   uib-tooltip="Remove the conda command toclean up this environment"                                  
                                   ng-click="pythonDepsCtrl.uninstall(row.channelUrl, row.lib, row.version)">
-                            <i ng-if="pythonDepsCtrl.uninstalling[row.lib]" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
+                            <i ng-show="pythonDepsCtrl.uninstalling[row.lib]" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
                              Remove</button>                                          
                       </td>
                     </tr>

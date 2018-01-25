@@ -266,6 +266,26 @@
                     </div>
                   </div>
                 </div>
+                
+                <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
+                  <div class="text-right col-md-6">Log Level <i class="fa fa-info-circle"
+                                                                uib-tooltip="Log4j log level for this job." 
+                                                                style="margin-left: 10px"></i>
+                  </div>
+                  <div class="col-md-2 jupyter-left">
+                    <ui-select ng-model="jupyterCtrl.logLevelSelected" theme="bootstrap"
+                               on-select="jupyterCtrl.changeLogLevel()">
+                      <ui-select-match >
+                        <span ng-bind="jupyterCtrl.logLevelSelected.name"></span>
+                      </ui-select-match>
+                      <ui-select-choices repeat="level in (jupyterCtrl.log_levels | filter: $select.search) track by level.name">
+                        <span ng-bind="level.name | highlight: $select.search"></span>
+                      </ui-select-choices>
+                    </ui-select>
+                  </div>
+                </div>
+
+                
                 <div class="row clusterparams">
                   <div class="text-right col-md-6">
                     <label for="archives">
@@ -330,50 +350,10 @@
                   </div>
                 </div>
 
-                <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
-                  <div class="text-right col-md-6">Log Level <i class="fa fa-info-circle"
-                                                                uib-tooltip="Log4j log level for this job." 
-                                                                style="margin-left: 10px"></i>
-                  </div>
-                  <div class="col-md-2 jupyter-left">
-                    <ui-select ng-model="jupyterCtrl.logLevelSelected" theme="bootstrap"
-                               on-select="jupyterCtrl.changeLogLevel()">
-                      <ui-select-match >
-                        <span ng-bind="jupyterCtrl.logLevelSelected.name"></span>
-                      </ui-select-match>
-                      <ui-select-choices repeat="level in (jupyterCtrl.log_levels | filter: $select.search) track by level.name">
-                        <span ng-bind="level.name | highlight: $select.search"></span>
-                      </ui-select-choices>
-                    </ui-select>
-                  </div>
-                </div>
-                <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
-                  <div class="text-right col-md-6">Umask (output files) <i class="fa fa-info-circle"
-                                                                           uib-tooltip="022 - Group readable/not-writable : 007 Group readable/writable : 077 - Group not-readable/not-writable" 
-                                                                           style="margin-left: 10px"></i>
-                  </div>
-                  <div class="col-md-2 jupyter-left">
-                    <ui-select ng-model="jupyterCtrl.umask" theme="bootstrap"
-                               on-select="jupyterCtrl.changeUmask()">
-                      <ui-select-match >
-                        <span ng-bind="jupyterCtrl.umask.name"></span>
-                      </ui-select-match>
-                      <ui-select-choices repeat="level in (jupyterCtrl.umasks | filter: $select.search) track by level.name">
-                        <span ng-bind="level.name | highlight: $select.search"></span>
-                      </ui-select-choices>
-                    </ui-select>
-                  </div>
-
-
-                </div>
-
-
-              </div>
-
               <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
                 <div class="text-right col-md-6">More Spark Properties <i class="fa fa-info-circle"
-                      uib-tooltip="Enter additional line-separated Spark properties here. Use the equality symbol to separate parameters from values." 
-                      style="margin-left: 10px"></i>
+                                                                          uib-tooltip="Enter additional line-separated Spark properties here. Use the equality symbol to separate parameters from values." 
+                                                                          style="margin-left: 10px"></i>
                 </div>
                 <div class="col-md-5 jupyter-left">
                   <textarea style="width: 100%;" id="TextArea" ng-model="jupyterCtrl.val.sparkParams" 
@@ -412,6 +392,27 @@
                               </div>-->
               </div>
             </div>
+                
+                <div class="row clusterparams" ng-if="jupyterCtrl.advanced === true">
+                  <div class="text-right col-md-6">Umask (output files) <i class="fa fa-info-circle"
+                                                                           uib-tooltip="022 - Group readable/not-writable : 007 Group readable/writable : 077 - Group not-readable/not-writable" 
+                                                                           style="margin-left: 10px"></i>
+                  </div>
+                  <div class="col-md-2 jupyter-left">
+                    <ui-select ng-model="jupyterCtrl.umask" theme="bootstrap"
+                               on-select="jupyterCtrl.changeUmask()">
+                      <ui-select-match >
+                        <span ng-bind="jupyterCtrl.umask.name"></span>
+                      </ui-select-match>
+                      <ui-select-choices repeat="level in (jupyterCtrl.umasks | filter: $select.search) track by level.name">
+                        <span ng-bind="level.name | highlight: $select.search"></span>
+                      </ui-select-choices>
+                    </ui-select>
+                  </div>
+                </div>
+              </div>
+                
+                
           </div>
         </div>
 

@@ -2282,7 +2282,7 @@ public class ProjectController {
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public void cloneAnacondaEnv(Project srcProj, Project destProj) throws
       AppException {
-    pythonDepsFacade.cloneProject(srcProj, destProj.getName());
+    pythonDepsFacade.cloneProject(srcProj, destProj);
   }
 
   /**

@@ -164,7 +164,7 @@ public class PythonDepsFacade {
           "Invalid version of python " + pythonVersion
           + " (valid: '2.7', and '3.5', and '3.6'");
     }
-    condaEnvironmentOp(CondaOp.CREATE, pythonVersion, project, pythonVersion, getHosts());
+    condaEnvironmentOp(CondaOp.CREATE, pythonVersion, project, pythonVersion);
 
     List<PythonDep> all = new ArrayList<>();
     projectFacade.enableConda(project);
@@ -372,7 +372,7 @@ public class PythonDepsFacade {
     return depVers;
   }
 
-  public void removePythonForProject(Project proj) throws AppException {
+  private void removePythonForProject(Project proj) throws AppException {
     Collection<PythonDep> deps = proj.getPythonDepCollection();
     proj.setPythonDepCollection(new ArrayList<PythonDep>());
     proj.setPythonVersion("");
@@ -402,7 +402,7 @@ public class PythonDepsFacade {
   public void removeProject(Project proj) throws AppException {
     removeCommandsForProject(proj);
     if (proj.getConda()) {
-      condaEnvironmentOp(CondaOp.REMOVE, "", proj, "", getHosts());
+      condaEnvironmentRemove(proj);
     }
     removePythonForProject(proj);
   }
@@ -412,11 +412,39 @@ public class PythonDepsFacade {
    * @param project
    * @throws AppException
    */
-  public void cloneProject(Project srcProject, String destProj) throws
+  public void cloneProject(Project srcProject, Project destProj) throws
       AppException {
-    condaEnvironmentOp(CondaOp.CLONE, "", srcProject, destProj, getHosts());
+    condaEnvironmentClone(srcProject, destProj);
   }
 
+  /**
+   * Asycnrhonous execution of conda operations
+   *
+   * @param op
+   * @param proj
+   * @param pythonVersion
+   * @param arg
+   * @param hosts
+   * @throws AppException
+   */
+  private void condaEnvironmentOp(CondaOp op, String pythonVersion, Project proj, String arg) throws AppException {
+    for (Hosts h : getHosts()) {
+      // For environment operations, we don't care about the Conda Channel, so we just pick 'defaults'
+      CondaCommands cc = new CondaCommands(h, settings.getAnacondaUser(),
+          op, CondaStatus.ONGOING, proj, pythonVersion, "", "defaults", new Date(), arg);
+      em.persist(cc);
+    }
+  }
+  
+  private void condaEnvironmentRemove(Project proj) throws AppException {
+    condaEnvironmentOp(CondaOp.REMOVE, "", proj, "");
+  }
+
+  private void condaEnvironmentClone(Project srcProj, Project destProj) throws AppException {
+    condaEnvironmentOp(CondaOp.CLONE, "", srcProj, destProj.getName());
+  }
+  
+  
   /**
    * Launches a thread per kagent (up to the threadpool max-size limit) that
    * send a REST
@@ -429,16 +457,6 @@ public class PythonDepsFacade {
    * @param hosts
    * @throws AppException
    */
-  public void condaEnvironmentOp(CondaOp op, String pythonVersion, Project proj, String arg,
-      List<Hosts> hosts) throws AppException {
-    for (Hosts h : hosts) {
-      CondaCommands cc = new CondaCommands(h, settings.getAnacondaUser(),
-          op, CondaStatus.ONGOING, proj, pythonVersion, "", "default",
-          new Date(), arg);
-      em.persist(cc);
-    }
-  }
-
   public void blockingCondaEnvironmentOp(CondaOp op, String proj, String arg, List<Hosts> hosts) throws AppException {
     List<Future> waiters = new ArrayList<>();
     for (Hosts h : hosts) {

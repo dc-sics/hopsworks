@@ -134,7 +134,7 @@ public class AgentResource {
       host.setLoad1(json.getJsonNumber("load1").doubleValue());
       host.setLoad5(json.getJsonNumber("load5").doubleValue());
       host.setLoad15(json.getJsonNumber("load15").doubleValue());
-      long previousDiskUsed = host.getDiskUsed();
+      Long previousDiskUsed = host.getDiskUsed() == null ? 0l : host.getDiskUsed(); 
       host.setDiskUsed(json.getJsonNumber("disk-used").longValue());
       host.setMemoryUsed(json.getJsonNumber("memory-used").longValue());
       host.setPrivateIp(json.getString("private-ip"));
