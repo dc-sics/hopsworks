@@ -57,11 +57,15 @@
                     <h:outputText value="Cluster Nodes"
                                   style="float:center"/>
                     <p:commandButton value="Add new node"
-                                     style="float:right"
+                                     style="float:right" 
                                      actionListener="#{nodesBean.dialogAddNewNode}">
                       <p:ajax event="dialogReturn"
                               listener="#{nodesBean.onDialogAddNewNodeClosed}"
                               update=":manageClusterNodes:growl @form"/>
+                    </p:commandButton>
+                    <p:commandButton value="Zip Anaconda Libraries"
+                                     style="float:right" 
+                                     actionListener="#{nodesBean.zipUpAnacondaLibs}">
                     </p:commandButton>
                   </f:facet>
 

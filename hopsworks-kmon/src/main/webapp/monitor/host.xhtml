@@ -97,7 +97,7 @@
               <p:column headerText="Service"><h:outputText value="#{hostService.service}"/></p:column>                           
               <p:column headerText="Service Status">
                 <p:commandLink action="#{urlController.serviceStatus}" ajax="false">
-                  <h:outputText value="#{hostService}"/>
+                  <h:outputText value="#{hostService.host.hostname}"/>
                   <f:param name="hostname" value="#{hostService.host.hostname}"/>
                   <f:param name="cluster" value="#{hostService.cluster}"/>
                   <f:param name="service" value="#{hostService.service}"/>
