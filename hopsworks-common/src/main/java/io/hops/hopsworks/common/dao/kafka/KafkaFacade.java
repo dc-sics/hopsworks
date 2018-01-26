@@ -58,6 +58,7 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.HopsUtils;
+import java.util.Collections;
 
 import com.twitter.bijection.Injection;
 import com.twitter.bijection.avro.GenericAvroCodecs;
@@ -385,6 +386,13 @@ public class KafkaFacade {
         zkConnection.close();
       }
     }
+  }
+
+  public void removeAclsForUser(Users user, Integer projectId) {
+    em.createNamedQuery("TopicAcls.deleteByUser", TopicAcls.class)
+        .setParameter("user", user)
+        .setParameter("projectId", projectId)
+        .executeUpdate();
   }
 
   public TopicDefaultValueDTO topicDefaultValues() throws AppException {
@@ -892,8 +900,6 @@ public class KafkaFacade {
     }
   }
 
-  
-
   private List<PartitionDetailsDTO> getTopicDetailsfromKafkaCluster(
       Project project, Users user, String topicName) throws Exception {
 
@@ -902,7 +908,7 @@ public class KafkaFacade {
     Map<Integer, List<String>> replicas = new HashMap<>();
     Map<Integer, List<String>> inSyncReplicas = new HashMap<>();
     Map<Integer, String> leaders = new HashMap<>();
-    List<PartitionDetailsDTO> partitionDetailsDto = new ArrayList<>();
+    List<PartitionDetailsDTO> partitionDetails = new ArrayList<>();
 
     //Keep only INTERNAL protocol brokers
     Iterator<String> iter = brokers.iterator();
@@ -919,80 +925,66 @@ public class KafkaFacade {
       String projectSpecificUser = hdfsUsersController.getHdfsUserName(project,
           user);
 
-      String certPassword;
-      certPassword = baseHadoopService.getProjectSpecificUserCertPassword(
-          projectSpecificUser);
+      String certPassword = baseHadoopService.getProjectSpecificUserCertPassword(projectSpecificUser);
+      //Get information from first broker, all of them will have the same information once they are synced
+      String brokerAddress = brokers.iterator().next().split("://")[1];
+      Properties props = new Properties();
+      props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerAddress);
+      props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+          "org.apache.kafka.common.serialization.IntegerDeserializer");
+      props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+          "org.apache.kafka.common.serialization.StringDeserializer");
 
-      for (String brokerAddress : brokers) {
-        brokerAddress = brokerAddress.split("://")[1];
-        Properties props = new Properties();
-        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerAddress);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
-            "org.apache.kafka.common.serialization.IntegerDeserializer");
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
-            "org.apache.kafka.common.serialization.StringDeserializer");
+      //configure the ssl parameters
+      props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, KAFKA_SECURITY_PROTOCOL);
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
+          settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.getProjectTruststoreName(project.getName(),
+          user.getUsername()));
+      props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG, certPassword);
+      props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, settings.getHopsworksTmpCertDir() + File.separator
+          + HopsUtils.getProjectKeystoreName(project.getName(), user.getUsername()));
+      props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG, certPassword);
+      props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG, certPassword);
+      try (KafkaConsumer<Integer, String> consumer = new KafkaConsumer<>(props)) {
+        List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
+        for (PartitionInfo partition : partitions) {
+          int id = partition.partition();
+          //list the leaders of each parition
+          leaders.put(id, partition.leader().host());
 
-        //configure the ssl parameters
-        props.setProperty(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, KAFKA_SECURITY_PROTOCOL);
-        props.setProperty(SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-            settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-            getProjectTruststoreName(project.getName(), user.
-                getUsername()));
-        props.setProperty(SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-            certPassword);
-        props.setProperty(SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
-            settings.getHopsworksTmpCertDir() + File.separator + HopsUtils.
-            getProjectKeystoreName(project.getName(), user.
-                getUsername()));
-        props.setProperty(SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-            certPassword);
-        props.setProperty(SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-            certPassword);
-        KafkaConsumer<Integer, String> consumer = null;
-        try {
-          consumer = new KafkaConsumer<>(props);
-          //          ConsumerGroupCommand.ConsumerGroupCommandOptions opts
-          //                  = new ConsumerGroupCommand.ConsumerGroupCommandOptions(null);
-          //          ConsumerGroupCommand.KafkaConsumerGroupService k
-          //                  = new ConsumerGroupCommand.KafkaConsumerGroupService(opts);
-
-          List<PartitionInfo> partitions = consumer.partitionsFor(topicName);
-          for (PartitionInfo partition : partitions) {
-            int id = partition.partition();
-            //list the leaders of each parition
-            leaders.put(id, partition.leader().host());
-
-            //list the replicas of the partition
-            replicas.put(id, new ArrayList<String>());
-            for (Node node : partition.replicas()) {
-              replicas.get(id).add(node.host());
-            }
-
-            //list the insync replicas of the parition
-            inSyncReplicas.put(id, new ArrayList<String>());
-            for (Node node : partition.inSyncReplicas()) {
-              inSyncReplicas.get(id).add(node.host());
-            }
-
-            partitionDetailsDto.add(new PartitionDetailsDTO(id, leaders.get(id),
-                replicas.get(id), replicas.get(id)));
+          //list the replicas of the partition
+          replicas.put(id, new ArrayList<>());
+          for (Node node : partition.replicas()) {
+            replicas.get(id).add(node.host());
           }
-        } catch (Exception ex) {
-          LOG.log(Level.SEVERE, null, ex);
-          throw new Exception(
-              "Error while retrieving topic metadata from broker: "
-                  + brokerAddress, ex);
-        } finally {
-          if (consumer != null) {
-            consumer.close();
+
+          //list the insync replicas of the parition
+          inSyncReplicas.put(id, new ArrayList<>());
+          for (Node node : partition.inSyncReplicas()) {
+            inSyncReplicas.get(id).add(node.host());
           }
+
+          partitionDetails.add(new PartitionDetailsDTO(id, leaders.get(id),replicas.get(id), replicas.get(id)));
         }
+      } catch (Exception ex) {
+        LOG.log(Level.SEVERE, null, ex);
+        throw new Exception(
+            "Error while retrieving topic metadata from broker: "
+            + brokerAddress, ex);
       }
     } finally {
       certificateMaterializer.removeCertificate(user.getUsername(), project.getName());
     }
-
-    return partitionDetailsDto;
+    Collections.sort(partitionDetails, (PartitionDetailsDTO c1, PartitionDetailsDTO c2) -> {
+        if (c1.getId() < c2.getId()) {
+          return -1;
+        }
+        if (c1.getId() > c2.getId()) {
+          return 1;
+        }
+        return 0;
+      });
+    return partitionDetails;
   }
 
   private String getAllKafkaBootstrapServers() throws Exception {
@@ -1125,4 +1117,5 @@ public class KafkaFacade {
       throw new DeviceServiceException(new DeviceResponseBuilder().PRODUCE_FAILED);
     }
   }
+
 }
