@@ -30,6 +30,8 @@ import org.codehaus.jackson.annotate.JsonIgnore;
           query = "SELECT h FROM Hosts h"),
   @NamedQuery(name = "Hosts.findBy-Id",
           query = "SELECT h FROM Hosts h WHERE h.id = :id"),
+  @NamedQuery(name = "Hosts.findBy-hasGpus",
+          query = "SELECT h FROM Hosts h WHERE h.hasGpus = :hasGpus"),
   @NamedQuery(name = "Hosts.findBy-Hostname",
           query = "SELECT h FROM Hosts h WHERE h.hostname = :hostname"),
   @NamedQuery(name = "Hosts.findBy-HostIp",
@@ -105,6 +107,9 @@ public class Hosts implements Serializable {
 
   @Column(name = "memory_used")
   private Long memoryUsed;
+
+  @Column(name = "has_gpus")
+  private boolean hasGpus = false;
 
   @Column(name = "registered")
   private boolean registered;
@@ -229,6 +234,14 @@ public class Hosts implements Serializable {
 
   public void setMemoryUsed(Long memoryUsed) {
     this.memoryUsed = memoryUsed;
+  }
+
+  public boolean isHasGpus() {
+    return hasGpus;
+  }
+
+  public void setHasGpus(boolean hasGpus) {
+    this.hasGpus = hasGpus;
   }
 
   public boolean isRegistered() {
