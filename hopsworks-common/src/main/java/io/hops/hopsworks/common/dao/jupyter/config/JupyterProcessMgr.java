@@ -96,7 +96,7 @@ public class JupyterProcessMgr {
    * @return
    */
   public static synchronized long getPidOfProcess(Process p) {
-    long pid = -1;
+    long pid = 0;
 
     try {
       if (p.getClass().getName().equals("java.lang.UNIXProcess")) {
@@ -106,7 +106,7 @@ public class JupyterProcessMgr {
         f.setAccessible(false);
       }
     } catch (Exception e) {
-      pid = -1;
+      pid = 0;
     }
     return pid;
   }
@@ -364,10 +364,14 @@ public class JupyterProcessMgr {
 
     // 2. Then kill the jupyter notebook server. If this step isn't 
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
+    if (jupyterHomePath.isEmpty()) {
+      jupyterHomePath = " ";
+    }
     int exitValue;
     Integer id = 1;
     String[] command = {"/usr/bin/sudo", prog, "kill", jupyterHomePath,
       pid.toString(), port.toString()};
+    logger.log(Level.INFO, Arrays.toString(command));
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
       Process process = pb.start();
@@ -378,7 +382,7 @@ public class JupyterProcessMgr {
       while ((line = br.readLine()) != null) {
         logger.info(line);
       }
-
+      
       process.waitFor(10l, TimeUnit.SECONDS);
       exitValue = process.exitValue();
     } catch (IOException | InterruptedException ex) {
@@ -545,7 +549,7 @@ public class JupyterProcessMgr {
     for (Long pid : pidsOrphaned) {
       JupyterProject jp = new JupyterProject();
       jp.setPid(pid);
-      jp.setPort(-1);
+      jp.setPort(0);
       jp.setLastAccessed(Date.from(Instant.now()));
       jp.setHdfsUserId(-1);
       allNotebooks.add(jp);
