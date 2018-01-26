@@ -361,11 +361,11 @@ public class JupyterService {
           "Could not find Jupyter entry for user: " + hdfsUser);
     }
     livyService.deleteAllLivySessions(hdfsUser, ProjectServiceEnum.JUPYTER);
-    String projectPath = jupyterProcessFacade.getJupyterHome(hdfsUser, jp);
+    String jupyterHomePath = jupyterProcessFacade.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
     // This method also removes the corresponding row for the Notebook process in the JupyterProject table.
-    jupyterProcessFacade.killServerJupyterUser(hdfsUser, projectPath, jp.getPid(), jp.
+    jupyterProcessFacade.killServerJupyterUser(hdfsUser, jupyterHomePath, jp.getPid(), jp.
         getPort());
 
     String[] project_user = hdfsUser.split(HdfsUsersController.USER_NAME_DELIMITER);

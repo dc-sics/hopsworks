@@ -141,7 +141,11 @@ public class JupyterProcessMgr {
         HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
         if (hdfsUser != null) {
           String user = hdfsUser.getUsername();
-          killOrphanedWithPid(jp.getPid());
+          try {
+            killServerJupyterUser(user, "", jp.getPid(), 1);
+          } catch (AppException ex) {
+            Logger.getLogger(JupyterProcessMgr.class.getName()).log(Level.SEVERE, null, ex);
+          }
         }
       }
     }
@@ -319,48 +323,50 @@ public class JupyterProcessMgr {
 //    }
 //
 //  }
+//  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+//  public int killOrphanedWithPid(Long pid) {
+//    String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
+//    int exitValue;
+//    Integer id = 1;
+//    String[] command = {"/usr/bin/sudo", prog, "killhard", pid.toString()};
+//    ProcessBuilder pb = new ProcessBuilder(command);
+//    try {
+//      Process process = pb.start();
+//      BufferedReader br = new BufferedReader(new InputStreamReader(
+//          process.getInputStream(), Charset.forName("UTF8")));
+//      String line;
+//      while ((line = br.readLine()) != null) {
+//        logger.info(line);
+//      }
+//      process.waitFor(10l, TimeUnit.SECONDS);
+//      exitValue = process.exitValue();
+//    } catch (IOException | InterruptedException ex) {
+//      logger.log(Level.SEVERE, "Problem starting a backup: {0}", ex.
+//          toString());
+//      exitValue = -2;
+//    }
+//    return exitValue;
+//  }
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public int killOrphanedWithPid(Long pid) {
-    String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
-    int exitValue;
-    Integer id = 1;
-    String[] command = {"/usr/bin/sudo", prog, "killhard", pid.toString()};
-    ProcessBuilder pb = new ProcessBuilder(command);
-    try {
-      Process process = pb.start();
-      BufferedReader br = new BufferedReader(new InputStreamReader(
-          process.getInputStream(), Charset.forName("UTF8")));
-      String line;
-      while ((line = br.readLine()) != null) {
-        logger.info(line);
-      }
-      process.waitFor(10l, TimeUnit.SECONDS);
-      exitValue = process.exitValue();
-    } catch (IOException | InterruptedException ex) {
-      logger.log(Level.SEVERE, "Problem starting a backup: {0}", ex.
-          toString());
-      exitValue = -2;
-    }
-    return exitValue;
-  }
-
-  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public void killServerJupyterUser(String hdfsUsername, String projectPath, Long pid, Integer port)
+  public void killServerJupyterUser(String hdfsUsername, String jupyterHomePath, Long pid, Integer port)
       throws AppException {
-    if (projectPath == null || pid == null || port == null) {
+    if (jupyterHomePath == null || pid == null || port == null) {
       throw new AppException(Response.Status.BAD_REQUEST.
           getStatusCode(),
           "Invalid arguments when stopping the Jupyter Server.");
     }
     // 1. Remove jupyter settings from the DB for this notebook first. If this fails, keep going to kill the notebook
-//    jupyterFacade.removeNotebookServer(jupyterSettings.get)
-//    jupyterFacade.removeNotebookServer(hdfsUsername);
+    try {
+      jupyterFacade.removeNotebookServer(hdfsUsername);
+    } catch (Exception e) {
+      logger.warning("Problem when removing jupyter notebook entry from jupyter_project table: " + jupyterHomePath);
+    }
 
     // 2. Then kill the jupyter notebook server. If this step isn't 
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
     int exitValue;
     Integer id = 1;
-    String[] command = {"/usr/bin/sudo", prog, "kill", projectPath,
+    String[] command = {"/usr/bin/sudo", prog, "kill", jupyterHomePath,
       pid.toString(), port.toString()};
     ProcessBuilder pb = new ProcessBuilder(command);
     try {
@@ -393,9 +399,9 @@ public class JupyterProcessMgr {
     // If we can't stop the server, delete the Entity bean anyway
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
     if (jp != null) {
-      String projectPath = getJupyterHome(hdfsUser, jp);
+      String jupyterHomePath = getJupyterHome(hdfsUser, jp);
       // stop the server, remove the user in this project's local dirs
-      killServerJupyterUser(hdfsUser, projectPath, jp.getPid(), jp.getPort());
+      killServerJupyterUser(hdfsUser, jupyterHomePath, jp.getPid(), jp.getPort());
       // remove the reference to th e server in the DB.
       jupyterFacade.removeNotebookServer(hdfsUser);
     }
@@ -404,12 +410,12 @@ public class JupyterProcessMgr {
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public void stopProject(Project project) //      throws AppException 
   {
-    String path = "";
+    String jupyterHomePath = "";
     for (JupyterProject jp : project.getJupyterProjectCollection()) {
       HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
       String hdfsUsername = (hdfsUser == null) ? "" : hdfsUser.getName();
       try {
-        killServerJupyterUser(hdfsUsername, path, jp.getPid(), jp.getPort());
+        killServerJupyterUser(hdfsUsername, jupyterHomePath, jp.getPid(), jp.getPort());
       } catch (AppException ex) {
         logger.warning("When removing a project, could not shutdown the jupyter notebook server.");
       }
@@ -446,6 +452,7 @@ public class JupyterProcessMgr {
           + project.getName());
     }
   }
+
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
   public boolean pingServerJupyterUser(Long pid) {
     int exitValue = executeJupyterCommand("ping", pid.toString());

@@ -141,7 +141,7 @@ public class JupyterSettings implements Serializable {
   private int numExecutorCores = 1;
   @Basic(optional = false)
   @Column(name = "executor_memory")
-  private int executorMemory = 1024;
+  private int executorMemory = 4096;
   @Basic(optional = false)
   @Column(name = "dynamic_initial_executors")
   private int dynamicInitialExecutors = 1;

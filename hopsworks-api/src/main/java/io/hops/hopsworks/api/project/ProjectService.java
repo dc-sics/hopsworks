@@ -511,7 +511,7 @@ public class ProjectService {
   @Path("starterProject/{type}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
-  public Response starterProject(
+  public Response example(
       @PathParam("type") String type,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
