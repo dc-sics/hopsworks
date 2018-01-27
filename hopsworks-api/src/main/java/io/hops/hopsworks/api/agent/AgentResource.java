@@ -134,6 +134,8 @@ public class AgentResource {
       host.setLoad1(json.getJsonNumber("load1").doubleValue());
       host.setLoad5(json.getJsonNumber("load5").doubleValue());
       host.setLoad15(json.getJsonNumber("load15").doubleValue());
+      Integer hasGpu = json.getJsonNumber("has-gpu").intValue();
+      host.setHasGpus( hasGpu == 1);  // '1' means has a GPU, '0' means doesn't have one.
       Long previousDiskUsed = host.getDiskUsed() == null ? 0l : host.getDiskUsed(); 
       host.setDiskUsed(json.getJsonNumber("disk-used").longValue());
       host.setMemoryUsed(json.getJsonNumber("memory-used").longValue());

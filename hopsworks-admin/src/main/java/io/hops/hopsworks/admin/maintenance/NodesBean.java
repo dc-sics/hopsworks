@@ -22,6 +22,7 @@ import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import org.primefaces.context.RequestContext;
@@ -34,6 +35,12 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.FileTime;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +131,32 @@ public class NodesBean implements Serializable {
     RequestContext.getCurrentInstance().openDialog("addNewNodeDialog", dialogOptions, null);
   }
 
+  public String anacondaLastSynchronized() {
+    String file = settings.getHopsworksDomainDir() + "/docroot/anaconda.tgz";
+    return lastModifiedFileDate(file);
+  }
+
+  private String lastModifiedFileDate(String fullPath) {
+    File f = new File(fullPath);
+    if (!f.isFile()) {
+      return "Not available! Click 'Zip Anaconda Libaries'.";
+    }
+    Path p = Paths.get(fullPath);
+    FileTime fileTime;
+    try {
+      fileTime = Files.getLastModifiedTime(p);
+      DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy - hh:mm:ss");
+      return "Last synchronized: " + dateFormat.format(fileTime.toMillis());
+    } catch (IOException e) {
+      return "Cannot get the last modified time - " + e.getLocalizedMessage();
+    }
+  }
+
+  public String anacondaGpuLastSynchronized() {
+    String file = settings.getHopsworksDomainDir() + "/bin/anaconda-gpu.tgz";
+    return lastModifiedFileDate(file);
+  }
+
   public void zipUpAnacondaLibs() {
 
     String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-prepare.sh";
@@ -178,8 +211,8 @@ public class NodesBean implements Serializable {
         allNodes.add(newNode);
         hostsFacade.storeHost(newNode, true);
         logger.log(Level.INFO, "Added new cluster node with ID " + newNode.getHostname());
-        MessagesController.addInfoMessage("New node added", "Start kagent on the new node to "
-            + "register with Hopsworks");
+        MessagesController.addInfoMessage("New node added", "Now click the button 'Zip Anaconda Libraries' before "
+            + "installing the new node.");
       }
     }
   }
