@@ -139,7 +139,7 @@ public class NodesBean implements Serializable {
   private String lastModifiedFileDate(String fullPath) {
     File f = new File(fullPath);
     if (!f.isFile()) {
-      return "Not available! Click 'Zip Anaconda Libaries'.";
+      return "Not available!!";
     }
     Path p = Paths.get(fullPath);
     FileTime fileTime;
