@@ -122,7 +122,6 @@ public class UsersController {
    * @return
    * @throws NoSuchAlgorithmException
    */
-
   public Users createNewUser(UserDTO newUser, UserAccountStatus accountStatus, UserAccountType accountType) throws
       AppException, NoSuchAlgorithmException {
     String otpSecret = SecurityUtils.calculateSecretKey();
@@ -166,12 +165,13 @@ public class UsersController {
 
   /**
    * Create ldap user
+   *
    * @param email
    * @param fname
    * @param lname
    * @param pwd
    * @param accStatus
-   * @return 
+   * @return
    */
   public Users createNewLdapUser(String email, String fname, String lname, String pwd, UserAccountStatus accStatus) {
     String uname = generateUsername(email);
@@ -179,7 +179,7 @@ public class UsersController {
     String salt = authController.generateSalt();
     String password = authController.getPasswordHash(pwd, salt);
 
-    Users user = new Users(uname, password, email, fname, lname, "-", "-", accStatus, 
+    Users user = new Users(uname, password, email, fname, lname, "-", "-", accStatus,
         UserAccountType.LDAP_ACCOUNT_TYPE, settings.getMaxNumProjPerUser(), salt);
     user.setBbcGroupCollection(groups);
     addAddress(user);
@@ -235,6 +235,7 @@ public class UsersController {
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
     }
+
     if (!authController.validatePassword(user, oldPassword, req)) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), ResponseMessages.PASSWORD_INCORRECT);
     }
@@ -248,6 +249,10 @@ public class UsersController {
       }
       accountAuditFacade.registerAccountChange(user, AccountsAuditActions.PASSWORDCHANGE.name(),
           AccountsAuditActions.SUCCESS.name(), "Changed password.", user, req);
+      if (user.getEmail().compareTo("admin@kth.se") == 0) {
+        settings.setAdminPasswordChanged();
+      }
+
     }
   }
 
@@ -274,6 +279,7 @@ public class UsersController {
     if (user == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(), ResponseMessages.USER_WAS_NOT_FOUND);
     }
+
     if (firstName != null) {
       user.setFname(firstName);
     }
@@ -541,7 +547,7 @@ public class UsersController {
       userFacade.update(u);
     }
   }
-  
+
   public void decrementNumActiveProjects(int id) {
     Users u = userFacade.find(id);
     int n = u.getNumActiveProjects();

@@ -4,7 +4,7 @@
 
   <groupId>io.hops</groupId>
   <artifactId>hopsworks</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <packaging>pom</packaging>
   <name>hopsworks</name>
   <description>Hopsworks parent project</description>
@@ -177,7 +177,7 @@
     <connection>scm:git:https://github.com/hopshadoop/hopsworks.git</connection>
     <developerConnection>scm:git:git@github.com:hopshadoop/hopsworks.git</developerConnection>
     <url>https://github.com/hopshadoop/hopsworks</url>
-    <tag>HEAD</tag>
+    <tag>hopsworks-0.2.0</tag>
   </scm>
   <!-- Spacer //-->
   <distributionManagement>

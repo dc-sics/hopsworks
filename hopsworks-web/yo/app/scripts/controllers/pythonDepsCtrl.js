@@ -46,6 +46,8 @@ angular.module('hopsWorksApp')
 
             self.pythonKernelEnabled = "true";
 
+            self.pythonVersion = "";
+
 
 //            https://repo.continuum.io/pkgs/free/linux-64/
             self.condaChannel = "defaults";
@@ -159,6 +161,7 @@ angular.module('hopsWorksApp')
               PythonDepsService.enabled(self.projectId).then(
                       function (success) {
                         self.enabled = true;
+                        self.pythonVersion = success.data;
                       }, function (error) {
                 self.enabled = false;
               });
@@ -178,6 +181,7 @@ angular.module('hopsWorksApp')
                         self.enabled = true;
                         self.enabling = false;
                         self.getInstallationStatus();
+                        self.pythonVersion = version;
                         growl.success("Anaconda initialized for this project.", {title: 'Done', ttl: 5000});
                       }, function (error) {
                 self.enabling = false;

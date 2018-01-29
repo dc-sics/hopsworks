@@ -1461,6 +1461,10 @@ public class Settings implements Serializable {
   private final String DEFAULT_ADMIN_PWD = "12fa520ec8f65d3a6feacfa97a705e622e1fea95b80b521ec016e43874dfed5a";
   private String ADMIN_PWD = DEFAULT_ADMIN_PWD;
 
+  public synchronized void setAdminPasswordChanged() {
+    // Just use a dummy password here, no need to store the actual password - enough to say it is different from 'admin'
+    ADMIN_PWD = "changed";
+  }
   public synchronized boolean isDefaultAdminPasswordChanged() {
     if (ADMIN_PWD.compareTo(DEFAULT_ADMIN_PWD) != 0) {
       return true;

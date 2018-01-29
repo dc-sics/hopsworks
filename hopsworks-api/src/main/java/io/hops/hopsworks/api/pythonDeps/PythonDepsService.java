@@ -133,7 +133,6 @@ public class PythonDepsService {
 
     pythonDepsFacade.removeProject(project);
 
-
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
@@ -184,11 +183,11 @@ public class PythonDepsService {
   @GET
   @Path("/enabled")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  @Produces(MediaType.TEXT_PLAIN)
   public Response enabled() throws AppException {
     boolean enabled = project.getConda();
     if (enabled) {
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
-          build();
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(project.getPythonVersion()).build();
     }
     return noCacheResponse.getNoCacheResponseBuilder(
         Response.Status.SERVICE_UNAVAILABLE).build();
@@ -324,7 +323,7 @@ public class PythonDepsService {
   public Response getFailedCondaOps(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
 
     List<OpStatus> failedOps = pythonDepsFacade.getFailedCondaOpsProject(project);
-    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(failedOps) {  };
+    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(failedOps) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(opsFound).build();
   }
@@ -339,8 +338,7 @@ public class PythonDepsService {
     pythonDepsFacade.retryFailedCondaOpsProject(project);
 
     List<OpStatus> response = pythonDepsFacade.opStatus(project);
-    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(response) {
-    };
+    GenericEntity<Collection<OpStatus>> opsFound = new GenericEntity<Collection<OpStatus>>(response) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(opsFound).build();
   }
@@ -478,6 +476,7 @@ public class PythonDepsService {
             "No results found.");
       }
       return all;
+
     } catch (IOException | InterruptedException ex) {
       Logger.getLogger(HopsUtils.class
           .getName()).log(Level.SEVERE, null, ex);
