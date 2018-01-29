@@ -31,7 +31,7 @@ import org.codehaus.jackson.annotate.JsonIgnore;
   @NamedQuery(name = "Hosts.findBy-Id",
           query = "SELECT h FROM Hosts h WHERE h.id = :id"),
   @NamedQuery(name = "Hosts.findBy-hasGpus",
-          query = "SELECT h FROM Hosts h WHERE h.hasGpus = :hasGpus"),
+          query = "SELECT h FROM Hosts h WHERE h.numGpus = :numGpus"),
   @NamedQuery(name = "Hosts.findBy-Hostname",
           query = "SELECT h FROM Hosts h WHERE h.hostname = :hostname"),
   @NamedQuery(name = "Hosts.findBy-HostIp",
