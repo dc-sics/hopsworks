@@ -154,7 +154,7 @@ public class KafkaService {
     kafkaFacade.createTopicInProject(projectId, topicDto);
     //By default, all members of the project are granted full permissions 
     //on the topic
-    AclDTO aclDto = new AclDTO(null, project.getName(),
+    AclDTO aclDto = new AclDTO(project.getName(),
             Settings.KAFKA_ACL_WILDCARD,
             "allow", Settings.KAFKA_ACL_WILDCARD, Settings.KAFKA_ACL_WILDCARD,
             Settings.KAFKA_ACL_WILDCARD);
@@ -258,7 +258,7 @@ public class KafkaService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Could not find project for topic");
     }
-    AclDTO aclDto = new AclDTO(null, projectShared.getName(),
+    AclDTO aclDto = new AclDTO(projectShared.getName(),
             Settings.KAFKA_ACL_WILDCARD,
             "allow", Settings.KAFKA_ACL_WILDCARD, Settings.KAFKA_ACL_WILDCARD,
             Settings.KAFKA_ACL_WILDCARD);
@@ -419,7 +419,8 @@ public class KafkaService {
     List<AclDTO> aclDto = null;
     try {
       aclDto = kafkaFacade.getTopicAcls(topicName, projectId);
-    } catch (Exception e) {
+    } catch (AppException e) {
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
 
     GenericEntity<List<AclDTO>> aclDtos

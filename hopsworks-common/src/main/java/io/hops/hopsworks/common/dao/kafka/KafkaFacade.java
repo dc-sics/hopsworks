@@ -54,8 +54,7 @@ import java.util.Collections;
 @Stateless
 public class KafkaFacade {
 
-  private final static Logger LOG = Logger.getLogger(KafkaFacade.class.
-      getName());
+  private final static Logger LOG = Logger.getLogger(KafkaFacade.class.getName());
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
