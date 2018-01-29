@@ -109,7 +109,7 @@ public class Hosts implements Serializable {
   private Long memoryUsed;
 
   @Column(name = "has_gpus")
-  private boolean hasGpus = false;
+  private int numGpus = 0;
 
   @Column(name = "registered")
   private boolean registered;
@@ -236,12 +236,12 @@ public class Hosts implements Serializable {
     this.memoryUsed = memoryUsed;
   }
 
-  public boolean isHasGpus() {
-    return hasGpus;
+  public int getNumGpus() {
+    return numGpus;
   }
 
-  public void setHasGpus(boolean hasGpus) {
-    this.hasGpus = hasGpus;
+  public void setNumGpus(int numGpus) {
+    this.numGpus = numGpus;
   }
 
   public boolean isRegistered() {
