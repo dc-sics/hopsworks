@@ -10,7 +10,7 @@ fi
 cd "$(dirname "$0")"
 VERSION=`grep -o -a -m 1 -h -r "version>.*</version" ../pom.xml | head -1 | sed "s/version//g" | sed "s/>//" | sed "s/<\///g"`
 
-VERSION=`echo $VERSION | sed -e 's/-SNAPSHOT//'`
+#VERSION=`echo $VERSION | sed -e 's/-SNAPSHOT//'`
 
 
 echo "Deploying ${VERSION}/hopsworks-ear${ext}.ear to http://snurran.sics.se/hops/hopsworks"
