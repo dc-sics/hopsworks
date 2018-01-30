@@ -89,9 +89,9 @@ public class PythonDepsService {
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "tensorflow", "1.4.0", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "hops", "1.4.3", "true", "Installed"));
     preInstalledPythonDeps.add(new PythonDepJson("pip installed", "hopsfacets", "0.0.1", "true", "Installed"));
-    preInstalledPythonDeps.add(new PythonDepJson("conda installed", "protobuf", "3.4.0", "true", "Installed"));
-    preInstalledPythonDeps.add(new PythonDepJson("conda installed", "numpy", "1.13.1", "true", "Installed"));
-    preInstalledPythonDeps.add(new PythonDepJson("conda installed", "pandas", "0.20.3", "true", "Installed"));
+//    preInstalledPythonDeps.add(new PythonDepJson("conda installed", "protobuf", "3.4.0", "true", "Installed"));
+//    preInstalledPythonDeps.add(new PythonDepJson("conda installed", "numpy", "1.13.1", "true", "Installed"));
+//    preInstalledPythonDeps.add(new PythonDepJson("conda installed", "pandas", "0.20.3", "true", "Installed"));
   }
 
   @GET
