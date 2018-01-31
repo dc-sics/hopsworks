@@ -33,6 +33,7 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.kafka.KafkaController;
 import io.hops.hopsworks.common.util.Settings;
 import javax.persistence.EntityExistsException;
 import javax.ws.rs.Consumes;
@@ -44,8 +45,7 @@ import javax.ws.rs.PUT;
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class KafkaService {
 
-  private final static Logger LOGGER = Logger.getLogger(KafkaService.class.
-          getName());
+  private final static Logger logger = Logger.getLogger(KafkaService.class.getName());
 
   @EJB
   private ProjectFacade projectFacade;
@@ -53,6 +53,8 @@ public class KafkaService {
   private NoCacheResponse noCacheResponse;
   @EJB
   private KafkaFacade kafkaFacade;
+  @EJB
+  private KafkaController kafkaController;
   @EJB
   private UserFacade userFacade;
 
@@ -110,7 +112,7 @@ public class KafkaService {
               "Incomplete request!");
     }
 
-    List<TopicDTO> listTopics = kafkaFacade.findSharedTopicsByProject(projectId);
+    List<TopicDTO> listTopics = kafkaController.findSharedTopicsByProject(projectId);
     GenericEntity<List<TopicDTO>> topics
             = new GenericEntity<List<TopicDTO>>(listTopics) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
@@ -130,7 +132,7 @@ public class KafkaService {
     }
     List<TopicDTO> allTopics = kafkaFacade.findTopicsByProject(projectId);
 
-    allTopics.addAll(kafkaFacade.findSharedTopicsByProject(projectId));
+    allTopics.addAll(kafkaController.findSharedTopicsByProject(projectId));
     GenericEntity<List<TopicDTO>> topics
             = new GenericEntity<List<TopicDTO>>(allTopics) {};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(

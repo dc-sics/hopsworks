@@ -1993,7 +1993,7 @@ public class ProjectController {
     }
 
     try {
-      kafkaFacade.removeAclsForUser(userToBeRemoved, project.getId());
+      kafkaController.removeProjectMemberFromTopics(project, userToBeRemoved);
     } catch (Exception ex) {
       String errorMsg = "Error while removing Kafka ACL for user " + userToBeRemoved.getUsername() + " from project "
           + project.getName();
