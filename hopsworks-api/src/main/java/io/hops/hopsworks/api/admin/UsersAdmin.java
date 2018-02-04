@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.admin;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -7,8 +26,8 @@ import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditAction;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
@@ -70,9 +89,9 @@ public class UsersAdmin {
     } else {
       String[] filterStrings = filter.split(",");
       for (String filterString : filterStrings) {
-        PeopleAccountStatus status;
+        UserAccountStatus status;
         try{
-          status = PeopleAccountStatus.valueOf(filterString);
+          status = UserAccountStatus.valueOf(filterString);
         } catch (IllegalArgumentException ex) {
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "the folloing status does not exist: "
               + filterString);
@@ -126,7 +145,7 @@ public class UsersAdmin {
         String initiatorEmail = sc.getUserPrincipal().getName();
         Users initiator = userFacade.findByEmail(initiatorEmail);
         auditManager.registerRoleChange(initiator,
-            RolesAuditActions.UPDATEROLES.name(), RolesAuditActions.SUCCESS.
+            RolesAuditAction.ROLE_UPDATED.name(), RolesAuditAction.SUCCESS.
             name(), result, u, req);
       }
       if (user.getMaxNumProjects() != null) {
@@ -149,14 +168,14 @@ public class UsersAdmin {
       @PathParam("email") String email, Users user) throws AppException {
     Users u = userFacade.findByEmail(email);
     if (u != null) {
-      if (u.getStatus().equals(PeopleAccountStatus.VERIFIED_ACCOUNT)) {
+      if (u.getStatus().equals(UserAccountStatus.VERIFIED_ACCOUNT)) {
         Collection<BbcGroup> groups = user.getBbcGroupCollection();
         if (groups == null || groups.isEmpty()) {
           BbcGroup bbcGroup = bbcGroupFacade.findByGroupName("HOPS_USER");
           groups = new ArrayList<BbcGroup>();
           groups.add(bbcGroup);
         }
-        u.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT);
+        u.setStatus(UserAccountStatus.ACTIVATED_ACCOUNT);
         u.setBbcGroupCollection(groups);
         u = userFacade.update(u);
         String result = "";
@@ -166,14 +185,14 @@ public class UsersAdmin {
         String initiatorEmail = sc.getUserPrincipal().getName();
         Users initiator = userFacade.findByEmail(initiatorEmail);
         auditManager.registerRoleChange(initiator,
-            RolesAuditActions.UPDATEROLES.name(), RolesAuditActions.SUCCESS.
+            RolesAuditAction.ROLE_UPDATED.name(), RolesAuditAction.SUCCESS.
             name(), result, u, req);
-        auditManager.registerRoleChange(initiator, PeopleAccountStatus.ACTIVATED_ACCOUNT.name(),
+        auditManager.registerRoleChange(initiator, UserAccountStatus.ACTIVATED_ACCOUNT.name(),
             AccountsAuditActions.SUCCESS.name(), "", u, req);
         sendConfirmationMail(u);
       } else {
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "The user can't transition from status "
-            + u.getStatus().name() + " to status " + PeopleAccountStatus.ACTIVATED_ACCOUNT.name());
+            + u.getStatus().name() + " to status " + UserAccountStatus.ACTIVATED_ACCOUNT.name());
       }
     } else {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "This user does not exist");
@@ -191,12 +210,12 @@ public class UsersAdmin {
       @PathParam("email") String email) throws AppException {
     Users u = userFacade.findByEmail(email);
     if (u != null) {
-      u.setStatus(PeopleAccountStatus.SPAM_ACCOUNT);
+      u.setStatus(UserAccountStatus.SPAM_ACCOUNT);
       u = userFacade.update(u);
       String initiatorEmail = sc.getUserPrincipal().getName();
       Users initiator = userFacade.findByEmail(initiatorEmail);
 
-      auditManager.registerRoleChange(initiator, PeopleAccountStatus.SPAM_ACCOUNT.name(),
+      auditManager.registerRoleChange(initiator, UserAccountStatus.SPAM_ACCOUNT.name(),
           AccountsAuditActions.SUCCESS.name(), "", u, req);
       sendRejectionEmail(u);
     } else {
@@ -215,8 +234,7 @@ public class UsersAdmin {
       @PathParam("email") String email) throws AppException {
     Users u = userFacade.findByEmail(email);
     if (u != null) {
-      if (u.getStatus().equals(PeopleAccountStatus.NEW_MOBILE_ACCOUNT) || u.getStatus().equals(
-          PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT)) {
+      if (u.getStatus().equals(UserAccountStatus.NEW_MOBILE_ACCOUNT)) {
         u = resendAccountVerificationEmail(u, req);
       } else {
         throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "The user can't transition from status "

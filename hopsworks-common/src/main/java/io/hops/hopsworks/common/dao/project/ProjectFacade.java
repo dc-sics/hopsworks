@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.dao.project;
 
 import java.util.Date;
@@ -6,7 +25,6 @@ import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.AbstractFacade;
@@ -116,47 +134,6 @@ public class ProjectFacade extends AbstractFacade<Project> {
     return findByNameAndOwner(projectname, user);
   }
 
-  /**
-   * Count the number of studies for which the given user is owner.
-   * <p/>
-   * @param owner
-   * @return
-   */
-  public int countOwnedStudies(Users owner) {
-    TypedQuery<Long> query = em.createNamedQuery("Project.countProjectByOwner",
-        Long.class);
-    query.setParameter("owner", owner);
-    return query.getSingleResult().intValue();
-  }
-
-  /**
-   * Count the number of studies for which the owner has the given email.
-   * <p/>
-   * @param email
-   * @return The number of studies.
-   * @deprecated Use countOwnedStudies(User owner) instead.
-   */
-  public int countOwnedStudies(String email) {
-    TypedQuery<Users> query = em.createNamedQuery("Users.findByEmail",
-        Users.class);
-    query.setParameter("email", email);
-    //TODO: may throw an exception
-    Users user = query.getSingleResult();
-    return countOwnedStudies(user);
-  }
-
-  /**
-   * Find all the studies owned by the given user.
-   * <p/>
-   * @param user
-   * @return
-   */
-  public List<Project> findOwnedStudies(Users user) {
-    TypedQuery<Project> query = em.createNamedQuery("Project.findByOwner",
-        Project.class);
-    query.setParameter("owner", user);
-    return query.getResultList();
-  }
 
   /**
    * Get the owner of the given project.
@@ -316,29 +293,6 @@ public class ProjectFacade extends AbstractFacade<Project> {
     } catch (NoResultException e) {
       return null;
     }
-  }
-
-  public List<Project> findAllExpiredStudies() {
-
-    Query q = em.createNativeQuery(
-        "SELECT * FROM hopsworks.project WHERE ethical_status='APPROVED' AND retention_period < NOW()",
-        Project.class);
-
-    List<Project> st = q.getResultList();
-    if (st == null) {
-      return null;
-    }
-    return st;
-  }
-
-  public boolean updateStudyStatus(Project st, String name) {
-
-    if (st != null) {
-      st.setEthicalStatus(name);
-      em.merge(st);
-      return true;
-    }
-    return false;
   }
 
   public boolean numProjectsLimitReached(Users user) {

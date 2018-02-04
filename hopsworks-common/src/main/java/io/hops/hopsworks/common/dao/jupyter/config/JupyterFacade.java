@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.dao.jupyter.config;
 
 import io.hops.hopsworks.common.dao.hdfs.HdfsLeDescriptorsFacade;
@@ -12,7 +31,6 @@ import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
@@ -30,7 +48,7 @@ import javax.ws.rs.core.Response;
 public class JupyterFacade {
 
   private static final Logger logger = Logger.getLogger(JupyterFacade.class.
-          getName());
+      getName());
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -52,29 +70,38 @@ public class JupyterFacade {
     return em;
   }
 
-  public List<JupyterProject> findNotebooksByProject(Integer projectId) {
-    TypedQuery<JupyterProject> query = em.createNamedQuery(
-            "JupyterProject.findByProjectId",
-            JupyterProject.class);
-    query.setParameter("projectId", projectId);
-    List<JupyterProject> res = query.getResultList();
-    List<JupyterProject> notebooks = new ArrayList<>();
-    for (JupyterProject pt : res) {
-//      notebooks.add(new TopicDTO(pt.getProjectTopicsPK().getTopicName(),
-//              pt.getSchemaTopics().getSchemaTopicsPK().getName(),
-//              pt.getSchemaTopics().getSchemaTopicsPK().getVersion()));
-    }
-    return notebooks;
-  }
-
+//  public List<JupyterProject> findNotebooksByProject(Integer projectId) {
+//    TypedQuery<JupyterProject> query = em.createNamedQuery(
+//        "JupyterProject.findByProjectId",
+//        JupyterProject.class);
+//    query.setParameter("projectId", projectId);
+//    List<JupyterProject> res = query.getResultList();
+//    List<JupyterProject> notebooks = new ArrayList<>();
+//    for (JupyterProject pt : res) {
+////      notebooks.add(new TopicDTO(pt.getProjectTopicsPK().getTopicName(),
+////              pt.getSchemaTopics().getSchemaTopicsPK().getName(),
+////              pt.getSchemaTopics().getSchemaTopicsPK().getVersion()));
+//    }
+//    return notebooks;
+//  }
   public boolean removeNotebookServer(String hdfsUsername) {
+
+    if (hdfsUsername == null || hdfsUsername.isEmpty()) {
+      return false;
+    }
 
     JupyterProject jp = findByUser(hdfsUsername);
     if (jp == null) {
       return false;
     }
-    em.remove(jp);
-    em.flush();
+    try {
+      em.remove(jp);
+      em.flush();
+    } catch (Exception ex) {
+      logger.warning("Problem removing jupyter notebook entry from hopsworks DB");
+      logger.warning(ex.getMessage());
+      return false;
+    }
     return true;
   }
 
@@ -109,24 +136,24 @@ public class JupyterFacade {
   public JupyterProject findByUser(String hdfsUser) {
     HdfsUsers res = null;
     TypedQuery<HdfsUsers> query = em.createNamedQuery(
-            "HdfsUsers.findByName", HdfsUsers.class);
+        "HdfsUsers.findByName", HdfsUsers.class);
     query.setParameter("name", hdfsUser);
     try {
       res = query.getSingleResult();
     } catch (EntityNotFoundException | NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
-              e);
+          e);
       return null;
     }
     JupyterProject res2 = null;
     TypedQuery<JupyterProject> query2 = em.createNamedQuery(
-            "JupyterProject.findByHdfsUserId", JupyterProject.class);
+        "JupyterProject.findByHdfsUserId", JupyterProject.class);
     query2.setParameter("hdfsUserId", res.getId());
     try {
       res2 = query2.getSingleResult();
     } catch (EntityNotFoundException | NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
-              e);
+          e);
     }
     return res2;
   }
@@ -135,7 +162,7 @@ public class JupyterFacade {
 
     if (hdfsUser == null) {
       throw new AppException(Response.Status.NOT_FOUND.getStatusCode(),
-              "Could not find a Jupyter Notebook server to delete.");
+          "Could not find a Jupyter Notebook server to delete.");
     }
 
     JupyterProject jp = this.findByUser(hdfsUser);
@@ -145,12 +172,12 @@ public class JupyterFacade {
   public List<JupyterProject> getAllNotebookServers() {
     List<JupyterProject> res = null;
     TypedQuery<JupyterProject> query = em.createNamedQuery(
-            "JupyterProject.findAll", JupyterProject.class);
+        "JupyterProject.findAll", JupyterProject.class);
     try {
       res = query.getResultList();
     } catch (EntityNotFoundException | NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
-              e);
+          e);
       return null;
     }
     return res;
@@ -162,14 +189,14 @@ public class JupyterFacade {
   }
 
   public JupyterProject saveServer(String host,
-          Project project, String secretConfig, int port,
-          int hdfsUserId, String token, long pid)
-          throws AppException {
+      Project project, String secretConfig, int port,
+      int hdfsUserId, String token, long pid)
+      throws AppException {
     JupyterProject jp = null;
     String ip;
     ip = host + ":" + settings.getHopsworksPort();
     jp = new JupyterProject(project, secretConfig, port, hdfsUserId, ip, token,
-            pid);
+        pid);
 
     persist(jp);
     return jp;
@@ -211,9 +238,9 @@ public class JupyterFacade {
   }
 
   public String getProjectPath(JupyterProject jp, String projectName,
-          String hdfsUser) {
+      String hdfsUser) {
     return settings.getJupyterDir() + File.separator
-            + Settings.DIR_ROOT + File.separator + projectName
-            + File.separator + hdfsUser + File.separator + jp.getSecret();
+        + Settings.DIR_ROOT + File.separator + projectName
+        + File.separator + hdfsUser + File.separator + jp.getSecret();
   }
 }

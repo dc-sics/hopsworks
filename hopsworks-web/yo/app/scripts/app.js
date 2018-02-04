@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*jshint undef: false, unused: false, indent: 2*/
 /*global angular: false */
 
@@ -136,20 +155,44 @@ angular.module('hopsWorksApp', [
                         auth: ['$q', '$location', 'AuthService', '$cookies', 'VariablesService',
                           function ($q, $location, AuthService, $cookies, VariablesService) {
                             return AuthService.session().then(
-                                    function (success) {
-                                      $cookies.put("email", success.data.data.value);
-                                      $location.path('/');
-                                      $location.replace();
-                                      return $q.when(success);
-                                    },
-                                    function (err) {
-                                      VariablesService.getTwofactor().then(
-                                              function (success) {
-                                                $cookies.put("otp", success.data.successMessage);
-                                              }, function (error) {
-
-                                      });
-                                    });
+                              function (success) {
+                                $cookies.put("email", success.data.data.value);
+                                $location.path('/');
+                                $location.replace();
+                                return $q.when(success);
+                              },
+                              function (err) {
+                                VariablesService.getAuthStatus().then(
+                                  function (success) {
+                                    $cookies.put("otp", success.data.twofactor);
+                                    $cookies.put("ldap", success.data.ldap);
+                                  }, function (error) {
+                                });
+                              });
+                          }]
+                      }
+                    })
+                    .when('/ldapLogin', {
+                      templateUrl: 'views/ldapLogin.html',
+                      controller: 'LdapLoginCtrl as loginCtrl',
+                      resolve: {
+                        auth: ['$q', '$location', 'AuthService', '$cookies', 'VariablesService',
+                          function ($q, $location, AuthService, $cookies, VariablesService) {
+                            return AuthService.session().then(
+                              function (success) {
+                                $cookies.put("email", success.data.data.value);
+                                $location.path('/');
+                                $location.replace();
+                                return $q.when(success);
+                              },
+                              function (err) {
+                                VariablesService.getAuthStatus().then(
+                                  function (success) {
+                                    $cookies.put("otp", success.data.twofactor);
+                                    $cookies.put("ldap", success.data.ldap);
+                                  }, function (error) {
+                                });
+                              });
                           }]
                       }
                     })
@@ -184,9 +227,6 @@ angular.module('hopsWorksApp', [
                     .when('/qrCode/:QR*', {
                       templateUrl: 'views/qrCode.html',
                       controller: 'RegCtrl as regCtrl'
-                    })
-                    .when('/yubikey', {
-                      templateUrl: 'views/yubikey.html',
                     })
                     .when('/project/:projectID', {
                       templateUrl: 'views/project.html',
@@ -495,26 +535,6 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
-                    .when('/project/:projectID/biobanking', {
-                      templateUrl: 'views/biobanking.html',
-                      controller: 'ProjectCtrl as projectCtrl',
-                      resolve: {
-                        auth: ['$q', '$location', 'AuthService', '$cookies',
-                          function ($q, $location, AuthService, $cookies) {
-                            return AuthService.session().then(
-                                    function (success) {
-                                      $cookies.put("email", success.data.data.value);
-                                    },
-                                    function (err) {
-                                      $cookies.remove("email");
-                                      $cookies.remove("projectID");
-                                      $location.path('/login');
-                                      $location.replace();
-                                      return $q.reject(err);
-                                    });
-                          }]
-                      }
-                    })
                     .when('/project/:projectID/kafka', {
                       templateUrl: 'views/kafka.html',
                       controller: 'ProjectCtrl as projectCtrl',
@@ -575,8 +595,8 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
-                    .when('/project/:projectID/tensorflow', {
-                      templateUrl: 'views/tensorflow.html',
+                    .when('/project/:projectID/tfserving', {
+                      templateUrl: 'views/tfServing.html',
                       controller: 'ProjectCtrl as projectCtrl',
                       resolve: {
                         auth: ['$q', '$location', 'AuthService', '$cookies',

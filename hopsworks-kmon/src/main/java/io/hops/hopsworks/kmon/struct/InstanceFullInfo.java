@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.kmon.struct;
 
 import io.hops.hopsworks.common.dao.host.Status;
@@ -11,23 +30,23 @@ public class InstanceFullInfo implements Serializable {
   private String host;
   private String ip;
   private String cluster;
+  private String group;
   private String service;
-  private String role;
   private Status status;
   private String health;
   private int pid;
   private String uptime;
   private Integer webPort;
 
-  public InstanceFullInfo(String cluster, String service, String role,
+  public InstanceFullInfo(String cluster, String group, String service,
           String host, String ip, Integer webPort, Status status, String health) {
 
-    this.name = role + " @" + host;
+    this.name = service + " @" + host;
     this.host = host;
     this.ip = ip;
     this.cluster = cluster;
-    this.role = role;
     this.service = service;
+    this.group = group;
     this.status = status;
     this.health = health;
     this.webPort = webPort;
@@ -53,10 +72,14 @@ public class InstanceFullInfo implements Serializable {
     return health;
   }
 
-  public String getRole() {
-    return role;
+  public String getService() {
+    return service;
   }
 
+  public void setService(String service) {
+    this.service = service;
+  }
+  
   public int getPid() {
     return pid;
   }
@@ -89,12 +112,12 @@ public class InstanceFullInfo implements Serializable {
     this.cluster = cluster;
   }
 
-  public String getService() {
-    return service;
+  public String getGroup() {
+    return group;
   }
 
-  public void setService(String service) {
-    this.service = service;
+  public void setGroup(String service) {
+    this.group = service;
   }
 
   public String getWebUiLink() {

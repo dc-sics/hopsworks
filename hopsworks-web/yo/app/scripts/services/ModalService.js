@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 'use strict';
 
 angular.module('hopsWorksApp')
@@ -6,6 +25,25 @@ angular.module('hopsWorksApp')
               confirm: function (size, title, msg, projectId) {
                 var modalInstance = $uibModal.open({
                   templateUrl: 'views/confirmModal.html',
+                  controller: 'ModalCtrl as modalCtrl',
+                  size: size,
+                  resolve: {
+                    title: function () {
+                      return title;
+                    },
+                    msg: function () {
+                      return msg;
+                    },
+                    projectId: function () {
+                      return projectId;
+                    }
+                  }
+                });
+                return modalInstance.result;
+              },
+              viewJson: function (size, title, msg, projectId) {
+                var modalInstance = $uibModal.open({
+                  templateUrl: 'views/jsonModal.html',
                   controller: 'ModalCtrl as modalCtrl',
                   size: size,
                   resolve: {
@@ -1139,5 +1177,21 @@ angular.module('hopsWorksApp')
                 });
                 return modalInstance.result;
               },
+              ldapUserConsent: function (size, data, val) {
+                var modalInstance = $uibModal.open({
+                  templateUrl: 'views/ldapUserConsentModal.html',
+                  controller: 'LdapUserConsentModalCtrl as ldapUserConsentModalCtrl',
+                  size: size,
+                  resolve: {
+                    data: function () {
+                      return data;
+                    },
+                    val: function () {
+                      return val;
+                    }
+                  }
+                });
+                return modalInstance.result;
+              }
             };
           }]);

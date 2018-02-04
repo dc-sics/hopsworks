@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.util;
 
 import java.text.DecimalFormat;
@@ -7,6 +26,8 @@ import java.util.Date;
 import java.util.List;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class FormatUtils {
 
@@ -83,6 +104,13 @@ public class FormatUtils {
     html = html.replaceAll("\t", StringUtils.repeat("&nbsp;", 8));
     html = html.replaceAll(" ", StringUtils.repeat("&nbsp;", 1));
     return html;
+  }
+
+  public static String getUserURL(HttpServletRequest req) {
+    String domain = req.getRequestURL().toString();
+    String cpath = req.getContextPath();
+
+    return domain.substring(0, domain.indexOf(cpath));
   }
 
   public static List<String> rrdChartFormats() {

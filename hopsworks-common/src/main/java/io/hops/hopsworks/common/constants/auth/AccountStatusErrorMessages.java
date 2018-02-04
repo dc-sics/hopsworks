@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.constants.auth;
 
 public class AccountStatusErrorMessages {
@@ -7,8 +26,6 @@ public class AccountStatusErrorMessages {
   public final static String INTERNAL_ERROR = "Internal servor error.";
   
   public final static String USER_NOT_FOUND = "No account found.";
-
-  public final static String YUBIKEY = "You are using a Yubikey Not a QRCode";
 
   public final static String BLOCKED_ACCOUNT = "This account has been blocked.";
 
@@ -40,11 +57,11 @@ public class AccountStatusErrorMessages {
 
   public final static String PASSWORD_EMPTY = "Enter a password.";
 
-  public final static String INCCORCT_PASSWORD = "The password is incorrect.";
+  public final static String INCORRECT_PASSWORD = "The password is incorrect.";
 
-  public final static String INCCORCT_DEACTIVATION_LENGTH
+  public final static String INCORRECT_DEACTIVATION_LENGTH
           = "The message should have a length between 5 and 500 characters.";
 
-  public final static String INCCORCT_TMP_PIN = "The temporary code was wrong.";
+  public final static String INCORRECT_TMP_PIN = "The temporary code was wrong.";
 
 }

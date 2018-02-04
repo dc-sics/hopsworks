@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.util;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -23,7 +42,8 @@ import javax.ws.rs.core.Response;
 
 @Path("/banner")
 @Stateless
-@Api(value = "Banner Service", description = "Banner Service")
+@Api(value = "Banner Service",
+    description = "Banner Service")
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class BannerService {
 
@@ -47,7 +67,7 @@ public class BannerService {
     maintenance.setOtp(settings.getTwoFactorAuth());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(maintenance).build();
   }
-  
+
   @GET
   @Path("user")
   @Produces(MediaType.APPLICATION_JSON)
@@ -60,5 +80,34 @@ public class BannerService {
       json.setSuccessMessage("For security purposes, we highly recommend you change your password.");
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
+  }
+
+  @GET
+  @Path("firsttime")
+  @Produces(MediaType.TEXT_PLAIN)
+  public Response isFirstTimeLogin(@Context HttpServletRequest req) throws AppException {
+    if (maintenanceController.isFirstTimeLogin()) {
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
+  }
+  
+  @GET
+  @Path("firstlogin")
+  @Produces(MediaType.TEXT_PLAIN)
+  @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
+  public Response firstLogin(@Context HttpServletRequest req) throws AppException {
+    settings.updateVariable("first_time_login", "0");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+  }  
+
+  @GET
+  @Path("admin_pwd_changed")  
+  @Produces(MediaType.TEXT_PLAIN)
+  public Response adminPwdChanged(@Context HttpServletRequest req) throws AppException {
+    if (settings.isDefaultAdminPasswordChanged()) {
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
   }
 }

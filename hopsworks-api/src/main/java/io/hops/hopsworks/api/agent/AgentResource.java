@@ -1,8 +1,28 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.agent;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.dao.alert.Alert;
 import io.hops.hopsworks.common.dao.alert.AlertEJB;
+import io.hops.hopsworks.common.dao.host.Health;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,9 +38,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import io.hops.hopsworks.common.dao.host.Hosts;
-import io.hops.hopsworks.common.dao.host.HostEJB;
-import io.hops.hopsworks.common.dao.role.Roles;
-import io.hops.hopsworks.common.dao.role.RoleEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
+import io.hops.hopsworks.common.dao.kagent.HostServices;
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import io.hops.hopsworks.common.dao.host.Status;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
@@ -40,6 +60,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +83,9 @@ import org.json.simple.JSONArray;
 public class AgentResource {
 
   @EJB
-  private HostEJB hostFacade;
+  private HostsFacade hostFacade;
   @EJB
-  private RoleEJB roleFacade;
+  private HostServicesFacade hostServiceFacade;
   @EJB
   private AlertEJB alertFacade;
   @EJB
@@ -78,6 +100,20 @@ public class AgentResource {
   private EmailBean emailBean;
 
   final static Logger logger = Logger.getLogger(AgentResource.class.getName());
+
+  public class CondaCommandsComparator implements Comparator<CondaCommands> {
+
+    @Override
+    public int compare(CondaCommands c1, CondaCommands c2) {
+      if (c1.getId() > c2.getId()) {
+        return 1;
+      } else if (c1.getId() < c2.getId()) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  }
 
   @GET
   @Path("ping")
@@ -117,10 +153,18 @@ public class AgentResource {
       host.setLoad1(json.getJsonNumber("load1").doubleValue());
       host.setLoad5(json.getJsonNumber("load5").doubleValue());
       host.setLoad15(json.getJsonNumber("load15").doubleValue());
+      Integer numGpus = json.getJsonNumber("num-gpus").intValue();
+      host.setNumGpus( numGpus);  // '1' means has a GPU, '0' means doesn't have one.
+      Long previousDiskUsed = host.getDiskUsed() == null ? 0l : host.getDiskUsed(); 
       host.setDiskUsed(json.getJsonNumber("disk-used").longValue());
       host.setMemoryUsed(json.getJsonNumber("memory-used").longValue());
       host.setPrivateIp(json.getString("private-ip"));
       host.setDiskCapacity(json.getJsonNumber("disk-capacity").longValue());
+      if (previousDiskUsed < host.getDiskUsed() && ((float) host.getDiskUsed()) / host.getDiskCapacity() > 0.8) {
+        String subject = "alert: hard drive full on " + host.getHostname();
+        String body = host.getHostname() + " hard drive utilisation is " + host.getDiskUsageInfo();
+        emailAlert(subject, body);
+      }
       host.setMemoryCapacity(json.getJsonNumber("memory-capacity").longValue());
       host.setCores(json.getInt("cores"));
       hostFacade.storeHost(host, false);
@@ -129,29 +173,29 @@ public class AgentResource {
       for (int i = 0; i < roles.size(); i++) {
         JsonObject s = roles.getJsonObject(i);
 
-        if (!s.containsKey("cluster") || !s.containsKey("service") || !s.
-            containsKey("role")) {
+        if (!s.containsKey("cluster") || !s.containsKey("group") || !s.
+            containsKey("service")) {
           logger.warning("Badly formed JSON object describing a service.");
           continue;
         }
         String cluster = s.getString("cluster");
-        String roleName = s.getString("role");
-        String service = s.getString("service");
-        Roles role = null;
+        String serviceName = s.getString("service");
+        String group = s.getString("group");
+        HostServices hostService = null;
         try {
-          role = roleFacade.find(hostname, cluster, service, roleName);
+          hostService = hostServiceFacade.find(hostname, cluster, group, serviceName);
         } catch (Exception ex) {
-          logger.log(Level.FINE, "Could not find a role for the kagent heartbeat.");
+          logger.log(Level.FINE, "Could not find a service for the kagent heartbeat.");
           continue;
         }
 
-        if (role == null) {
-          role = new Roles();
-          role.setHost(host);
-          role.setCluster(cluster);
-          role.setService(service);
-          role.setRole(roleName);
-          role.setStartTime(agentTime);
+        if (hostService == null) {
+          hostService = new HostServices();
+          hostService.setHost(host);
+          hostService.setCluster(cluster);
+          hostService.setGroup(group);
+          hostService.setService(serviceName);
+          hostService.setStartTime(agentTime);
         }
 
         String webPort = s.containsKey("web-port") ? s.getString("web-port")
@@ -159,35 +203,44 @@ public class AgentResource {
         String pid = s.containsKey("pid") ? s.getString("pid") : "-1";
         try {
 //          role.setWebPort(Integer.parseInt(webPort));
-          role.setPid(Integer.parseInt(pid));
+          hostService.setPid(Integer.parseInt(pid));
         } catch (NumberFormatException ex) {
-          logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", role);
+          logger.log(Level.WARNING, "Invalid webport or pid - not a number for: {0}", hostService);
           continue;
         }
+        Health previousHealthOfService = hostService.getHealth();
         if (s.containsKey("status")) {
-          if ((role.getStatus() == null || !role.getStatus().equals(Status.Started)) && Status.valueOf(s.getString(
-              "status")).equals(Status.Started)) {
-            role.setStartTime(agentTime);
+          if ((hostService.getStatus() == null || !hostService.getStatus().equals(Status.Started)) && Status.valueOf(s.
+              getString(
+                  "status")).equals(Status.Started)) {
+            hostService.setStartTime(agentTime);
           }
-          role.setStatus(Status.valueOf(s.getString("status")));
+          hostService.setStatus(Status.valueOf(s.getString("status")));
         } else {
-          role.setStatus(Status.None);
+          hostService.setStatus(Status.None);
         }
 
-        Long startTime = role.getStartTime();
+        Long startTime = hostService.getStartTime();
         Status status = Status.valueOf(s.getString("status"));
         if (status.equals(Status.Started)) {
-          role.setStopTime(agentTime);
+          hostService.setStopTime(agentTime);
         }
-        Long stopTime = role.getStopTime();
+        Long stopTime = hostService.getStopTime();
 
         if (startTime != null && stopTime != null) {
-          role.setUptime(stopTime - startTime);
+          hostService.setUptime(stopTime - startTime);
         } else {
-          role.setUptime(0);
+          hostService.setUptime(0);
+        }
+        hostServiceFacade.store(hostService);
+        if (!hostService.getHealth().equals(previousHealthOfService) && hostService.getHealth().equals(Health.Bad)) {
+          String subject = "alert: " + hostService.getGroup() + "." + hostService.getService() + "@" + hostService.
+              getHost().getHostname();
+          String body = hostService.getGroup() + "." + hostService.getService() + "@" + hostService.getHost().
+              getHostname() + " transitioned from state " + previousHealthOfService + " to " + hostService.getHealth();
+          emailAlert(subject, body);
         }
 
-        roleFacade.store(role);
       }
 
       if (json.containsKey("conda-ops")) {
@@ -212,7 +265,7 @@ public class AgentResource {
           // has probably been removed. We needed to send a compensating action if
           // this action was successful.
           if (command != null) {
-            if (agentStatus == PythonDepsFacade.CondaStatus.INSTALLED) {
+            if (agentStatus == PythonDepsFacade.CondaStatus.SUCCESS) {
               // remove command from the DB
               pythonDepsFacade.
                   updateCondaComamandStatus(commmandId, agentStatus, arg, projName, opType, lib, version);
@@ -374,10 +427,19 @@ public class AgentResource {
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
 
-    GenericEntity<Collection<CondaCommands>> commandsForKagent
-        = new GenericEntity<Collection<CondaCommands>>(commands) { };
+    Collections.sort(commands, new CondaCommandsComparator());
+    GenericEntity<List<CondaCommands>> kcs = new GenericEntity<List<CondaCommands>>(commands) {
+    };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        commandsForKagent).build();
+        kcs).build();
+  }
+
+  private void emailAlert(String subject, String body) {
+    try {
+      emailBean.sendEmails(settings.getAlertEmailAddrs(), subject, body);
+    } catch (MessagingException ex) {
+      logger.log(Level.SEVERE, ex.getMessage());
+    }
   }
 
   @POST
@@ -397,7 +459,9 @@ public class AgentResource {
       alert.setSeverity(Alert.Severity.valueOf(json.getString("Severity")).toString());
       alert.setAgentTime(json.getJsonNumber("Time").bigIntegerValue());
       alert.setMessage(json.getString("Message"));
-      alert.setHostid(json.getString("host-id"));
+      String hostname = json.getString("host-id");
+      Hosts h = hostFacade.findByHostname(hostname);
+      alert.setHost(h);
       alert.setPlugin(json.getString("Plugin"));
       if (json.containsKey("PluginInstance")) {
         alert.setPluginInstance(json.getString("PluginInstance"));

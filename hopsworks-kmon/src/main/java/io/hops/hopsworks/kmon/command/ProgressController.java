@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.kmon.command;
 
 import io.hops.hopsworks.common.dao.command.CommandEJB;
@@ -16,12 +35,12 @@ public class ProgressController {
 
   @EJB
   private CommandEJB commandEJB;
-  @ManagedProperty("#{param.hostid}")
-  private String hostId;
-  @ManagedProperty("#{param.role}")
-  private String role;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
   @ManagedProperty("#{param.service}")
   private String service;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @ManagedProperty("#{param.cluster}")
   private String cluster;
   private static final Logger logger = Logger.getLogger(
@@ -37,14 +56,6 @@ public class ProgressController {
 //        setCommands(getLatestCommandByClusterServiceInstanceHost());
   }
 
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
   public String getService() {
     return service;
   }
@@ -53,12 +64,20 @@ public class ProgressController {
     this.service = service;
   }
 
-  public String getHostId() {
-    return hostId;
+  public String getGroup() {
+    return group;
   }
 
-  public void setHostId(String hostId) {
-    this.hostId = hostId;
+  public void setGroup(String group) {
+    this.group = group;
+  }
+
+  public String getHostname() {
+    return hostname;
+  }
+
+  public void setHostname(String hostname) {
+    this.hostname = hostname;
   }
 
   public void setCluster(String cluster) {
@@ -70,8 +89,7 @@ public class ProgressController {
   }
 
   public List<Command> getLatestCommandByClusterServiceInstanceHost() {
-    return commandEJB.findLatestByClusterServiceRoleHostId(cluster, service,
-            role, hostId);
+    return commandEJB.findLatestByClusterServiceRoleHostname(cluster, group, service, hostname);
   }
 
   public List<Command> getCommands() {

@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.user;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -103,12 +122,10 @@ public class UserService {
           @FormParam("lastName") String lastName,
           @FormParam("telephoneNum") String telephoneNum,
           @FormParam("toursState") Integer toursState,
-          @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
     JsonResponse json = new JsonResponse();
     
-    Users user = userController.updateProfile(sc.getUserPrincipal().
-            getName(), firstName, lastName, telephoneNum, toursState, req);
+    Users user = userController.updateProfile(req.getRemoteUser(), firstName, lastName, telephoneNum, toursState, req);
     UserDTO userDTO = new UserDTO(user);
     
     json.setStatus("OK");
@@ -126,11 +143,10 @@ public class UserService {
           @FormParam("oldPassword") String oldPassword,
           @FormParam("newPassword") String newPassword,
           @FormParam("confirmedPassword") String confirmedPassword,
-          @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException, MessagingException {
     JsonResponse json = new JsonResponse();
 
-    userController.changePassword(sc.getUserPrincipal().getName(), oldPassword, newPassword, confirmedPassword, req);
+    userController.changePassword(req.getRemoteUser(), oldPassword, newPassword, confirmedPassword, req);
 
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.PASSWORD_CHANGED);
@@ -145,10 +161,9 @@ public class UserService {
   public Response changeSecurityQA(@FormParam("oldPassword") String oldPassword,
           @FormParam("securityQuestion") String securityQuestion,
           @FormParam("securityAnswer") String securityAnswer,
-          @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException, MessagingException {
     JsonResponse json = new JsonResponse();
-    userController.changeSecQA(sc.getUserPrincipal().getName(), oldPassword, securityQuestion, securityAnswer, req);
+    userController.changeSecQA(req.getRemoteUser(), oldPassword, securityQuestion, securityAnswer, req);
 
     json.setStatus("OK");
     json.setSuccessMessage(ResponseMessages.SEC_QA_CHANGED);
@@ -162,9 +177,8 @@ public class UserService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response changeTwoFactor(@FormParam("password") String password,
           @FormParam("twoFactor") boolean twoFactor,
-          @Context SecurityContext sc,
           @Context HttpServletRequest req) throws AppException {
-    Users user = userBean.findByEmail(sc.getUserPrincipal().getName());
+    Users user = userBean.findByEmail(req.getRemoteUser());
 
     byte[] qrCode;
     JsonResponse json = new JsonResponse();

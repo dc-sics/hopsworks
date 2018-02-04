@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.project;
 
 import io.hops.hopsworks.common.constants.auth.AllowedRoles;
@@ -38,7 +57,7 @@ import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnPriceMultiplicator;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuota;
 import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
-import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessMgr;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.log.operation.OperationType;
 import io.hops.hopsworks.common.dao.log.operation.OperationsLog;
@@ -54,11 +73,11 @@ import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamPK;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
+import io.hops.hopsworks.common.dao.tfserving.config.TfServingProcessMgr;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.Activity;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
-import io.hops.hopsworks.common.dao.user.consent.ConsentStatus;
 import io.hops.hopsworks.common.dataset.DatasetController;
 import io.hops.hopsworks.common.dataset.FolderNameValidator;
 import io.hops.hopsworks.common.elastic.ElasticController;
@@ -74,6 +93,7 @@ import io.hops.hopsworks.common.jobs.yarn.YarnLogUtil;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.hive.HiveController;
+import io.hops.hopsworks.common.kafka.KafkaController;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.LocalhostServices;
 import io.hops.hopsworks.common.util.Settings;
@@ -161,11 +181,15 @@ public class ProjectController {
   @EJB
   private PythonDepsFacade pythonDepsFacade;
   @EJB
-  private JupyterProcessFacade jupyterProcessFacade;
+  private JupyterProcessMgr jupyterProcessFacade;
+  @EJB
+  private TfServingProcessMgr tfServingProcessMgr;
   @EJB
   private JobFacade jobFacade;
   @EJB
   private KafkaFacade kafkaFacade;
+  @EJB 
+  KafkaController kafkaController;
   @EJB
   private ElasticController elasticController;
   @EJB
@@ -484,9 +508,6 @@ public class ProjectController {
     Project project = new Project(projectName, user, now, PaymentType.PREPAID);
     project.setDescription(projectDescription);
 
-    // make ethical status pending
-    project.setEthicalStatus(ConsentStatus.PENDING.name());
-
     // set retention period to next 10 years by default
     Calendar cal = Calendar.getInstance();
     cal.setTime(now);
@@ -687,22 +708,6 @@ public class ProjectController {
     }
   }
 
-  public void createProjectConsentFolder(String username, Project project,
-      DistributedFileSystemOps dfso, DistributedFileSystemOps udfso)
-      throws
-      ProjectInternalFoldersFailedException, AppException {
-
-    Users user = userFacade.findByEmail(username);
-
-    try {
-      datasetController.createDataset(user, project, "consents",
-          "Biobanking consent forms", -1, false, false, dfso);
-    } catch (IOException | EJBException e) {
-      throw new ProjectInternalFoldersFailedException(
-          "Could not create project consents folder ", e);
-    }
-  }
-
   /**
    * Returns a Project
    *
@@ -748,6 +753,10 @@ public class ProjectController {
         break;
       case HIVE:
         toPersist = addServiceHive(project, user, dfso);
+        break;
+      case SERVING:
+        toPersist= addServiceDataset(project, user,
+            Settings.ServiceDataset.SERVING, dfso, udfso);
         break;
       default:
         toPersist = true;
@@ -882,7 +891,7 @@ public class ProjectController {
        */
       Path location = new Path(File.separator + rootDir);
       FsPermission fsPermission = new FsPermission(FsAction.ALL, FsAction.ALL,
-          FsAction.ALL); // permission 777 so any one can creat a project.
+          FsAction.READ_EXECUTE);
       rootDirCreated = dfso.mkdir(location, fsPermission);
     } else {
       rootDirCreated = true;
@@ -971,12 +980,14 @@ public class ProjectController {
           projectApps = getYarnApplications(hdfsUsers, yarnClientWrapper.getYarnClient());
           cleanupLogger.logSuccess("Gotten Yarn applications");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when reading YARN apps during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
         // Kill Zeppelin jobs
         try {
           killZeppelin(project.getId(), sessionId);
+          cleanupLogger.logError("Error when killing Zeppelin during project cleanup");
           cleanupLogger.logSuccess("Killed Zeppelin");
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
@@ -987,6 +998,7 @@ public class ProjectController {
           jupyterProcessFacade.stopProject(project);
           cleanupLogger.logSuccess("Stopped Jupyter");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when killing Jupyter during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -995,6 +1007,7 @@ public class ProjectController {
           killYarnJobs(project);
           cleanupLogger.logSuccess("Killed Yarn jobs");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when killing YARN jobs during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1003,6 +1016,7 @@ public class ProjectController {
           waitForJobLogs(projectApps, yarnClientWrapper.getYarnClient());
           cleanupLogger.logSuccess("Gotten logs for jobs");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when getting Yarn logs during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1011,6 +1025,7 @@ public class ProjectController {
           logProject(project, OperationType.Delete);
           cleanupLogger.logSuccess("Logged project removal");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when logging project removal during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1021,6 +1036,7 @@ public class ProjectController {
           changeOwnershipToSuperuser(path, dfso);
           cleanupLogger.logSuccess("Changed ownership of root Project dir");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when changing ownership of root Project dir during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1030,6 +1046,7 @@ public class ProjectController {
           changeOwnershipToSuperuser(dummy, dfso);
           cleanupLogger.logSuccess("Changed ownership of dummy inode");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when changing ownership of dummy inode during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1038,6 +1055,7 @@ public class ProjectController {
           removeKafkaTopics(project);
           cleanupLogger.logSuccess("Removed Kafka topics");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing kafka topics during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1046,6 +1064,7 @@ public class ProjectController {
           certificatesController.deleteProjectCertificates(project);
           cleanupLogger.logSuccess("Removed certificates");
         } catch (IOException ex) {
+          cleanupLogger.logError("Error when removing certificates during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1057,6 +1076,7 @@ public class ProjectController {
           removeProjectRelatedFiles(usersToClean, dfso);
           cleanupLogger.logSuccess("Removed project related files");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing project-related files during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1065,6 +1085,7 @@ public class ProjectController {
           removeQuotas(project);
           cleanupLogger.logSuccess("Removed quotas");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing quota during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1073,6 +1094,7 @@ public class ProjectController {
           fixSharedDatasets(project, dfso);
           cleanupLogger.logSuccess("Fixed shared datasets");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when changing ownership during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1081,6 +1103,7 @@ public class ProjectController {
           hiveController.dropDatabase(project, dfso, true);
           cleanupLogger.logSuccess("Removed Hive db");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing hive db during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1089,6 +1112,7 @@ public class ProjectController {
           removeElasticsearch(project.getName());
           cleanupLogger.logSuccess("Removed ElasticSearch");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing elastic during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1097,6 +1121,7 @@ public class ProjectController {
           removeGroupAndUsers(groupsToClean, usersToClean);
           cleanupLogger.logSuccess("Removed HDFS Groups and Users");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing HDFS groups/users during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1105,14 +1130,17 @@ public class ProjectController {
           removeJupyter(project);
           cleanupLogger.logSuccess("Removed Jupyter");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing Anaconda during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
+
 
         // remove dumy Inode
         try {
           dfso.rm(dummy, true);
           cleanupLogger.logSuccess("Removed dummy Inode");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing dummy Inode during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1121,6 +1149,7 @@ public class ProjectController {
           removeProjectFolder(project.getName(), dfso);
           cleanupLogger.logSuccess("Removed root Project folder");
         } catch (Exception ex) {
+          cleanupLogger.logError("Error when removing root Project dir during project cleanup");          
           cleanupLogger.logError(ex.getMessage());
         }
       } else {
@@ -1164,7 +1193,7 @@ public class ProjectController {
 
         // Cleanup Jupyter project
         try {
-          jupyterProcessFacade.projectCleanup(toDeleteProject);
+          jupyterProcessFacade.stopProject(toDeleteProject);
           cleanupLogger.logSuccess("Cleaned Jupyter environment");
         } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
@@ -1413,6 +1442,8 @@ public class ProjectController {
         // try and close all the jupyter jobs
         jupyterProcessFacade.stopProject(project);
 
+        tfServingProcessMgr.removeProject(project);
+
         try {
           removeAnacondaEnv(project);
         } catch (AppException ex) {
@@ -1643,14 +1674,20 @@ public class ProjectController {
             try {
               hdfsUsersBean.addNewProjectMember(project, projectTeam);
             } catch (IOException ex) {
+              LOGGER.log(Level.SEVERE,"Could not add member:"+newMember+" to project:"+project+" in HDFS.", ex);
               projectTeamFacade.removeProjectTeam(project, newMember);
-              throw new EJBException("Could not add member to HDFS.");
+              throw new EJBException("Could not add member:"+newMember+" to project:"+project+" in HDFS.");
             }
+            //Add user to kafka topics ACLs by default
+            if (projectServicesFacade.isServiceEnabledForProject(project, ProjectServiceEnum.KAFKA)) {
+              kafkaController.addProjectMemberToTopics(project, newMember.getEmail());
+            }
+            
+            
             // TODO: This should now be a REST call
             Future<CertificatesController.CertsResult> certsResultFuture = null;
             try {
-              certsResultFuture = certificatesController
-                  .generateCertificates(project, newMember, false);
+              certsResultFuture = certificatesController.generateCertificates(project, newMember, false);
               certsResultFuture.get();
               if (settings.isPythonKernelEnabled()) {
                 jupyterProcessFacade.createPythonKernelForProjectUser(project, newMember);
@@ -1922,7 +1959,7 @@ public class ProjectController {
       List<ApplicationReport> projectsApps = client.getApplications(null, hdfsUsers, null, EnumSet.of(
           YarnApplicationState.ACCEPTED, YarnApplicationState.NEW, YarnApplicationState.NEW_SAVING,
           YarnApplicationState.RUNNING, YarnApplicationState.SUBMITTED));
-      //kill jupitter for this user
+      //kill jupyter for this user
       jupyterProcessFacade.stopCleanly(hdfsUser);
       if (settings.isPythonKernelEnabled()) {
         jupyterProcessFacade.removePythonKernelForProjectUser(hdfsUser);
@@ -1975,7 +2012,7 @@ public class ProjectController {
     }
 
     try {
-      kafkaFacade.removeAclsForUser(userToBeRemoved, project.getId());
+      kafkaController.removeProjectMemberFromTopics(project, userToBeRemoved);
     } catch (Exception ex) {
       String errorMsg = "Error while removing Kafka ACL for user " + userToBeRemoved.getUsername() + " from project "
           + project.getName();
@@ -2262,13 +2299,19 @@ public class ProjectController {
 
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public void removeJupyter(Project project) throws AppException {
-    jupyterProcessFacade.removeProject(project);
+    jupyterProcessFacade.stopProject(project);
+  }
+
+  @TransactionAttribute(TransactionAttributeType.NEVER)
+  public void removeTfServing(Project project) throws AppException {
+    LOGGER.log(Level.SEVERE, "PLEASE REMOVE TF SERVINGS");
+    tfServingProcessMgr.removeProject(project);
   }
 
   @TransactionAttribute(TransactionAttributeType.NEVER)
   public void cloneAnacondaEnv(Project srcProj, Project destProj) throws
       AppException {
-    pythonDepsFacade.cloneProject(srcProj, destProj.getName());
+    pythonDepsFacade.cloneProject(srcProj, destProj);
   }
 
   /**

@@ -1,3 +1,22 @@
+<!--
+  ~ This file is part of HopsWorks
+  ~
+  ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+  ~
+  ~ HopsWorks is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ HopsWorks is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
 <html>
   <head>
     <meta charset="utf-8">
@@ -193,15 +212,15 @@
     <script src="scripts/controllers/vizopsStreamingCtrl.js"></script>
     <script src="scripts/controllers/messageCtrl.js"></script>
     <script src="scripts/controllers/sshKeysCtrl.js"></script>
-    <script src="scripts/controllers/biobankingCtrl.js"></script>    
     <script src="scripts/controllers/detachTemplateCtrl.js"></script>
     <script src="scripts/controllers/localFsCtrl.js"></script>
     <script src="scripts/controllers/inputModalCtrl.js"></script>
     <script src="scripts/controllers/uberCtrl.js"></script>
     <script src="scripts/controllers/workflowCtrl.js"></script>
     <script src="scripts/controllers/workflowcreatorCtrl.js"></script>
-    <script src="scripts/controllers/uberCtrl.js"></script>    
-    <script src="scripts/controllers/kafkaCtrl.js"></script>    
+    <script src="scripts/controllers/uberCtrl.js"></script>
+    <script src="scripts/controllers/tfservingCtrl.js"></script>
+    <script src="scripts/controllers/kafkaCtrl.js"></script>
     <script src="scripts/controllers/tensorflowCtrl.js"></script>    
     <script src="scripts/controllers/pythonDepsCtrl.js"></script>    
     <script src="scripts/controllers/selectProjectCtrl.js"></script>    
@@ -223,6 +242,8 @@
     <script src="scripts/controllers/delahopsDatasetCtrl.js"></script>
     <script src="scripts/controllers/delaclusterDatasetCtrl.js"></script>
     <script src="scripts/controllers/publicDSPanelCtrl.js"></script>
+    <script src="scripts/controllers/ldapLoginCtrl.js"></script>
+    <script src="scripts/controllers/ldapUserConsentModalCtrl.js"></script>
     <script src="scripts/controllers/workflowexecutionCtrl.js"></script>
     <script src="scripts/controllers/workflowjobCtrl.js"></script>
 
@@ -247,6 +268,7 @@
     <script src="scripts/services/SparkService.js"></script>
     <script src="scripts/services/AdamService.js"></script>
     <script src="scripts/services/FlinkService.js"></script>
+    <script src="scripts/services/TfServingService.js"></script>p
     <script src="scripts/services/TensorFlowService.js"></script>
     <script src="scripts/services/HistoryService.js"></script>
     <script src="scripts/services/JobService.js"></script>
@@ -258,7 +280,6 @@
     <script src="scripts/services/ZeppelinService.js"></script>
     <script src="scripts/services/MessageService.js"></script>
     <script src="scripts/services/VariablesService.js"></script>
-    <script src="scripts/services/BiobankingService.js"></script>
     <script src="scripts/services/LocalFsService.js"></script>
     <script src="scripts/services/TourService.js"></script>
     <script src="scripts/services/WorkflowService.js"></script>

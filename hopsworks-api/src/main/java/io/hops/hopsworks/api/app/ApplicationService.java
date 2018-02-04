@@ -1,12 +1,35 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.app;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.common.dao.app.ServingEndpointJsonDTO;
 import io.hops.hopsworks.common.dao.kafka.KafkaFacade;
 import io.hops.hopsworks.common.dao.kafka.SchemaDTO;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -24,6 +47,8 @@ import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.tfserving.TfServing;
+import io.hops.hopsworks.common.dao.tfserving.TfServingFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
@@ -76,6 +101,8 @@ public class ApplicationService {
   private JobFacade jobFacade;
   @EJB
   private ExecutionFacade executionFacade;
+  @EJB
+  private TfServingFacade tfServingFacade;
 
   @POST
   @Path("mail")
@@ -102,7 +129,6 @@ public class ApplicationService {
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
         build();
-
   }
 
   //when do we need this endpoint? It's used when the Kafka clients want to access
@@ -127,7 +153,51 @@ public class ApplicationService {
     SchemaDTO schemaDto = kafka.getSchemaForTopic(topicInfo.getTopicName());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).
         entity(schemaDto).build();
+  }
 
+  @POST
+  @Path("tfserving")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response getServingEndpoint(@Context SecurityContext sc,
+                            @Context HttpServletRequest req, ServingEndpointJsonDTO servingEndpointJsonDTO) throws
+          AppException {
+
+    String projectUser = checkAndGetProjectUser(servingEndpointJsonDTO.
+            getKeyStoreBytes(), servingEndpointJsonDTO.getKeyStorePwd().toCharArray());
+
+    String projectName = servingEndpointJsonDTO.getProject();
+    String model = servingEndpointJsonDTO.getModel();
+
+    //check if user is member of project
+    Project project = projectFacade.findByName(hdfsUserBean.getProjectName(
+            projectUser));
+
+    if(project != null && project.getName().equals(projectName)) {
+
+      String host = null;
+      String port = null;
+      List <TfServing> tfServings = tfServingFacade.findForProject(project);
+      for(TfServing tfServing: tfServings) {
+        if(tfServing.getModelName().equals(model)) {
+          host = tfServing.getHostIp();
+          port = tfServing.getPort().toString();
+          break;
+        }
+      }
+
+      JsonObjectBuilder arrayObjectBuilder = Json.createObjectBuilder();
+      if(host != null && port != null) {
+        arrayObjectBuilder.add("host", host);
+        arrayObjectBuilder.add("port", port);
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(arrayObjectBuilder.build()).build();
+      } else {
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
+      }
+    } else {
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.UNAUTHORIZED).
+              build();
+    }
   }
 
   /////////////////////////////////////////////////

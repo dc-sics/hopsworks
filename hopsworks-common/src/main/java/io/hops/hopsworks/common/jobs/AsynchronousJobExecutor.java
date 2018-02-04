@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.jobs;
 
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
@@ -9,7 +28,6 @@ import javax.ejb.Stateless;
 import io.hops.hopsworks.common.jobs.execution.HopsJob;
 import io.hops.hopsworks.common.dao.jobhistory.ExecutionFacade;
 import io.hops.hopsworks.common.dao.jobs.JobsHistoryFacade;
-import io.hops.hopsworks.common.dao.jobs.JobOutputFileFacade;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.jobs.yarn.YarnExecutionFinalizer;
@@ -34,8 +52,6 @@ public class AsynchronousJobExecutor {
 
   @EJB
   private ExecutionFacade executionFacade;
-  @EJB
-  private JobOutputFileFacade jobOutputFileFacade;
   @EJB
   private DistributedFsService dfs;
   @EJB
@@ -73,10 +89,6 @@ public class AsynchronousJobExecutor {
     return yarnExecutionFinalizer;
   }
   
-  public JobOutputFileFacade getJobOutputFileFacade() {
-    return jobOutputFileFacade;
-  }
-
   public DistributedFsService getFsService() {
     return dfs;
   }

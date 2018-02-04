@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.dao.jupyter;
 
 import java.util.List;
@@ -9,6 +28,11 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import org.apache.commons.codec.digest.DigestUtils;
 
+/**
+ * The jupyter_settings table stores the most recent configuration settings from the user's Hopsworks UI.
+ * That is, what version did the user pick (tensorflow, dynamic/static spark, horovod, TfOnSpark, etc)
+ * How many executors (CPU/Memory/GPus), etc...
+ */
 @Stateless
 public class JupyterSettingsFacade {
 
@@ -42,8 +66,9 @@ public class JupyterSettingsFacade {
     if (js == null) {
       String secret = DigestUtils.sha256Hex(Integer.toString(
               ThreadLocalRandom.current().nextInt()));
-      // Set default framework to 'sparkDynamic'
-      js = new JupyterSettings(pk, secret, "sparkDynamic");
+      js = new JupyterSettings(pk);
+      js.setSecret(secret);
+      js.setMode("sparkDynamic");
       persist(js);
     }
     return js;

@@ -1,19 +1,20 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- * <p/>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
- * express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.hops.hopsworks.admin.jupyter;
 
@@ -22,7 +23,7 @@ import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
-import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessMgr;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.Settings;
 
@@ -46,7 +47,7 @@ public class JupyterNotebooksBean {
   @EJB
   private JupyterSettingsFacade jupyterSettingsFacade;
   @EJB
-  private JupyterProcessFacade jupyterProcessFacade;
+  private JupyterProcessMgr jupyterProcessFacade;
   @EJB
   private HdfsUsersFacade hdfsUsersFacade;
   @EJB
@@ -93,25 +94,22 @@ public class JupyterNotebooksBean {
   }
 
   public String kill(JupyterProject notebook) {
-    String projectPath;
+    String jupyterHomePath;
     String hdfsUser = getHdfsUser(notebook);
-    if (hdfsUser.compareTo("Orphaned") == 0) {
-      if (jupyterProcessFacade.killHardJupyterWithPid(notebook.getPid()) == -1) {
-        return "KILL_NOTEBOOK_FAILED";
+    try {
+      if (hdfsUser.compareTo("Orphaned") == 0) {
+        jupyterHomePath = "";
+      } else {
+        jupyterHomePath = jupyterProcessFacade.getJupyterHome(hdfsUser, notebook);
       }
-    } else {
-      try {
-        projectPath = jupyterProcessFacade.getJupyterHome(hdfsUser, notebook);
-        jupyterProcessFacade.killServerJupyterUser(projectPath, notebook.getPid(), notebook.getPort());
-        jupyterFacade.removeNotebookServer(hdfsUser);
-        FacesContext context = FacesContext.getCurrentInstance();
-        context.addMessage(null, new FacesMessage("Successful", "Successfully killed Jupyter Notebook Server."));
-      } catch (AppException ex) {
-        Logger.getLogger(JupyterNotebooksBean.class.getName()).log(Level.SEVERE, null, ex);
-        FacesContext context = FacesContext.getCurrentInstance();
-        context.addMessage(null, new FacesMessage("Failure", "Failed to kill Jupyter Notebook Server."));
-        return "KILL_NOTEBOOK_FAILED";
-      }
+      jupyterProcessFacade.killServerJupyterUser(hdfsUser, jupyterHomePath, notebook.getPid(), notebook.getPort());
+      FacesContext context = FacesContext.getCurrentInstance();
+      context.addMessage(null, new FacesMessage("Successful", "Successfully killed Jupyter Notebook Server."));
+    } catch (AppException ex) {
+      Logger.getLogger(JupyterNotebooksBean.class.getName()).log(Level.SEVERE, null, ex);
+      FacesContext context = FacesContext.getCurrentInstance();
+      context.addMessage(null, new FacesMessage("Failure", "Failed to kill Jupyter Notebook Server."));
+      return "KILL_NOTEBOOK_FAILED";
     }
     return "KILL_NOTEBOOK_SUCCESS";
   }

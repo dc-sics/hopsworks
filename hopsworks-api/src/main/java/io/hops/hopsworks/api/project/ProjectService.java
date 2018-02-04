@@ -1,14 +1,33 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.project;
 
 import io.hops.hopsworks.api.dela.DelaClusterProjectService;
 import io.hops.hopsworks.api.dela.DelaProjectService;
 import io.hops.hopsworks.api.filter.AllowedProjectRoles;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
-import io.hops.hopsworks.api.jobs.BiobankingService;
 import io.hops.hopsworks.api.jobs.JobService;
 import io.hops.hopsworks.api.jobs.KafkaService;
 import io.hops.hopsworks.api.jupyter.JupyterService;
 import io.hops.hopsworks.api.pythonDeps.PythonDepsService;
+import io.hops.hopsworks.api.tensorflow.TfServingService;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.api.util.LocalFsService;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
@@ -100,13 +119,13 @@ public class ProjectService {
   @Inject
   private JupyterService jupyter;
   @Inject
+  private TfServingService tfServingService;
+  @Inject
   private DataSetService dataSet;
   @Inject
   private LocalFsService localFs;
   @Inject
   private JobService jobs;
-  @Inject
-  private BiobankingService biobanking;
   @Inject
   private PythonDepsService pysparkService;
   @Inject
@@ -121,7 +140,6 @@ public class ProjectService {
   private InodeFacade inodes;
   @EJB
   private HdfsUsersController hdfsUsersBean;
-
   @EJB
   private UsersController usersController;
   @EJB
@@ -512,7 +530,7 @@ public class ProjectService {
   @Path("starterProject/{type}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
-  public Response starterProject(
+  public Response example(
       @PathParam("type") String type,
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
@@ -710,15 +728,6 @@ public class ProjectService {
     return this.jobs.setProject(project);
   }
 
-  @Path("{projectId}/biobanking")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public BiobankingService biobanking(@PathParam("projectId") Integer projectId)
-      throws
-      AppException {
-    Project project = projectController.findProjectById(projectId);
-    return this.biobanking.setProject(project);
-  }
-  
   @Path("{projectId}/certs")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public CertService certs(@PathParam("projectId") Integer projectId) throws
@@ -850,8 +859,8 @@ public class ProjectService {
   public Response downloadCerts(@PathParam("id") Integer id, @FormParam("password") String password,
       @Context HttpServletRequest req) throws AppException {
     Users user = userFacade.findByEmail(req.getRemoteUser());
-    if (user == null || user.getEmail().equals(Settings.AGENT_EMAIL) || !authController.validatePassword(user, password,
-        req)) {
+    if (user == null || user.getEmail().equals(Settings.AGENT_EMAIL) || !authController.validatePwd(user, password, req)
+        ) {
       throw new AppException(Response.Status.FORBIDDEN.getStatusCode(), "Access to the certificat has been forbidden.");
     }
     Project project = projectController.findProjectById(id);
@@ -915,6 +924,20 @@ public class ProjectService {
     this.jupyter.setProjectId(id);
 
     return this.jupyter;
+  }
+
+  @Path("{id}/tfserving")
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
+  public TfServingService tfServingService(
+          @PathParam("id") Integer id) throws AppException {
+    Project project = projectController.findProjectById(id);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    this.tfServingService.setProjectId(id);
+
+    return this.tfServingService;
   }
 
   @Path("{id}/pythonDeps")

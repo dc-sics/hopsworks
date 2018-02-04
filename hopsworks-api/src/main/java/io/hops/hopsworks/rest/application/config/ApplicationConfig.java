@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.rest.application.config;
 
 import io.swagger.annotations.Api;
@@ -16,15 +35,16 @@ public class ApplicationConfig extends ResourceConfig {
     register(io.hops.hopsworks.api.exception.mapper.AccessControlExceptionMapper.class);
     register(io.hops.hopsworks.api.exception.mapper.AppExceptionMapper.class);
     register(io.hops.hopsworks.api.exception.mapper.AuthExceptionMapper.class);
+    register(io.hops.hopsworks.api.exception.mapper.LoginExceptionMapper.class);
     register(io.hops.hopsworks.api.exception.mapper.ThrowableExceptionMapper.class);
     register(io.hops.hopsworks.api.exception.mapper.TransactionExceptionMapper.class);
     register(io.hops.hopsworks.api.filter.RequestAuthFilter.class);
     register(io.hops.hopsworks.api.jobs.AdamService.class);
-    register(io.hops.hopsworks.api.jobs.BiobankingService.class);
     register(io.hops.hopsworks.api.jobs.ExecutionService.class);
     register(io.hops.hopsworks.api.jobs.FlinkService.class);
     register(io.hops.hopsworks.api.jobs.JobService.class);
     register(io.hops.hopsworks.api.jupyter.JupyterService.class);
+    register(io.hops.hopsworks.api.tensorflow.TfServingService.class);
     register(io.hops.hopsworks.api.jobs.KafkaService.class);
     register(io.hops.hopsworks.api.jobs.SparkService.class);
     register(io.hops.hopsworks.api.project.DataSetService.class);

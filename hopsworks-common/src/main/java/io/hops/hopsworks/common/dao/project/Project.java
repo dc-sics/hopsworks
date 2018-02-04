@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.dao.project;
 
 import java.io.Serializable;
@@ -26,6 +45,7 @@ import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
+import io.hops.hopsworks.common.dao.tfserving.TfServing;
 import io.hops.hopsworks.common.util.Settings;
 import org.codehaus.jackson.annotate.JsonIgnore;
 import io.hops.hopsworks.common.dao.hdfs.inode.Inode;
@@ -58,10 +78,6 @@ import javax.persistence.ManyToMany;
   ,
   @NamedQuery(name = "Project.findByCreated",
       query = "SELECT t FROM Project t WHERE t.created = :created")
-  ,
-  @NamedQuery(name = "Project.findByEthicalStatus",
-      query
-      = "SELECT t FROM Project t WHERE t.ethicalStatus = :ethicalStatus")
   ,
   @NamedQuery(name = "Project.findByRetentionPeriod",
       query
@@ -106,7 +122,8 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "project")
   private Collection<JupyterSettings> jupyterSettingsCollection;
-
+  @OneToMany(cascade = CascadeType.ALL, mappedBy = "project")
+  private Collection<TfServing> tfServingCollection;
   private static final long serialVersionUID = 1L;
 
   @Id
@@ -136,12 +153,6 @@ public class Project implements Serializable {
   @Column(name = "retention_period")
   @Temporal(TemporalType.DATE)
   private Date retentionPeriod;
-
-  @NotNull
-  @Size(min = 1,
-      max = 30)
-  @Column(name = "ethical_status")
-  private String ethicalStatus;
 
   @Column(name = "deleted")
   private Boolean deleted;
@@ -222,14 +233,6 @@ public class Project implements Serializable {
 
   public void setCreated(Date created) {
     this.created = created;
-  }
-
-  public String getEthicalStatus() {
-    return ethicalStatus;
-  }
-
-  public void setEthicalStatus(String ethicalStatus) {
-    this.ethicalStatus = ethicalStatus;
   }
 
   public String getName() {
@@ -447,6 +450,16 @@ public class Project implements Serializable {
     this.jupyterSettingsCollection = jupyterSettingsCollection;
   }
 
+  @XmlTransient
+  @JsonIgnore
+  public Collection<TfServing> getTfServingCollection() {
+    return tfServingCollection;
+  }
+
+  public void setTfServingCollection(Collection <TfServing> tfServingCollection) {
+    this.tfServingCollection = tfServingCollection;
+  }
+
   public String getProjectGenericUser() {
     return name + Settings.PROJECT_GENERIC_USER_SUFFIX;
   }
@@ -462,14 +475,4 @@ public class Project implements Serializable {
     return "se.kth.bbc.project.Project[ name=" + this.name + ", id=" + this.id
         + ", parentId=" + this.inode.getInodePK().getParentId() + " ]";
   }
-
-//  @XmlTransient
-//  @JsonIgnore
-//  public Collection<TfServing> getTfServingCollection() {
-//    return tfServingCollection;
-//  }
-//
-//  public void setTfServingCollection(Collection<TfServing> tfServingCollection) {
-//    this.tfServingCollection = tfServingCollection;
-//  }
 }

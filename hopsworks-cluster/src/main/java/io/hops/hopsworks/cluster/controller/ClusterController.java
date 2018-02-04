@@ -1,3 +1,21 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package io.hops.hopsworks.cluster.controller;
 
 import io.hops.hopsworks.cluster.ClusterDTO;
@@ -10,15 +28,15 @@ import io.hops.hopsworks.common.dao.user.cluster.ClusterCert;
 import io.hops.hopsworks.common.dao.user.cluster.ClusterCertFacade;
 import io.hops.hopsworks.common.dao.user.cluster.RegistrationStatusEnum;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.security.PKIUtils;
 import io.hops.hopsworks.common.user.AuthController;
 import io.hops.hopsworks.common.user.UsersController;
-import io.hops.hopsworks.common.util.AuditUtil;
 import io.hops.hopsworks.common.util.EmailBean;
+import io.hops.hopsworks.common.util.FormatUtils;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -97,8 +115,8 @@ public class ClusterController {
     commonName = cluster.getOrganizationName() + "_" + cluster.getOrganizationalUnitName();
 
     if (autoValidate) {
-      if (clusterAgent.getStatus() == PeopleAccountStatus.NEW_MOBILE_ACCOUNT) {
-        clusterAgent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT);
+      if (clusterAgent.getStatus() == UserAccountStatus.NEW_MOBILE_ACCOUNT) {
+        clusterAgent.setStatus(UserAccountStatus.ACTIVATED_ACCOUNT);
       }
       clusterCert = new ClusterCert(commonName, cluster.getOrganizationName(), cluster.getOrganizationalUnitName(),
         RegistrationStatusEnum.REGISTERED, clusterAgent);
@@ -197,8 +215,8 @@ public class ClusterController {
     }
     if (type.equals(OP_TYPE.REGISTER) && clusterCert.getRegistrationStatus().equals(
       RegistrationStatusEnum.REGISTRATION_PENDING)) {
-      if (agent.getStatus() == PeopleAccountStatus.NEW_MOBILE_ACCOUNT) {
-        agent.setStatus(PeopleAccountStatus.ACTIVATED_ACCOUNT);
+      if (agent.getStatus() == UserAccountStatus.NEW_MOBILE_ACCOUNT) {
+        agent.setStatus(UserAccountStatus.ACTIVATED_ACCOUNT);
         userBean.update(agent);
       }
       clusterCert.setValidationKey(null);
@@ -386,11 +404,11 @@ public class ClusterController {
       if (type.equals(AccountsAuditActions.REGISTRATION.name())) {
         emailBean.sendEmail(cluster.getEmail(), Message.RecipientType.TO,
           UserAccountsEmailMessages.CLUSTER_REQUEST_SUBJECT, UserAccountsEmailMessages.
-          buildClusterRegisterRequestMessage(AuditUtil.getUserURL(req), validationKey));
+          buildClusterRegisterRequestMessage(FormatUtils.getUserURL(req), validationKey));
       } else {
         emailBean.sendEmail(cluster.getEmail(), Message.RecipientType.TO,
           UserAccountsEmailMessages.CLUSTER_REQUEST_SUBJECT, UserAccountsEmailMessages.
-          buildClusterUnregisterRequestMessage(AuditUtil.getUserURL(req), validationKey));
+          buildClusterUnregisterRequestMessage(FormatUtils.getUserURL(req), validationKey));
       }
     } catch (MessagingException ex) {
       LOGGER.log(Level.SEVERE, "Could not send email to ", u.getEmail());

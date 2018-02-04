@@ -1,10 +1,29 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.certs;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import io.hops.hopsworks.api.annotation.AllowCORS;
 import io.hops.hopsworks.common.dao.host.Hosts;
-import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.kafka.CsrDTO;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -54,7 +73,7 @@ public class CertSigningService {
   @EJB
   private Settings settings;
   @EJB
-  private HostEJB hostEJB;
+  private HostsFacade hostsFacade;
   @EJB
   private UserFacade userBean;
   @EJB
@@ -90,11 +109,11 @@ public class CertSigningService {
       String hostId = json.getString("host-id");
       Hosts host;
       try {
-        host = hostEJB.findByHostname(hostId);
+        host = hostsFacade.findByHostname(hostId);
         String agentPassword = json.getString("agent-password");
         host.setAgentPassword(agentPassword);
         host.setRegistered(true);
-        hostEJB.storeHost(host, true);
+        hostsFacade.storeHost(host, true);
       } catch (Exception ex) {
         logger.log(Level.SEVERE, "Host storing error while Cert signing: {0}", ex.getMessage());
       }

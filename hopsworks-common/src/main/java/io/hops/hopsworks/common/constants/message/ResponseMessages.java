@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.constants.message;
 
 public class ResponseMessages {
@@ -129,8 +148,6 @@ public class ResponseMessages {
   public final static String TEAM_MEMBER_NOT_FOUND
           = " The selected user is not a team member in this project.";
   public final static String ROLE_NOT_SET = "Role cannot be empty.";
-  public final static String CONSENT_ALREADY_EXISTS
-          = "Duplicate error. There is already a consent form in the Project with the same name";
   public final static String PROJECT_NOT_SELECTED = "No project selected";
   public final static String QUOTA_NOT_FOUND = "Quota information not found.";
   public final static String QUOTA_REQUEST_NOT_COMPLETE = "Please specify both namespace and space quota.";

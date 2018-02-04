@@ -1,8 +1,29 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.util;
 
 import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
+import io.hops.hopsworks.common.dao.user.UserFacade;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.dela.DelaClientType;
@@ -29,6 +50,7 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.ejb.ConcurrencyManagement;
 import javax.ejb.ConcurrencyManagementType;
+import javax.ejb.EJB;
 import javax.ejb.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
@@ -51,6 +73,9 @@ public class Settings implements Serializable {
 
   private static final Logger logger = Logger.getLogger(Settings.class.
       getName());
+
+  @EJB
+  private UserFacade userFacade;
 
   @PersistenceContext(unitName = "kthfsPU")
   private EntityManager em;
@@ -183,6 +208,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_RECOVERY_PATH = "recovery_endpoint";
   private static final String VARIABLE_VERIFICATION_PATH = "verification_endpoint";
   private static final String VARIABLE_ALERT_EMAIL_ADDRS = "alert_email_addrs";
+  private static final String VARIABLE_FIRST_TIME_LOGIN = "first_time_login";
 
   private String setVar(String varName, String defaultValue) {
     Variables userName = findById(varName);
@@ -402,10 +428,17 @@ public class Settings implements Serializable {
       WHITELIST_USERS_LOGIN = setStrVar(VARIABLE_WHITELIST_USERS_LOGIN,
           WHITELIST_USERS_LOGIN);
       RECOVERY_PATH = setStrVar(VARIABLE_RECOVERY_PATH, RECOVERY_PATH);
+      FIRST_TIME_LOGIN = setStrVar(VARIABLE_FIRST_TIME_LOGIN, FIRST_TIME_LOGIN);
       VERIFICATION_PATH = setStrVar(VARIABLE_VERIFICATION_PATH, VERIFICATION_PATH);
       populateDelaCache();
+      populateLDAPCache();
       //Set Zeppelin Default Interpreter
       zeppelinDefaultInterpreter = getZeppelinDefaultInterpreter(ZEPPELIN_INTERPRETERS);
+
+//      Users user = userFacade.findByEmail("admin@kth.se");
+//      if (user != null) {
+//        ADMIN_PWD=user.getPassword();
+//      }
       cached = true;
     }
   }
@@ -420,19 +453,19 @@ public class Settings implements Serializable {
     cached = false;
     populateCache();
   }
-  
+
   public synchronized void updateVariable(String variableName, String variableValue) {
     updateVariableInternal(variableName, variableValue);
     refreshCache();
   }
-  
+
   public synchronized void updateVariables(Map<String, String> variablesToUpdate) {
     for (Map.Entry<String, String> entry : variablesToUpdate.entrySet()) {
       updateVariableInternal(entry.getKey(), entry.getValue());
     }
     refreshCache();
   }
-  
+
   /**
    * This method will invalidate the cache of variables.
    * The next call to read a variable after invalidateCache() will trigger a read of all variables
@@ -463,14 +496,14 @@ public class Settings implements Serializable {
     checkCache();
     return TWOFACTOR_EXCLUDE;
   }
-  
+
   public static enum TwoFactorMode {
     MANDATORY("mandatory", "User can not disable two factor auth."),
     OPTIONAL("true", "Users can choose to disable two factor auth.");
 
     private final String name;
     private final String description;
-    
+
     private TwoFactorMode(String name, String description) {
       this.name = name;
       this.description = description;
@@ -496,6 +529,8 @@ public class Settings implements Serializable {
    * Default Directory locations
    */
   public static String PRIVATE_DIRS = "/private_dirs/";
+
+  public static String SERVING_DIRS = "/serving/";
 
   private String SPARK_DIR = "/srv/hops/spark";
   public static final String SPARK_EXAMPLES_DIR = "/examples/jars";
@@ -527,7 +562,7 @@ public class Settings implements Serializable {
   public static final String SPARK_METRICS_ENV = "spark.metrics.conf";
   public static final String SPARK_MAX_APP_ATTEMPTS = "spark.yarn.maxAppAttempts";
   public static final String SPARK_EXECUTOR_EXTRA_JAVA_OPTS = "spark.executor.extraJavaOptions";
-  
+
   //PySpark properties
   public static final String SPARK_APP_NAME_ENV = "spark.app.name";
   public static final String SPARK_EXECUTORENV_PYTHONPATH = "spark.executorEnv.PYTHONPATH";
@@ -743,7 +778,7 @@ public class Settings implements Serializable {
     checkCache();
     return getCertsDir() + File.separator + "encryption_master_password";
   }
-  
+
   private static String HOPSWORKS_INSTALL_DIR = "/srv/hops/domains";
 
   public synchronized String getHopsworksInstallDir() {
@@ -884,11 +919,11 @@ public class Settings implements Serializable {
   public static String getYarnConfDir(String hadoopDir) {
     return hadoopConfDir(hadoopDir);
   }
-  
+
   public String getHopsLeaderElectionJarPath() {
     return getHadoopSymbolicLinkDir() + "/share/hadoop/hdfs/lib/hops-leader-election-" + getHadoopVersion() + ".jar";
   }
-  
+
   //Default configuration file names
   public static final String DEFAULT_YARN_CONFFILE_NAME = "yarn-site.xml";
   public static final String DEFAULT_HADOOP_CONFFILE_NAME = "core-site.xml";
@@ -1090,7 +1125,6 @@ public class Settings implements Serializable {
   public static final String DIR_ROOT = "Projects";
   public static final String DIR_SAMPLES = "Samples";
   public static final String DIR_RESULTS = "Results";
-  public static final String DIR_CONSENTS = "consents";
   public static final String DIR_META_TEMPLATES = File.separator + DIR_ROOT + File.separator + "Uploads"
       + File.separator;
   public static final String PROJECT_STAGING_DIR = "Resources";
@@ -1438,6 +1472,31 @@ public class Settings implements Serializable {
     return "https://" + HOPSWORKS_REST_ENDPOINT;
   }
 
+  private String FIRST_TIME_LOGIN = "0";
+
+  public synchronized String getFirstTimeLogin() {
+    checkCache();
+    return FIRST_TIME_LOGIN;
+  }
+
+  private final String DEFAULT_ADMIN_PWD = "12fa520ec8f65d3a6feacfa97a705e622e1fea95b80b521ec016e43874dfed5a";
+  private String ADMIN_PWD = DEFAULT_ADMIN_PWD;
+
+  public synchronized void setAdminPasswordChanged() {
+    // Just use a dummy password here, no need to store the actual password - enough to say it is different from 'admin'
+    ADMIN_PWD = "changed";
+  }
+  public synchronized boolean isDefaultAdminPasswordChanged() {
+    if (ADMIN_PWD.compareTo(DEFAULT_ADMIN_PWD) != 0) {
+      return true;
+    }
+    Users user = userFacade.findByEmail("admin@kth.se");
+    if (user != null) {
+      ADMIN_PWD = user.getPassword();
+    }
+    return ADMIN_PWD.compareTo(DEFAULT_ADMIN_PWD) != 0;
+  }
+
   private String HOPSWORKS_DEFAULT_SSL_MASTER_PASSWORD = "adminpw";
 
   public synchronized String getHopsworksMasterPasswordSsl() {
@@ -1523,15 +1582,41 @@ public class Settings implements Serializable {
 
   //Filename conventions
   public static final String PROJECT_DISALLOWED_CHARS
-          = " -/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
-  public static final String PRINT_PROJECT_DISALLOWED_CHARS
-    = "__, -, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
+      = " -/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
+  public static final String PRINT_PROJECT_DISALLOWED_CHARS = "__, -, space, " 
+      + "/, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
   public static final String FILENAME_DISALLOWED_CHARS = " /\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
   public static final String SUBDIR_DISALLOWED_CHARS = "/\\?*:|'\"<>%()&;#öäåÖÅÄàáéèâîïüÜ@${}[]+~^$`";
   public static final String PRINT_FILENAME_DISALLOWED_CHARS
-    = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
+      = "__, space, /, \\, ?, *, :, |, ', \", <, >, %, (, ), &, ;, #,ö,ä,å,Ö,Å,Ä,à,á,é,è,â,î,ï,ü,Ü,@,$,{,},[,],+,~,^";
   public static final String SHARED_FILE_SEPARATOR = "::";
   public static final String DOUBLE_UNDERSCORE = "__";
+
+  // Authentication Constants
+  // POSIX compliant usernake length
+  public static final int USERNAME_LENGTH = 8;
+
+  // Strating user id from 1000 to create a POSIX compliant username: meb1000
+  public static int STARTING_USER = 1000;
+  public static int PASSWORD_MIN_LENGTH = 6;
+
+  // POSIX compliant usernake length
+  public static final int ACCOUNT_VALIDATION_TRIES = 5;
+
+  // Issuer of the QrCode
+  public static final String ISSUER = "hops.io";
+
+  // For padding when password field is empty: 6 chars
+  public static final String MOBILE_OTP_PADDING = "@@@@@@";
+
+  // when user is loged in 1 otherwise 0
+  public static final int IS_ONLINE = 1;
+  public static final int IS_OFFLINE = 0;
+
+  public static final int ALLOWED_FALSE_LOGINS = 20;
+
+  //hopsworks user prefix username prefix
+  public static final String USERNAME_PREFIX = "meb";
 
   public static final String K_CERTIFICATE = "k_certificate";
   public static final String T_CERTIFICATE = "t_certificate";
@@ -1560,15 +1645,15 @@ public class Settings implements Serializable {
   public static int FILE_PREVIEW_TXT_SIZE = 100;
   public static final int FILE_PREVIEW_TXT_SIZE_BYTES = 1024 * 384;
   public static final String README_TEMPLATE = "*This is an auto-generated README.md"
-    + " file for your Dataset!*\n"
-    + "To replace it, go into your DataSet and edit the README.md file.\n"
-    + "\n" + "*%s* DataSet\n" + "===\n" + "\n"
-    + "## %s";
+      + " file for your Dataset!*\n"
+      + "To replace it, go into your DataSet and edit the README.md file.\n"
+      + "\n" + "*%s* DataSet\n" + "===\n" + "\n"
+      + "## %s";
 
   public static final String FILE_PREVIEW_TEXT_TYPE = "text";
   public static final String FILE_PREVIEW_IMAGE_TYPE = "image";
   public static final String FILE_PREVIEW_MODE_TAIL = "tail";
-  
+
   public String getHopsworksTmpCertDir() {
     return Paths.get(getCertsDir(), "transient").toString();
   }
@@ -1662,7 +1747,8 @@ public class Settings implements Serializable {
 
   public static enum ServiceDataset {
     ZEPPELIN("notebook", "Contains Zeppelin notebooks."),
-    JUPYTER("Jupyter", "Contains Jupyter notebooks.");
+    JUPYTER("Jupyter", "Contains Jupyter notebooks."),
+    SERVING("Models", "Contains models to be used for serving.");
 
     private final String name;
     private final String description;
@@ -1698,15 +1784,13 @@ public class Settings implements Serializable {
 
   public Settings() {
   }
-  
-  
+
   private String ALERT_EMAIL_ADDRS = "";
 
   public synchronized String getAlertEmailAddrs() {
     checkCache();
     return ALERT_EMAIL_ADDRS;
   }
-  
 
   /**
    * Get the variable value with the given name.
@@ -1722,14 +1806,15 @@ public class Settings implements Serializable {
       return null;
     }
   }
-  
+
   /**
    * Get all variables from the database.
+   *
    * @return List with all the variables
    */
   public List<Variables> getAllVariables() {
     TypedQuery<Variables> query = em.createNamedQuery("Variables.findAll", Variables.class);
-    
+
     try {
       return query.getResultList();
     } catch (EntityNotFoundException ex) {
@@ -1738,9 +1823,10 @@ public class Settings implements Serializable {
     }
     return new ArrayList<>();
   }
-  
+
   /**
    * Update a variable in the database.
+   *
    * @param variableName
    * @param variableValue
    */
@@ -1754,7 +1840,7 @@ public class Settings implements Serializable {
       em.persist(var);
     }
   }
-  
+
   public void detach(Variables variable) {
     em.detach(variable);
   }
@@ -2012,7 +2098,7 @@ public class Settings implements Serializable {
     checkCache();
     return DELA_ENABLED;
   }
-  
+
   public synchronized DelaClientType getDelaClientType() {
     return DELA_CLIENT_TYPE;
   }
@@ -2323,4 +2409,123 @@ public class Settings implements Serializable {
     }
   }
   //Kafka END
+
+  //-------------------------LDAP----------------------------
+  private static final String VARIABLE_LDAP_AUTH = "ldap_auth";
+  private static final String VARIABLE_LDAP_GROUP_MAPPING = "ldap_group_mapping";
+  private static final String VARIABLE_LDAP_USER_ID = "ldap_user_id";
+  private static final String VARIABLE_LDAP_USER_GIVEN_NAME = "ldap_user_givenName";
+  private static final String VARIABLE_LDAP_USER_SURNAME = "ldap_user_surname";
+  private static final String VARIABLE_LDAP_USER_EMAIL = "ldap_user_email";
+  private static final String VARIABLE_LDAP_USER_SEARCH_FILTER = "ldap_user_search_filter";
+  private static final String VARIABLE_LDAP_GROUP_SEARCH_FILTER = "ldap_group_search_filter";
+  private static final String VARIABLE_LDAP_ATTR_BINARY = "ldap_attr_binary";
+  private static final String VARIABLE_LDAP_GROUP_TARGET = "ldap_group_target";
+  private static final String VARIABLE_LDAP_DYNAMIC_GROUP_TARGET = "ldap_dyn_group_target";
+  private static final String VARIABLE_LDAP_USERDN = "ldap_user_dn";
+  private static final String VARIABLE_LDAP_GROUPDN = "ldap_group_dn";
+  private static final String VARIABLE_LDAP_ACCOUNT_STATUS = "ldap_account_status";
+
+  private String LDAP_AUTH = "false";
+  private String LDAP_GROUP_MAPPING = "";
+  private String LDAP_USER_ID = "uid"; //login name
+  private String LDAP_USER_GIVEN_NAME = "givenName";
+  private String LDAP_USER_SURNAME = "sn";
+  private String LDAP_USER_EMAIL = "mail";
+  private String LDAP_USER_SEARCH_FILTER = "uid=%s";
+  private String LDAP_GROUP_SEARCH_FILTER = "member=%d";
+  private String LDAP_ATTR_BINARY = "java.naming.ldap.attributes.binary";
+  private String LDAP_GROUP_TARGET = "cn";
+  private String LDAP_DYNAMIC_GROUP_TARGET = "memberOf";
+  private String LDAP_LDAP_USERDN = "";
+  private String LDAP_LDAP_GROUPDN = "";
+  private int LDAP_ACCOUNT_STATUS = 4;
+
+  private void populateLDAPCache() {
+    LDAP_AUTH = setVar(VARIABLE_LDAP_AUTH, LDAP_AUTH);
+    LDAP_GROUP_MAPPING = setVar(VARIABLE_LDAP_GROUP_MAPPING, LDAP_GROUP_MAPPING);
+    LDAP_USER_ID = setVar(VARIABLE_LDAP_USER_ID, LDAP_USER_ID);
+    LDAP_USER_GIVEN_NAME = setVar(VARIABLE_LDAP_USER_GIVEN_NAME, LDAP_USER_GIVEN_NAME);
+    LDAP_USER_SURNAME = setVar(VARIABLE_LDAP_USER_SURNAME, LDAP_USER_SURNAME);
+    LDAP_USER_EMAIL = setVar(VARIABLE_LDAP_USER_EMAIL, LDAP_USER_EMAIL);
+    LDAP_USER_SEARCH_FILTER = setVar(VARIABLE_LDAP_USER_SEARCH_FILTER, LDAP_USER_SEARCH_FILTER);
+    LDAP_GROUP_SEARCH_FILTER = setVar(VARIABLE_LDAP_GROUP_SEARCH_FILTER, LDAP_GROUP_SEARCH_FILTER);
+    LDAP_ATTR_BINARY = setVar(VARIABLE_LDAP_ATTR_BINARY, LDAP_ATTR_BINARY);
+    LDAP_GROUP_TARGET = setVar(VARIABLE_LDAP_GROUP_TARGET, LDAP_GROUP_TARGET);
+    LDAP_DYNAMIC_GROUP_TARGET = setVar(VARIABLE_LDAP_DYNAMIC_GROUP_TARGET, LDAP_DYNAMIC_GROUP_TARGET);
+    LDAP_LDAP_USERDN = setVar(VARIABLE_LDAP_USERDN, LDAP_LDAP_USERDN);
+    LDAP_LDAP_GROUPDN = setVar(VARIABLE_LDAP_GROUPDN, LDAP_LDAP_GROUPDN);
+    LDAP_ACCOUNT_STATUS = setIntVar(VARIABLE_LDAP_ACCOUNT_STATUS, LDAP_ACCOUNT_STATUS);
+  }
+
+  public synchronized String getLDAPAuthStatus() {
+    checkCache();
+    return LDAP_AUTH;
+  }
+
+  public synchronized String getLdapGroupMapping() {
+    checkCache();
+    return LDAP_GROUP_MAPPING;
+  }
+
+  public synchronized String getLdapUserId() {
+    checkCache();
+    return LDAP_USER_ID;
+  }
+
+  public synchronized String getLdapUserGivenName() {
+    checkCache();
+    return LDAP_USER_GIVEN_NAME;
+  }
+
+  public synchronized String getLdapUserSurname() {
+    checkCache();
+    return LDAP_USER_SURNAME;
+  }
+
+  public synchronized String getLdapUserMail() {
+    checkCache();
+    return LDAP_USER_EMAIL;
+  }
+
+  public synchronized String getLdapUserSearchFilter() {
+    checkCache();
+    return LDAP_USER_SEARCH_FILTER;
+  }
+
+  public synchronized String getLdapGroupSearchFilter() {
+    checkCache();
+    return LDAP_GROUP_SEARCH_FILTER;
+  }
+
+  public synchronized String getLdapAttrBinary() {
+    checkCache();
+    return LDAP_ATTR_BINARY;
+  }
+
+  public synchronized String getLdapGroupTarget() {
+    checkCache();
+    return LDAP_GROUP_TARGET;
+  }
+
+  public synchronized String getLdapDynGroupTarget() {
+    checkCache();
+    return LDAP_DYNAMIC_GROUP_TARGET;
+  }
+
+  public synchronized String getLdapUserDN() {
+    checkCache();
+    return LDAP_LDAP_USERDN;
+  }
+
+  public synchronized String getLdapGroupDN() {
+    checkCache();
+    return LDAP_LDAP_GROUPDN;
+  }
+
+  public synchronized int getLdapAccountStatus() {
+    checkCache();
+    return LDAP_ACCOUNT_STATUS;
+  }
+  //----------------------------END LDAP------------------------------------
 }

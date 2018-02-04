@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.project;
 
 import java.util.Date;
@@ -16,7 +35,6 @@ public class ProjectDTO {
   private String description;
   private Date retentionPeriod;
   private Date created;
-  private String ethicalStatus;
   private boolean archived;
   private List<String> services;
   private List<ProjectTeam> projectTeam;
@@ -42,7 +60,6 @@ public class ProjectDTO {
     this.owner = project.getOwner().getEmail();
     this.retentionPeriod = project.getRetentionPeriod();
     this.created = project.getCreated();
-    this.ethicalStatus = project.getEthicalStatus();
     this.archived = project.getArchived();
     this.description = project.getDescription();
     this.services = services;
@@ -60,7 +77,6 @@ public class ProjectDTO {
     this.owner = project.getOwner().getEmail();
     this.retentionPeriod = project.getRetentionPeriod();
     this.created = project.getCreated();
-    this.ethicalStatus = project.getEthicalStatus();
     this.archived = project.getArchived();
     this.description = project.getDescription();
     this.services = services;
@@ -69,15 +85,13 @@ public class ProjectDTO {
   }
 
   public ProjectDTO(Integer projectId, String projectName, String owner,
-      Date retentionPeriod, Date created, String ethicalStatus,
-      boolean archived, String description,
+      Date retentionPeriod, Date created, boolean archived, String description,
       List<String> services, List<ProjectTeam> projectTeam) {
     this.projectId = projectId;
     this.projectName = projectName;
     this.owner = owner;
     this.retentionPeriod = retentionPeriod;
     this.created = created;
-    this.ethicalStatus = ethicalStatus;
     this.archived = archived;
     this.description = description;
     this.services = services;
@@ -130,14 +144,6 @@ public class ProjectDTO {
 
   public void setCreated(Date created) {
     this.created = created;
-  }
-
-  public String getEthicalStatus() {
-    return ethicalStatus;
-  }
-
-  public void setEthicalStatus(String ethicalStatus) {
-    this.ethicalStatus = ethicalStatus;
   }
 
   public boolean isArchived() {
@@ -200,8 +206,8 @@ public class ProjectDTO {
   public String toString() {
     return "ProjectDTO{" + "projectName=" + projectName + ", owner=" + owner
         + ", description=" + description + ", retentionPeriod="
-        + retentionPeriod + ", created=" + created + ", ethicalStatus="
-        + ethicalStatus + ", archived=" + archived + ", services="
+        + retentionPeriod + ", created=" + created + ", archived="
+        + archived + ", services="
         + services + ", projectTeam=" + projectTeam + '}';
   }
 

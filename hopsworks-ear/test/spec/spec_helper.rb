@@ -1,3 +1,22 @@
+=begin
+This file is part of HopsWorks
+
+Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+
+HopsWorks is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+HopsWorks is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+=end
+
 require 'airborne'
 require 'byebug'
 require 'active_record'
@@ -90,7 +109,7 @@ def clean_test_data
     system("cd #{ENV['RSPEC_USER_DIR']}; vagrant ssh -c 'sudo -u root -H sh -c \" cat /srv/hops/domains/tables.sql | /srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh --database=hopsworks \" ' ")
     system("cd #{ENV['RSPEC_USER_DIR']}; vagrant ssh -c 'sudo -u root -H sh -c \" cat /srv/hops/domains/rows.sql   | /srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh --database=hopsworks \" ' ")
     system("cd #{ENV['RSPEC_USER_DIR']}; vagrant ssh -c 'sudo -u root -H sh -c \" cat /srv/hops/domains/views.sql  | /srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh --database=hopsworks \" ' ")
-    system("cd #{ENV['RSPEC_USER_DIR']}; vagrant ssh -c  'sudo -u root -H sh -c \" /srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh --database=hopsworks -e \\\" UPDATE hosts SET registered=1 WHERE id=1; \\\" \" ' ")
+    system("cd #{ENV['RSPEC_USER_DIR']}; vagrant ssh -c 'sudo -u root -H sh -c \" /srv/hops/mysql-cluster/ndb/scripts/mysql-client.sh --database=hopsworks -e \\\" UPDATE hosts SET registered=1 WHERE id=1; \\\" \" ' ")
     puts "DataBase Clean-up finished."
   end
 end

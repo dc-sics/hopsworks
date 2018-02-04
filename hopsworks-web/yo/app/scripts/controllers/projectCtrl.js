@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*jshint undef: false, unused: false, indent: 2*/
 /*global angular: false */
 
@@ -31,9 +50,9 @@ angular.module('hopsWorksApp')
 
             // We could instead implement a service to get all the available types but this will do it for now
             if ($rootScope.isDelaEnabled) {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA'];
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
             } else {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE'];
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
             }
 
             $scope.activeService = "home";
@@ -225,7 +244,6 @@ angular.module('hopsWorksApp')
                 'description': self.currentProject.description,
                 'services': self.selectionProjectTypes,
                 'retentionPeriod': self.currentProject.retentionPeriod,
-                'ethicalStatus': self.currentProject.ethicalStatus
               };
 
               ProjectService.update({id: self.currentProject.projectId}, $scope.newProject)
@@ -336,11 +354,15 @@ angular.module('hopsWorksApp')
 
 
             self.goToWorklows = function () {
-              self.goToUrl('workflows');
+              self.goToUrl('workflows');f
             };
 
             self.goToTensorflow = function () {
               self.goToUrl('tensorflow');
+            };
+
+            self.goToTfServing = function () {
+              self.goToUrl('tfserving');
             };
 
             self.goToKafka = function () {
@@ -432,10 +454,6 @@ angular.module('hopsWorksApp')
               return showService("Charon");
             };
 
-            self.showBiobanking = function () {
-              return showService("Biobanking");
-            };
-
             self.showKafka = function () {
               return showService("Kafka");
             };
@@ -449,6 +467,10 @@ angular.module('hopsWorksApp')
 
             self.showTensorflow = function () {
               return showService("Tensorflow");
+            };
+
+            self.showTfServing = function () {
+              return showService("Serving");
             };
 
             self.showWorkflows = function () {

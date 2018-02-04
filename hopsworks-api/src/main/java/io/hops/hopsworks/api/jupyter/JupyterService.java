@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.jupyter;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -23,7 +42,7 @@ import io.hops.hopsworks.common.dao.jobs.quota.YarnProjectsQuotaFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettingsFacade;
-import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessFacade;
+import io.hops.hopsworks.common.dao.jupyter.config.JupyterProcessMgr;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterDTO;
 import io.hops.hopsworks.common.dao.jupyter.config.JupyterFacade;
 import io.hops.hopsworks.common.dao.project.PaymentType;
@@ -70,7 +89,7 @@ public class JupyterService {
   @EJB
   private UserFacade userFacade;
   @EJB
-  private JupyterProcessFacade jupyterProcessFacade;
+  private JupyterProcessMgr jupyterProcessFacade;
   @EJB
   private JupyterFacade jupyterFacade;
   @EJB
@@ -91,6 +110,7 @@ public class JupyterService {
   private YarnProjectsQuotaFacade yarnProjectsQuotaFacade;
 
   private Integer projectId;
+  // No @EJB annotation for Project, it's injected explicitly in ProjectService.
   private Project project;
 
   public JupyterService() {
@@ -222,8 +242,7 @@ public class JupyterService {
       jupyterFacade.update(jp);
     }
 
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        jp).build();
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(jp).build();
   }
 
   @POST
@@ -252,44 +271,36 @@ public class JupyterService {
           "First enable Anaconda. Click on 'Settings -> Python'");
     }
 
-    if(project.getPaymentType().equals(PaymentType.PREPAID)){
+    if (project.getPaymentType().equals(PaymentType.PREPAID)) {
       YarnProjectsQuota projectQuota = yarnProjectsQuotaFacade.findByProjectName(project.getName());
-      if(projectQuota==null || projectQuota.getQuotaRemaining() < 0){
+      if (projectQuota == null || projectQuota.getQuotaRemaining() < 0) {
         throw new AppException(Response.Status.FORBIDDEN.getStatusCode(), "This project is out of credits.");
       }
     }
-    
+
     JupyterProject jp = jupyterFacade.findByUser(hdfsUser);
 
     if (jp == null) {
       HdfsUsers user = hdfsUsersFacade.findByName(hdfsUser);
 
-      String configSecret = DigestUtils.sha256Hex(Integer.toString(
-          ThreadLocalRandom.current().nextInt()));
+      String configSecret = DigestUtils.sha256Hex(Integer.toString(ThreadLocalRandom.current().nextInt()));
       JupyterDTO dto;
       DistributedFileSystemOps dfso = dfsService.getDfsOps();
       String[] project_user = hdfsUser.split(HdfsUsersController.USER_NAME_DELIMITER);
 
       try {
-
         jupyterSettingsFacade.update(jupyterSettings);
-
         dto = jupyterProcessFacade.startServerAsJupyterUser(project, configSecret, hdfsUser, jupyterSettings);
-
         if (dto == null) {
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");
         }
-
-        HopsUtils.materializeCertificatesForUser(project.getName(),
-            project_user[1], settings.getHopsworksTmpCertDir(), settings
-            .getHdfsTmpCertDir(), dfso, certificateMaterializer,
-            settings);
+        HopsUtils.materializeCertificatesForUser(project.getName(), project_user[1], settings.getHopsworksTmpCertDir(),
+            settings.getHdfsTmpCertDir(), dfso, certificateMaterializer, settings);
       } catch (InterruptedException | IOException ex) {
         Logger.getLogger(JupyterService.class.getName()).log(Level.SEVERE, null, ex);
         try {
-          HopsUtils.cleanupCertificatesForUser(project_user[1], project
-              .getName(), settings.getHdfsTmpCertDir(), dfso,
+          HopsUtils.cleanupCertificatesForUser(project_user[1], project.getName(), settings.getHdfsTmpCertDir(), dfso,
               certificateMaterializer);
         } catch (IOException e) {
           LOGGER.log(Level.SEVERE, "Could not cleanup certificates for " + hdfsUser);
@@ -369,13 +380,12 @@ public class JupyterService {
           "Could not find Jupyter entry for user: " + hdfsUser);
     }
     livyService.deleteAllLivySessions(hdfsUser, ProjectServiceEnum.JUPYTER);
-    String projectPath = jupyterProcessFacade.getJupyterHome(hdfsUser, jp);
+    String jupyterHomePath = jupyterProcessFacade.getJupyterHome(hdfsUser, jp);
 
     // stop the server, remove the user in this project's local dirs
-    jupyterProcessFacade.killServerJupyterUser(projectPath, jp.getPid(), jp.
+    // This method also removes the corresponding row for the Notebook process in the JupyterProject table.
+    jupyterProcessFacade.killServerJupyterUser(hdfsUser, jupyterHomePath, jp.getPid(), jp.
         getPort());
-    // remove the reference to th e server in the DB.
-    jupyterFacade.removeNotebookServer(hdfsUser);
 
     String[] project_user = hdfsUser.split(HdfsUsersController.USER_NAME_DELIMITER);
     DistributedFileSystemOps dfso = dfsService.getDfsOps();

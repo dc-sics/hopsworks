@@ -1,6 +1,25 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.kmon.host;
 
-import io.hops.hopsworks.common.dao.host.HostEJB;
+import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.host.Hosts;
 import java.io.Serializable;
 import java.util.List;
@@ -16,9 +35,9 @@ import javax.faces.context.FacesContext;
 import io.hops.hopsworks.common.dao.command.Command;
 import io.hops.hopsworks.common.dao.command.CommandEJB;
 import io.hops.hopsworks.common.util.WebCommunication;
-import io.hops.hopsworks.common.dao.role.Roles;
-import io.hops.hopsworks.common.dao.role.RoleEJB;
 import io.hops.hopsworks.common.dao.host.Status;
+import io.hops.hopsworks.common.dao.kagent.HostServices;
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import java.io.Reader;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -34,9 +53,9 @@ import javax.ws.rs.core.Response.Status.Family;
 public class HostController implements Serializable {
 
   @EJB
-  private HostEJB hostEJB;
+  private HostsFacade hostsFacade;
   @EJB
-  private RoleEJB roleEjb;
+  private HostServicesFacade hostServicesFacade;
   @EJB
   private CommandEJB commandEJB;
   @EJB
@@ -47,17 +66,17 @@ public class HostController implements Serializable {
 
   @ManagedProperty("#{param.cluster}")
   private String cluster;
-  @ManagedProperty("#{param.hostid}")
-  private String hostId;
+  @ManagedProperty("#{param.hostname}")
+  private String hostname;
   @ManagedProperty("#{param.command}")
   private String command;
+  @ManagedProperty("#{param.group}")
+  private String group;
   @ManagedProperty("#{param.service}")
   private String service;
-  @ManagedProperty("#{param.role}")
-  private String role;
   private Hosts host;
   private boolean found;
-  private List<Roles> roles;
+  private List<HostServices> services;
   private static final Logger logger = Logger.getLogger(HostController.class.
           getName());
 
@@ -68,7 +87,7 @@ public class HostController implements Serializable {
   public void init() {
     logger.info("init HostController");
     loadHost();
-    loadRoles();
+    loadHostServices();
   }
 
   public void setCommand(String command) {
@@ -79,18 +98,6 @@ public class HostController implements Serializable {
     return command;
   }
 
-  public void setRole(String role) {
-    this.role = role;
-  }
-
-  public String getRole() {
-    return role;
-  }
-
-  public void setHostId(String hostId) {
-    this.hostId = hostId;
-  }
-
   public void setService(String service) {
     this.service = service;
   }
@@ -99,8 +106,20 @@ public class HostController implements Serializable {
     return service;
   }
 
-  public String getHostId() {
-    return hostId;
+  public String getHostname() {
+    return hostname;
+  }
+
+  public void setHostname(String hostname) {
+    this.hostname = hostname;
+  }
+
+  public void setGroup(String group) {
+    this.group = group;
+  }
+
+  public String getGroup() {
+    return group;
   }
 
   public void setCluster(String cluster) {
@@ -126,24 +145,24 @@ public class HostController implements Serializable {
 
   private void loadHost() {
     try {
-      host = hostEJB.findByHostname(hostId);
+      host = hostsFacade.findByHostname(hostname);
       if (host != null) {
         found = true;
       }
     } catch (Exception ex) {
-      logger.log(Level.WARNING, "Host {0} not found.", hostId);
+      logger.log(Level.WARNING, "Host {0} not found.", hostname);
     }
   }
 
-  private void loadRoles() {
-    roles = roleEjb.findHostRoles(hostId);
+  private void loadHostServices() {
+    services = hostServicesFacade.findHostServiceByHostname(hostname);
   }
 
   public void doCommand() throws Exception {
     //  TODO: If the web application server crashes, status will remain 'Running'.
-    Command c = new Command(command, hostId, service, role, cluster);
+    Command c = new Command(command, hostname, group, service, cluster);
     commandEJB.persistCommand(c);
-    Hosts h = hostEJB.findByHostname(hostId);
+    Hosts h = hostsFacade.findByHostname(hostname);
     FacesContext context = FacesContext.getCurrentInstance();
 //    CommandThread r = new CommandThread(context, h.getPublicOrPrivateIp(), c);
 //    Thread t = new Thread(r);
@@ -152,9 +171,9 @@ public class HostController implements Serializable {
     runCommands(context, h.getPublicOrPrivateIp(), h.getAgentPassword(), c);
   }
 
-  public List<Roles> getRoles() {
-    loadRoles();
-    return roles;
+  public List<HostServices> getHostServices() {
+    loadHostServices();
+    return services;
   }
 
 //  class CommandThread implements Runnable {//it's not bad, because he does bad thing :D
@@ -172,15 +191,15 @@ public class HostController implements Serializable {
 //    public void run() {
 //      FacesMessage message;
 //      try {
-//        ClientResponse response = web.doCommand(hostAddress, cluster, service,
-//                role, command);
+//        ClientResponse response = web.doCommand(hostAddress, cluster, group,
+//                service, command);
 //
 //        Thread.sleep(3000);
 //
 //        if (response.getClientResponseStatus().getFamily() == Family.SUCCESSFUL) {
 //          c.succeeded();
 //          String messageText = "";
-//          Role r = roleEjb.find(hostId, cluster, service, role);
+//          Role r = roleEjb.find(hostname, cluster, group, service);
 //
 //          if (command.equalsIgnoreCase("start")) {
 //            JsonObject json
@@ -245,7 +264,7 @@ public class HostController implements Serializable {
       FacesMessage message;
       try {
         Response response = web.doCommand(hostAddress, agentPassword,
-                cluster, service, role, command);
+                cluster, group, service, command);
 
         Thread.sleep(3000);
         int code = response.getStatus();
@@ -253,20 +272,20 @@ public class HostController implements Serializable {
         if (res == Response.Status.Family.SUCCESSFUL) {
           c.succeeded();
           String messageText = "";
-          Roles r = roleEjb.find(hostId, cluster, service, role);
+          HostServices hs = hostServicesFacade.find(hostname, cluster, group, service);
 
           if (command.equalsIgnoreCase("start")) {
             JsonObject json
                     = Json.createReader(response.readEntity(Reader.class)).
                     readObject();
             messageText = json.getString("msg");
-            r.setStatus(Status.Started);
+            hs.setStatus(Status.Started);
 
           } else if (command.equalsIgnoreCase("stop")) {
             messageText = command + ": " + response.readEntity(String.class);
-            r.setStatus(Status.Stopped);
+            hs.setStatus(Status.Stopped);
           }
-          roleEjb.store(r);
+          hostServicesFacade.store(hs);
           message = new FacesMessage(FacesMessage.SEVERITY_INFO, "Success",
                   messageText);
 

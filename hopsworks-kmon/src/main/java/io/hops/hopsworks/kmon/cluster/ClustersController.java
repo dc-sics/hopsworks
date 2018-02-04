@@ -1,5 +1,26 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.kmon.cluster;
 
+import io.hops.hopsworks.common.dao.kagent.HostServices;
+import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -7,8 +28,6 @@ import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.RequestScoped;
-import io.hops.hopsworks.common.dao.role.RoleEJB;
-import io.hops.hopsworks.common.dao.role.Roles;
 import io.hops.hopsworks.kmon.struct.ClusterInfo;
 
 @ManagedBean
@@ -16,7 +35,7 @@ import io.hops.hopsworks.kmon.struct.ClusterInfo;
 public class ClustersController {
 
   @EJB
-  private RoleEJB roleEjb;
+  private HostServicesFacade hostServicesFacade;
   private static final Logger LOGGER = Logger.getLogger(ClustersController.class.getName());
   private List<ClusterInfo> clusters;
 
@@ -35,26 +54,26 @@ public class ClustersController {
   }
 
   private void loadClusters() {
-    for (String cluster : roleEjb.findClusters()) {
+    for (String cluster : hostServicesFacade.findClusters()) {
       ClusterInfo clusterInfo = new ClusterInfo(cluster);
-      clusterInfo.setNumberOfHost(roleEjb.countHosts(cluster));
-      clusterInfo.setTotalCores(roleEjb.totalCores(cluster));
-      clusterInfo.setTotalMemoryCapacity(roleEjb.totalMemoryCapacity(cluster));
-      clusterInfo.setTotalDiskCapacity(roleEjb.totalDiskCapacity(cluster));
-      clusterInfo.addRoles(roleEjb.findRoleHost(cluster));
+      clusterInfo.setNumberOfHosts(hostServicesFacade.countHosts(cluster));
+      clusterInfo.setTotalCores(hostServicesFacade.totalCores(cluster));
+      clusterInfo.setTotalMemoryCapacity(hostServicesFacade.totalMemoryCapacity(cluster));
+      clusterInfo.setTotalDiskCapacity(hostServicesFacade.totalDiskCapacity(cluster));
+      clusterInfo.addServices(hostServicesFacade.findHostServicesByCluster(cluster));
       clusters.add(clusterInfo);
     }
   }
  
   public String getNameNodesString() {
-    String hosts = "";
-    List<Roles> roles = roleEjb.findRoles("namenode");
-    if (roles != null && !roles.isEmpty()) {
-      hosts = hosts + roles.get(0).getHost();
-      for (int i = 1; i < roles.size(); i++) {
-        hosts = hosts + "," + roles.get(i).getHost();
+    StringBuilder hosts = new StringBuilder();
+    List<HostServices> hostServices = hostServicesFacade.findServices("namenode");
+    if (hostServices != null && !hostServices.isEmpty()) {
+      hosts.append(hostServices.get(0).getHost().getHostname());
+      for (int i = 1; i < hostServices.size(); i++) {
+        hosts.append(",").append(hostServices.get(i).getHost().getHostname());
       }
     }
-    return hosts;
+    return hosts.toString();
   }
 }

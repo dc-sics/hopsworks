@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+<!--
+  ~ This file is part of HopsWorks
+  ~
+  ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+  ~
+  ~ HopsWorks is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU Affero General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ HopsWorks is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License
+  ~ along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml"   
       xmlns:f="http://java.sun.com/jsf/core"
@@ -38,6 +57,27 @@
               <h:form id="manageClusterNodes" >
                 <p:growl id="growl" showDetail="true" sticky="true"/>
 
+
+                <div class="ui-g">
+                  <div class="ui-g-12 ui-md-2" style="float:left"><h3>Anaconda for New Nodes</h3></div>
+                  <div class="ui-g-12 ui-md-8 ui-g-nopad">
+                    <div class="ui-g-12">
+                      <h:outputText value="Anaconda package:  #{nodesBean.anacondaLastSynchronized()}"
+                                    style="float:left"/>
+                    </div>
+                    <div class="ui-g-12">
+                      <h:outputText value="Gpu Anaconda package: #{nodesBean.anacondaGpuLastSynchronized()}"
+                                    style="float:left"/>
+                    </div>
+                  </div>
+                  <div class="ui-g-12 ui-md-2">
+                    <p:commandButton value="Zip Anaconda Libraries"
+                                     style="float:right" 
+                                     actionListener="#{nodesBean.zipUpAnacondaLibs}" ajax ="true" update="@all">
+                    </p:commandButton>
+                  </div>
+                </div>
+
                 <p:dataTable id="nodesTable" var="node"
                              value="#{nodesBean.allNodes}"
                              editable="true"
@@ -57,13 +97,14 @@
                     <h:outputText value="Cluster Nodes"
                                   style="float:center"/>
                     <p:commandButton value="Add new node"
-                                     style="float:right"
+                                     style="float:right" 
                                      actionListener="#{nodesBean.dialogAddNewNode}">
                       <p:ajax event="dialogReturn"
                               listener="#{nodesBean.onDialogAddNewNodeClosed}"
                               update=":manageClusterNodes:growl @form"/>
                     </p:commandButton>
                   </f:facet>
+
 
                   <p:ajax event="rowEdit"
                           listener="#{nodesBean.onRowEdit}"
@@ -162,6 +203,12 @@
                                    icon="ui-icon-close"/>
                 </p:confirmDialog>
               </h:form>   
+
+              <p:ajaxStatus onstart="PF('dlgAction').show()" onsuccess="PF('dlgAction').hide()" />
+
+              <p:dialog widgetVar="dlgAction" header="Ongoing Operation" modal="true" draggable="false" closable="false" resizable="false" showHeader="false">
+                <p:graphicImage library="images"  name="ajaxloadingbar.gif" />
+              </p:dialog>           
 
             </div>
           </div> 

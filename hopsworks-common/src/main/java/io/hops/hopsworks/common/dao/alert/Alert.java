@@ -1,5 +1,25 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.dao.alert;
 
+import io.hops.hopsworks.common.dao.host.Hosts;
 import java.io.Serializable;
 import java.util.Date;
 import javax.persistence.Column;
@@ -13,6 +33,8 @@ import javax.persistence.NamedQuery;
 import javax.persistence.Temporal;
 import java.math.BigInteger;
 import javax.persistence.Basic;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -84,15 +106,17 @@ public class Alert implements Serializable {
   @Size(max = 128)
   @Column(name = "data_source")
   private String dataSource;
-  @Size(max = 256)
-  @Column(name = "hostid")
-  private String hostid;
+  @JoinColumn(name = "host_id",
+      referencedColumnName = "id")
+  @ManyToOne
+  private Hosts host;
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
           max = 1024)
   @Column(name = "message")
   private String message;
+    
   @Size(max = 128)
   @Column(name = "plugin")
   private String plugin;
@@ -113,9 +137,9 @@ public class Alert implements Serializable {
   public Alert() {
   }
 
-  public Alert(String hostId, String message, String plugin,
+  public Alert(Hosts host, String message, String plugin,
           String pluginInstance, String type, String typeInstance) {
-    this.hostid = hostId;
+    this.host = host;
     this.message = message;
     this.plugin = plugin;
     this.pluginInstance = pluginInstance;
@@ -204,12 +228,12 @@ public class Alert implements Serializable {
     this.dataSource = dataSource;
   }
 
-  public String getHostid() {
-    return hostid;
+  public Hosts getHost() {
+    return host;
   }
 
-  public void setHostid(String hostid) {
-    this.hostid = hostid;
+  public void setHost(Hosts host) {
+    this.host = host;
   }
 
   public String getMessage() {
@@ -292,7 +316,7 @@ public class Alert implements Serializable {
   @Override
   public String toString() {
     return "Alert: " + message + "\r"
-         + "Host : " + hostid + "\r"
+         + "Host : " + host.getHostname() + "\r"
          + "Type: " + type +  "\r"
          + "Type Instance: " + typeInstance +  "\r"
          + "Current Value: " + currentValue +  "\r"

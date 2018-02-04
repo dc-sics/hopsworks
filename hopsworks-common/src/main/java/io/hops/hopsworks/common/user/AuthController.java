@@ -1,6 +1,24 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.user;
 
-import io.hops.hopsworks.common.constants.auth.AuthenticationConstants;
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.certificates.ProjectGenericUserCerts;
 import io.hops.hopsworks.common.dao.certificates.UserCerts;
@@ -10,17 +28,20 @@ import io.hops.hopsworks.common.dao.user.BbcGroup;
 import io.hops.hopsworks.common.dao.user.BbcGroupFacade;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUser;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUserFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountsAuditActions;
-import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditActions;
+import io.hops.hopsworks.common.dao.user.security.audit.RolesAuditAction;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountStatus;
-import io.hops.hopsworks.common.dao.user.security.ua.PeopleAccountType;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountType;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
+import io.hops.hopsworks.common.user.ldap.LdapRealm;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
@@ -41,6 +62,8 @@ import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.naming.NamingException;
+import javax.security.auth.login.LoginException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -72,23 +95,31 @@ public class AuthController {
   private ProjectFacade projectFacade;
   @EJB
   private CertificatesMgmService certificatesMgmService;
+  @EJB
+  private LdapRealm ldapRealm;
+  @EJB
+  private LdapUserFacade ldapUserFacade;
 
   /**
    * Pre check for custom realm login.
+   *
    * @param user
    * @param password
    * @param otp
    * @param req
    * @return
-   * @throws AppException 
+   * @throws AppException
    */
-  public String preCustomRealmLoginCheck(Users user, String password, String otp, HttpServletRequest req) 
+  public String preCustomRealmLoginCheck(Users user, String password, String otp, HttpServletRequest req)
       throws AppException {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
     }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Can not login ldap user. Use LDAP login.");
+    }
     if (isTwoFactorEnabled(user)) {
-      if ((otp == null || otp.isEmpty()) && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {
+      if ((otp == null || otp.isEmpty()) && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
         if (checkPasswordAndStatus(user, password, req)) {
           throw new IllegalStateException("Second factor required.");
         }
@@ -96,24 +127,31 @@ public class AuthController {
     }
 
     // Add padding if custom realm is disabled
-    if (otp == null || otp.isEmpty() && user.getMode().equals(PeopleAccountType.M_ACCOUNT_TYPE)) {
-      otp = AuthenticationConstants.MOBILE_OTP_PADDING;
+    if (otp == null || otp.isEmpty() && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
+      otp = Settings.MOBILE_OTP_PADDING;
     }
     String newPassword = getPasswordPlusSalt(password, user.getSalt());
-    if (otp.length() == AuthenticationConstants.MOBILE_OTP_PADDING.length() && user.getMode().equals(
-        PeopleAccountType.M_ACCOUNT_TYPE)) {
+    if (otp.length() == Settings.MOBILE_OTP_PADDING.length() && user.getMode().equals(UserAccountType.M_ACCOUNT_TYPE)) {
       newPassword = newPassword + otp;
-    } else if (otp.length() == AuthenticationConstants.YUBIKEY_OTP_PADDING.length() && user.getMode().equals(
-        PeopleAccountType.Y_ACCOUNT_TYPE)) {
-      newPassword = newPassword + otp + AuthenticationConstants.YUBIKEY_USER_MARKER;
     } else {
       throw new IllegalArgumentException("Could not recognize the account type. Report a bug.");
     }
     return newPassword;
   }
 
+  public String preLdapLoginCheck(Users user, String password, HttpServletRequest req) {
+    if (user == null) {
+      throw new IllegalArgumentException("User not set.");
+    }
+    if (!user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("User is not registerd as ldap user.");
+    }
+    String newPassword = getPasswordPlusSalt(password, user.getSalt()) + Settings.MOBILE_OTP_PADDING;
+    return newPassword;
+  }
+
   /**
-   * Validates password and update account audit
+   * Validates password and update account audit. Use validatePwd if ldap user.
    *
    * @param user
    * @param password
@@ -123,6 +161,48 @@ public class AuthController {
   public boolean validatePassword(Users user, String password, HttpServletRequest req) {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Operation not allowed for LDAP account.");
+    }
+    String userPwdHash = user.getPassword();
+    String pwdHash = getPasswordHash(password, user.getSalt());
+    if (!userPwdHash.equals(pwdHash)) {
+      registerFalseLogin(user, req);
+      LOGGER.log(Level.WARNING, "False login attempt by user: {0}", user.getEmail());
+      return false;
+    }
+    resetFalseLogin(user);
+    return true;
+  }
+  
+  /**
+   * Validate password works both for hopsworks and ldap user
+   * @param user
+   * @param password
+   * @param req
+   * @return
+   */
+  public boolean validatePwd(Users user, String password, HttpServletRequest req) {
+    if (user == null) {
+      throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      LdapUser ldapUser = ldapUserFacade.findByUsers(user);
+      if (ldapUser == null) {
+        return false;
+      }
+      try {
+        ldapRealm.authenticateLdapUser(ldapUser, password);
+        return true;
+      } catch (LoginException ex) {
+        LOGGER.log(Level.WARNING, "False login attempt by ldap user: {0}", user.getEmail());
+        LOGGER.log(Level.WARNING, null, ex.getMessage());
+        return false;
+      } catch (EJBException | NamingException ee) {
+        LOGGER.log(Level.WARNING, "Could not reach LDAP server. {0}", ee.getMessage());
+        throw new IllegalStateException("Could not reach LDAP server.");
+      }
     }
     String userPwdHash = user.getPassword();
     String pwdHash = getPasswordHash(password, user.getSalt());
@@ -136,18 +216,22 @@ public class AuthController {
   }
 
   /**
-   * Validate security question and update false login attempts   
+   * Validate security question and update false login attempts
+   *
    * @param user
    * @param securityQuestion
    * @param securityAnswer
    * @param req
    * @return
-   * @throws AppException 
+   * @throws AppException
    */
   public boolean validateSecurityQA(Users user, String securityQuestion, String securityAnswer, HttpServletRequest req)
       throws AppException {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
+    }
+    if (user.getMode().equals(UserAccountType.LDAP_ACCOUNT_TYPE)) {
+      throw new IllegalArgumentException("Operation not allowed for LDAP account.");
     }
     if (!user.getSecurityQuestion().getValue().equalsIgnoreCase(securityQuestion)
         || !user.getSecurityAnswer().equals(DigestUtils.sha256Hex(securityAnswer.toLowerCase()))) {
@@ -160,11 +244,12 @@ public class AuthController {
 
   /**
    * Checks password and user status. Also updates false login attempts
+   *
    * @param user
    * @param password
    * @param req
    * @return
-   * @throws AppException 
+   * @throws AppException
    */
   public boolean checkPasswordAndStatus(Users user, String password, HttpServletRequest req) throws AppException {
     if (user == null) {
@@ -178,20 +263,21 @@ public class AuthController {
 
   /**
    * Validates email validation key. Also updates false key validation attempts.
+   *
    * @param key
    * @param req
-   * @throws AppException 
+   * @throws AppException
    */
   public void validateKey(String key, HttpServletRequest req) throws AppException {
     if (key == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "the validation key should not be null");
     }
-    if (key.length() <= AuthenticationConstants.USERNAME_LENGTH) {
+    if (key.length() <= Settings.USERNAME_LENGTH) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "The validation key is invalid");
     }
-    String userName = key.substring(0, AuthenticationConstants.USERNAME_LENGTH);
+    String userName = key.substring(0, Settings.USERNAME_LENGTH);
     // get the 8 char username
-    String secret = key.substring(AuthenticationConstants.USERNAME_LENGTH);
+    String secret = key.substring(Settings.USERNAME_LENGTH);
     Users user = userFacade.findByUsername(userName);
     if (user == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "The user does not exist");
@@ -201,8 +287,7 @@ public class AuthController {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(), "Wrong validation key");
     }
 
-    if (!user.getStatus().equals(PeopleAccountStatus.NEW_MOBILE_ACCOUNT) && !user.getStatus().equals(
-        PeopleAccountStatus.NEW_YUBIKEY_ACCOUNT)) {
+    if (!user.getStatus().equals(UserAccountStatus.NEW_MOBILE_ACCOUNT)) {
       switch (user.getStatus()) {
         case VERIFIED_ACCOUNT:
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
@@ -214,17 +299,18 @@ public class AuthController {
       }
     }
 
-    user.setStatus(PeopleAccountStatus.VERIFIED_ACCOUNT);
+    user.setStatus(UserAccountStatus.VERIFIED_ACCOUNT);
     userFacade.update(user);
-    accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.VERIFIED_ACCOUNT.name(), RolesAuditActions.SUCCESS.
+    accountAuditFacade.registerRoleChange(user, UserAccountStatus.VERIFIED_ACCOUNT.name(), RolesAuditAction.SUCCESS.
         name(), "Account verification", user, req);
   }
 
   /**
    * Sends new activation key to the given user.
+   *
    * @param user
    * @param req
-   * @throws MessagingException 
+   * @throws MessagingException
    */
   public void sendNewValidationKey(Users user, HttpServletRequest req) throws MessagingException {
     if (user == null) {
@@ -305,9 +391,10 @@ public class AuthController {
 
   /**
    * Hash password + salt
+   *
    * @param password
    * @param salt
-   * @return 
+   * @return
    */
   public String getPasswordHash(String password, String salt) {
     return getHash(getPasswordPlusSalt(password, salt));
@@ -315,8 +402,9 @@ public class AuthController {
 
   /**
    * Returns the hash of the value
+   *
    * @param val
-   * @return 
+   * @return
    */
   public String getHash(String val) {
     return DigestUtils.sha256Hex(val);
@@ -344,10 +432,11 @@ public class AuthController {
 
   /**
    * Change security question and adds account audit for the operation.
+   *
    * @param user
    * @param securityQuestion
    * @param securityAnswer
-   * @param req 
+   * @param req
    */
   public void changeSecQA(Users user, String securityQuestion, String securityAnswer, HttpServletRequest req) {
     user.setSecurityQuestion(SecurityQuestion.getQuestion(securityQuestion));
@@ -359,9 +448,10 @@ public class AuthController {
 
   /**
    * Concatenates password and salt
+   *
    * @param password
    * @param salt
-   * @return 
+   * @return
    */
   public String getPasswordPlusSalt(String password, String salt) {
     return password + salt;
@@ -391,7 +481,7 @@ public class AuthController {
               + Settings.PROJECT_GENERIC_USER_SUFFIX);
           pguCerts.add(userCertsFacade.findProjectGenericUserCerts(project.getName()
               + Settings.PROJECT_GENERIC_USER_SUFFIX));
-          String pguCertPassword = HopsUtils.decrypt(oldPass, pguCert.getCertificatePassword(), 
+          String pguCertPassword = HopsUtils.decrypt(oldPass, pguCert.getCertificatePassword(),
               masterEncryptionPassword);
           //Encrypt it with new password and store it in the db
           String newPguSecret = HopsUtils.encrypt(p.getPassword(), pguCertPassword, masterEncryptionPassword);
@@ -399,7 +489,7 @@ public class AuthController {
           userCertsFacade.updatePGUCert(pguCert);
         }
       }
-    } catch (Exception ex) { 
+    } catch (Exception ex) {
       LOGGER.log(Level.SEVERE, null, ex);
       throw new EJBException(ex);
     }
@@ -408,8 +498,9 @@ public class AuthController {
 
   /**
    * Register failed login attempt.
+   *
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerFalseLogin(Users user, HttpServletRequest req) {
     if (user != null) {
@@ -417,15 +508,15 @@ public class AuthController {
       user.setFalseLogin(count);
 
       // block the user account if more than allowed false logins
-      if (count > AuthenticationConstants.ALLOWED_FALSE_LOGINS) {
-        user.setStatus(PeopleAccountStatus.BLOCKED_ACCOUNT);
+      if (count > Settings.ALLOWED_FALSE_LOGINS) {
+        user.setStatus(UserAccountStatus.BLOCKED_ACCOUNT);
         try {
           emailBean.sendEmail(user.getEmail(), Message.RecipientType.TO,
               UserAccountsEmailMessages.ACCOUNT_BLOCKED__SUBJECT, UserAccountsEmailMessages.accountBlockedMessage());
         } catch (MessagingException ex) {
           LOGGER.log(Level.SEVERE, "Failed to send email. ", ex);
         }
-        accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), RolesAuditActions.SUCCESS.
+        accountAuditFacade.registerRoleChange(user, UserAccountStatus.SPAM_ACCOUNT.name(), RolesAuditAction.SUCCESS.
             name(), "False login retries:" + Integer.toString(count), user, req);
       }
       // notify user about the false attempts
@@ -435,8 +526,9 @@ public class AuthController {
 
   /**
    * Registers failed email validation
+   *
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerFalseKeyValidation(Users user, HttpServletRequest req) {
     if (user != null) {
@@ -444,42 +536,45 @@ public class AuthController {
       user.setFalseLogin(count);
 
       // make the user spam account if more than allowed tries
-      if (count > AuthenticationConstants.ACCOUNT_VALIDATION_TRIES) {
-        user.setStatus(PeopleAccountStatus.SPAM_ACCOUNT);
+      if (count > Settings.ACCOUNT_VALIDATION_TRIES) {
+        user.setStatus(UserAccountStatus.SPAM_ACCOUNT);
       }
       userFacade.update(user);
-      accountAuditFacade.registerRoleChange(user, PeopleAccountStatus.SPAM_ACCOUNT.name(), RolesAuditActions.SUCCESS.
+      accountAuditFacade.registerRoleChange(user, UserAccountStatus.SPAM_ACCOUNT.name(), RolesAuditAction.SUCCESS.
           name(), "Wrong validation key retries: " + Integer.toString(count), user, req);
     }
   }
-  
+
   /**
    * Set user online, resets false login attempts and register login audit info
+   *
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerLogin(Users user, HttpServletRequest req) {
     resetFalseLogin(user);
-    setUserOnlineStatus(user, AuthenticationConstants.IS_ONLINE);
+    setUserOnlineStatus(user, Settings.IS_ONLINE);
     accountAuditFacade.registerLoginInfo(user, UserAuditActions.LOGIN.name(), UserAuditActions.SUCCESS.name(), req);
     LOGGER.log(Level.INFO, "Logged in user: {0}. ", user.getEmail());
   }
 
   /**
    * Set user offline and register login audit info
+   *
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerLogout(Users user, HttpServletRequest req) {
-    setUserOnlineStatus(user, AuthenticationConstants.IS_OFFLINE);
+    setUserOnlineStatus(user, Settings.IS_OFFLINE);
     accountAuditFacade.registerLoginInfo(user, UserAuditActions.LOGOUT.name(), UserAuditActions.SUCCESS.name(), req);
     LOGGER.log(Level.INFO, "Logged out user: {0}. ", user.getEmail());
   }
-  
+
   /**
    * Register authentication failure and register login audit info
+   *
    * @param user
-   * @param req 
+   * @param req
    */
   public void registerAuthenticationFailure(Users user, HttpServletRequest req) {
     registerFalseLogin(user, req);
@@ -514,7 +609,8 @@ public class AuthController {
 
   /**
    * Generates a salt value with SALT_LENGTH and DIGEST
-   * @return 
+   *
+   * @return
    */
   public String generateSalt() {
     byte[] bytes = new byte[SALT_LENGTH];

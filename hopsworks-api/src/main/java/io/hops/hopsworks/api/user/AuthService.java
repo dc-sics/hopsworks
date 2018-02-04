@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.user;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -7,12 +26,15 @@ import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import io.hops.hopsworks.common.dao.user.UserDTO;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.ldap.LdapUser;
 import io.hops.hopsworks.common.dao.user.security.audit.AccountAuditFacade;
 import io.hops.hopsworks.common.dao.user.security.audit.UserAuditActions;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.user.AuthController;
 import io.hops.hopsworks.common.user.UserStatusValidator;
 import io.hops.hopsworks.common.user.UsersController;
+import io.hops.hopsworks.common.user.ldap.LdapUserController;
+import io.hops.hopsworks.common.user.ldap.LdapUserState;
 import io.swagger.annotations.Api;
 import java.net.SocketException;
 import java.security.NoSuchAlgorithmException;
@@ -24,6 +46,7 @@ import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.mail.MessagingException;
+import javax.security.auth.login.LoginException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -46,6 +69,7 @@ import org.apache.commons.codec.binary.Base64;
     description = "Authentication service")
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class AuthService {
+
   private final static Logger LOGGER = Logger.getLogger(AuthService.class.getName());
   @EJB
   private UserFacade userFacade;
@@ -59,6 +83,8 @@ public class AuthService {
   private AccountAuditFacade accountAuditFacade;
   @EJB
   private AuthController authController;
+  @EJB
+  private LdapUserController ldapUserController;
 
   @GET
   @Path("session")
@@ -92,7 +118,7 @@ public class AuthService {
     }
     // Do pre cauth realm check 
     String passwordWithSaltPlusOtp = authController.preCustomRealmLoginCheck(user, password, otp, req);
-    
+
     // logout any user already loggedin if a new user tries to login 
     if (req.getRemoteUser() != null && !req.getRemoteUser().equals(email)) {
       logoutAndInvalidateSession(req);
@@ -109,6 +135,46 @@ public class AuthService {
     json.setSessionID(req.getSession().getId());
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
+  }
+
+  @POST
+  @Path("ldapLogin")
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response ldapLogin(@FormParam("username") String username, @FormParam("password") String password,
+      @FormParam("chosenEmail") String chosenEmail, @FormParam("consent") boolean consent,
+      @Context HttpServletRequest req) throws LoginException, AppException {
+    JsonResponse json = new JsonResponse();
+    if (username == null || username.isEmpty()) {
+      throw new IllegalArgumentException("Username can not be empty.");
+    }
+    if (password == null || password.isEmpty()) {
+      throw new IllegalArgumentException("Password can not be empty.");
+    }
+    LdapUserState ldapUserState = ldapUserController.login(username, password, consent, chosenEmail);
+    if (!ldapUserState.isSaved()) {
+      return Response.status(Response.Status.PRECONDITION_FAILED).entity(ldapUserState.getUserDTO()).build();
+    }
+    LdapUser ladpUser = ldapUserState.getLdapUser();
+    if (ladpUser == null || ladpUser.getUid() == null) {
+      throw new LoginException("Failed to get ldap user from table.");
+    }
+    Users user = ladpUser.getUid();
+    // Do pre cauth realm check 
+    String passwordWithSalt = authController.preLdapLoginCheck(user, ladpUser.getAuthKey(), req);
+    if (req.getRemoteUser() != null && !req.getRemoteUser().equals(user.getEmail())) {
+      logoutAndInvalidateSession(req);
+    }
+    //only login if not already logged...
+    if (req.getRemoteUser() == null) {
+      login(user, user.getEmail(), passwordWithSalt, req);
+    } else {
+      req.getServletContext().log("Skip logged because already logged in: " + username);
+    }
+    //read the user data from db and return to caller
+    json.setStatus("SUCCESS");
+    json.setSessionID(req.getSession().getId());
+    json.setData(user.getEmail());
+    return Response.status(Response.Status.OK).entity(json).build();
   }
 
   @GET
@@ -146,17 +212,6 @@ public class AuthService {
       json.setSuccessMessage("We registered your account request. Please validate you email and we will "
           + "review your account within 48 hours.");
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
-  }
-
-  @POST
-  @Path("registerYubikey")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public Response registerYubikey(UserDTO newUser, @Context HttpServletRequest req) throws AppException,
-      SocketException, NoSuchAlgorithmException {
-    JsonResponse json = new JsonResponse();
-    userController.registerYubikeyUser(newUser, req);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(json).build();
   }
 
@@ -221,7 +276,7 @@ public class AuthService {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ResponseMessages.LOGOUT_FAILURE);
     }
   }
-  
+
   private void login(Users user, String email, String password, HttpServletRequest req) throws AppException {
     if (user == null) {
       throw new IllegalArgumentException("User not set.");
@@ -232,10 +287,10 @@ public class AuthService {
     if (statusValidator.checkStatus(user.getStatus())) {
       try {
         req.login(email, password);
-        authController.registerLogin(user, req);        
+        authController.registerLogin(user, req);
       } catch (ServletException e) {
         LOGGER.log(Level.WARNING, e.getMessage());
-        authController.registerAuthenticationFailure(user, req); 
+        authController.registerAuthenticationFailure(user, req);
         throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(), ResponseMessages.AUTHENTICATION_FAILURE);
       }
     } else { // if user == null
@@ -245,10 +300,10 @@ public class AuthService {
 
   private void logUserLogin(HttpServletRequest req) {
     StringBuilder roles = new StringBuilder();
-    roles.append(req.isUserInRole("HOPS_USER")? "{user": "{");
-    roles.append(req.isUserInRole("HOPS_ADMIN")? " admin": "");
-    roles.append(req.isUserInRole("AGENT")? " agent": "");
-    roles.append(req.isUserInRole("CLUSTER_AGENT")? " cluster-agent}": "}");
+    roles.append(req.isUserInRole("HOPS_USER") ? "{user" : "{");
+    roles.append(req.isUserInRole("HOPS_ADMIN") ? " admin" : "");
+    roles.append(req.isUserInRole("AGENT") ? " agent" : "");
+    roles.append(req.isUserInRole("CLUSTER_AGENT") ? " cluster-agent}" : "}");
     LOGGER.log(Level.INFO, "[/hopsworks-api] login:\n email: {0}\n session: {1}\n in roles: {2}", new Object[]{
       req.getUserPrincipal(), req.getSession().getId(), roles});
   }

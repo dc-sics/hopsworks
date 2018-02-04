@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 'use strict';
 
 angular.module('hopsWorksApp')
@@ -41,6 +60,18 @@ angular.module('hopsWorksApp')
             ];
             self.logLevelSelected;
 
+
+//  (Group/World readable, not writable)
+//  (Group readable and writable)
+//  (Not Group readable or writable)
+            self.umasks = [
+              {id: 1, name: '022'},
+              {id: 2, name: '007'},
+              {id: 3, name: '077'}
+            ];
+            self.umask = self.umasks[1];
+
+
             self.job = {'type': '',
               'name': '',
               'id': '',
@@ -50,12 +81,14 @@ angular.module('hopsWorksApp')
                       }
             };
 
-
-
-
             self.changeLogLevel = function () {
               self.val.logLevel = self.logLevelSelected.name;
             };
+
+            self.changeUmask = function () {
+              self.val.umask = self.umask.name;
+            };
+
 
             self.changeBaseDir = function () {
               self.val.baseDir = self.selected.name;
@@ -316,6 +349,16 @@ angular.module('hopsWorksApp')
                         } else {
                           self.logLevelSelected = self.log_levels[2];
                         }
+                        if (self.val.umask === "022") {
+                          self.umask = self.umasks[0];
+                        } else if (self.val.umask === "007") {
+                          self.umask = self.umasks[1];
+                        } else if (self.val.umask === "077") {
+                          self.umask = self.umasks[2];
+                        } else {
+                          self.umask = self.umasks[0];                          
+                        }
+                        
                       }, function (error) {
                 growl.error("Could not get Jupyter Notebook Server Settings.");
               }

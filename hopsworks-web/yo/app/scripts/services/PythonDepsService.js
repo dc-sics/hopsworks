@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 'use strict';
 
 /**
@@ -16,11 +35,23 @@ angular.module('hopsWorksApp')
               enable: function (projectId, version, pythonKernel) {
                 return $http.get('/api/project/' + projectId + '/pythonDeps/enable/' + version + "/" + pythonKernel);
               },
+              destroyAnaconda: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/pythonDeps/destroyAnaconda');
+              },
               enabled: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/pythonDeps/enabled');
               },
               installed: function (projectId) {
                 return $http.get('/api/project/' + projectId + '/pythonDeps/installed');
+              },
+              failedCondaOps: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/pythonDeps/failedCondaOps');
+              },
+              retryFailedCondaOps: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/pythonDeps/retryFailedCondaOps');
+              },
+              status: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/pythonDeps/status');
               },
               install: function (projectId, data) {
                 var regReq = {
@@ -52,6 +83,16 @@ angular.module('hopsWorksApp')
                 };
                 return $http(regReq);
               },
+              clearCondaOps: function (projectId, data) {
+                var regReq = {
+                  method: 'POST',
+                  url: '/api/project/' + projectId + '/pythonDeps/clearCondaOps',
+                  headers: {'Content-Type': 'application/json'},
+                  data: data,
+                  dataType: "json"
+                };
+                return $http(regReq);
+              },
               upgrade: function (projectId, data) {
                 var regReq = {
                   method: 'POST',
@@ -66,16 +107,6 @@ angular.module('hopsWorksApp')
                 var regReq = {
                   method: 'POST',
                   url: '/api/project/' + projectId + '/pythonDeps/search',
-                  headers: {'Content-Type': 'application/json'},
-                  data: data,
-                  dataType: "json"
-                };
-                return $http(regReq);
-              },
-              status: function (projectId, data) {
-                var regReq = {
-                  method: 'POST',
-                  url: '/api/project/' + projectId + '/pythonDeps/status',
                   headers: {'Content-Type': 'application/json'},
                   data: data,
                   dataType: "json"

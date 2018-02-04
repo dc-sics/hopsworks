@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 'use strict';
 
 angular.module('hopsWorksApp')
@@ -23,6 +42,7 @@ angular.module('hopsWorksApp')
             self.working = [];
             self.user = {};
             self.showTourTips = true;
+            self.sortBy='-project.created';
             self.getTours = function () {
               self.tours = [
                 {'name': 'Spark', 'tip': 'Take a tour of HopsWorks by creating a project and running a Spark job!'},
@@ -55,6 +75,7 @@ angular.module('hopsWorksApp')
             // Load all projects
             var loadProjects = function (success) {
               self.projects = success;
+              console.log("Projects: ", self.projects);
               self.pageSizeProjects = 10;
               self.totalPagesProjects = Math.ceil(self.projects.length / self.pageSizeProjects);
               self.totalItemsProjects = self.projects.length;

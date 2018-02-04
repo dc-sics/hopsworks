@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.api.zeppelin.notebook.repo;
 
 import com.google.common.collect.Lists;
@@ -69,8 +88,12 @@ public class HDFSNotebookRepo implements NotebookRepo {
     this.hdfsConf = getHadoopConf();
     superuser = UserGroupInformation.getLoginUser();
     try {
+//          ("java:global/hopsworks-common-0.2.0-SNAPSHOT/DistributedFsService");
+      String applicationName = InitialContext.doLookup("java:app/AppName");
+      String moduleName = InitialContext.doLookup("java:module/ModuleName");
+      moduleName = moduleName.replace("api", "common");
       dfsService = InitialContext.doLookup
-          ("java:global/hopsworks-ear/hopsworks-common-0.1.0/DistributedFsService");
+          ("java:global/" + applicationName + "/" + moduleName + "/DistributedFsService");
     } catch (NamingException ex) {
       throw new IOException(ex);
     }

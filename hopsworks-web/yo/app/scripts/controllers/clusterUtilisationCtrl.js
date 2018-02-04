@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /*jshint undef: false, unused: false, indent: 2*/
 /*global angular: false */
 
@@ -77,13 +96,13 @@ angular.module('hopsWorksApp')
                         var nbNameNodes = 0;
                         var nbRunningNameNodes = 0;
                         success.data.forEach(function (status) {
-                          if (status.role === "datanode") {
+                          if (status.service === "datanode") {
                             nbDataNodes++;
                             if (status.status === "Started") {
                               nbRunningDataNodes++;
                             }
                           }
-                          if (status.role === "namenode") {
+                          if (status.service === "namenode") {
                             nbNameNodes++;
                             if (status.status === "Started") {
                               nbRunningNameNodes++;
@@ -114,13 +133,13 @@ angular.module('hopsWorksApp')
                         var nbRMs = 0;
                         var nbRunningRMs = 0;
                         success.data.forEach(function (status) {
-                          if (status.role === "nodemanager") {
+                          if (status.service === "nodemanager") {
                             nbNodeManagers++;
                             if (status.status === "Started") {
                               nbRunningNodeManagers++;
                             }
                           }
-                          if (status.role === "resourcemanager") {
+                          if (status.service === "resourcemanager") {
                             nbRMs++;
                             if (status.status === "Started") {
                               nbRunningRMs++;

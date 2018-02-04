@@ -1,3 +1,22 @@
+/*
+ * This file is part of HopsWorks
+ *
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ *
+ * HopsWorks is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * HopsWorks is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.hops.hopsworks.common.dao.user.security.ua;
 
 public class UserAccountsEmailMessages {
@@ -73,36 +92,6 @@ public class UserAccountsEmailMessages {
    */
   public final static String ACCOUNT_DEACTIVATED
           = "Your HopsWorks account has expired";
-
-  /**
-   * Build an email message for Yubikey users upon registration.
-   *
-   * @param path
-   * @param key
-   * @return
-   */
-  public static String buildYubikeyRequestMessage(String path, String key) {
-
-    String message;
-
-    String l1 = GREETINGS_HEADER + ",\n\n"
-            + "We receieved your Yubikey account request for HopsWorks.\n\n";
-    String l2
-            = "Please click on the following link to verify your email address. "
-            + "Afterwards we will activate your account within 48 hours and send "
-            + "you a Yubikey stick to your address.\n\n\n";
-
-    String url = path + "/hopsworks-admin/security/validate_account.xhtml?key=" + key;
-
-    String l3 = "To confirm your email click " + url + " \n\n";
-
-    String l4 = "If you have any questions please contact "
-            + HOPSWORKS_SUPPORT_EMAIL;
-
-    message = l1 + l2 + l3 + l4;
-
-    return message;
-  }
 
   /**
    * Build an email message for mobile users upon registration.
@@ -308,21 +297,6 @@ public class UserAccountsEmailMessages {
     return message;
   }
 
-  public static String yubikeyAccountActivatedMessage(String username) {
-    String message;
-
-    String l1 = GREETINGS_HEADER + ",\n\n"
-            + "Your account request to access HopsWorks has been approved.\n\n";
-    String l2
-            = "We sent a Yubikey device to your postal address. You can use that "
-            + "device in addition to usename/password to login to the platform. \n\n\n";
-    String l3 = "If you have any questions please contact "
-            + HOPSWORKS_SUPPORT_EMAIL;
-    message = l1 + l2 + l3;
-
-    return message;
-  }
-
   public static String accountRejectedMessage() {
     String message;
 
@@ -352,22 +326,6 @@ public class UserAccountsEmailMessages {
 
     return message;
 
-  }
-
-  public static String buildYubikeyResetMessage() {
-    String message;
-
-    String l1 = GREETINGS_HEADER + ",\n\n"
-            + "We received an Yubikey request reset for HopsWorks in your behalf.\n\n";
-    String l2 = "Your account will be reset within "
-            + ACCOUNT_ACITVATION_PERIOD
-            + " hours and a new device will be sent to your postal address.\n\n\n";
-    String l3 = "If you have any questions please contact "
-            + HOPSWORKS_SUPPORT_EMAIL;
-
-    message = l1 + l2 + l3;
-
-    return message;
   }
   
   public static String buildClusterRegisterRequestMessage(String path, String key) {
