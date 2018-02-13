@@ -341,7 +341,12 @@ public class JupyterConfigFilesGenerator {
           .append("\"hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
           .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
           .append("__tstore.jks#").append(Settings.T_CERTIFICATE).append("\",")
-          .append("\"" + Settings.getSparkLog4JPath(settings.getSparkUser()) + "\"");
+          .append("\"" + settings.getSparkLog4JPath() + "\"")
+          // Glassfish domain truststore
+          .append(settings.getGlassfishTrustStore())
+          .append("#").append(Settings.CA_TRUSTSTORE)
+          // Add HopsUtil
+          .append(settings.getHopsUtilHdfsPath());
 
       // If RPC TLS is enabled, password file would be injected by the
       // NodeManagers. We don't need to add it as LocalResource

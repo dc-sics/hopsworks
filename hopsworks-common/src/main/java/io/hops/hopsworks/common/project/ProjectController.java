@@ -666,7 +666,7 @@ public class ProjectController {
       if (ds.equals(Settings.BaseDataset.RESOURCES)) {
         String[] subResources = settings.getResourceDirs().split(";");
         for (String sub : subResources) {
-          Path resourceDir = new Path(Settings.getProjectPath(project.getName()),
+          Path resourceDir = new Path(settings.getProjectPath(project.getName()),
               ds.getName());
           Path subDirPath = new Path(resourceDir, sub);
           datasetController.createSubDirectory(project, subDirPath, -1,
@@ -1847,7 +1847,7 @@ public class ProjectController {
       Long hiveDbSpaceQuotaInMb, DistributedFileSystemOps dfso)
       throws IOException {
 
-    dfso.setHdfsSpaceQuotaInMBs(new Path(Settings.getProjectPath(project.getName())),
+    dfso.setHdfsSpaceQuotaInMBs(new Path(settings.getProjectPath(project.getName())),
         diskspaceQuotaInMB);
 
     if (hiveDbSpaceQuotaInMb != null && projectServicesFacade.isServiceEnabledForProject(project,
@@ -2199,7 +2199,7 @@ public class ProjectController {
           break;
         case KAFKA:
           // Get the JAR from /user/<super user>
-          String kafkaExampleSrc = "/user/" + settings.getHopsworksUser() + "/"
+          String kafkaExampleSrc = "/user/" + settings.getSparkUser() + "/"
               + settings.getHopsExamplesFilename();
           String kafkaExampleDst = "/" + Settings.DIR_ROOT + "/" + project.getName()
               + "/" + Settings.HOPS_TOUR_DATASET + "/" + settings.getHopsExamplesFilename();
@@ -2337,7 +2337,7 @@ public class ProjectController {
         + "\"timestamp\":{\"type\":\"date\",\"index\":\"not_analyzed\"},"
         + "\"project\":{\"type\":\"string\",\"index\":\"not_analyzed\"}},\n"
         + "\"_ttl\": {\n" + "\"enabled\": true,\n" + "\"default\": \""
-        + Settings.getJobLogsExpiration() + "s\"\n" + "}}}}");
+        + settings.getJobLogsExpiration() + "s\"\n" + "}}}}");
 
     JSONObject resp = elasticController.sendElasticsearchReq(params);
     boolean templateCreated = false;
@@ -2668,7 +2668,7 @@ public class ProjectController {
             equals(currentQuotas.getHdfsQuotaInBytes()) || !quotas.getHdfsNsQuota().equals(currentQuotas.
             getHdfsNsQuota()))) {
 
-          dfso.setHdfsQuotaBytes(new Path(Settings.getProjectPath(currentProject.getName())),
+          dfso.setHdfsQuotaBytes(new Path(settings.getProjectPath(currentProject.getName())),
               quotas.getHdfsNsQuota(), quotas.getHdfsQuotaInBytes());
           quotaChanged = true;
 

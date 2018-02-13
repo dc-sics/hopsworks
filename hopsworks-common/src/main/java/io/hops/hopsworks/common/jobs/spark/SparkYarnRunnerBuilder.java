@@ -103,9 +103,7 @@ public class SparkYarnRunnerBuilder {
    * Get a YarnRunner instance that will launch a Spark job.
    *
    * @param project name of the project
-   * @param sparkUser
    * @param jobUser
-   * @param sparkDir
    * @param services
    * @param dfsClient
    * @param yarnClient
@@ -113,14 +111,14 @@ public class SparkYarnRunnerBuilder {
    * @return The YarnRunner instance to launch the Spark job on Yarn.
    * @throws IOException If creation failed.
    */
-  public YarnRunner getYarnRunner(String project, String sparkUser,
-      String jobUser, final String sparkDir, AsynchronousJobExecutor services,
+  public YarnRunner getYarnRunner(String project,
+      String jobUser, AsynchronousJobExecutor services,
       final DistributedFileSystemOps dfsClient, final YarnClient yarnClient,
       Settings settings)
       throws IOException {
 
     //Read blacklisted properties from local spark dir
-    File blacklist = new File(sparkDir + "/" + Settings.SPARK_BLACKLISTED_PROPS);
+    File blacklist = new File(settings.getSparkDir() + "/" + Settings.SPARK_BLACKLISTED_PROPS);
     try (InputStream is = new FileInputStream(blacklist)) {
       byte[] data = new byte[(int) blacklist.length()];
       is.read(data);
@@ -133,8 +131,8 @@ public class SparkYarnRunnerBuilder {
     String appPath = ((SparkJobConfiguration) job.getJobConfig()).
         getAppPath();
 
-    String hdfsSparkJarPath = Settings.getHdfsSparkJarPath(sparkUser);
-    String log4jPath = Settings.getSparkLog4JPath(sparkUser);
+    String hdfsSparkJarPath = settings.getHdfsSparkJarPath();
+    String log4jPath = settings.getSparkLog4JPath();
     StringBuilder pythonPath = null;
     StringBuilder pythonPathExecs = null;
     //Create a builder
@@ -174,6 +172,11 @@ public class SparkYarnRunnerBuilder {
         Settings.SPARK_METRICS_PROPERTIES, settings.getSparkConfDir() + "/metrics.properties",
         LocalResourceVisibility.PRIVATE.toString(),
         LocalResourceType.FILE.toString(), null), false);
+    //Add Glassfish ca truststore for hopsutil
+    builder.addLocalResource(new LocalResourceDTO(
+        Settings.CA_TRUSTSTORE, settings.getGlassfishTrustStore(),
+        LocalResourceVisibility.PRIVATE.toString(),
+        LocalResourceType.FILE.toString(), null), false);
 
     //Add app file
     String appExecName = null;
@@ -182,21 +185,21 @@ public class SparkYarnRunnerBuilder {
     } else if (jobType == JobType.PYSPARK || jobType == JobType.TFSPARK) {
       builder.addLocalResource(new LocalResourceDTO(
           Settings.PYSPARK_ZIP,
-          Settings.getPySparkLibsPath(sparkUser) + File.separator
+          settings.getPySparkLibsPath() + File.separator
           + Settings.PYSPARK_ZIP,
           LocalResourceVisibility.APPLICATION.toString(),
           LocalResourceType.ARCHIVE.toString(), null), false);
 
       builder.addLocalResource(new LocalResourceDTO(
           Settings.PYSPARK_PY4J,
-          Settings.getPySparkLibsPath(sparkUser) + File.separator
+          settings.getPySparkLibsPath() + File.separator
           + Settings.PYSPARK_PY4J,
           LocalResourceVisibility.APPLICATION.toString(),
           LocalResourceType.ARCHIVE.toString(), null), false);
       if (jobType == JobType.TFSPARK) {
         LocalResourceDTO pythonZip = new LocalResourceDTO(
             Settings.TFSPARK_PYTHON_NAME,
-            Settings.getPySparkLibsPath(sparkUser) + File.separator
+            settings.getPySparkLibsPath() + File.separator
             + Settings.TFSPARK_PYTHON_ZIP,
             LocalResourceVisibility.APPLICATION.toString(),
             LocalResourceType.ARCHIVE.toString(), null);
@@ -205,7 +208,7 @@ public class SparkYarnRunnerBuilder {
         extraFiles.add(pythonZip);
         LocalResourceDTO tfsparkZip = new LocalResourceDTO(
             Settings.TFSPARK_ZIP,
-            Settings.getPySparkLibsPath(sparkUser) + File.separator
+            settings.getPySparkLibsPath() + File.separator
             + Settings.TFSPARK_ZIP,
             LocalResourceVisibility.APPLICATION.toString(),
             LocalResourceType.ARCHIVE.toString(), null);
@@ -247,8 +250,7 @@ public class SparkYarnRunnerBuilder {
     StringBuilder secondaryJars = new StringBuilder();
     //Add hops-util.jar if it is a Kafka job
     builder.addLocalResource(new LocalResourceDTO(
-        settings.getHopsUtilFilename(), settings.getHopsUtilHdfsPath(
-        sparkUser),
+        settings.getHopsUtilFilename(), settings.getHopsUtilHdfsPath(),
         LocalResourceVisibility.APPLICATION.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
@@ -421,8 +423,7 @@ public class SparkYarnRunnerBuilder {
 
     if (serviceProps != null) {
       addSystemProperty(Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY, serviceProps.getRestEndpoint());
-      addSystemProperty(Settings.HOPSWORKS_KEYSTORE_PROPERTY, Settings.KEYSTORE_VAL_ENV_VAR);
-      addSystemProperty(Settings.HOPSWORKS_TRUSTSTORE_PROPERTY, Settings.TRUSTSTORE_VAL_ENV_VAR);
+      addSystemProperty(Settings.SERVER_TRUSTSTORE_PROPERTY, Settings.SERVER_TRUSTSTORE_PROPERTY);
       addSystemProperty(Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY, serviceProps.getElastic().getRestEndpoint());
       addSystemProperty(Settings.HOPSWORKS_JOBNAME_PROPERTY, serviceProps.getJobName());
       addSystemProperty(Settings.HOPSWORKS_JOBTYPE_PROPERTY, jobType.getName());
@@ -431,8 +432,7 @@ public class SparkYarnRunnerBuilder {
       addSystemProperty(Settings.HOPSWORKS_PROJECTNAME_PROPERTY, serviceProps.getProjectName());
 
       extraJavaOptions.put(Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY, serviceProps.getRestEndpoint());
-      extraJavaOptions.put(Settings.HOPSWORKS_KEYSTORE_PROPERTY, Settings.KEYSTORE_VAL_ENV_VAR);
-      extraJavaOptions.put(Settings.HOPSWORKS_TRUSTSTORE_PROPERTY, Settings.TRUSTSTORE_VAL_ENV_VAR);
+      extraJavaOptions.put(Settings.SERVER_TRUSTSTORE_PROPERTY, Settings.SERVER_TRUSTSTORE_PROPERTY);
       extraJavaOptions.put(Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY, serviceProps.getElastic().getRestEndpoint());
       extraJavaOptions.put(Settings.HOPSWORKS_PROJECTID_PROPERTY, Integer.toString(serviceProps.getProjectId()));
       extraJavaOptions.put(Settings.HOPSWORKS_PROJECTNAME_PROPERTY, serviceProps.getProjectName());
@@ -478,7 +478,7 @@ public class SparkYarnRunnerBuilder {
 
     //Parse properties from Spark config file
     Properties sparkProperties = new Properties();
-    try (InputStream is = new FileInputStream(sparkDir + "/" + Settings.SPARK_CONFIG_FILE)) {
+    try (InputStream is = new FileInputStream(settings.getSparkDir() + "/" + Settings.SPARK_CONFIG_FILE)) {
       sparkProperties.load(is);
       //For every property that is in the spark configuration file but is not already set, create a system property.
       for (String property : sparkProperties.stringPropertyNames()) {
@@ -532,7 +532,7 @@ public class SparkYarnRunnerBuilder {
     //Set app name
     builder.appName(jobName);
 
-    return builder.build(sparkDir, JobType.SPARK, services);
+    return builder.build(settings.getSparkDir(), JobType.SPARK, services);
   }
 
   public SparkYarnRunnerBuilder setJobName(String jobName) {

@@ -202,7 +202,7 @@
         "livy.spark.dynamicAllocation.cachedExecutorIdleTimeout": "",
         "livy.spark.dynamicAllocation.maxExecutors": "",
         "livy.spark.dynamicAllocation.initialExecutors": "",
-        "livy.spark.files": "%%metrics-properties_path%%",
+        "livy.spark.files": "%%dist_files%%",
         "livy.spark.sql.warehouse.dir": "%%livy.spark.sql.warehouse.dir%%",
         "livy.spark.submit.deployMode": "cluster",
         "livy.spark.yarn.appMasterEnv.PYSPARK_PYTHON": "%%zeppelin.python_conda_path%%",

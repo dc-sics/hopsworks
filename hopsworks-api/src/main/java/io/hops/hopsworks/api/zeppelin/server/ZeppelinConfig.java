@@ -120,10 +120,8 @@ public class ZeppelinConfig {
 
     boolean newDir = false;
     boolean newFile = false;
-    boolean newBinDir = false;
     try {
       newDir = createZeppelinDirs();//creates the necessary folders for the project in /srv/hops/zeppelin
-      newBinDir = copyBinDir();
       createSymLinks();//interpreter and lib
       createVisCacheSymlink();//create a symlink to node and npm tar cache.
       newFile = createZeppelinConfFiles(interpreterConf);//create project specific configurations for zeppelin 
@@ -254,10 +252,6 @@ public class ZeppelinConfig {
     }
   }
 
-  public boolean isClosed() {
-    return this.replFactory == null || this.notebook == null || this.notebookServer == null;
-  }
-
   public InterpreterSettingManager getInterpreterSettingManager() {
     return interpreterSettingManager;
   }
@@ -269,16 +263,16 @@ public class ZeppelinConfig {
   public NotebookRepoSync getNotebookRepo() {
     return notebookRepo;
   }
-
-  public SchedulerFactory getSchedulerFactory() {
+  
+  private SchedulerFactory getSchedulerFactory() {
     return this.schedulerFactory;
   }
 
   public Helium getHelium() {
     return helium;
   }
-
-  public HeliumApplicationFactory getHeliumApplicationFactory() {
+  
+  private HeliumApplicationFactory getHeliumApplicationFactory() {
     return heliumApplicationFactory;
   }
 
@@ -301,16 +295,16 @@ public class ZeppelinConfig {
   public String getOwner() {
     return owner;
   }
-
-  public String getProjectDirPath() {
+  
+  private String getProjectDirPath() {
     return projectDirPath;
   }
 
   public SearchService getNotebookIndex() {
     return noteSearchService;
   }
-
-  public DependencyResolver getDepResolver() {
+  
+  private DependencyResolver getDepResolver() {
     return depResolver;
   }
 
@@ -321,12 +315,12 @@ public class ZeppelinConfig {
   public Settings getSettings() {
     return settings;
   }
-
-  public String getInterpreterDirPath() {
+  
+  private String getInterpreterDirPath() {
     return interpreterDirPath;
   }
-
-  public String getLibDirPath() {
+  
+  private String getLibDirPath() {
     return libDirPath;
   }
 
@@ -334,31 +328,31 @@ public class ZeppelinConfig {
     return confDirPath;
   }
 
-  public String getNotebookDirPath() {
+  private String getNotebookDirPath() {
     return notebookDirPath;
   }
-
-  public String getRunDirPath() {
+  
+  private String getRunDirPath() {
     return runDirPath;
   }
-
-  public String getBinDirPath() {
+  
+  private String getBinDirPath() {
     return binDirPath;
   }
-
-  public String getLogDirPath() {
+  
+  private String getLogDirPath() {
     return logDirPath;
   }
-
-  public String getRepoDirPath() {
+  
+  private String getRepoDirPath() {
     return repoDirPath;
   }
-
-  public NotebookAuthorization getNotebookAuthorization() {
+  
+  private NotebookAuthorization getNotebookAuthorization() {
     return notebookAuthorization;
   }
-
-  public Credentials getCredentials() {
+  
+  private Credentials getCredentials() {
     return credentials;
   }
 
@@ -432,7 +426,7 @@ public class ZeppelinConfig {
     boolean createdLog4j = false;
     boolean createdXml = false;
 
-    String log4jPath = Settings.getSparkLog4JPath(settings.getSparkUser());
+    String log4jPath = settings.getSparkLog4JPath();
     String zeppelinPythonPath = settings.getAnacondaProjectDir(this.projectName)
         + File.separator + "bin" + File.separator + "python";
     if (!zeppelin_env_file.exists()) {
@@ -489,8 +483,6 @@ public class ZeppelinConfig {
     String logstashID = "-D" + Settings.LOGSTASH_JOB_INFO + "="
         + this.projectName.toLowerCase() + ",zeppelin,notebook,?";
     String restEndpointProp = " -D" + Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY + "=" + settings.getRestEndpoint();
-    String keystorePwProp = " -D" + Settings.HOPSWORKS_KEYSTORE_PROPERTY + "=" + Settings.KEYSTORE_VAL_ENV_VAR;
-    String truststorePwProp = " -D" + Settings.HOPSWORKS_TRUSTSTORE_PROPERTY + "=" + Settings.TRUSTSTORE_VAL_ENV_VAR;
     String elasticEndpointProp = " -D" + Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY + "=" + settings.
         getElasticRESTEndpoint();
     String projectIdProp = " -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=" + this.projectId;
@@ -498,8 +490,7 @@ public class ZeppelinConfig {
     String userProp = " -D" + Settings.HOPSWORKS_PROJECTUSER_PROPERTY + "=" + this.projectName
         + Settings.PROJECT_GENERIC_USER_SUFFIX;
     String extraSparkJavaOptions = " -Dlog4j.configuration=./log4j.properties "
-        + logstashID + restEndpointProp + keystorePwProp + truststorePwProp + elasticEndpointProp + projectIdProp
-        + projectNameProp + userProp;
+        + logstashID + restEndpointProp + elasticEndpointProp + projectIdProp + projectNameProp + userProp;
     String hdfsResourceDir = "hdfs://" + resourceDir + File.separator;
     // Comma-separated files to be added as local resources to Spark/Livy interpreter
     String driverExtraClassPath = settings.getHopsLeaderElectionJarPath();
@@ -524,8 +515,12 @@ public class ZeppelinConfig {
         .append(projectName)
         .append(Settings.PROJECT_GENERIC_USER_SUFFIX)
         .append("__tstore.jks#")
-        .append(Settings.T_CERTIFICATE);
-  
+        .append(Settings.T_CERTIFICATE).append(",")
+        // Glassfish domain truststore
+        .append(settings.getGlassfishTrustStore())
+        .append("#").append(Settings.CA_TRUSTSTORE)
+        // Add HopsUtil
+        .append(settings.getHopsUtilHdfsPath());
     // If RPC TLS is enabled, password file would be injected by the
     // NodeManagers. We don't need to add it as LocalResource
     if (!settings.getHopsRpcTls()) {
@@ -551,7 +546,7 @@ public class ZeppelinConfig {
               "hdfs_user", this.projectName + Settings.PROJECT_GENERIC_USER_SUFFIX,
               "hadoop_home", settings.getHadoopSymbolicLinkDir(),
               "livy_url", settings.getLivyUrl(),
-              "metrics-properties_path", log4jPath + "," + distFiles.toString(),
+              "dist_files", log4jPath + "," + distFiles.toString(),
               "extra_spark_java_options", extraSparkJavaOptions,
               "driver_extraClassPath", driverExtraClassPath,
               "executor_extraClassPath", executorExtraClassPath,
@@ -573,7 +568,7 @@ public class ZeppelinConfig {
     return createdSh || createdXml || createdLog4j;
   }
 
-  // loads configeration from project specific zeppelin-site.xml
+  // loads configuration from project specific zeppelin-site.xml
   private ZeppelinConfiguration loadConfig() {
     URL url = null;
     File zeppelinConfig = new File(confDirPath + ZEPPELIN_SITE_XML);
