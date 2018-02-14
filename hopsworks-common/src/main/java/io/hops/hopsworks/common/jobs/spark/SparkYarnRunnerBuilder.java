@@ -174,7 +174,7 @@ public class SparkYarnRunnerBuilder {
         LocalResourceType.FILE.toString(), null), false);
     //Add Glassfish ca truststore for hopsutil
     builder.addLocalResource(new LocalResourceDTO(
-        Settings.CA_TRUSTSTORE, settings.getGlassfishTrustStore(),
+        Settings.DOMAIN_CA_TRUSTSTORE, settings.getGlassfishTrustStore(),
         LocalResourceVisibility.PRIVATE.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
@@ -278,8 +278,7 @@ public class SparkYarnRunnerBuilder {
           //For PySpark jobs prefix the resource name with __pyfiles__ as spark requires that.
           //github.com/apache/spark/blob/v2.1.0/yarn/src/main/scala/org/apache/spark/deploy/yarn/Client.scala#L624
           if (dto.getName().endsWith(".py")) {
-            dto.setName(Settings.SPARK_LOCALIZED_PYTHON_DIR + File.separator
-                + dto.getName());
+            dto.setName(Settings.SPARK_LOCALIZED_PYTHON_DIR + File.separator + dto.getName());
           } else {
             pythonPath.append(File.pathSeparator).append(dto.getName());
             pythonPathExecs.append(File.pathSeparator).append(dto.getName());

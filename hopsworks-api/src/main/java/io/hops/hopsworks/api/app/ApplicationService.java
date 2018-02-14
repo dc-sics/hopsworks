@@ -92,7 +92,7 @@ public class ApplicationService {
   @EJB
   private UserFacade userFacade;
   @EJB
-  protected UsersController usersController;
+  private UsersController usersController;
   @EJB
   private CertificatesController certificatesController;
   @EJB
@@ -257,10 +257,10 @@ public class ApplicationService {
   /**
    * Returns the project user from the keystore and verifies it.
    *
-   * @param keyStore
-   * @param keyStorePwd
-   * @return
-   * @throws AppException
+   * @param keyStore project-user keystore
+   * @param keyStorePwd project-user password
+   * @return CN of certificate
+   * @throws AppException When user is not authorized to access project.
    */
   private String checkAndGetProjectUser(byte[] keyStore, char[] keyStorePwd)
       throws AppException {

@@ -344,7 +344,7 @@ public class JupyterConfigFilesGenerator {
           .append("\"" + settings.getSparkLog4JPath() + "\"")
           // Glassfish domain truststore
           .append(settings.getGlassfishTrustStore())
-          .append("#").append(Settings.CA_TRUSTSTORE)
+          .append("#").append(Settings.DOMAIN_CA_TRUSTSTORE)
           // Add HopsUtil
           .append(settings.getHopsUtilHdfsPath());
 

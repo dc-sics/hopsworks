@@ -518,7 +518,7 @@ public class ZeppelinConfig {
         .append(Settings.T_CERTIFICATE).append(",")
         // Glassfish domain truststore
         .append(settings.getGlassfishTrustStore())
-        .append("#").append(Settings.CA_TRUSTSTORE)
+        .append("#").append(Settings.DOMAIN_CA_TRUSTSTORE)
         // Add HopsUtil
         .append(settings.getHopsUtilHdfsPath());
     // If RPC TLS is enabled, password file would be injected by the
