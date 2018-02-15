@@ -174,7 +174,7 @@ public class SparkYarnRunnerBuilder {
         LocalResourceType.FILE.toString(), null), false);
     //Add Glassfish ca truststore for hopsutil
     builder.addLocalResource(new LocalResourceDTO(
-        Settings.DOMAIN_CA_TRUSTSTORE, settings.getGlassfishTrustStore(),
+        Settings.DOMAIN_CA_TRUSTSTORE, settings.getGlassfishTrustStoreHdfs(),
         LocalResourceVisibility.PRIVATE.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
@@ -441,11 +441,11 @@ public class SparkYarnRunnerBuilder {
 
       //Handle Kafka properties
       if (serviceProps.getKafka() != null) {
-        addSystemProperty(Settings.KAFKA_BROKERADDR_ENV_VAR, serviceProps.getKafka().getBrokerAddresses());
-        addSystemProperty(Settings.KAFKA_JOB_TOPICS_ENV_VAR, serviceProps.getKafka().getTopics());
+        addSystemProperty(Settings.KAFKA_BROKERADDR_PROPERTY, serviceProps.getKafka().getBrokerAddresses());
+        addSystemProperty(Settings.KAFKA_JOB_TOPICS_PROPERTY, serviceProps.getKafka().getTopics());
         addSystemProperty(Settings.KAFKA_CONSUMER_GROUPS, serviceProps.getKafka().getConsumerGroups());
-        extraJavaOptions.put(Settings.KAFKA_BROKERADDR_ENV_VAR, serviceProps.getKafka().getBrokerAddresses());
-        extraJavaOptions.put(Settings.KAFKA_JOB_TOPICS_ENV_VAR, serviceProps.getKafka().getTopics());
+        extraJavaOptions.put(Settings.KAFKA_BROKERADDR_PROPERTY, serviceProps.getKafka().getBrokerAddresses());
+        extraJavaOptions.put(Settings.KAFKA_JOB_TOPICS_PROPERTY, serviceProps.getKafka().getTopics());
         extraJavaOptions.put(Settings.KAFKA_CONSUMER_GROUPS, serviceProps.getKafka().getConsumerGroups());
 
       }

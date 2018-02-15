@@ -1553,10 +1553,8 @@ public class Settings implements Serializable {
   public static final String HOPSWORKS_JOBNAME_PROPERTY = "hopsworks.job.name";
   public static final String HOPSWORKS_JOBTYPE_PROPERTY = "hopsworks.job.type";
   public static final String HOPSWORKS_APPID_PROPERTY = "hopsworks.job.appid";
-  public static final String KAFKA_BROKERADDR_ENV_VAR = "hopsworks.kafka.brokeraddress";
-  public static final String KAFKA_JOB_TOPICS_ENV_VAR = "hopsworks.kafka.job.topics";
-  public static final String HOPSWORKS_KEYSTORE_PROPERTY = "hopsworks.keystore";
-  public static final String HOPSWORKS_TRUSTSTORE_PROPERTY = "hopsworks.truststore";
+  public static final String KAFKA_BROKERADDR_PROPERTY = "hopsworks.kafka.brokeraddress";
+  public static final String KAFKA_JOB_TOPICS_PROPERTY = "hopsworks.kafka.job.topics";
   public static final String SERVER_TRUSTSTORE_PROPERTY = "server.truststore";
   public static final String KAFKA_CONSUMER_GROUPS = "hopsworks.kafka.consumergroups";
   public static final String HOPSWORKS_REST_ENDPOINT_PROPERTY = "hopsworks.restendpoint";
@@ -1591,8 +1589,14 @@ public class Settings implements Serializable {
     return getHopsworksDomainDir() + File.separator + "config";
   }
   
-  public String getGlassfishTrustStore(){ return "hdfs:///user/" + getHopsworksUser() + "/" + CA_TRUSTSTORE_NAME; }
-
+  public String getGlassfishTrustStoreHdfs() {
+    return "hdfs:///user/" + getHdfsSuperUser() + "/" + CA_TRUSTSTORE_NAME;
+  }
+  
+  public String getGlassfishTrustStore() {
+    return getHopsworksDomainDir() + File.separator + "config" + File
+        .separator + CA_TRUSTSTORE_NAME;
+  }
   //Dataset request subject
   public static final String MESSAGE_DS_REQ_SUBJECT = "Dataset access request.";
 

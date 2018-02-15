@@ -22,7 +22,12 @@ package io.hops.hopsworks.common.project;
 import io.hops.hopsworks.common.constants.auth.AllowedRoles;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -36,6 +41,9 @@ import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;
 
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
@@ -1359,21 +1367,45 @@ public class ProjectController {
       }
     }
   }
-
+  
+  private static class InsecureHostnameVerifier implements HostnameVerifier {
+    static InsecureHostnameVerifier INSTANCE = new InsecureHostnameVerifier();
+    
+    InsecureHostnameVerifier() {
+    }
+    
+    @Override
+    public boolean verify(String string, SSLSession ssls) {
+      return true;
+    }
+  }
+  
   private void killZeppelin(Integer projectId, String sessionId) throws AppException {
-    Response resp = ClientBuilder.newClient()
-        .target(settings.getRestEndpoint()
-            + "/hopsworks-api/api/zeppelin/" + projectId
-            + "/interpreter/check")
-        .request()
-        .cookie("SESSION", sessionId)
-        .method("GET");
-    LOGGER.log(Level.FINE, "Zeppelin check resp:{0}", resp.getStatus());
+    Client client;
+    Response resp;
+    try (FileInputStream trustStoreIS = new FileInputStream(settings.getGlassfishTrustStore())) {
+      KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      trustStore.load(trustStoreIS, null);
+      
+      client = ClientBuilder.newBuilder()
+          .trustStore(trustStore)
+          .hostnameVerifier(InsecureHostnameVerifier.INSTANCE)
+          .build();
+      
+      resp = client
+          .target(settings.getRestEndpoint() + "/hopsworks-api/api/zeppelin/" + projectId + "/interpreter/check")
+          .request()
+          .cookie("SESSION", sessionId)
+          .method("GET");
+      LOGGER.log(Level.FINE, "Zeppelin check resp:{0}", resp.getStatus());
+    } catch (CertificateException | NoSuchAlgorithmException | IOException | KeyStoreException e) {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
+          getStatusCode(),
+          "Could not close zeppelin interpreters, please wait 60 seconds to retry");
+    }
     if (resp.getStatus() == 200) {
-      resp = ClientBuilder.newClient()
-          .target(settings.getRestEndpoint()
-              + "/hopsworks-api/api/zeppelin/" + projectId
-              + "/interpreter/restart")
+      resp = client
+          .target(settings.getRestEndpoint() + "/hopsworks-api/api/zeppelin/" + projectId + "/interpreter/restart")
           .request()
           .cookie("SESSION", sessionId)
           .method("GET");

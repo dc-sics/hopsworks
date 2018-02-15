@@ -180,7 +180,7 @@ public class YarnRunner {
     HopsUtils.copyProjectUserCerts(project, username,
         services.getSettings().getHopsworksTmpCertDir(),
         services.getSettings().getHdfsTmpCertDir(), jobType,
-        dfso, materialResources, systemProperties, services.getSettings().getGlassfishTrustStore(),
+        dfso, materialResources, systemProperties, services.getSettings().getGlassfishTrustStoreHdfs(),
         applicationId, services.getCertificateMaterializer(),
         services.getSettings().getHopsRpcTls());
 
