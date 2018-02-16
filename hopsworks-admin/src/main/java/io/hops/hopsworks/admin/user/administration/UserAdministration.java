@@ -465,7 +465,7 @@ public class UserAdministration implements Serializable {
         getCurrentInstance().getExternalContext().getRequest();
     String message = usersController.activateUser(role, user1, sessionState.getLoggedInUser(), httpServletRequest);
     if(Strings.isNullOrEmpty(message)){
-      MessagesController.addInfoMessage("User {0} activated successfully", message);
+      MessagesController.addInfoMessage("User "+user1.getEmail()+ " activated successfully", message);
     } else {
       MessagesController.addSecurityErrorMessage(message);
     }
@@ -487,11 +487,10 @@ public class UserAdministration implements Serializable {
   }
 
   public boolean notVerified(Users user) {
-    if (user == null || user.getBbcGroupCollection() == null || user.
-        getBbcGroupCollection().isEmpty() == false) {
-      return false;
-    }
-    if (user.getStatus().equals(UserAccountStatus.VERIFIED_ACCOUNT)) {
+    if (user == null
+        || user.getBbcGroupCollection() == null
+        || !user.getBbcGroupCollection().isEmpty()
+        || user.getStatus().equals(UserAccountStatus.VERIFIED_ACCOUNT)) {
       return false;
     }
     return true;
