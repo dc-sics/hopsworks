@@ -1,20 +1,21 @@
 /*
- * This file is part of HopsWorks
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
- * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * HopsWorks is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  *
- * HopsWorks is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS  OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.hops.hopsworks.common.util;
@@ -68,7 +69,9 @@ public class HopsUtils {
   public static int ROOT_INODE_ID = 1;
   public static int PROJECTS_DIR_DEPTH = 1;
   public static String PROJECTS_DIR_NAME = "Projects";
-
+  
+  private static final FsPermission materialPermissions = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE);
+  
   /**
    *
    * @param <E>
@@ -222,17 +225,15 @@ public class HopsUtils {
    * filesystem and from HDFS
    * @param projectName
    * @param remoteFSDir
-   * @param dfso
    * @param certificateMaterializer
    * @throws IOException
    */
   public static void cleanupCertificatesForProject(String projectName,
-      String remoteFSDir, DistributedFileSystemOps dfso, CertificateMaterializer
-      certificateMaterializer) throws IOException {
-
-    String projectGenericUsername = projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
-    cleanupCertsLocal(null, projectName, certificateMaterializer);
-    cleanupCertsHDFS(projectGenericUsername, remoteFSDir, dfso);
+      String remoteFSDir, CertificateMaterializer certificateMaterializer) throws IOException {
+    
+    certificateMaterializer.removeCertificatesLocal(projectName);
+    String remoteDirectory = remoteFSDir + Path.SEPARATOR + projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
+    certificateMaterializer.removeCertificatesRemote(null, projectName, remoteDirectory);
   }
 
   /**
@@ -240,82 +241,42 @@ public class HopsUtils {
    * filesystem and from HDFS
    * @param username
    * @param remoteFSDir
-   * @param dfso
    * @param certificateMaterializer
    * @throws IOException
    */
   public static void cleanupCertificatesForUser(String username,
-      String projectName, String remoteFSDir,
-      DistributedFileSystemOps dfso, CertificateMaterializer
-      certificateMaterializer) throws IOException {
+      String projectName, String remoteFSDir, CertificateMaterializer certificateMaterializer) throws IOException {
 
+    certificateMaterializer.removeCertificatesLocal(username, projectName);
     String projectSpecificUsername = projectName + HdfsUsersController
         .USER_NAME_DELIMITER + username;
-    cleanupCertsLocal(username, projectName, certificateMaterializer);
-    cleanupCertsHDFS(projectSpecificUsername, remoteFSDir, dfso);
-  }
-
-  /**
-   * Remote user certificates materialized from the local filesystem
-   * @param username
-   * @param certificateMaterializer
-   * @throws IOException
-   */
-  public static void cleanupCertsLocal(String username, String
-      projectName, CertificateMaterializer certificateMaterializer) {
-    certificateMaterializer.removeCertificate(username, projectName);
-  }
-  
-  private static void cleanupCertsHDFS(String username, String remoteFSDir,
-      DistributedFileSystemOps dfso) throws IOException {
-    Path remoteProjectDirK = new Path(remoteFSDir + Path.SEPARATOR
-      + username + Path.SEPARATOR + username + "__kstore.jks");
-    Path remoteProjectDirT = new Path(remoteFSDir + Path.SEPARATOR
-        + username + Path.SEPARATOR + username + "__tstore.jks");
-    Path remoteProjectDirP = new Path(remoteFSDir + Path.SEPARATOR + username + Path.SEPARATOR + username +
-        CertificateMaterializer.CERT_PASS_SUFFIX);
-    dfso.rm(remoteProjectDirK, false);
-    dfso.rm(remoteProjectDirT, false);
-    dfso.rm(remoteProjectDirP, false);
+    String remoteDirectory = remoteFSDir + Path.SEPARATOR + projectSpecificUsername;
+    certificateMaterializer.removeCertificatesRemote(username, projectName, remoteDirectory);
   }
   
   /**
    * Utility method that materializes user certificates in the local
    * filesystem and in HDFS
    * @param projectName
-   * @param localFSDir
    * @param remoteFSDir
    * @param dfso
    * @param certificateMaterializer
    * @param settings
    * @throws IOException
    */
-  public static void materializeCertificatesForUser(String projectName,
-      String userName, String localFSDir, String remoteFSDir,
+  public static void materializeCertificatesForUser(String projectName, String userName, String remoteFSDir,
       DistributedFileSystemOps dfso, CertificateMaterializer
       certificateMaterializer, Settings settings) throws
       IOException {
 
     String projectSpecificUsername = projectName + "__" + userName;
-
-    certificateMaterializer.materializeCertificates(userName, projectName);
+  
+    certificateMaterializer.materializeCertificatesLocal(userName, projectName);
     
-    // If certificates exist in HDFS do not materialize them again
-    if (checkUserMatCertsInHDFS(projectSpecificUsername, remoteFSDir, dfso, settings)) {
-      return;
-    }
     
-    String kStorePath = localFSDir + File.separator + projectSpecificUsername + "__kstore.jks";
-    String tStorePath = localFSDir + File.separator + projectSpecificUsername + "__tstore.jks";
-    String passwdPath = localFSDir + File.separator + projectSpecificUsername + "__cert.key";
-
-    materializeCertsRemote(projectSpecificUsername, remoteFSDir, kStorePath,
-        tStorePath, passwdPath, dfso, settings);
-    
-    // If RPC SSL is not enabled, we don't need them anymore in the local fs
-    if (!settings.getHopsRpcTls()) {
-      certificateMaterializer.removeCertificate(userName, projectName);
-    }
+    String remoteDirectory = createRemoteDirectory(remoteFSDir, projectSpecificUsername, projectSpecificUsername, dfso);
+    certificateMaterializer.materializeCertificatesRemote(userName, projectName, projectSpecificUsername,
+        projectSpecificUsername, materialPermissions, remoteDirectory);
   }
   
   /**
@@ -323,82 +284,50 @@ public class HopsUtils {
    * filesystem and in HDFS
    *
    * @param projectName
-   * @param localFSDir
    * @param remoteFSDir
    * @param dfso
    * @param certificateMaterializer
    * @param settings
    * @throws IOException
    */
-  public static void materializeCertificatesForProject(String projectName,
-      String localFSDir, String remoteFSDir,
-      DistributedFileSystemOps dfso, CertificateMaterializer certificateMaterializer, Settings settings) throws
-      IOException {
-    certificateMaterializer.materializeCertificates(projectName);
+  public static void materializeCertificatesForProject(String projectName, String remoteFSDir,
+      DistributedFileSystemOps dfso, CertificateMaterializer certificateMaterializer, Settings settings)
+      throws IOException {
+    
+    
+    certificateMaterializer.materializeCertificatesLocal(projectName);
+    
+    
     String projectGenericUser = projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
-
-    if (checkUserMatCertsInHDFS(projectGenericUser,remoteFSDir, dfso, settings)) {
-      return;
-    }
-    String kStorePath = localFSDir + File.separator + projectGenericUser + "__kstore.jks";
-    String tStorePath = localFSDir + File.separator + projectGenericUser + "__tstore.jks";
-    String passwdPath = localFSDir + File.separator + projectGenericUser + "__cert.key";
-
-    materializeCertsRemote(projectGenericUser, remoteFSDir, kStorePath, tStorePath,
-        passwdPath, dfso, settings);
+  
+    String remoteDirectory = createRemoteDirectory(remoteFSDir, projectGenericUser, projectGenericUser, dfso);
+    
+    certificateMaterializer.materializeCertificatesRemote(null, projectName, projectGenericUser,
+        projectGenericUser, materialPermissions, remoteDirectory);
   }
   
-  private static void materializeCertsRemote(String prefix, String
-      remoteFSDir, String kStorePath, String tStorePath, String passwdPath,
-      DistributedFileSystemOps dfso, Settings settings) throws IOException {
+  private static String createRemoteDirectory(String remoteFSDir, String certsSpecificDir, String owner,
+      DistributedFileSystemOps dfso) throws IOException {
+    boolean createdDir = false;
     
     if (!dfso.exists(remoteFSDir)) {
       Path remoteFSTarget = new Path(remoteFSDir);
       dfso.mkdir(remoteFSTarget, new FsPermission(
           FsAction.ALL, FsAction.ALL, FsAction.ALL));
+      createdDir = true;
     }
   
-    // Now upload them also to HDFS
-    Path projectRemoteFSDir = new Path(remoteFSDir + Path.SEPARATOR +
-        prefix);
-    Path remoteProjectKStore = new Path(projectRemoteFSDir, prefix +
-        "__kstore.jks");
-    Path remoteProjectTStore = new Path(projectRemoteFSDir, prefix +
-        "__tstore.jks");
-    Path remoteProjectPasswd = new Path(projectRemoteFSDir, prefix +
-        "__cert.key");
-    if (dfso.exists(projectRemoteFSDir.toString())) {
-      dfso.rm(remoteProjectKStore, false);
-      dfso.rm(remoteProjectTStore, false);
-      dfso.rm(remoteProjectPasswd, false);
-    } else {
-      dfso.mkdir(projectRemoteFSDir, new FsPermission(
-          FsAction.ALL, FsAction.ALL, FsAction.NONE));
-      dfso.setOwner(projectRemoteFSDir, prefix, prefix);
+    Path projectRemoteFSDir = new Path(remoteFSDir + Path.SEPARATOR + certsSpecificDir);
+    if (!dfso.exists(projectRemoteFSDir.toString())) {
+      dfso.mkdir(projectRemoteFSDir, new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.NONE));
+      dfso.setOwner(projectRemoteFSDir, owner, owner);
+      createdDir = true;
+    }
+    if (createdDir) {
+      dfso.flushCache(owner, owner);
     }
     
-    FsPermission materialPermissions = new FsPermission(FsAction.ALL,
-        FsAction.NONE, FsAction.NONE);
-  
-    dfso.copyToHDFSFromLocal(false, kStorePath,
-        remoteProjectKStore.toString());
-    dfso.setPermission(remoteProjectKStore, materialPermissions);
-    dfso.setOwner(remoteProjectKStore, prefix, prefix);
-  
-    dfso.copyToHDFSFromLocal(false, tStorePath,
-        remoteProjectTStore.toString());
-    dfso.setPermission(remoteProjectTStore, materialPermissions);
-    dfso.setOwner(remoteProjectTStore, prefix, prefix);
-  
-    if (!settings.getHopsRpcTls()) {
-      dfso.copyToHDFSFromLocal(false, passwdPath,
-          remoteProjectPasswd.toString());
-      dfso.setPermission(remoteProjectPasswd, materialPermissions);
-      dfso.setOwner(remoteProjectPasswd, prefix, prefix);
-    }
-    
-    // Cache should be flushed otherwise NN will raise permission exceptions
-    dfso.flushCachedUser(prefix);
+    return projectRemoteFSDir.toString();
   }
 
   /**
@@ -430,12 +359,11 @@ public class HopsUtils {
     // Let the Certificate Materializer handle the certificates
     UserCerts userCert = new UserCerts(project.getName(), username);
     try {
-      certMat.materializeCertificates(username, project.getName());
-      CertificateMaterializer.CryptoMaterial material = certMat
-          .getUserMaterial(username, project.getName());
-      userCert.setUserKey(material.getKeyStore());
-      userCert.setUserCert(material.getTrustStore());
-      userCert.setUserKeyPwd(material.getPassword());
+      certMat.materializeCertificatesLocal(username, project.getName());
+      CertificateMaterializer.CryptoMaterial material = certMat.getUserMaterial(username, project.getName());
+      userCert.setUserKey(material.getKeyStore().array());
+      userCert.setUserCert(material.getTrustStore().array());
+      userCert.setUserKeyPwd(new String(material.getPassword()));
     } catch (IOException | CryptoPasswordNotFoundException ex) {
       throw new RuntimeException("Could not materialize user certificates", ex);
     }
@@ -628,7 +556,7 @@ public class HopsUtils {
           }
         }*/
         if (jobType != null) {
-          certMat.removeCertificate(username, project.getName());
+          certMat.removeCertificatesLocal(username, project.getName());
         }
       }
     }

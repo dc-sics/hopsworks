@@ -1,20 +1,21 @@
 /*
- * This file is part of HopsWorks
+ * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
- * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+ * software and associated documentation files (the "Software"), to deal in the Software
+ * without restriction, including without limitation the rights to use, copy, modify, merge,
+ * publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+ * persons to whom the Software is furnished to do so, subject to the following conditions:
  *
- * HopsWorks is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * The above copyright notice and this permission notice shall be included in all copies or
+ * substantial portions of the Software.
  *
- * HopsWorks is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS  OR IMPLIED, INCLUDING
+ * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with HopsWorks.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.hops.hopsworks.api.admin.dto;
@@ -22,47 +23,59 @@ package io.hops.hopsworks.api.admin.dto;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.List;
-import java.util.Set;
 
 @XmlRootElement
 public class MaterializerStateResponse implements Serializable {
   private static final long serialVersionUID = 1L;
   
-  private List<CryptoMaterial> materializedState;
-  private Set<String> scheduledRemovals;
+  private List<CryptoMaterial> localMaterializedState;
+  private List<CryptoMaterial> remoteMaterializedState;
+  private List<CryptoMaterial> scheduledRemovals;
   
   public MaterializerStateResponse(
-      List<CryptoMaterial> materializedState, Set<String> scheduledRemovals) {
-    this.materializedState = materializedState;
+      List<CryptoMaterial> localMaterializedState, List<CryptoMaterial> remoteMaterializedState,
+      List<CryptoMaterial> scheduledRemovals) {
+    this.localMaterializedState = localMaterializedState;
+    this.remoteMaterializedState = remoteMaterializedState;
     this.scheduledRemovals = scheduledRemovals;
   }
   
   public MaterializerStateResponse() {
   }
   
-  public List<CryptoMaterial> getMaterializedState() {
-    return materializedState;
+  public List<CryptoMaterial> getLocalMaterializedState() {
+    return localMaterializedState;
   }
   
-  public void setMaterializedState(
-      List<CryptoMaterial> materializedState) {
-    this.materializedState = materializedState;
+  public void setLocalMaterializedState(
+      List<CryptoMaterial> localMaterializedState) {
+    this.localMaterializedState = localMaterializedState;
   }
   
-  public Set<String> getScheduledRemovals() {
+  public List<CryptoMaterial> getRemoteMaterializedState() {
+    return remoteMaterializedState;
+  }
+  
+  public void setRemoteMaterializedState(List<CryptoMaterial> remoteMaterializedState) {
+    this.remoteMaterializedState = remoteMaterializedState;
+  }
+  
+  public List<CryptoMaterial> getScheduledRemovals() {
     return scheduledRemovals;
   }
   
-  public void setScheduledRemovals(Set<String> scheduledRemovals) {
+  public void setScheduledRemovals(List<CryptoMaterial> scheduledRemovals) {
     this.scheduledRemovals = scheduledRemovals;
   }
   
   public static class CryptoMaterial {
     private String user;
+    private String path;
     private Integer references;
     
-    public CryptoMaterial(String user, Integer references) {
+    public CryptoMaterial(String user, String path, Integer references) {
       this.user = user;
+      this.path = path;
       this.references = references;
     }
     
@@ -75,6 +88,14 @@ public class MaterializerStateResponse implements Serializable {
     
     public void setUser(String user) {
       this.user = user;
+    }
+    
+    public String getPath() {
+      return path;
+    }
+    
+    public void setPath(String path) {
+      this.path = path;
     }
     
     public Integer getReferences() {
