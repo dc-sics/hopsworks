@@ -66,13 +66,6 @@ public class HopsUtils {
   public static final short ROOT_DIR_DEPTH = 0;
   private static int RANDOM_PARTITIONING_MAX_LEVEL = 1;
   public static int ROOT_INODE_ID = 1;
-  private static int PROJECTS_DIR_DEPTH = 1;
-  private static String PROJECTS_DIR_NAME = "Projects";
-
-  
-  public static int PROJECTS_DIR_DEPTH = 1;
-  public static String PROJECTS_DIR_NAME = "Projects";
-  
   private static final FsPermission materialPermissions = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE);
   
   /**
