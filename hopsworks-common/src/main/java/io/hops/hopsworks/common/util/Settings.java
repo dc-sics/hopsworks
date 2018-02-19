@@ -396,12 +396,10 @@ public class Settings implements Serializable {
           VARIABLE_HOPSWORKS_SSL_MASTER_PASSWORD,
           HOPSWORKS_DEFAULT_SSL_MASTER_PASSWORD);
       CLUSTER_CERT = setVar(VARIABLE_CLUSTER_CERT, CLUSTER_CERT);
-      FILE_PREVIEW_IMAGE_SIZE = setIntVar(VARIABLE_FILE_PREVIEW_IMAGE_SIZE,
-          10000000);
+      FILE_PREVIEW_IMAGE_SIZE = setIntVar(VARIABLE_FILE_PREVIEW_IMAGE_SIZE, 10000000);
       FILE_PREVIEW_TXT_SIZE = setIntVar(VARIABLE_FILE_PREVIEW_TXT_SIZE, 100);
       HOPSWORKS_REST_ENDPOINT = setStrVar(VARIABLE_HOPSWORKS_REST_ENDPOINT,
           HOPSWORKS_REST_ENDPOINT);
-      REST_PORT = setIntVar(VARIABLE_REST_PORT, REST_PORT);
       CUDA_DIR = setDirVar(VARIABLE_CUDA_DIR, CUDA_DIR);
       ANACONDA_USER = setStrVar(VARIABLE_ANACONDA_USER, ANACONDA_USER);
       ANACONDA_DIR = setDirVar(VARIABLE_ANACONDA_DIR, ANACONDA_DIR);
@@ -1389,14 +1387,7 @@ public class Settings implements Serializable {
     return CONDA_CHANNEL_URL;
   }
 
-  private int REST_PORT = 8080;
-
-  public synchronized int getRestPort() {
-    checkCache();
-    return REST_PORT;
-  }
-
-  private String HOPSWORKS_REST_ENDPOINT = "192.168.56.101:8080";
+  private String HOPSWORKS_REST_ENDPOINT = "hopsworks0:8181";
   public synchronized String getRestEndpoint() {
     checkCache();
     return "https://" + HOPSWORKS_REST_ENDPOINT;
@@ -1591,7 +1582,7 @@ public class Settings implements Serializable {
   }
   
   public String getGlassfishTrustStoreHdfs() {
-    return "hdfs:///user/" + getHdfsSuperUser() + "/" + CA_TRUSTSTORE_NAME;
+    return "hdfs:///user/" + getSparkUser() + "/" + CA_TRUSTSTORE_NAME;
   }
   
   public String getGlassfishTrustStore() {

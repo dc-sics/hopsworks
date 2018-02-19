@@ -995,9 +995,9 @@ public class ProjectController {
         // Kill Zeppelin jobs
         try {
           killZeppelin(project.getId(), sessionId);
-          cleanupLogger.logError("Error when killing Zeppelin during project cleanup");
           cleanupLogger.logSuccess("Killed Zeppelin");
         } catch (Exception ex) {
+          LOGGER.log(Level.SEVERE, "Error when killing Zeppelin during project cleanup", ex);
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1393,12 +1393,14 @@ public class ProjectController {
           .build();
       
       resp = client
-          .target(settings.getRestEndpoint() + "/hopsworks-api/api/zeppelin/" + projectId + "/interpreter/check")
+          .target(settings.getRestEndpoint())
+          .path("/hopsworks-api/api/zeppelin/" + projectId + "/interpreter/check")
           .request()
           .cookie("SESSION", sessionId)
           .method("GET");
       LOGGER.log(Level.FINE, "Zeppelin check resp:{0}", resp.getStatus());
     } catch (CertificateException | NoSuchAlgorithmException | IOException | KeyStoreException e) {
+      LOGGER.log(Level.WARNING, "Could not close zeppelin interpreters, please wait 60 seconds to retry", e);
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(),
           "Could not close zeppelin interpreters, please wait 60 seconds to retry");
