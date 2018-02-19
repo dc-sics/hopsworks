@@ -386,7 +386,8 @@ public class JupyterConfigFilesGenerator {
           + " -D" + Settings.HOPSWORKS_REST_ENDPOINT_PROPERTY + "=" + settings.getRestEndpoint()
           + " -D" + Settings.HOPSWORKS_ELASTIC_ENDPOINT_PROPERTY + "=" + settings.getElasticRESTEndpoint()
           + " -D" + Settings.HOPSWORKS_PROJECTID_PROPERTY + "=" + project.getId()
-          + " -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=" + project.getName();
+          + " -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=" + project.getName()
+          + " -Dlog4j.configuration=./log4j.properties";
           
       String extraClassPath = settings.getHopsLeaderElectionJarPath()
           + File.pathSeparator
@@ -518,8 +519,8 @@ public class JupyterConfigFilesGenerator {
       sparkMagicParams.put("spark.executorEnv.HADOOP_VERSION", new ConfigProperty(
           "hadoop_version", IGNORE, this.settings.getHadoopVersion()));
       
-      sparkMagicParams.put("spark.executorEnv.extraJavaOptions", new ConfigProperty(
-          "spark_executorEnv_extraJavaOptions", APPEND, extraJavaOptions));
+      sparkMagicParams.put("spark.executor.extraJavaOptions", new ConfigProperty(
+          "spark_executor_extraJavaOptions", APPEND, extraJavaOptions));
       
       sparkMagicParams.put("spark.executorEnv.HDFS_BASE_DIR", new ConfigProperty(
           "spark_executorEnv_HDFS_BASE_DIR", IGNORE,
