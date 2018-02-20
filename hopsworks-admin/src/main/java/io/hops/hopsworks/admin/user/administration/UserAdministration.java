@@ -85,10 +85,6 @@ public class UserAdministration implements Serializable {
   @ManagedProperty("#{param.userMail}")
   private String userMail;
 
-  @Resource
-  private UserTransaction userTransaction;
-
-//  private Users user;
   private String secAnswer;
 
   private List<Users> filteredUsers;
