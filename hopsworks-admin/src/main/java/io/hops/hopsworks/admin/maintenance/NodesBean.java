@@ -159,6 +159,36 @@ public class NodesBean implements Serializable {
     return lastModifiedFileDate(file);
   }
 
+  public void restartKagent(String hostname) {
+    String prog = settings.getHopsworksDomainDir() + "/bin/kagent-restart.sh";
+    int exitValue;
+    Integer id = 1;
+    String[] command = {prog, hostname};
+    ProcessBuilder pb = new ProcessBuilder(command);
+    try {
+      Process process = pb.start();
+      BufferedReader br = new BufferedReader(new InputStreamReader(
+          process.getInputStream(), Charset.forName("UTF8")));
+      String line;
+      while ((line = br.readLine()) != null) {
+        logger.info(line);
+      }
+      process.waitFor(10l, TimeUnit.SECONDS);
+      exitValue = process.exitValue();
+    } catch (IOException | InterruptedException ex) {
+      logger.log(Level.SEVERE, "Problem restarting kagent: {0}", ex.toString());
+      MessagesController.addInfoMessage("Problem restarting kagent for: ", hostname);
+      exitValue = -2;
+    }
+    if (exitValue != 0) {
+      logger.log(Level.INFO, "Restarted kagent for: {0}", hostname);
+    } else {
+      MessagesController.addInfoMessage("Restarted kagent for: ", hostname);
+    }
+
+  }
+
+  
   public void zipUpAnacondaLibs() {
 
     String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-prepare.sh";

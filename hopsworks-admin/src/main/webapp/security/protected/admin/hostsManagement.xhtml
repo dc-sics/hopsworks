@@ -17,7 +17,7 @@
   ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ~
-  -->
+-->
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -176,6 +176,13 @@
                       </f:facet>
                     </p:cellEditor>
                   </p:column>
+
+                  <p:column headerText="Restart Kagent">
+                    <p:commandButton value="Restart Kagent"
+                                     style="float:center" 
+                                     actionListener="#{nodesBean.restartKagent(node.hostname)}" ajax ="true" update="@all">
+                    </p:commandButton>
+                  </p:column>  
 
 
                   <p:column style="width:32px">
