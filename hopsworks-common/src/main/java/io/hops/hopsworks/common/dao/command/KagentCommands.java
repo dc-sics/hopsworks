@@ -1,3 +1,4 @@
+package io.hops.hopsworks.common.dao.command;
 /*
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
@@ -18,34 +19,40 @@
  *
  */
 
-package io.hops.hopsworks.api.hopssite.dto;
+import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
 
-import io.hops.hopsworks.common.dao.dataset.Dataset;
-import io.hops.hopsworks.common.dataset.DatasetController;
-import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
+import javax.xml.bind.annotation.XmlRootElement;
+import java.io.Serializable;
 import java.util.List;
-import org.apache.hadoop.fs.Path;
 
-public class LocalDatasetHelper {
-
-  public static List<LocalDatasetDTO> parse(DatasetController datasetCtrl, DistributedFileSystemOps dfso, 
-    List<Dataset> datasets) {
-    List<LocalDatasetDTO> localDS = new ArrayList<>();
-    for (Dataset d : datasets) {
-      Date date = new Date(d.getInode().getModificationTime().longValue());
-      Path path = datasetCtrl.getDatasetPath(d);
-      long size;
-      try {
-        size = dfso.getLastUpdatedDatasetSize(path);
-      } catch (IOException ex) {
-        size = -1;
-      }
-      localDS.add(new LocalDatasetDTO(d.getInodeId(), d.getName(), d.getDescription(), d.getProject().getName(), date,
-        date, size));
-    }
-    return localDS;
+@XmlRootElement
+public class KagentCommands implements Serializable {
+  private static final long serialVersionUID = 1L;
+  
+  private List<SystemCommand> systemCommands;
+  private List<CondaCommands> condaCommands;
+  
+  public KagentCommands() {
+  }
+  
+  public KagentCommands(List<SystemCommand> systemCommands, List<CondaCommands> condaCommands) {
+    this.systemCommands = systemCommands;
+    this.condaCommands = condaCommands;
+  }
+  
+  public List<SystemCommand> getSystemCommands() {
+    return systemCommands;
+  }
+  
+  public void setSystemCommands(List<SystemCommand> systemCommands) {
+    this.systemCommands = systemCommands;
+  }
+  
+  public List<CondaCommands> getCondaCommands() {
+    return condaCommands;
+  }
+  
+  public void setCondaCommands(List<CondaCommands> condaCommands) {
+    this.condaCommands = condaCommands;
   }
 }
