@@ -154,6 +154,7 @@ public class PKIUtils {
     commands.add(extension);
     commands.add(csrPath);
     commands.add(generatedCertFile.getAbsolutePath());
+    commands.add(settings.getCertificateUserValidDays());
 
     StringBuilder sb = new StringBuilder();
     for (String s : commands) {
