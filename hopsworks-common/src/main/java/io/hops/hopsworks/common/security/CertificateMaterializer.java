@@ -80,15 +80,7 @@ import java.util.regex.Pattern;
 @DependsOn("Settings")
 public class CertificateMaterializer {
   private static final Logger LOG = Logger.getLogger(CertificateMaterializer.class.getName());
-  private static final Map<String, TimeUnit> TIME_SUFFIXES;
-  static {
-    TIME_SUFFIXES = new HashMap<>(5);
-    TIME_SUFFIXES.put("ms", TimeUnit.MILLISECONDS);
-    TIME_SUFFIXES.put("s", TimeUnit.SECONDS);
-    TIME_SUFFIXES.put("m", TimeUnit.MINUTES);
-    TIME_SUFFIXES.put("h", TimeUnit.HOURS);
-    TIME_SUFFIXES.put("d", TimeUnit.DAYS);
-  }
+  
   private final static String KEYSTORE_SUFFIX = "__kstore.jks";
   private final static String TRUSTSTORE_SUFFIX = "__tstore.jks";
   private final static String CERT_PASS_SUFFIX = "__cert.key";
@@ -208,20 +200,8 @@ public class CertificateMaterializer {
     }
     transientDir = tmpDir.getAbsolutePath();
     String delayRaw = settings.getCertificateMaterializerDelay();
-    
-    Matcher matcher = Pattern.compile("([0-9]+)([a-z]+)?").matcher(delayRaw
-        .toLowerCase());
-    if (!matcher.matches()) {
-      throw new IllegalArgumentException("Invalid delay value: " + delayRaw);
-    }
-    
-    DELAY_VALUE = Long.parseLong(matcher.group(1));
-    String timeUnitStr = matcher.group(2);
-    if (null != timeUnitStr && !TIME_SUFFIXES.containsKey(timeUnitStr)) {
-      throw new IllegalArgumentException("Invalid delay suffix: " + timeUnitStr);
-    }
-    DELAY_TIMEUNIT = timeUnitStr == null ? TimeUnit.MINUTES : TIME_SUFFIXES
-        .get(timeUnitStr);
+    DELAY_VALUE = Settings.getConfTimeValue(delayRaw);
+    DELAY_TIMEUNIT = Settings.getConfTimeTimeUnit(delayRaw);
     
     try {
       String hostAddress = InetAddress.getLocalHost().getHostAddress();
@@ -799,15 +779,6 @@ public class CertificateMaterializer {
       if (materialBag.getCount(materializationDirectory) <= 0) {
         scheduleFileRemover(key, materializationDirectory);
       }
-      
-      // No more references to that crypto material
-      if (materialBag.isEmpty()) {
-        materializedCerts.remove(key);
-        CryptoMaterial material = materialCache.remove(key);
-        if (material != null) {
-          material.wipePassword();
-        }
-      }
     }
   }
   
@@ -1241,6 +1212,22 @@ public class CertificateMaterializer {
         if (materialRemovers.isEmpty()) {
           fileRemovers.remove(key);
         }
+  
+        // No more references to that crypto material, wipe out password
+        try {
+          localWriteLock.lock();
+          Bag materialBag = materializedCerts.get(key);
+          if (materialBag.isEmpty()) {
+            materializedCerts.remove(key);
+            CryptoMaterial material = materialCache.remove(key);
+            if (material != null) {
+              material.wipePassword();
+            }
+          }
+        } finally {
+          localWriteLock.unlock();
+        }
+        
         LOG.log(Level.FINEST, "Deleted crypto material for <" + key.getExtendedUsername() + "> from directory "
             + materializationDirectory);
       }
