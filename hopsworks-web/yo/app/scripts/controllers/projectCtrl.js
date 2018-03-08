@@ -24,9 +24,9 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('ProjectCtrl', ['$scope', '$rootScope', '$location', '$routeParams', '$route',  '$timeout', 'UtilsService',
+        .controller('ProjectCtrl', ['$scope', '$rootScope', '$location', '$routeParams', '$route', '$timeout', 'UtilsService',
           'growl', 'ProjectService', 'ModalService', 'ActivityService', '$cookies', 'DataSetService', 'EndpointService',
-          'UserService', 'TourService', 'PythonDepsService', 'StorageService', 'CertService', 'FileSaver', 'Blob', 
+          'UserService', 'TourService', 'PythonDepsService', 'StorageService', 'CertService', 'FileSaver', 'Blob',
           function ($scope, $rootScope, $location, $routeParams, $route, $timeout, UtilsService, growl, ProjectService,
                   ModalService, ActivityService, $cookies, DataSetService, EndpointService, UserService, TourService, PythonDepsService,
                   StorageService, CertService, FileSaver, Blob) {
@@ -44,6 +44,26 @@ angular.module('hopsWorksApp')
             self.location = $location;
             self.cloak = true;
             self.isClosed = true;
+
+            self.pia = {
+              "personal_data": "",
+              "how_data_collected": "",
+              "specified_explicit_legitimate": 0,
+              "consent_process": "",
+              "consent_basis": "",
+              "data_minimized": 0,
+              "data_uptodate": 0,
+              "users_informed_how": "",
+              "user_controls_data_collection_retention": "",
+              "data_encrypted": 0,
+              "data_anonymized": 0,
+              "data_pseudonymized": 0,
+              "data_backedup": 0,
+              "data_security_measures": "",
+              "data_portability_measure": "",
+              "subject_access_rights": "",
+              "risks": ""
+            };
 
             self.role = "";
 
@@ -168,6 +188,15 @@ angular.module('hopsWorksApp')
                         //set the project name under which the search is performed
                         UtilsService.setProjectName(self.currentProject.projectName);
                         self.getRole();
+                        ProjectService.getPia({id: self.projectId}).$promise.then(
+                          function (response) {
+                            ProjectService.query().$promise.then(
+                                    function (success) {
+                                      self.pia = success.data;
+                                    }, function (error) {
+                                    growl.error(error.data.errorMsg, {title: 'Error getting Pia', ttl: 5000});
+                            });
+                          });
 
                       }, function (error) {
                 $location.path('/');
@@ -237,6 +266,17 @@ angular.module('hopsWorksApp')
               });
             };
 
+            self.savePia = function() {
+              ProjectService.savePia({id: self.currentProject.projectId}, self.pia)
+                      .$promise.then(
+                              function (success) {
+                                growl.success("Saved Pia", {title: 'Saved', ttl: 2000});
+                              }, function (error) {
+                        self.working = false;
+                        growl.warning("Error: " + error.data.errorMsg, {title: 'Error', ttl: 5000});
+                      }
+                      );
+            };
 
             self.saveProject = function () {
               self.working = true;
@@ -318,44 +358,45 @@ angular.module('hopsWorksApp')
 //              if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
 //                self.goToUrl('jupyter');
 //              } else {
-                self.enabling = true;
-                PythonDepsService.enabled(self.projectId).then(function (success) {
+              self.enabling = true;
+              PythonDepsService.enabled(self.projectId).then(function (success) {
+                self.goToUrl('jupyter');
+              }, function (error) {
+                if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
                   self.goToUrl('jupyter');
-                }, function (error) {
-                  if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
-                    self.goToUrl('jupyter');
-                  } else {
-                      ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
-                              .then(function (success) {
-                                self.goToUrl('settings');
-                              }, function (error) {
-                                self.goToUrl('jupyter');
-                              });
-                            }
-                    });
+                } else {
+                  ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable anaconda before running Jupyter!')
+                          .then(function (success) {
+                            self.goToUrl('settings');
+                          }, function (error) {
+                            self.goToUrl('jupyter');
+                          });
+                }
+              });
             };
 
             self.goToZeppelin = function () {
               self.enabling = true;
-              PythonDepsService.enabled(self.projectId).then( function (success) {
+              PythonDepsService.enabled(self.projectId).then(function (success) {
+                self.goToUrl('zeppelin');
+              }, function (error) {
+                if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
                   self.goToUrl('zeppelin');
-                }, function (error) {
-                  if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
-                    self.goToUrl('zeppelin');
-                  } else {
-                   ModalService.confirm('sm', 'Enable anaconda', 'You need to enable anaconda to use pyspark!')
-                      .then(function (success) {
-                        self.goToUrl('settings');
-                      }, function (error) {
-                        self.goToUrl('zeppelin');
-                   });
-                 }
+                } else {
+                  ModalService.confirm('sm', 'Enable anaconda', 'You need to enable anaconda to use pyspark!')
+                          .then(function (success) {
+                            self.goToUrl('settings');
+                          }, function (error) {
+                            self.goToUrl('zeppelin');
+                          });
+                }
               });
             };
 
 
             self.goToWorklows = function () {
-              self.goToUrl('workflows');f
+              self.goToUrl('workflows');
+              f
             };
 
             self.goToTensorflow = function () {
@@ -459,7 +500,7 @@ angular.module('hopsWorksApp')
               return showService("Kafka");
             };
 
-            self.showDela = function(){
+            self.showDela = function () {
               if (!$rootScope.isDelaEnabled) {
                 return false;
               }
@@ -602,36 +643,36 @@ angular.module('hopsWorksApp')
               return Math.round(n) / multiplicator;
             };
 
-            self.tourDone = function(tour){
-              StorageService.store("hopsworks-tourdone-"+tour,true);
+            self.tourDone = function (tour) {
+              StorageService.store("hopsworks-tourdone-" + tour, true);
             };
 
-            self.isTourDone = function(tour){
-              var isDone = StorageService.get("hopsworks-tourdone-"+tour);
+            self.isTourDone = function (tour) {
+              var isDone = StorageService.get("hopsworks-tourdone-" + tour);
             };
-            
+
             self.getCerts = function () {
               ModalService.certs('sm', 'Certificates Download', 'Please type your password', self.projectId)
-                .then(function (successPwd) {
-                  CertService.downloadProjectCert(self.currentProject.projectId, successPwd)
-                    .then(function (success) {
-                      var certs = success.data;
-                      download(atob(certs.kStore), 'keyStore.' + certs.fileExtension);
-                      download(atob(certs.tStore), 'trustStore.' + certs.fileExtension);
-                    }, function (error) {
-                      growl.error(error.data.errorMsg, {title: 'Failed', ttl: 5000});
-                  });
-                }, function (error) {
+                      .then(function (successPwd) {
+                        CertService.downloadProjectCert(self.currentProject.projectId, successPwd)
+                                .then(function (success) {
+                                  var certs = success.data;
+                                  download(atob(certs.kStore), 'keyStore.' + certs.fileExtension);
+                                  download(atob(certs.tStore), 'trustStore.' + certs.fileExtension);
+                                }, function (error) {
+                                  growl.error(error.data.errorMsg, {title: 'Failed', ttl: 5000});
+                                });
+                      }, function (error) {
 
-                });
+                      });
             };
-            
+
             var download = function (text, fileName) {
               var bytes = toByteArray(text);
               var data = new Blob([bytes], {type: 'application/octet-binary'});
               FileSaver.saveAs(data, fileName);
             };
-            
+
             var toByteArray = function (text) {
               var l = text.length;
               var bytes = new Uint8Array(l);
@@ -641,9 +682,9 @@ angular.module('hopsWorksApp')
               return bytes;
             };
 
-            self.isServiceEnabled = function(service) {
-                var idx = self.projectTypes.indexOf(service);
-                return idx === -1;
+            self.isServiceEnabled = function (service) {
+              var idx = self.projectTypes.indexOf(service);
+              return idx === -1;
             };
 
           }]);

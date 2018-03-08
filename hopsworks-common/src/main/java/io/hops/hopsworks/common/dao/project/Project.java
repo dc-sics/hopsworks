@@ -17,7 +17,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 package io.hops.hopsworks.common.dao.project;
 
 import java.io.Serializable;
@@ -54,6 +53,7 @@ import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
+import io.hops.hopsworks.common.dao.project.pia.Pia;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
@@ -123,8 +123,13 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "project")
   private Collection<JupyterSettings> jupyterSettingsCollection;
-  @OneToMany(cascade = CascadeType.ALL, mappedBy = "project")
+  @OneToMany(cascade = CascadeType.ALL,
+      mappedBy = "project")
   private Collection<TfServing> tfServingCollection;
+  @OneToMany(cascade = CascadeType.ALL,
+      mappedBy = "projectId")
+  private Collection<Pia> piaCollection;
+
   private static final long serialVersionUID = 1L;
 
   @Id
@@ -457,7 +462,7 @@ public class Project implements Serializable {
     return tfServingCollection;
   }
 
-  public void setTfServingCollection(Collection <TfServing> tfServingCollection) {
+  public void setTfServingCollection(Collection<TfServing> tfServingCollection) {
     this.tfServingCollection = tfServingCollection;
   }
 
@@ -465,12 +470,24 @@ public class Project implements Serializable {
     return name + Settings.PROJECT_GENERIC_USER_SUFFIX;
   }
 
-  public Date getLastQuotaUpdate() { return lastQuotaUpdate; }
+  public Date getLastQuotaUpdate() {
+    return lastQuotaUpdate;
+  }
 
   public void setLastQuotaUpdate(Date lastQuotaUpdate) {
     this.lastQuotaUpdate = lastQuotaUpdate;
   }
-  
+
+  @XmlTransient
+  @JsonIgnore
+  public Collection<Pia> getPiaCollection() {
+    return piaCollection;
+  }
+
+  public void setPiaCollection(Collection<Pia> piaCollection) {
+    this.piaCollection = piaCollection;
+  }
+
   @Override
   public String toString() {
     return "se.kth.bbc.project.Project[ name=" + this.name + ", id=" + this.id
