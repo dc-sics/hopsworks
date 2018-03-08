@@ -53,7 +53,6 @@ import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
-import io.hops.hopsworks.common.dao.project.pia.Pia;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;

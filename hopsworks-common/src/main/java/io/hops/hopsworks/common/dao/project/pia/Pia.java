@@ -1,6 +1,5 @@
 package io.hops.hopsworks.common.dao.project.pia;
 
-import io.hops.hopsworks.common.dao.project.Project;
 import java.io.Serializable;
 import javax.annotation.Nullable;
 import javax.persistence.Basic;
@@ -9,8 +8,6 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
