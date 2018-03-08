@@ -126,9 +126,9 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "project")
   private Collection<TfServing> tfServingCollection;
-  @OneToMany(cascade = CascadeType.ALL,
-      mappedBy = "projectId")
-  private Collection<Pia> piaCollection;
+//  @OneToMany(cascade = CascadeType.ALL,
+//      mappedBy = "projectId")
+//  private Collection<Pia> piaCollection;
 
   private static final long serialVersionUID = 1L;
 
@@ -209,9 +209,7 @@ public class Project implements Serializable {
       mappedBy = "projectId")
   private Collection<JupyterProject> jupyterProjectCollection;
 
-//  @OneToMany(cascade = CascadeType.ALL,
-//      mappedBy = "projectId")
-//  private Collection<TfServing> tfServingCollection;
+
   public Project() {
   }
 
@@ -478,15 +476,13 @@ public class Project implements Serializable {
     this.lastQuotaUpdate = lastQuotaUpdate;
   }
 
-  @XmlTransient
-  @JsonIgnore
-  public Collection<Pia> getPiaCollection() {
-    return piaCollection;
-  }
-
-  public void setPiaCollection(Collection<Pia> piaCollection) {
-    this.piaCollection = piaCollection;
-  }
+//  public Collection<Pia> getPiaCollection() {
+//    return piaCollection;
+//  }
+//
+//  public void setPiaCollection(Collection<Pia> piaCollection) {
+//    this.piaCollection = piaCollection;
+//  }
 
   @Override
   public String toString() {

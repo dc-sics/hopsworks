@@ -17,7 +17,6 @@ import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlRootElement;
-import org.codehaus.jackson.annotate.JsonIgnore;
 
 @Entity
 @Table(name = "pia",
@@ -88,6 +87,10 @@ import org.codehaus.jackson.annotate.JsonIgnore;
     @NamedQuery(name = "Pia.findBySubjectAccessRights",
       query
       = "SELECT p FROM Pia p WHERE p.subjectAccessRights = :subjectAccessRights")
+  ,
+    @NamedQuery(name = "Pia.findByProjectId",
+      query
+      = "SELECT p FROM Pia p WHERE p.projectId = :projectId")
   ,
     @NamedQuery(name = "Pia.findByRisks",
       query = "SELECT p FROM Pia p WHERE p.risks = :risks")})
@@ -181,12 +184,12 @@ public class Pia implements Serializable {
       max = 2000)
   @Column(name = "risks")
   private String risks;
-  @JoinColumn(name = "project_id",
-      referencedColumnName = "id")
-  @ManyToOne(optional = false)
-  @JsonIgnore
+//  @JoinColumn(name = "project_id",
+//      referencedColumnName = "id")
+//  @ManyToOne(optional = false)
   @Nullable
-  private Project projectId;
+  private int projectId;
+//  private Project projectId;
 
   public Pia() {
   }
@@ -361,14 +364,22 @@ public class Pia implements Serializable {
     this.risks = risks;
   }
 
-  public Project getProjectId() {
+//  public Project getProjectId() {
+//    return projectId;
+//  }
+//
+//  public void setProjectId(Project projectId) {
+//    this.projectId = projectId;
+//  }
+
+  public int getProjectId() {
     return projectId;
   }
 
-  public void setProjectId(Project projectId) {
+  public void setProjectId(int projectId) {
     this.projectId = projectId;
   }
-
+  
   @Override
   public int hashCode() {
     int hash = 0;
