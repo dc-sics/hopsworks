@@ -46,6 +46,7 @@ angular.module('hopsWorksApp')
             self.isClosed = true;
 
             self.pia = {
+              "id": "",
               "personal_data": "",
               "how_data_collected": "",
               "specified_explicit_legitimate": 0,
