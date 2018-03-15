@@ -107,23 +107,23 @@ public class Pia implements Serializable {
   @Size(min = 1,
       max = 4000)
   @Column(name = "personal_data")
-  private String personalData;
+  private String personalData="";
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 2000)
   @Column(name = "how_data_collected")
-  private String howDataCollected;
+  private String howDataCollected="";
   @Basic(optional = false)
   @NotNull
   @Column(name = "specified_explicit_legitimate")
   private int specifiedExplicitLegitimate;
   @Size(max = 1000)
   @Column(name = "consent_process")
-  private String consentProcess;
+  private String consentProcess="";
   @Size(max = 1000)
   @Column(name = "consent_basis")
-  private String consentBasis;
+  private String consentBasis="";
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_minimized")
@@ -137,13 +137,13 @@ public class Pia implements Serializable {
   @Size(min = 1,
       max = 500)
   @Column(name = "users_informed_how")
-  private String usersInformedHow;
+  private String usersInformedHow="";
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 500)
   @Column(name = "user_controls_data_collection_retention")
-  private String userControlsDataCollectionRetention;
+  private String userControlsDataCollectionRetention="";
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_encrypted")
@@ -165,26 +165,25 @@ public class Pia implements Serializable {
   @Size(min = 1,
       max = 500)
   @Column(name = "data_security_measures")
-  private String dataSecurityMeasures;
+  private String dataSecurityMeasures="";
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 500)
   @Column(name = "data_portability_measure")
-  private String dataPortabilityMeasure;
+  private String dataPortabilityMeasure="";
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 500)
   @Column(name = "subject_access_rights")
-  private String subjectAccessRights;
+  private String subjectAccessRights="";
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 2000)
   @Column(name = "risks")
-  private String risks;
-//  @Basic(optional = true)
+  private String risks="";
   @JoinColumn(name = "project_id",
       referencedColumnName = "id")
   @ManyToOne(optional = true)
