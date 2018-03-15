@@ -127,11 +127,11 @@ public class Pia implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_minimized")
-  private int dataMinimized;
+  private int dataMinimized=0;
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_uptodate")
-  private int dataUptodate;
+  private int dataUptodate=0;
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
@@ -147,19 +147,19 @@ public class Pia implements Serializable {
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_encrypted")
-  private int dataEncrypted;
+  private int dataEncrypted=0;
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_anonymized")
-  private int dataAnonymized;
+  private int dataAnonymized=0;
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_pseudonymized")
-  private int dataPseudonymized;
+  private int dataPseudonymized=0;
   @Basic(optional = false)
   @NotNull
   @Column(name = "data_backedup")
-  private int dataBackedup;
+  private int dataBackedup=0;
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
@@ -188,7 +188,7 @@ public class Pia implements Serializable {
       referencedColumnName = "id")
   @ManyToOne(optional = true)
   @Nullable
-  private Project projectId;
+  private Project projectId = null;
 //  private int projectId;
 
   public Pia() {
