@@ -2,6 +2,7 @@ package io.hops.hopsworks.common.dao.project.pia;
 
 import io.hops.hopsworks.common.dao.AbstractFacade;
 import io.hops.hopsworks.common.dao.project.Project;
+import java.util.ArrayList;
 import java.util.Collection;
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -42,6 +43,8 @@ public class PiaFacade extends AbstractFacade<Pia> {
     if (allPias == null || allPias.isEmpty()) {
       Pia p = new Pia();
       p.setProjectId(project);
+      allPias = new ArrayList<>();
+      allPias.add(p);
     }
     return allPias.iterator().next();
   }
