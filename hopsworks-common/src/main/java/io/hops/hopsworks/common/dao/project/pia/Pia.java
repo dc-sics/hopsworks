@@ -1,5 +1,6 @@
 package io.hops.hopsworks.common.dao.project.pia;
 
+import io.hops.hopsworks.common.dao.project.Project;
 import java.io.Serializable;
 import javax.annotation.Nullable;
 import javax.persistence.Basic;
@@ -8,6 +9,8 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
@@ -85,10 +88,10 @@ import javax.xml.bind.annotation.XmlRootElement;
       query
       = "SELECT p FROM Pia p WHERE p.subjectAccessRights = :subjectAccessRights")
   ,
-    @NamedQuery(name = "Pia.findByProjectId",
-      query
-      = "SELECT p FROM Pia p WHERE p.projectId = :projectId")
-  ,
+//    @NamedQuery(name = "Pia.findByProjectId",
+//      query
+//      = "SELECT p FROM Pia p WHERE p.projectId = :projectId")
+//  ,
     @NamedQuery(name = "Pia.findByRisks",
       query = "SELECT p FROM Pia p WHERE p.risks = :risks")})
 public class Pia implements Serializable {
@@ -181,12 +184,13 @@ public class Pia implements Serializable {
       max = 2000)
   @Column(name = "risks")
   private String risks;
-//  @JoinColumn(name = "project_id",
-//      referencedColumnName = "id")
-//  @ManyToOne(optional = false)
+//  @Basic(optional = true)
+  @JoinColumn(name = "project_id",
+      referencedColumnName = "id")
+  @ManyToOne(optional = true)
   @Nullable
-  private int projectId;
-//  private Project projectId;
+  private Project projectId;
+//  private int projectId;
 
   public Pia() {
   }
@@ -198,7 +202,7 @@ public class Pia implements Serializable {
   public Pia(Long id, String personalData, String howDataCollected, int specifiedExplicitLegitimate, int dataMinimized,
       int dataUptodate, String usersInformedHow, String userControlsDataCollectionRetention, int dataEncrypted,
       int dataAnonymized, int dataPseudonymized, int dataBackedup, String dataSecurityMeasures,
-      String dataPortabilityMeasure, String subjectAccessRights, String risks) {
+      String dataPortabilityMeasure, String subjectAccessRights, String risks, Project project) {
     this.id = id;
     this.personalData = personalData;
     this.howDataCollected = howDataCollected;
@@ -215,6 +219,7 @@ public class Pia implements Serializable {
     this.dataPortabilityMeasure = dataPortabilityMeasure;
     this.subjectAccessRights = subjectAccessRights;
     this.risks = risks;
+    this.projectId = project;
   }
 
   public Long getId() {
@@ -361,21 +366,21 @@ public class Pia implements Serializable {
     this.risks = risks;
   }
 
-//  public Project getProjectId() {
-//    return projectId;
-//  }
-//
-//  public void setProjectId(Project projectId) {
-//    this.projectId = projectId;
-//  }
-
-  public int getProjectId() {
+  public Project getProjectId() {
     return projectId;
   }
 
-  public void setProjectId(int projectId) {
+  public void setProjectId(Project projectId) {
     this.projectId = projectId;
   }
+
+//  public int getProjectId() {
+//    return projectId;
+//  }
+//
+//  public void setProjectId(int projectId) {
+//    this.projectId = projectId;
+//  }
   
   @Override
   public int hashCode() {

@@ -982,13 +982,14 @@ public class ProjectService {
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     
-    // The project is 'null' for security regions, need to set it.
-//    Project project = projectController.findProjectById(projectId);
-//    if (project == null) {
-//      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-//          ResponseMessages.PROJECT_NOT_FOUND);
-//    }
-    pia.setProjectId(projectId);
+//     The project is 'null' for security regions, need to set it.
+    Project project = projectController.findProjectById(projectId);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    pia.setProjectId(project);
+//    pia.setProjectId(projectId);
     piaFacade.update(pia);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
@@ -1001,14 +1002,15 @@ public class ProjectService {
       @PathParam("id") Integer projectId,
       @Context HttpServletRequest req) throws AppException {
     
-//    Project project = projectController.findProjectById(projectId);
-//    if (project == null) {
-//      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-//          ResponseMessages.PROJECT_NOT_FOUND);
-//    }
-    Pia pia = piaFacade.findByProject(projectId);
+    Project project = projectController.findProjectById(projectId);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+          ResponseMessages.PROJECT_NOT_FOUND);
+    }
+//    Pia pia = piaFacade.findByProject(projectId);
+    Pia pia = piaFacade.findByProject(project);
     // set the project to 'null', so that it is not exposed to the client
-//    pia.setProjectId(null);
+    pia.setProjectId(null);
     GenericEntity<Pia> genericPia = new GenericEntity<Pia>(pia) {};
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(genericPia).build();
