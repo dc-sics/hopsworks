@@ -988,8 +988,8 @@ public class ProjectService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.PROJECT_NOT_FOUND);
     }
-    pia.setProjectId(project);
-//    pia.setProjectId(projectId);
+//    pia.setProjectId(project);
+    pia.setProjectId(projectId);
     piaFacade.update(pia);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
@@ -1007,10 +1007,10 @@ public class ProjectService {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.PROJECT_NOT_FOUND);
     }
-//    Pia pia = piaFacade.findByProject(projectId);
-    Pia pia = piaFacade.findByProject(project);
+    Pia pia = piaFacade.findByProject(projectId);
+//    Pia pia = piaFacade.findByProject(project);
     // set the project to 'null', so that it is not exposed to the client
-    pia.setProjectId(null);
+//    pia.setProjectId(null);
     GenericEntity<Pia> genericPia = new GenericEntity<Pia>(pia) {};
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(genericPia).build();

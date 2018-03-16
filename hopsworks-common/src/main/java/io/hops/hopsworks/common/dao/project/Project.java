@@ -53,7 +53,6 @@ import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
-import io.hops.hopsworks.common.dao.project.pia.Pia;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
@@ -126,9 +125,10 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "project")
   private Collection<TfServing> tfServingCollection;
-  @OneToMany(cascade = CascadeType.ALL,
-      mappedBy = "projectId")
-  private Collection<Pia> piaCollection;
+  
+//  @OneToMany(cascade = CascadeType.ALL,
+//      mappedBy = "projectId")
+//  private Collection<Pia> piaCollection;
 
   private static final long serialVersionUID = 1L;
 
@@ -475,13 +475,13 @@ public class Project implements Serializable {
     this.lastQuotaUpdate = lastQuotaUpdate;
   }
 
-  public Collection<Pia> getPiaCollection() {
-    return piaCollection;
-  }
-
-  public void setPiaCollection(Collection<Pia> piaCollection) {
-    this.piaCollection = piaCollection;
-  }
+//  public Collection<Pia> getPiaCollection() {
+//    return piaCollection;
+//  }
+//
+//  public void setPiaCollection(Collection<Pia> piaCollection) {
+//    this.piaCollection = piaCollection;
+//  }
 
   @Override
   public String toString() {
