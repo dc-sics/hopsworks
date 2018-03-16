@@ -196,8 +196,6 @@ public class PythonDepsService {
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   @Produces(MediaType.TEXT_PLAIN)
   public Response installed() throws AppException {
-    Map<String, String> deps = pythonDepsFacade.getPreInstalledLibs(project);
-
     String defaultRepo = settings.getCondaDefaultRepo();
     if (settings.isAnacondaInstalled()) {
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
