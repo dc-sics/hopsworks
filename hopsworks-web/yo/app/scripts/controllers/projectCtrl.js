@@ -189,19 +189,18 @@ angular.module('hopsWorksApp')
                         //set the project name under which the search is performed
                         UtilsService.setProjectName(self.currentProject.projectName);
                         self.getRole();
-                        ProjectService.getPia({id: self.projectId}).$promise.then(
-                                function (response) {
-                                  ProjectService.query().$promise.then(
-                                          function (success) {
-                                            self.pia = success.data;
-                                          }, function (error) {
-                                    growl.error(error.data.errorMsg, {title: 'Error getting Pia', ttl: 5000});
-                                  });
-                                });
 
-                      }, function (error) {
-                $location.path('/');
-              }
+                        ProjectService.getPia({id: self.projectId}).$promise.then(
+                          function (success) {
+//                                  ProjectService.query().$promise.then(
+//                                          function (success) {
+                            self.pia = success.data;
+//                                          }, function (error) {
+                          }, function (error) {
+                            growl.error(error.data.errorMsg, {title: 'Error getting Pia', ttl: 5000});
+                            $location.path('/');
+                        });
+                      }
               );
             };
 
@@ -269,18 +268,18 @@ angular.module('hopsWorksApp')
 
 
             self.savePia = function () {
-                var forms = document.getElementsByClassName('needs-validation');
-                Array.prototype.filter.call(forms, function (form) {
-                  form.addEventListener('submit', function (event) {
-                    if (form.checkValidity() === false) {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }
-                    form.classList.add('was-validated');
-                  }, false);
-                });
-              
-              
+              var forms = document.getElementsByClassName('needs-validation');
+              Array.prototype.filter.call(forms, function (form) {
+                form.addEventListener('submit', function (event) {
+                  if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }
+                  form.classList.add('was-validated');
+                }, false);
+              });
+
+
               ProjectService.savePia({id: self.currentProject.projectId}, self.pia)
                       .$promise.then(
                               function (success) {
