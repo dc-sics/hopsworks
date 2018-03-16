@@ -713,64 +713,58 @@
                 <form ng-submit="projectCtrl.savePia()" name="piaForm" class="needs-validation" novalidate>          
                   <div class="form-group"> 
                     <label for="personal_data" class="control-label">What Personal Data is Processed?</label>
-                    <textarea ng-model="projectCtrl.pia.personal_data" maxlength="4000"
+                    <textarea ng-model="projectCtrl.pia.personalData" maxlength="4000"
                               class="form-control" cols="40" id="personal_data" 
                               name="personal_data" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
 
                   <div class="form-group"> 
                     <label for="how_data_collected" class="control-label">How is that data collected and retained?</label>
-                    <textarea ng-model="projectCtrl.pia.how_data_collected" maxlength="2000" 
+                    <textarea ng-model="projectCtrl.pia.howDataCollected" maxlength="2000" 
                               class="form-control" cols="40" id="how_data_collected" 
                               name="how_data_collected" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.specified_explicit_legitimate"  name="specified_explicit_legitimate" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.specifiedExplicitLegitimate"  name="specified_explicit_legitimate" value="">
                     <label for="specified_explicit_legitimate" class="control-label"> The data collection and processing is specified, explicit, and legitimate.</label>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
 
                   <div class="form-group"> 
                     <label for="consent_process" class="control-label">What is the process for granting consent for the data processing, and is consent explicit and verifiable?</label>
-                    <textarea ng-model="projectCtrl.pia.consent_process" maxlength="1000" 
+                    <textarea ng-model="projectCtrl.pia.consentProcess" maxlength="1000" 
                               class="form-control" cols="40" id="consent_process" 
                               name="consent_process" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
                   <div class="form-group"> 
                     <label for="consent_basis" class="control-label">What is the basis of the consent for the data processing? If not based on consent, what is the legal basis for the data processing?</label>
-                    <textarea ng-model="projectCtrl.pia.consent_basis" maxlength="1000" 
+                    <textarea ng-model="projectCtrl.pia.consentBasis" maxlength="1000" 
                               class="form-control" cols="40" id="consent_basis" 
                               name="consent_basis" rows="4"></textarea>
                     <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
 
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.data_minimized"  name="data_minimized" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataMinimized"  name="data_minimized" value="">
                     <label for="data_minimized" class="control-label"> Is the data minimized to what is explicitly required?</label>
                   </div>
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.data_uptodate"  name="data_uptodate" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataUptodate"  name="data_uptodate" value="">
                     <label for="data_uptodate" class="control-label">Is the data collection and processing specified, explicit, and legitimate?</label>
                   </div>
                   <div class="form-group"> 
                     <label for="users_informed_how" class="control-label">How are users informed about the data processing?</label>
-                    <textarea ng-model="projectCtrl.pia.users_informed_how" maxlength="500" 
+                    <textarea ng-model="projectCtrl.pia.usersInformedHow" maxlength="500" 
                               class="form-control" cols="40" id="users_informed_how" 
                               name="users_informed_how" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
                   <div class="form-group"> 
                     <label for="user_controls_data_collection_retention" class="control-label">What controls do users have over the data collection and retention?</label>
-                    <textarea ng-model="projectCtrl.pia.user_controls_data_collection_retention" maxlength="500" 
+                    <textarea ng-model="projectCtrl.pia.userControlsDataCollectionRetention" maxlength="500" 
                               class="form-control" cols="40" id="user_controls_data_collection_retention" 
                               name="user_controls_data_collection_retention" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.data_encrypted"  name="data_encrypted" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataEncrypted"  name="data_encrypted" value="">
                     <label for="data_encrypted" class="control-label">Is the data encrypted?</label>
                   </div>
 
@@ -778,48 +772,48 @@
                     <label class="control-label">Is the data anonymized or pseudonymized?</label>
                     <div class="radio">
                       <label>
-                        <input type="radio" name="data_anonymization" value="1" ng-model="projectCtrl.pia.data_anonymized" >
+                        <input type="radio" name="data_anonymization" value="1" 
+                               ng-model="projectCtrl.pia.dataAnonymized" >
                         Anonymized
                       </label>
                     </div>
                     <div class="radio">
                       <label>
-                        <input type="radio"  name="data_anonymization" value="1" ng-model="projectCtrl.pia.data_pseudonymized">
+                        <input type="radio"  name="data_anonymization" value="1" 
+                               ng-model="projectCtrl.pia.dataPseudonymized">
                         Pseudonymized
                       </label>
                     </div>
                     <div class="radio">
                       <label>
-                        <input type="radio"  name="data_anonymization" value="none" ng-click="projectCtrl.pia.data_pseudonymized = 0; projectCtrl.pia.data_anonymized = 0">
+                        <input type="radio"  name="data_anonymization" value="none" 
+                               ng-click="projectCtrl.pia.data_pseudonymized = 0; projectCtrl.pia.data_anonymized = 0">
                         Neither
                       </label>
                     </div>
-                    <div class="invalid-feedback"> Please select one option.</div>
                   </div>		                  
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.data_backedup"  name="data_backedup" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataBackedup"  name="data_backedup" value="">
                     <label for="data_backedup" class="control-label">Is the data backed up at a remote location/project?</label>                    
                   </div>
                   <div class="form-group"> 
                     <label for="data_security_measures" class="control-label">Describe any additional technical and security measures in this project.</label>
-                    <textarea ng-model="projectCtrl.pia.data_security_measures" maxlength="500" 
+                    <textarea ng-model="projectCtrl.pia.data_securityMeasures" maxlength="500" 
                               class="form-control" cols="40" id="data_security_measures" 
                               name="data_security_measures" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
                   <div class="form-group"> 
                     <label for="data_portability_measure" class="control-label">What controls do users have over the data collection and retention?</label>
-                    <textarea ng-model="projectCtrl.pia.data_portability_measure" maxlength="500" 
+                    <textarea ng-model="projectCtrl.pia.dataPortabilityMeasure" maxlength="500" 
                               class="form-control" cols="40" id="data_portability_measure" 
                               name="data_portability_measure" rows="4"></textarea>
                   </div>
                   <div class="form-group"> 
                     <label for="subject_access_rights" class="control-label">Describe the Subject Access Rights:</label>
                     <i class="fa fa-info-circle" uib-tooltip="How does the data subject exercise their access rights? How does the data subject exercise their right to data portability? How does the data subject exercise their rights to erasure and the right to be forgotten? How does the data subject exercise their right to restrict and object?" style="margin-left: 10px"></i>
-                    <textarea ng-model="projectCtrl.pia.subject_access_rights" maxlength="500" 
+                    <textarea ng-model="projectCtrl.pia.subjectAccessRights" maxlength="500" 
                               class="form-control" cols="40" id="subject_access_rights" 
                               name="subject_access_rights" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
                   <div class="form-group"> 
                     <label for="risks" class="control-label">Describe the risks.</label>
@@ -829,7 +823,6 @@
                     <textarea ng-model="projectCtrl.pia.risks" maxlength="500" 
                               class="form-control" cols="40" id="risks" 
                               name="risks" rows="4"></textarea>
-                    <div class="invalid-feedback"> Missing field - please fill in.</div>
                   </div>
 
                   <div class="form-group"> 
