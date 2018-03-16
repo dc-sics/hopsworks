@@ -46,5 +46,10 @@ public class PiaFacade extends AbstractFacade<Pia> {
 //    }
 //    return allPias.iterator().next();
 //  }
-  
+  public Pia mergeUpdate(Pia pia, int projectId) {
+    Pia piaManaged = findByProject(projectId);
+    pia.setProjectId(projectId);
+    piaManaged.deepCopy(pia);
+    return update(piaManaged);
+  }
 }

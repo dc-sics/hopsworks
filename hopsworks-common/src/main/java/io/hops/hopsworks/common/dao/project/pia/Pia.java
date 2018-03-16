@@ -194,7 +194,28 @@ public class Pia implements Serializable {
   
   public Pia() {
   }
-
+  
+  public void deepCopy(Pia that) {
+    this.consentBasis =  that.consentBasis;
+    this.consentProcess = that.consentProcess;
+    this.dataAnonymized = that.dataAnonymized;
+    this.dataBackedup = that.dataBackedup;
+    this.dataEncrypted = that.dataEncrypted;
+    this.dataMinimized = that.dataMinimized;
+    this.dataPortabilityMeasure = that.dataPortabilityMeasure;
+    this.dataPseudonymized = that.dataPseudonymized;
+    this.dataSecurityMeasures = that.dataSecurityMeasures;
+    this.dataUptodate = that.dataUptodate;
+    this.howDataCollected = that.howDataCollected;
+    this.personalData = that.personalData;
+    this.projectId = that.projectId;
+    this.risks = that.risks;
+    this.specifiedExplicitLegitimate = that.specifiedExplicitLegitimate;
+    this.subjectAccessRights = that.subjectAccessRights;
+    this.userControlsDataCollectionRetention = that.userControlsDataCollectionRetention;
+    this.usersInformedHow = that.usersInformedHow;
+  }
+  
   public Pia(Long id) {
     this.id = id;
   }

@@ -982,15 +982,7 @@ public class ProjectService {
       @Context SecurityContext sc,
       @Context HttpServletRequest req) throws AppException {
     
-//     The project is 'null' for security regions, need to set it.
-//    Project project = projectController.findProjectById(projectId);
-//    if (project == null) {
-//      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
-//          ResponseMessages.PROJECT_NOT_FOUND);
-//    }
-//    pia.setProjectId(project);
-    pia.setProjectId(projectId);
-    piaFacade.update(pia);
+    piaFacade.mergeUpdate(pia, projectId);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
   }
 
