@@ -88,10 +88,6 @@ import javax.xml.bind.annotation.XmlRootElement;
       query
       = "SELECT p FROM Pia p WHERE p.subjectAccessRights = :subjectAccessRights")
   ,
-//    @NamedQuery(name = "Pia.findByProjectId",
-//      query
-//      = "SELECT p FROM Pia p WHERE p.projectId = :projectId")
-//  ,
     @NamedQuery(name = "Pia.findByRisks",
       query = "SELECT p FROM Pia p WHERE p.risks = :risks")})
 public class Pia implements Serializable {
@@ -186,11 +182,10 @@ public class Pia implements Serializable {
   private String risks=" ";
   @JoinColumn(name = "project_id",
       referencedColumnName = "id")
-  @ManyToOne(optional = true)
+  @ManyToOne(optional = false)
   @Nullable
   private Project projectId = null;
-//  private int projectId;
-
+  
   public Pia() {
   }
 
@@ -373,14 +368,6 @@ public class Pia implements Serializable {
     this.projectId = projectId;
   }
 
-//  public int getProjectId() {
-//    return projectId;
-//  }
-//
-//  public void setProjectId(int projectId) {
-//    this.projectId = projectId;
-//  }
-  
   @Override
   public int hashCode() {
     int hash = 0;
