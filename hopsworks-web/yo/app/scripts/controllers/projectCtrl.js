@@ -44,6 +44,7 @@ angular.module('hopsWorksApp')
             self.location = $location;
             self.cloak = true;
             self.isClosed = true;
+            self.isCondaAdvanced = false;
 
             self.pia = {
               "id": "",
