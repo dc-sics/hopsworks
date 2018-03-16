@@ -229,8 +229,7 @@
                         <!--Number of hosts left: {{pythonDepsCtrl.numEnvsNotEnabled}}-->
                       </div>
                     </div>
-                    <div class="col-md-offset-2 col-md-2  pull-right" style="margin-right: 60px" 
-                         ng-show="projectCtrl.isCondaAdvanced">
+                    <div class="col-md-offset-2 col-md-2  pull-right" style="margin-right: 60px">
                       <button tooltip-placement="auto top"
                               uib-tooltip="The project's Anaconda Environment will be deleted (but it can be recreated again)." 
                               ng-click="pythonDepsCtrl.destroyAnaconda()" 
@@ -240,19 +239,40 @@
                     </div>
 
                   </div>
+                    <div style="margin-top: 15px;">
+                      <div>Conda Channel: <a uib-tooltip="You can search a different conda channel by entering a new channel name here." tooltip-placement="top"
+                                             href="#" data-inputclass="xwdith" editable-text="pythonDepsCtrl.condaChannel">{{ pythonDepsCtrl.condaChannel || 'default' }}</a></div>  
+                    </div>
 
-                  <div lass="col-md-offset-1 checkbox c-checkbox">
-                    <div class="col-md-2">Advanced</div>
-                    <label style="margin-left: 10px; margin-top: -1px;">
-                      <span class="fa fa-check"></span>
-                      <input name="AdvancedConda" ng-checked="projectCtrl.isCondaAdvanced" type="checkbox">
-                    </label>
-                  </div>
 
-                  <div ng-show="projectCtrl.isCondaAdvanced">
+                  <fieldset>
+                    <div class="control-group col-md-offset-1">
+                      <div class="row"></div>
+                      <form name="nestedForm">
+                        <div class="form-group row" style="margin-top: 40px;">
+                          <div class="col-md-5">
+                            <input type="text" class="form-control" 
+                                   placeholder="Search here ...."
+                                   required ng-model="pythonDepsCtrl.condaSelectedLib.lib"/>
+                          </div>
+                          <div class="col-md-5">
+                            <div class="btn-group row">
+                              <button class="btn btn-primary button-sm" type="submit" ng-click="pythonDepsCtrl.search('CONDA')"
+                                      ng-disabled="pythonDepsCtrl.condaSearching">
+                                <i ng-if="pythonDepsCtrl.condaSearching" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
+                                Search <i class="fa fa-search"></i>
 
-                    <!--<div class="col-md-offset-1">-->
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </fieldset>
 
+                  <div class="col-md-offset-1" ng-show="pythonDepsCtrl.condaResultsMessageShowing">{{pythonDepsCtrl.condaResultsMsg}}</div>
+
+		  <div ng-show="pythonDepsCtrl.condaSearchResults.length > 0">
                     <h2>Installation mode<i class="fa fa-info-circle" uib-tooltip="Install library in Anaconda environment on hosts with specific capability." style="margin-left: 10px"></i></h2>
                     <div class="row">
 
@@ -296,42 +316,9 @@
                       </div>
                     </div>
 
-                    <div style="margin-top: 15px;">
-                      <div>Conda Channel: <a uib-tooltip="You can search a different conda channel by entering a new channel name here." tooltip-placement="top"
-                                             href="#" data-inputclass="xwdith" editable-text="pythonDepsCtrl.condaChannel">{{ pythonDepsCtrl.condaChannel || 'default' }}</a></div>  
-                    </div>
 
-                    <!--</div>-->
-                  </div>
-
-                  <fieldset>
-                    <div class="control-group col-md-offset-1">
-                      <div class="row"></div>
-                      <form name="nestedForm">
-                        <div class="form-group row" style="margin-top: 40px;">
-                          <div class="col-md-5">
-                            <input type="text" class="form-control" 
-                                   placeholder="Search here ...."
-                                   required ng-model="pythonDepsCtrl.condaSelectedLib.lib"/>
-                          </div>
-                          <div class="col-md-5">
-                            <div class="btn-group row">
-                              <button class="btn btn-primary button-sm" type="submit" ng-click="pythonDepsCtrl.search('CONDA')"
-                                      ng-disabled="pythonDepsCtrl.condaSearching">
-                                <i ng-if="pythonDepsCtrl.condaSearching" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
-                                Search <i class="fa fa-search"></i>
-
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                  </fieldset>
-
-                  <div class="col-md-offset-1" ng-show="pythonDepsCtrl.condaResultsMessageShowing">{{pythonDepsCtrl.condaResultsMsg}}</div>
-
-                  <table ng-show="pythonDepsCtrl.enabled" st-table="rowCollection" class="table table-striped" ng-show="pythonDepsCtrl.condaSearchResults.length > 0">
+		  
+                  <table ng-show="pythonDepsCtrl.enabled" st-table="rowCollection" class="table table-striped">
                     <thead>
                       <tr>
                         <th st-sort="depName" class="col-sm-4"></th>
@@ -375,7 +362,7 @@
                         </td>
                       </tr>
                   </table>
-
+                  </div>
                 </div>
 
 
@@ -390,26 +377,26 @@
                       <p class="lead">Jupyter requires an Anaconda installation. Click on the button below to install Anaconda for this project.</p>
                       <p>You cannot change the version of python after you have selected enabled the anaconda environment for this project.</p>
                       <p class="lead">
-                      <div><span> <label>Enable Python Kernel:
-                            <input type="checkbox" ng-init="pythonDepsCtrl.pythonKernelEnabled = true" ng-model="pythonDepsCtrl.pythonKernelEnabled"></label>
-                          <i class="fa" ng-class="{'fa-exclamation-triangle' : pythonDepsCtrl.pythonKernelEnabled == true, 'fa-info' : pythonDepsCtrl.pythonKernelEnabled == false }" uib-tooltip="Enabling the Python kernel risks that users who are not Data Owners can perform unauthorized copying of data out from a Project."
-                             style="margin-left: 10px"></i></span>
-                      </div>
+			<div><span> <label>Enable Python Kernel:
+                              <input type="checkbox" ng-init="pythonDepsCtrl.pythonKernelEnabled = true" ng-model="pythonDepsCtrl.pythonKernelEnabled"></label>
+                            <i class="fa" ng-class="{'fa-exclamation-triangle' : pythonDepsCtrl.pythonKernelEnabled == true, 'fa-info' : pythonDepsCtrl.pythonKernelEnabled == false }" uib-tooltip="Enabling the Python kernel risks that users who are not Data Owners can perform unauthorized copying of data out from a Project."
+                               style="margin-left: 10px"></i></span>
+			</div>
 
-                      <div>
-                        <div class="btn-group" uib-dropdown is-open="pythonDepsCtrl.pythonVersionOpen">
-                          <button ng-disabled="pythonDepsCtrl.enabling" id="single-button" type="button"
-                                  class="btn btn-success btn-lg"
-                                  uib-dropdown-toggle >
-                            Activate Anaconda &nbsp;<span class="caret"></span>
-                          </button>
-                          <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="single-button">
-                            <li role="menuitem"><a ng-click="pythonDepsCtrl.enable('2.7')">Python 2.7</a></li>
-                            <li class="divider"></li>
-                            <li role="menuitem"><a ng-click="pythonDepsCtrl.enable('3.6')">Python 3.6</a></li>
-                          </ul>
-                        </div>
-                      </div>
+			<div>
+                          <div class="btn-group" uib-dropdown is-open="pythonDepsCtrl.pythonVersionOpen">
+                            <button ng-disabled="pythonDepsCtrl.enabling" id="single-button" type="button"
+                                    class="btn btn-success btn-lg"
+                                    uib-dropdown-toggle >
+                              Activate Anaconda &nbsp;<span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" uib-dropdown-menu role="menu" aria-labelledby="single-button">
+                              <li role="menuitem"><a ng-click="pythonDepsCtrl.enable('2.7')">Python 2.7</a></li>
+                              <li class="divider"></li>
+                              <li role="menuitem"><a ng-click="pythonDepsCtrl.enable('3.6')">Python 3.6</a></li>
+                            </ul>
+                          </div>
+			</div>
                       </p>
                     </div>
                   </div>
@@ -420,7 +407,7 @@
                   <h2>Install Python libraries using pip in Anaconda environment </h2><span style="pull-right">Python Version is {{pythonDepsCtrl.pythonVersion}}</span>
 
 
-                  <div class="row" ng-show="pythonDepsCtrl.enabled">
+                  <div class="row">
                     <div class="col-md-offset-1 col-md-5 progress" ng-if="pythonDepsCtrl.numEnvsNotEnabled > 0">
                       <div class="progress-bar progress-bar-success progress-bar-striped active" role="progressbar"
                            aria-valuenow="{{pythonDepsCtrl.progress()}}" aria-valuemin="0" aria-valuemax="100" style="width:100%">
@@ -428,8 +415,7 @@
                         <!--Number of hosts left: {{pythonDepsCtrl.numEnvsNotEnabled}}-->
                       </div>
                     </div>
-                    <div class="col-md-offset-2 col-md-2 pull-right" style="margin-right: 60px"  
-                         ng-show="projectCtrl.isCondaAdvanced">
+                    <div class="col-md-offset-2 col-md-2 pull-right" style="margin-right: 60px">
                       <button tooltip-placement="auto top"
                               uib-tooltip="The project's Anaconda Environment will be deleted (but it can be recreated again)."
                               ng-click="pythonDepsCtrl.destroyAnaconda()"
@@ -438,18 +424,38 @@
                       </button>
                     </div>
                   </div>
+		  
+                  <fieldset>
+                    <div class="control-group col-md-offset-1">
 
-                  <div lass="col-md-offset-1 checkbox c-checkbox">
-                    <div class="col-md-2">Advanced</div>
-                    <label style="margin-left: 10px; margin-top: -1px;">
-                      <span class="fa fa-check"></span>
-                      <input name="AdvancedConda" ng-checked="projectCtrl.isCondaAdvanced" type="checkbox">
-                    </label>
-                  </div>
+                      <div class="row"></div>
+                      <form name="nestedForm">
+                        <div class="form-group row" style="margin-top: 40px;">
+                          <div class="col-md-5">
+                            <input type="text" class="form-control"
+                                   placeholder="Search here ...."
+                                   required ng-model="pythonDepsCtrl.pipSelectedLib.lib"/>
+                          </div>
+                          <div class="col-md-5">
+                            <div class="btn-group row">
+                              <button class="btn btn-primary button-sm" type="submit" ng-click="pythonDepsCtrl.search('PIP')"
+                                      ng-disabled="pythonDepsCtrl.pipSearching">
+                                <i ng-if="pythonDepsCtrl.pipSearching" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
+                                Search <i class="fa fa-search"></i>
 
-                  <div ng-show="projectCtrl.isCondaAdvanced">
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </fieldset>
 
-                    <div class="col-md-offset-1" ng-show="pythonDepsCtrl.enabled">
+                  <div class="col-md-offset-1" ng-show="pythonDepsCtrl.pipResultsMessageShowing">{{pythonDepsCtrl.pipResultsMsg}}</div>
+
+
+		  <div ng-show="pythonDepsCtrl.pipSearchResults.length > 0">
+                    <div class="col-md-offset-1">
                       <h2>Installation mode<i class="fa fa-info-circle" uib-tooltip="Install library in Anaconda environment on hosts with specific capability." style="margin-left: 10px"></i></h2>
                       <div class="row">
 
@@ -493,84 +499,54 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <fieldset>
-                    <div ng-show="pythonDepsCtrl.enabled" class="control-group col-md-offset-1">
 
-                      <div class="row"></div>
-                      <form name="nestedForm">
-                        <div class="form-group row" style="margin-top: 40px;">
-                          <div class="col-md-5">
-                            <input type="text" class="form-control"
-                                   placeholder="Search here ...."
-                                   required ng-model="pythonDepsCtrl.pipSelectedLib.lib"/>
-                          </div>
-                          <div class="col-md-5">
-                            <div class="btn-group row">
-                              <button class="btn btn-primary button-sm" type="submit" ng-click="pythonDepsCtrl.search('PIP')"
-                                      ng-disabled="pythonDepsCtrl.pipSearching">
-                                <i ng-if="pythonDepsCtrl.pipSearching" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
-                                Search <i class="fa fa-search"></i>
+		    
+                    <table ng-show="pythonDepsCtrl.enabled" st-table="rowCollection" class="table table-striped">
+                      <thead>
+			<tr>
+                          <th st-sort="depName" class="col-sm-4"></th>
+                          <th class="col-sm-2"></th>
+                          <th class="col-sm-2"></th>
+                          <th class="col-sm-2"></th>
+			</tr>
+                      </thead>
+                      <tbody>
+			<tr st-select-row="row" st-select-mode="single" ng-repeat="row in pythonDepsCtrl.pipSearchResults"
+                            ng-class="{'selectedTopicOdd': row.isSelected === true}">
+                          <td class="col-sm-4">
+                            <div class="row" style="margin-left: 10px;"><b>{{row.lib}}</b></div>
+                          </td>
+                          <td class="col-sm-2">
+                            <div class="row">
 
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </form>
-                    </div>
-                  </fieldset>
+                              <div class="form-group">
+				<label class="col-sm-3 control-label" style="margin-top: 5px;">Version</label>
+				<div class="col-sm-8">
+                                  <ui-select ng-model="pythonDepsCtrl.selectedLibs[row.lib].version" theme="select2" class="form-control" title="Choose a version">
+                                    <ui-select-match placeholder="Select a version from the list...">{{$select.selected.version}}</ui-select-match>
+                                    <ui-select-choices repeat="v in row.versions | orderBy:'v.version' : false | filter: $select.search">
+                                      <div ng-bind-html="v.version | highlight: $select.search"></div>
+                                      <small ng-bind-html="v.status | highlight: $select.search"></small>
+                                    </ui-select-choices>
+                                  </ui-select>
+				</div>
 
-                  <div class="col-md-offset-1" ng-show="pythonDepsCtrl.pipResultsMessageShowing">{{pythonDepsCtrl.pipResultsMsg}}</div>
-
-                  <!--                <div class="col-md-offset-1" ng-show="pythonDepsCtrl.numEnvsNotEnabled > 0">Number of hosts not provisioned with an environment yet: {{pythonDepsCtrl.numEnvsNotEnabled}}</div>-->
-
-
-                  <table ng-show="pythonDepsCtrl.enabled" st-table="rowCollection" class="table table-striped" ng-show="pythonDepsCtrl.pipSearchResults.length > 0">
-                    <thead>
-                      <tr>
-                        <th st-sort="depName" class="col-sm-4"></th>
-                        <th class="col-sm-2"></th>
-                        <th class="col-sm-2"></th>
-                        <th class="col-sm-2"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr st-select-row="row" st-select-mode="single" ng-repeat="row in pythonDepsCtrl.pipSearchResults"
-                          ng-class="{'selectedTopicOdd': row.isSelected === true}">
-                        <td class="col-sm-4">
-                          <div class="row" style="margin-left: 10px;"><b>{{row.lib}}</b></div>
-                        </td>
-                        <td class="col-sm-2">
-                          <div class="row">
-
-                            <div class="form-group">
-                              <label class="col-sm-3 control-label" style="margin-top: 5px;">Version</label>
-                              <div class="col-sm-8">
-                                <ui-select ng-model="pythonDepsCtrl.selectedLibs[row.lib].version" theme="select2" class="form-control" title="Choose a version">
-                                  <ui-select-match placeholder="Select a version from the list...">{{$select.selected.version}}</ui-select-match>
-                                  <ui-select-choices repeat="v in row.versions | orderBy:'v.version' : false | filter: $select.search">
-                                    <div ng-bind-html="v.version | highlight: $select.search"></div>
-                                    <small ng-bind-html="v.status | highlight: $select.search"></small>
-                                  </ui-select-choices>
-                                </ui-select>
                               </div>
-
                             </div>
-                          </div>
-                        </td>
-                        <td class="col-sm-2">
-                          <div class="row" style="margin-left: 10px;"><b>{{row.status}}</b></div>
-                        </td>
-                        <td class="col-sm-2">
-                          <button type="submit" class="btn btn-primary" ng-disabled="row.status === 'SUCCESS'"
-                                  ng-click="pythonDepsCtrl.install(row.lib, 'PIP', pythonDepsCtrl.machineTypeVal, pythonDepsCtrl.selectedLibs[row.lib].version); active = 4">
-                            <i ng-if="pythonDepsCtrl.installing[row.lib]" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
-                            Install</button>
-                        </td>
-                      </tr>
-                  </table>
-                </div>
-
+                          </td>
+                          <td class="col-sm-2">
+                            <div class="row" style="margin-left: 10px;"><b>{{row.status}}</b></div>
+                          </td>
+                          <td class="col-sm-2">
+                            <button type="submit" class="btn btn-primary" ng-disabled="row.status === 'SUCCESS'"
+                                    ng-click="pythonDepsCtrl.install(row.lib, 'PIP', pythonDepsCtrl.machineTypeVal, pythonDepsCtrl.selectedLibs[row.lib].version); active = 4">
+                              <i ng-if="pythonDepsCtrl.installing[row.lib]" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
+                              Install</button>
+                          </td>
+			</tr>
+                    </table>
+                  </div>		  
+                </div>		  
               </uib-tab>
               <uib-tab index="3" heading="Installed Python Libraries" ng-show="pythonDepsCtrl.enabled && pythonDepsCtrl.installed"
                        ng-click="pythonDepsCtrl.getInstalled()">
