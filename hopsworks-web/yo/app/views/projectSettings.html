@@ -725,7 +725,8 @@
                               name="how_data_collected" rows="4"></textarea>
                   </div>
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.specifiedExplicitLegitimate"  name="specified_explicit_legitimate" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.specifiedExplicitLegitimate"  
+                           name="specified_explicit_legitimate" ng-true-value="1" ng-false-value="0">
                     <label for="specified_explicit_legitimate" class="control-label"> The data collection and processing is specified, explicit, and legitimate.</label>
                   </div>
 
@@ -743,11 +744,13 @@
                   </div>
 
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.dataMinimized"  name="data_minimized" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataMinimized"  name="data_minimized" 
+                            ng-true-value="1" ng-false-value="0">
                     <label for="data_minimized" class="control-label"> Is the data minimized to what is explicitly required?</label>
                   </div>
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.dataUptodate"  name="data_uptodate" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataUptodate"  name="data_uptodate" 
+                            ng-true-value="1" ng-false-value="0">
                     <label for="data_uptodate" class="control-label">Is the data collection and processing specified, explicit, and legitimate?</label>
                   </div>
                   <div class="form-group"> 
@@ -763,7 +766,8 @@
                               name="user_controls_data_collection_retention" rows="4"></textarea>
                   </div>
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.dataEncrypted"  name="data_encrypted" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataEncrypted"  name="data_encrypted" 
+                            ng-true-value="1" ng-false-value="0">
                     <label for="data_encrypted" class="control-label">Is the data encrypted?</label>
                   </div>
 
@@ -792,7 +796,8 @@
                     </div>
                   </div>		                  
                   <div class="form-group"> 
-                    <input type="checkbox" ng-model="projectCtrl.pia.dataBackedup"  name="data_backedup" value="">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataBackedup"  name="data_backedup" 
+                            ng-true-value="1" ng-false-value="0">
                     <label for="data_backedup" class="control-label">Is the data backed up at a remote location/project?</label>                    
                   </div>
                   <div class="form-group"> 
