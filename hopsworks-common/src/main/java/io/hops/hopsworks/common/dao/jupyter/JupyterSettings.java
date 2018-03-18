@@ -23,6 +23,7 @@ package io.hops.hopsworks.common.dao.jupyter;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.user.Users;
 import java.io.Serializable;
+import java.util.Date;
 import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
@@ -32,6 +33,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -138,93 +141,125 @@ public class JupyterSettings implements Serializable {
   private static final long serialVersionUID = 1L;
   @EmbeddedId
   protected JupyterSettingsPK jupyterSettingsPK;
+
   @Basic(optional = false)
   @Column(name = "num_tf_ps")
   private int numTfPs = 1;
+
   @Basic(optional = false)
   @Column(name = "num_tf_gpus")
   private int numTfGpus = 0;
+
   @Basic(optional = false)
   @Column(name = "num_mpi_np")
   private int numMpiNp = 1;
+
   @Basic(optional = false)
   @Column(name = "appmaster_cores")
   private int appmasterCores = 1;
+
   @Basic(optional = false)
   @Column(name = "appmaster_memory")
   private int appmasterMemory = 1024;
+
   @Basic(optional = false)
   @Column(name = "num_executors")
   private int numExecutors = 1;
+
   @Basic(optional = false)
   @Column(name = "num_executor_cores")
   private int numExecutorCores = 1;
+
   @Basic(optional = false)
   @Column(name = "executor_memory")
   private int executorMemory = 4096;
+
   @Basic(optional = false)
   @Column(name = "dynamic_initial_executors")
   private int dynamicInitialExecutors = 1;
+
   @Basic(optional = false)
   @Column(name = "dynamic_min_executors")
   private int dynamicMinExecutors = 1;
+
   @Basic(optional = false)
   @Column(name = "dynamic_max_executors")
   private int dynamicMaxExecutors = 100;
+
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 255)
   @Column(name = "secret")
   private String secret;
+
   @Size(max = 32)
   @Column(name = "log_level")
   private String logLevel = "INFO";
+
+  @Basic(optional = false)
+  @Column(name = "shutdown_hours")
+  private int shutdownLevel=6;
+
+  @Basic(optional = true)
+  @Column(name = "created")
+  @Temporal(TemporalType.TIMESTAMP)
+  private Date created;
+
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 32)
   @Column(name = "mode")
   private String mode = "dynamicSpark";
+
   @Basic(optional = false)
   @Column(name = "advanced")
   private boolean advanced = false;
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "archives")
   private String archives = "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "jars")
   private String jars= "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "files")
   private String files= "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "py_files")
   private String pyFiles= "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 6500)
   @Column(name = "spark_params")
   private String sparkParams= "";
+
   @Basic(optional = false)
   @Size(min = 3,
       max = 4)
   @Column(name = "umask")
   private String umask = "022";
+
   @JoinColumn(name = "team_member",
       referencedColumnName = "email",
       insertable = false,
       updatable = false)
   @ManyToOne(optional = false)
   private Users users;
+
   @JoinColumn(name = "project_id",
       referencedColumnName = "id",
       insertable = false,
@@ -511,4 +546,20 @@ public class JupyterSettings implements Serializable {
     this.privateDir = privateDir;
   }
 
+  public int getShutdownLevel() {
+    return shutdownLevel;
+  }
+
+  public void setShutdownLevel(int shutdownLevel) {
+    this.shutdownLevel = shutdownLevel;
+  }
+
+  public Date getCreated() {
+    return created;
+  }
+
+
+  public void setCreated(Date created) {
+    this.created = created;
+  }
 }

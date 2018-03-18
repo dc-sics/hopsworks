@@ -303,6 +303,10 @@ public class JupyterProcessMgr {
   /**
    * This method both stops any jupyter server for a proj_user
    *
+   * @param hdfsUsername
+   * @param jupyterHomePath
+   * @param pid
+   * @param port
    * @throws AppException
    */
 //  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)

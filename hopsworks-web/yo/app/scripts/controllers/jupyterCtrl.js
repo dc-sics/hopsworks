@@ -61,6 +61,17 @@ angular.module('hopsWorksApp')
             ];
             self.logLevelSelected;
 
+            self.shutdown_levels = [
+              {id: 1, name: '1'},
+              {id: 2, name: '6'},
+              {id: 3, name: '12'},
+              {id: 4, name: '24'},
+              {id: 4, name: '72'},
+              {id: 5, name: '168'},
+              {id: 5, name: '1000'}
+            ];
+            self.shutdownLevelSelected;
+
 
 //  (Group/World readable, not writable)
 //  (Group readable and writable)
@@ -84,6 +95,10 @@ angular.module('hopsWorksApp')
 
             self.changeLogLevel = function () {
               self.val.logLevel = self.logLevelSelected.name;
+            };
+            
+            self.changeShutdownLevel = function () {
+              self.val.shutdownLevel = self.shutdownLevelSelected.name;
             };
 
             self.changeUmask = function () {
@@ -435,11 +450,10 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.toggleValue = true;
                         self.config = success.data;
-
+                        growl.info("Starting.....notebook will close automatically in " + self.val.shutdownLevel + " hours.");
                         self.ui = "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
                         $window.open(self.ui, '_blank');
                         $timeout(stopLoading(), 5000);
-
                       }, function (error) {
                 if (error.data !== undefined && error.status === 404) {
                   growl.error("Anaconda not enabled yet - retry starting Jupyter again in a few seconds.");
