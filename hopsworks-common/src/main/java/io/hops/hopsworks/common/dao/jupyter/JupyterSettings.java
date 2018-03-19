@@ -195,7 +195,7 @@ public class JupyterSettings implements Serializable {
   private String logLevel = "INFO";
 
   @Basic(optional = false)
-  @Column(name = "shutdown_hours")
+  @Column(name = "shutdown_level")
   private int shutdownLevel=6;
 
   @Basic(optional = false)
