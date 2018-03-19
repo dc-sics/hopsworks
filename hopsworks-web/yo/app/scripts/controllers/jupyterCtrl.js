@@ -352,6 +352,25 @@ angular.module('hopsWorksApp')
                         } else {
                           self.logLevelSelected = self.log_levels[2];
                         }
+                        
+                        if (self.val.shutdownLevel === "1") {
+                          self.shutdownLevelSelected = self.shutdown_levels[0];
+                        } else if (self.val.shutdownLevel === "6") {
+                          self.shutdownLevelSelected = self.shutdown_levels[1];
+                        } else if (self.val.shutdownLevel === "12") {
+                          self.shutdownLevelSelected = self.shutdown_levels[2];
+                        } else if (self.val.shutdownLevel === "24") {
+                          self.shutdownLevelSelected = self.shutdown_levels[3];
+                        } else if (self.val.shutdownLevel === "72") {
+                          self.shutdownLevelSelected = self.shutdown_levels[4];
+                        } else if (self.val.shutdownLevel === "168") {
+                          self.shutdownLevelSelected = self.shutdown_levels[5];
+                        } else if (self.val.shutdownLevel === "1000") {
+                          self.shutdownLevelSelected = self.shutdown_levels[6];
+                        } else {
+                          self.shutdownLevelSelected = self.log_levels[2];
+                        }
+                        
                         if (self.val.umask === "022") {
                           self.umask = self.umasks[0];
                         } else if (self.val.umask === "007") {
