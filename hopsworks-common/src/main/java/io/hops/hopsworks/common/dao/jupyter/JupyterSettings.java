@@ -201,11 +201,6 @@ public class JupyterSettings implements Serializable {
   @Column(name = "shutdown_hours")
   private int shutdownLevel=6;
 
-  @Basic(optional = true)
-  @Column(name = "created")
-  @Temporal(TemporalType.TIMESTAMP)
-  private Date created;
-
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
@@ -554,12 +549,4 @@ public class JupyterSettings implements Serializable {
     this.shutdownLevel = shutdownLevel;
   }
 
-  public Date getCreated() {
-    return created;
-  }
-
-
-  public void setCreated(Date created) {
-    this.created = created;
-  }
 }
