@@ -368,7 +368,7 @@ angular.module('hopsWorksApp')
                         } else if (self.val.shutdownLevel === "1000") {
                           self.shutdownLevelSelected = self.shutdown_levels[6];
                         } else {
-                          self.shutdownLevelSelected = self.log_levels[2];
+                          self.shutdownLevelSelected = self.shutdown_levels[0];
                         }
                         
                         if (self.val.umask === "022") {
@@ -469,7 +469,7 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.toggleValue = true;
                         self.config = success.data;
-                        growl.info("Starting.....notebook will close automatically in " + self.val.shutdownLevel + " hours.");
+                        growl.info("Starting.....notebook will close automatically in " + self.val.shutdownLevel + " hours.", {title: 'Info', ttl: 3000});
                         self.ui = "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
                         $window.open(self.ui, '_blank');
                         $timeout(stopLoading(), 5000);
