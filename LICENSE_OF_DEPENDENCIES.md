@@ -10,7 +10,7 @@ Frontend dependencies
 * github.com/gdi2290/angular-websocket [MIT](https://github.com/gdi2290/angular-websocket/blob/master/LICENSE)
 * github.com/gdi2290/angular-md5 [MIT](https://github.com/gdi2290/angular-md5/blob/master/LICENSE)
 * github.com/angular/angular.js [MIT](https://github.com/angular/angular.js/blob/master/LICENSE)
-* angular-hamburger-toggle: 0.2.0,-- MIT
+* github.com/dbtek/angular-hamburger-toggle [MIT](https://github.com/dbtek/angular-hamburger-toggle/blob/master/LICENSE)
 * github.com/sachinchoolur/ngclipboard [MIT](https://github.com/sachinchoolur/ngclipboard/blob/master/LICENSE)
 * github.com/michaelbromley/angularUtils [MIT](https://github.com/michaelbromley/angularUtils/blob/master/license.txt)
 * github.com/cytoscape/cytoscape.js [MIT](https://github.com/cytoscape/cytoscape.js/blob/master/LICENSE)
@@ -127,3 +127,4 @@ Backend Dependecies
 * org.sonatype.sisu:sisu-inject-bean:jar:2.6.0 [EPL](https://github.com/eclipse/sisu.inject/blob/master/LICENSE.txt)
 * org.sonatype.sisu:sisu-inject-plexus:jar:2.6.0 [EPL](https://github.com/eclipse/sisu.inject/blob/master/LICENSE.txt)
 * xalan:xalan:jar:2.7.2 [ApacheV2](https://github.com/apache/xalan-j/blob/trunk/LICENSE.txt)
+* github.com/mitre/HTTP-Proxy-Servlet [ApacheV2](https://github.com/mitre/HTTP-Proxy-Servlet/blob/master/LICENSE.txt)
