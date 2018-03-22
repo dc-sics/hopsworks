@@ -25,8 +25,7 @@
       xmlns:f="http://java.sun.com/jsf/core"
       xmlns:h="http://java.sun.com/jsf/html"
       xmlns:ui="http://java.sun.com/jsf/facelets"
-      xmlns:p="http://primefaces.org/ui"
-      >
+      xmlns:p="http://primefaces.org/ui">
 
 
   <f:view contentType="text/html">
@@ -34,9 +33,7 @@
     <h:head>
       <title><ui:insert name="title">Admin Panel</ui:insert></title>
       <link rel="icon" type="image/png" href="#{resource['images/hops-black.png']}" />
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/layout.css']}" />
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/lims.css']}" />
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/customized.css']}" />
+      <link rel="stylesheet" type="text/css" href="#{resource['/css/main.css']}" />
       <meta http-equiv="refresh" content="#{facesContext.externalContext.sessionMaxInactiveInterval};url=/hopsworks/#!/login"/>
     </h:head>
 
@@ -45,15 +42,15 @@
         <ui:include src="/security/protected/admin/admintitleBar.xhtml" />
       </ui:insert>
 
-      <div style="margin: 1% 10% 10% 10%" align="center">
+      <div align="center">
         <h:form>
 
-          <h:panelGrid columns="3" cellpadding="50">
+          <h:panelGrid columns="4" cellpadding="50">
 
             <p:column >
               <h:commandLink  action="userMgmt">
                 <p:graphicImage id="mgmt" 
-                                value="/resources/images/users/admin.png" 
+                                value="/resources/images/users/audit.png" 
                                 width="100"
                                 height="100"
                                 title="User Administration"
@@ -133,7 +130,7 @@
                                 value="/resources/images/users/mobile.png" 
                                 width="100"
                                 height="100"
-                                title="New Mobile Requests"
+                                title="New User Requests"
                                 >
                 </p:graphicImage>
               </h:commandLink>
@@ -149,7 +146,7 @@
                                 value="/resources/images/users/spam.png" 
                                 width="100"
                                 height="100"
-                                title="Spam Requests"
+                                title="Spam User Requests"
                                 >
                 </p:graphicImage>
               </h:commandLink>
@@ -159,7 +156,7 @@
             <p:column>
               <h:commandLink  action="ndbBackups">
                 <p:graphicImage id="backups"
-                                value="/resources/images/users/audit.png"
+                                value="/resources/images/backup.png"
                                 width="100"
                                 height="100"
                                 title="Ndb Backups"

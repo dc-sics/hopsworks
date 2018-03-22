@@ -239,7 +239,7 @@ public class AdminProfileAdministration implements Serializable {
     }
 
     editingUser = (Users) FacesContext.getCurrentInstance().getExternalContext().getSessionMap().get("editinguser");
-    address = editingUser.getAddress();
+    address = editingUser != null? editingUser.getAddress(): null;
 
     login = (Userlogins) FacesContext.getCurrentInstance().getExternalContext()
         .getSessionMap().get("editinguser_logins");
