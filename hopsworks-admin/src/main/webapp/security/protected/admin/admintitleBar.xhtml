@@ -36,7 +36,7 @@
           </f:facet>
           <f:facet name="right" rendered="#{roleEnforcementPoint.loggedIn}">
             <p:menuButton value=" #{userAdministration.loginName}" id="userBtn">
-              <p:menuitem value="My Account" action="admin_profile" icon="ui-icon-person"/>
+              <p:menuitem value="My Account" action="#{userAdministration.showProfile()}" icon="ui-icon-person"/>
               <p:menuitem value="Logout" action="#{roleEnforcementPoint.logOut()}" icon="ui-icon-extlink"/>           
             </p:menuButton>
           </f:facet>

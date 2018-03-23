@@ -71,11 +71,11 @@ body {
 }
 
 .user-profile {
-    min-height: 900px;
-    height: auto !important;
-    margin-top: 10px;
-    margin-left: 25%;
-    margin-right: 25%;
+  min-height: 900px;
+  height: auto !important;
+  margin-top: 50px;
+  margin-left: 25%;
+  margin-right: 25%;
 }
 
 .personal-info{
