@@ -70,3 +70,48 @@ body {
   margin-left: 0px;
 }
 
+.user-profile {
+    min-height: 900px;
+    height: auto !important;
+    margin-top: 10px;
+    margin-left: 25%;
+    margin-right: 25%;
+}
+
+.personal-info{
+  background-color: #FFF;
+  text-align: left;
+  color: #4184F3;
+  font-weight: 500;
+  line-height: 1; 
+  margin-bottom: 20px;
+}
+
+.personal-info .h2 {
+  color: rgba(0, 0, 0, 0.87);
+  font-weight: 400;
+}
+
+.user-profile .ui-widget-content {
+  border-width: 0px;  
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+
+.ui-panelgrid .ui-panelgrid-cell {
+  border-width: 0px;
+  padding-right: 100px;
+}
+
+ui-panelgrid td {
+  border-width: medium;
+  border-style: none;
+  -moz-border-top-colors: none;
+  -moz-border-right-colors: none;
+  -moz-border-bottom-colors: none;
+  -moz-border-left-colors: none;
+  border-image: none;
+  border-color: inherit;
+  padding: 4px 5px;
+  font-size: 14px;
+}
