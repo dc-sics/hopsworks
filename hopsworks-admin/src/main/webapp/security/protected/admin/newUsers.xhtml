@@ -48,7 +48,7 @@
 
         <div class="container">
           <div align="left">
-            <h2>Mobile User Administration</h2>
+            <h2>New User Administration</h2>
           </div>
 
           <div class="content">
@@ -89,13 +89,15 @@
                                   itemValue="#{userAdministration.role}"/>
                     <f:selectItems value="#{userAdministration.actGroups}"/>
                   </p:selectOneMenu>
+                  <h:outputText value="Not yet verified." rendered="#{userAdministration.notVerified(req) == true}"/>
                 </p:column>
 
                 <p:column id="actionColumn" headerText="Action">
-                  <h:panelGrid columns="3" style="width: auto">                                                    
+                  <h:panelGrid columns="3" style="width: auto" styleClass="actionTable">                                                    
                     <p:commandLink styleClass="ui-button-remove fa fa-ban" 
                                    action="#{userAdministration.rejectUser}"
-                                   update="@form">
+                                   update="@form"
+                                   title="Reject request">
                       <p:confirm header="Reject user" 
                                  message="Are you sure you want to reject #{req.email} ?" 
                                  icon="ui-icon-alert"/>
@@ -104,7 +106,8 @@
                     <p:commandLink styleClass="ui-button-allow fa fa-check" 
                                    rendered="#{userAdministration.notVerified(req) == false}"
                                    actionListener="#{userAdministration.activateUser}"
-                                   update="@form">
+                                   update="@form"
+                                   title="Accept request">
                       <p:confirm header="Activate user" 
                                  message="Activate #{req.email} ?" 
                                  icon="ui-icon-alert"/>
@@ -113,7 +116,8 @@
                     <p:commandLink styleClass="ui-button-allow fa fa-envelope" 
                                    rendered="#{userAdministration.notVerified(req)}"
                                    actionListener="#{userAdministration.resendAccountVerificationEmail}"
-                                   update="@form">
+                                   update="@form"
+                                   title="Resend Email">
                       <p:confirm header="Resend Email" 
                                  message="Resend Account Validation Email to #{req.email} ?"
                                  icon="ui-icon-alert"/>
