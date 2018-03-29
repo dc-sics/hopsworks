@@ -293,6 +293,12 @@
                     <h:outputText value="#{ProjectQuotas.lastQuotaUpdate}" />
                   </p:column>
 
+                  <p:column id="kafkaMaxNumTopics"
+                            headerText="Num Kafka Topics"
+                            style=" font-size: 12px; text-align: left;">
+                    <h:outputText value="#{ProjectQuotas.kafkaMaxNumTopics}" />
+                  </p:column>
+                  
                   <p:column headerText="Edit"
                             style="width:32px">
                     <p:rowEditor/>

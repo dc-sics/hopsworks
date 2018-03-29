@@ -49,7 +49,7 @@ public class ProjectQuotas {
   private String hiveUsedHdfsNsQuota= "-1";
   private String yarnQuota = "0:00:00:00";
   private String yarnTotalQuota = "0:00:00:00";
-
+  private String kafkaMaxNumTopics = "";
 
   public ProjectQuotas(Project project, QuotasDTO quotas) {
     this.project = project;
@@ -183,4 +183,14 @@ public class ProjectQuotas {
   public int getId() { return id; }
 
   public String getOwnerEmail() { return ownerEmail; }
+
+  public String getKafkaMaxNumTopics() {
+    return kafkaMaxNumTopics;
+  }
+
+  public void setKafkaMaxNumTopics(String kafkaMaxNumTopics) {
+    this.kafkaMaxNumTopics = kafkaMaxNumTopics;
+  }
+  
+  
 }

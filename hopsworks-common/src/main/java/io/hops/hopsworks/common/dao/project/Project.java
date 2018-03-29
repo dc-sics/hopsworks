@@ -174,6 +174,11 @@ public class Project implements Serializable {
   @Size(max = 2000)
   @Column(name = "description")
   private String description;
+  
+  @Basic(optional = false)
+  @Column(name = "id")
+  private Integer kafkaMaxNumTopics;
+  
 
   @Basic(optional = false)
   @NotNull
@@ -483,6 +488,16 @@ public class Project implements Serializable {
 //    this.piaCollection = piaCollection;
 //  }
 
+  public Integer getKafkaMaxNumTopics() {
+    return kafkaMaxNumTopics;
+  }
+
+  public void setKafkaMaxNumTopics(Integer kafkaMaxNumTopics) {
+    this.kafkaMaxNumTopics = kafkaMaxNumTopics;
+  }
+
+  
+  
   @Override
   public String toString() {
     return "se.kth.bbc.project.Project[ name=" + this.name + ", id=" + this.id
