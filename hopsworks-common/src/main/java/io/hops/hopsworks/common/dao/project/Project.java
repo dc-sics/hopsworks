@@ -175,8 +175,8 @@ public class Project implements Serializable {
   @Column(name = "description")
   private String description;
   
-  @Basic(optional = false)
-  @Column(name = "id")
+  @Basic(optional = true)
+  @Column(name = "kafka_max_num_topics")
   private Integer kafkaMaxNumTopics;
   
 
