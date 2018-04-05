@@ -125,11 +125,10 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "project")
   private Collection<TfServing> tfServingCollection;
-  
+
 //  @OneToMany(cascade = CascadeType.ALL,
 //      mappedBy = "projectId")
 //  private Collection<Pia> piaCollection;
-
   private static final long serialVersionUID = 1L;
 
   @Id
@@ -174,11 +173,11 @@ public class Project implements Serializable {
   @Size(max = 2000)
   @Column(name = "description")
   private String description;
-  
-  @Basic(optional = true)
+
+  @Basic(optional = false)
+  @NotNull
   @Column(name = "kafka_max_num_topics")
-  private Integer kafkaMaxNumTopics;
-  
+  private Integer kafkaMaxNumTopics = 10;
 
   @Basic(optional = false)
   @NotNull
@@ -487,7 +486,6 @@ public class Project implements Serializable {
 //  public void setPiaCollection(Collection<Pia> piaCollection) {
 //    this.piaCollection = piaCollection;
 //  }
-
   public Integer getKafkaMaxNumTopics() {
     return kafkaMaxNumTopics;
   }
@@ -496,8 +494,6 @@ public class Project implements Serializable {
     this.kafkaMaxNumTopics = kafkaMaxNumTopics;
   }
 
-  
-  
   @Override
   public String toString() {
     return "se.kth.bbc.project.Project[ name=" + this.name + ", id=" + this.id

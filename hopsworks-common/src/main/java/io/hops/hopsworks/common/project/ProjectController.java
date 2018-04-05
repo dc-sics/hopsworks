@@ -517,6 +517,7 @@ public class ProjectController {
     //Create a new project object
     Date now = new Date();
     Project project = new Project(projectName, user, now, PaymentType.PREPAID);
+    project.setKafkaMaxNumTopics(settings.getKafkaMaxNumTopics());
     project.setDescription(projectDescription);
 
     // set retention period to next 10 years by default
@@ -1167,6 +1168,7 @@ public class ProjectController {
         Date now = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
         Users user = userFacade.findByEmail(userEmail);
         Project toDeleteProject = new Project(projectName, user, now, PaymentType.PREPAID);
+        toDeleteProject.setKafkaMaxNumTopics(settings.getKafkaMaxNumTopics());
         Path tmpInodePath = new Path(File.separator + "tmp" + File.separator + projectName);
         try {
           if (!dfso.exists(tmpInodePath.toString())) {
