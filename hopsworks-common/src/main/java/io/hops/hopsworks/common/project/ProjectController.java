@@ -2735,6 +2735,11 @@ public class ProjectController {
         yarnProjectsQuotaFacade.changeYarnQuota(currentProject.getName(), quotas.getYarnQuotaInSecs());
         quotaChanged = true;
       }
+      if (quotas.getKafkaMaxNumTopics() != null) {
+        projectFacade.changeKafkaQuota(projectName, quotas.getKafkaMaxNumTopics());
+        quotaChanged = true;
+      }
+      
 
       // Register time of last quota change in the project entry
       if (quotaChanged) {

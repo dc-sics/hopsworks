@@ -131,6 +131,15 @@
                       value="#{ProjectQuotas.yarnTotalQuota}" />
                   </p:column>
 
+                  <p:column id="kafkaQuotaColumn"
+                            headerText="Num Kafka Topics"
+                            filterBy="#{ProjectQuotas.kafkaMaxNumTopics}"
+                            filterMatchMode="contains"
+                            style=" font-size: 12px; text-align: center;">
+                    <h:outputText
+                      value="#{ProjectQuotas.kafkaMaxNumTopics}" />
+                  </p:column>                  
+                  
                   <p:column id="hdfsquotaColumn"
                             headerText="Disk quota"
                             filterBy="#{ProjectQuotas.hdfsQuota}"
@@ -293,12 +302,6 @@
                     <h:outputText value="#{ProjectQuotas.lastQuotaUpdate}" />
                   </p:column>
 
-                  <p:column id="kafkaMaxNumTopics"
-                            headerText="Num Kafka Topics"
-                            style=" font-size: 12px; text-align: left;">
-                    <h:outputText value="#{ProjectQuotas.kafkaMaxNumTopics}" />
-                  </p:column>
-                  
                   <p:column headerText="Edit"
                             style="width:32px">
                     <p:rowEditor/>

@@ -308,4 +308,14 @@ public class ProjectFacade extends AbstractFacade<Project> {
     em.merge(project);
     em.flush();
   }
+  
+  
+  public void changeKafkaQuota(String projectName, int numTopics) {
+    Project project = findByName(projectName);
+    if (project != null) {
+      project.setKafkaMaxNumTopics(numTopics);
+      em.merge(project);
+    }
+  }  
+  
 }
