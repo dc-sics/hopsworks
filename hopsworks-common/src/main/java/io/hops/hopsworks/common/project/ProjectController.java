@@ -1913,6 +1913,7 @@ public class ProjectController {
   public QuotasDTO getQuotasInternal(Project project) {
     Long hdfsQuota = -1L, hdfsUsage = -1L, hdfsNsQuota = -1L, hdfsNsCount = -1L, dbhdfsQuota = -1L,
         dbhdfsUsage = -1L, dbhdfsNsQuota = -1L, dbhdfsNsCount = -1L;
+    Integer kafkaQuota = project.getKafkaMaxNumTopics();
     Float yarnRemainingQuota = 0f, yarnTotalQuota = 0f;
 
     // Yarn Quota
@@ -1956,7 +1957,7 @@ public class ProjectController {
     }
 
     return new QuotasDTO(yarnRemainingQuota, yarnTotalQuota, hdfsQuota, hdfsUsage, hdfsNsQuota, hdfsNsCount,
-        dbhdfsQuota, dbhdfsUsage, dbhdfsNsQuota, dbhdfsNsCount);
+        dbhdfsQuota, dbhdfsUsage, dbhdfsNsQuota, dbhdfsNsCount, kafkaQuota);
   }
 
   /**
@@ -2736,11 +2737,10 @@ public class ProjectController {
         quotaChanged = true;
       }
       if (quotas.getKafkaMaxNumTopics() != null) {
-        projectFacade.changeKafkaQuota(projectName, quotas.getKafkaMaxNumTopics());
+        projectFacade.changeKafkaQuota(currentProject.getName(), quotas.getKafkaMaxNumTopics());
         quotaChanged = true;
       }
-      
-
+ 
       // Register time of last quota change in the project entry
       if (quotaChanged) {
         projectFacade.setTimestampQuotaUpdate(currentProject, new Date());
