@@ -86,7 +86,8 @@ public class ProjectQuotas {
         HopsUtils.spaceQuotaToLong(hdfsNsQuota),
         HopsUtils.spaceQuotaToLong(hiveHdfsQuota),
         HopsUtils.spaceQuotaToLong(hiveHdfsNsQuota),
-        HopsUtils.procQuotaToFloat(yarnQuota)
+        HopsUtils.procQuotaToFloat(yarnQuota),
+        this.kafkaMaxNumTopics
     );
   }
 

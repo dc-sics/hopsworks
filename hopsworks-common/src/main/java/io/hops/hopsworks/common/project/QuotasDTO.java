@@ -62,12 +62,13 @@ public class QuotasDTO implements Serializable {
   }
 
   public QuotasDTO(Long hdfsQuotaInBytes, Long hdfsNsQuota,
-                   Long hiveHdfsQuotaInBytes, Long hiveHdfsNsQuota, Float yarnQuotaInSecs) {
+                   Long hiveHdfsQuotaInBytes, Long hiveHdfsNsQuota, Float yarnQuotaInSecs, Integer numKafkaTopics) {
     this.hdfsQuotaInBytes = hdfsQuotaInBytes;
     this.hdfsNsQuota = hdfsNsQuota;
     this.hiveHdfsQuotaInBytes = hiveHdfsQuotaInBytes;
     this.hiveHdfsNsQuota = hiveHdfsNsQuota;
     this.yarnQuotaInSecs = yarnQuotaInSecs;
+    this.kafkaMaxNumTopics = numKafkaTopics;
   }
 
   public Long getHdfsQuotaInBytes() {

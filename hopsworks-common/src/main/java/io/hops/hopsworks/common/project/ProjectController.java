@@ -2737,7 +2737,7 @@ public class ProjectController {
         quotaChanged = true;
       }
       if (quotas.getKafkaMaxNumTopics() != null) {
-        projectFacade.changeKafkaQuota(currentProject.getName(), quotas.getKafkaMaxNumTopics());
+        projectFacade.changeKafkaQuota(currentProject, quotas.getKafkaMaxNumTopics());
         quotaChanged = true;
       }
  
