@@ -182,8 +182,7 @@ public class ResetPassword implements Serializable {
       // generate a radndom password
       String random_password = SecurityUtils.getRandomPassword(passwordLength);
 
-      String mess = UserAccountsEmailMessages.buildPasswordResetMessage(
-          random_password);
+      String mess = UserAccountsEmailMessages.buildPasswordResetMessage(random_password);
 
       userTransaction.begin();
       // make the account pending until it will be reset by user upon first login
