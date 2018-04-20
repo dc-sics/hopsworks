@@ -72,9 +72,9 @@ angular.module('hopsWorksApp')
 
             // We could instead implement a service to get all the available types but this will do it for now
             if ($rootScope.isDelaEnabled) {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING', 'EXPERIMENTS'];
             } else {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING', 'EXPERIMENTS'];
             }
 
             $scope.activeService = "home";
@@ -339,6 +339,10 @@ angular.module('hopsWorksApp')
             self.goToDatasets = function () {
               self.goToUrl('datasets');
             };
+            
+            self.goToExperiments = function () {
+              self.goToUrl('experiments');
+            };
 
             self.goToJobs = function () {
               ProjectService.enableLogs({id: self.currentProject.projectId}).$promise.then(
@@ -523,6 +527,10 @@ angular.module('hopsWorksApp')
 
             self.showTensorflow = function () {
               return showService("Tensorflow");
+            };
+
+            self.showExperiments = function () {
+              return showService("Experiments");
             };
 
             self.showTfServing = function () {
