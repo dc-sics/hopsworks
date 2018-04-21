@@ -20,7 +20,6 @@
 
 package io.hops.hopsworks.common.dao.rstudio;
 
-import io.hops.hopsworks.common.dao.jupyter.*;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.user.Users;
 import java.io.Serializable;
