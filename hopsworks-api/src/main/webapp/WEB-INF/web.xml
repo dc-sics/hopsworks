@@ -97,7 +97,7 @@
     
 
     
-    <servlet>
+<!--    <servlet>
         <servlet-name>rstudio</servlet-name>
         <servlet-class>com.predic8.membrane.servlet.embedded.RStudioMembraneServlet</servlet-class>
         <init-param>
@@ -116,7 +116,7 @@
     <servlet-mapping>
         <servlet-name>rstudio</servlet-name>
         <url-pattern>/rstudio/*</url-pattern>
-    </servlet-mapping>            
+    </servlet-mapping>            -->
                     
     
     <!-- Grafana proxy servlet -->
