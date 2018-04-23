@@ -19,7 +19,7 @@
   -->
 
 <div class="modal-header">
-  <button class="close" ng-click="transformGraphCtrl.close()" data-dismiss="modal" aria-hidden="true"
+  <button class="close" ng-click="transformGraphCtrl.cancel()" data-dismiss="modal" aria-hidden="true"
           type="button">&times;</button>
   <h2 class="modal-title">Create a Tensorflow Cluster</h2>
 </div>
@@ -62,7 +62,7 @@
 
     <div class="modal-footer">
 
-      <button class="btn btn-default" type="button" ng-click="transformGraphCtrl.close()" tabindex="5">Cancel</button>
+      <button class="btn btn-default" type="button" ng-click="transformGraphCtrl.cancel()" tabindex="5">Cancel</button>
       <button class="btn btn-primary" type="submit"
               ng-disabled="transformGraphCtrl.working" tabindex="6">
         <i ng-if="transformGraphCtrl.working" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>

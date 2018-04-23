@@ -176,7 +176,7 @@ angular.module('hopsWorksApp')
               },
               createProject: function (size) {
                 var modalInstance = $uibModal.open({
-                  templateUrl: 'views/newProject.html',
+                  templateUrl: 'views/projectCreateModal.html',
                   controller: 'ProjectCreatorCtrl as projectCreatorCtrl',
                   size: size,
                   resolve: {

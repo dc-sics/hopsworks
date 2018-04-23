@@ -21,8 +21,8 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('TransformGraphCtrl', ['$scope', '$routeParams', 'growl', '$location', 'ModalService', 'TfServingService', 'servingId', 'inGraph', 'outGraph', 
-          function ($scope, $routeParams, growl, $location, ModalService, TfServingService, servingId, inGraph, outGraph) {
+        .controller('TransformGraphCtrl', ['$scope', '$uibModalInstance', '$routeParams', 'growl', '$location', 'ModalService', 'TfServingService', 'servingId', 'inGraph', 'outGraph', 
+          function ($scope, $uibModalInstance, $routeParams, growl, $location, ModalService, TfServingService, servingId, inGraph, outGraph) {
 
 
             var self = this;
@@ -102,6 +102,9 @@ angular.module('hopsWorksApp')
 //            self.init();
 
 
+            self.cancel = function () {
+              $uibModalInstance.dismiss('cancel');
+            };
 
           }]);
 

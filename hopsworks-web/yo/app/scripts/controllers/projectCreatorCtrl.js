@@ -47,11 +47,11 @@ angular.module('hopsWorksApp')
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
 //            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
             if ($rootScope.isDelaEnabled) {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
-              self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING', 'EXPERIMENTS'];
+              self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING', 'EXPERIMENTS'];
             } else {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
-              self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
+              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING', 'EXPERIMENTS'];
+              self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING', 'EXPERIMENTS'];
             }
 
             self.projectName = '';
