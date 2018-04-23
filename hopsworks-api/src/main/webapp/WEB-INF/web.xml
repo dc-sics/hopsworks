@@ -95,28 +95,6 @@
         <url-pattern>/jupyter2/*</url-pattern>
     </servlet-mapping>
     
-
-    
-<!--    <servlet>
-        <servlet-name>rstudio</servlet-name>
-        <servlet-class>com.predic8.membrane.servlet.embedded.RStudioMembraneServlet</servlet-class>
-        <init-param>
-            <param-name>targetUri</param-name>
-            <param-value>http://localhost:{_port}/hopsworks-api/rstudio</param-value>
-        </init-param>
-        <init-param>
-            <param-name>log</param-name>
-            <param-value>true</param-value>
-        </init-param>
-    </servlet>        
-    <servlet-mapping>
-        <servlet-name>rstudio</servlet-name>
-        <url-pattern>/rstudio</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>rstudio</servlet-name>
-        <url-pattern>/rstudio/*</url-pattern>
-    </servlet-mapping>            -->
                     
     
     <!-- Grafana proxy servlet -->
