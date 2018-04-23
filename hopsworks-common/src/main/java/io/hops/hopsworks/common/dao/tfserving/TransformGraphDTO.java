@@ -20,6 +20,9 @@
 
 package io.hops.hopsworks.common.dao.tfserving;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class TransformGraphDTO {
 
   private int tfServingId;
