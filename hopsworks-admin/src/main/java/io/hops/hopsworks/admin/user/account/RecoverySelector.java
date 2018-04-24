@@ -183,7 +183,7 @@ public class RecoverySelector implements Serializable {
 
         return "validate_code";
       } else {
-        MessagesController.addSecurityErrorMessage(AccountStatusErrorMessages.INCCORCT_CREDENTIALS);
+        MessagesController.addSecurityErrorMessage(AccountStatusErrorMessages.INCORRECT_CREDENTIALS);
         if (people != null) {
           am.registerAccountChange(people, AccountsAuditActions.RECOVERY.name(), AccountsAuditActions.FAILED.name(),
               "", people, httpServletRequest);

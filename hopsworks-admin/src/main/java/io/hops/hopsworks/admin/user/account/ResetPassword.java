@@ -305,7 +305,7 @@ public class ResetPassword implements Serializable {
             UserAccountsEmailMessages.ACCOUNT_PROFILE_UPDATE, message);
         return ("sec_question_changed");
       } else {
-        MessagesController.addSecurityErrorMessage(AccountStatusErrorMessages.INCCORCT_CREDENTIALS);
+        MessagesController.addSecurityErrorMessage(AccountStatusErrorMessages.INCORRECT_CREDENTIALS);
         auditManager.registerAccountChange(people, AccountsAuditActions.SECQUESTION.name(),
             AccountsAuditActions.FAILED.name(), "", people, req);
         return "";
@@ -446,8 +446,7 @@ public class ResetPassword implements Serializable {
             AccountsAuditActions.SUCCESS.name(), "", people, req);
         return ("profile_password_changed");
       } else {
-        MessagesController.addSecurityErrorMessage(
-            AccountStatusErrorMessages.INCCORCT_CREDENTIALS);
+        MessagesController.addSecurityErrorMessage(AccountStatusErrorMessages.INCORRECT_CREDENTIALS);
         auditManager.registerAccountChange(people, AccountsAuditActions.PASSWORD.name(),
             AccountsAuditActions.FAILED.name(), "", people, req);
         return "";
