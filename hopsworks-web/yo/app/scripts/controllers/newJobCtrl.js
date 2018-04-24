@@ -60,7 +60,7 @@ angular.module('hopsWorksApp')
             self.selectedTopics = [];
             self.projectName = "";
             self.tfOnSpark = false;
-            self.sparkTourParamsFilledIn = false;
+            self.tourParamsFilledIn = false;
             self.getAllTopics = function () {
               if (self.kafkaSelected) {
                 if (typeof self.runConfig.kafka !== "undefined" &&
@@ -624,10 +624,10 @@ angular.module('hopsWorksApp')
             };
 
             self.chooseParameters = function () {
-              if (self.jobtype === 1 &&  self.projectIsGuide && !self.sparkTourParamsFilledIn) {
+              if (self.jobtype === 1 &&  self.projectIsGuide && !self.tourParamsFilledIn) {
                   self.runConfig.mainClass = 'org.apache.spark.examples.SparkPi';
                   self.runConfig.args = '10';
-                  self.sparkTourParamsFilledIn = true;
+                  self.tourParamsFilledIn = true;
               }
               // For Kafka tour
               if (self.projectIsGuide) {
@@ -646,6 +646,7 @@ angular.module('hopsWorksApp')
             self.populateKafkaJobParameters = function () {
               self.runConfig.mainClass = 'io.hops.examples.spark.kafka.StructuredStreamingKafka';
               var jobState = self.tourService.kafkaJobCreationState;
+              self.tourParamsFilledIn = true;
               if (angular.equals('producer', jobState)) {
                 self.runConfig.args = 'producer';
               } else if (angular.equals('consumer', jobState)) {
