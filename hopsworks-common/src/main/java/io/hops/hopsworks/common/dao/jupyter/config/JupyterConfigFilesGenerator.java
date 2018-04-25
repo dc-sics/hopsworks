@@ -320,19 +320,23 @@ public class JupyterConfigFilesGenerator {
       StringBuilder sparkFiles = new StringBuilder();
       sparkFiles
           // Keystore
-          .append("\"hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+          .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
           .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
-          .append("__kstore.jks#").append(Settings.K_CERTIFICATE).append("\",")
+          .append("__kstore.jks#").append(Settings.K_CERTIFICATE)
+          .append(",")
           // TrustStore
-          .append("\"hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+          .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
           .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
-          .append("__tstore.jks#").append(Settings.T_CERTIFICATE).append("\",")
-          .append("\"").append(settings.getSparkLog4JPath()).append("\",")
+          .append("__tstore.jks#").append(Settings.T_CERTIFICATE)
+          .append(",")
+          //Log4j.properties
+          .append(settings.getSparkLog4JPath())
+          .append(",")
           // Glassfish domain truststore
-          .append("\"").append(settings.getGlassfishTrustStoreHdfs()).append("#").append(Settings.DOMAIN_CA_TRUSTSTORE)
-          .append("\",")
+          .append(settings.getGlassfishTrustStoreHdfs()).append("#").append(Settings.DOMAIN_CA_TRUSTSTORE)
+          .append(",")
           // Add HopsUtil
-          .append("\"").append(settings.getHopsUtilHdfsPath()).append("\"");
+          .append(settings.getHopsUtilHdfsPath());
 
       // If RPC TLS is enabled, password file would be injected by the
       // NodeManagers. We don't need to add it as LocalResource
@@ -340,14 +344,16 @@ public class JupyterConfigFilesGenerator {
         sparkFiles
             .append(",")
             // File with crypto material password
-            .append("\"hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
+            .append("hdfs://").append(settings.getHdfsTmpCertDir()).append(File.separator)
             .append(this.hdfsUser).append(File.separator).append(this.hdfsUser)
-            .append("__cert.key#").append(Settings.CRYPTO_MATERIAL_PASSWORD)
-            .append("\"");
+            .append("__cert.key#").append(Settings.CRYPTO_MATERIAL_PASSWORD);
       }
-
+  
       if (!js.getFiles().equals("")) {
-        sparkFiles.append("," + js.getFiles());
+        //Split the comma-separated string and append it to sparkFiles
+        for (String file : js.getFiles().split(",")) {
+          sparkFiles.append(",").append(file);
+        }
       }
 
       String sparkProps = js.getSparkParams();
@@ -403,7 +409,6 @@ public class JupyterConfigFilesGenerator {
       sparkMagicParams.put("archives", new ConfigProperty("archives", HopsUtils.IGNORE, js.getArchives()));
       sparkMagicParams.put("jars", new ConfigProperty("jars", HopsUtils.IGNORE, js.getJars()));
       sparkMagicParams.put("pyFiles", new ConfigProperty("pyFiles", HopsUtils.IGNORE, js.getPyFiles()));
-      sparkMagicParams.put("files", new ConfigProperty("files", HopsUtils.IGNORE, sparkFiles.toString()));
       
       // Spark properties
       sparkMagicParams.put("spark.executorEnv.PATH", new ConfigProperty("spark_executorEnv_PATH",
@@ -451,7 +456,11 @@ public class JupyterConfigFilesGenerator {
       sparkMagicParams.put("spark.yarn.stagingDir", new ConfigProperty(
           "spark_yarn_stagingDir", HopsUtils.IGNORE,
           "hdfs:///Projects/" + this.project.getName() + "/Resources"));
-      
+  
+      sparkMagicParams.put("spark.yarn.dist.files", new ConfigProperty(
+          "spark_yarn_dist_files", HopsUtils.IGNORE,
+          sparkFiles.toString()));
+    
       sparkMagicParams.put("spark.driver.extraLibraryPath", new ConfigProperty(
           "spark_driver_extraLibraryPath", HopsUtils.APPEND,
           this.getSettings().getCudaDir() + "/lib64"));

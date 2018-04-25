@@ -312,9 +312,9 @@ angular.module('hopsWorksApp')
                 case "FILES":
                   path = path + "#" + file
                   if (self.val.files === "") {
-                    self.val.files = " \"" + path + "\"";
+                    self.val.files = path;
                   } else {
-                    self.val.files = self.val.files.concat(",").concat(" \"" + path + "\"");
+                    self.val.files = self.val.files.concat(",").concat(path);
                   }
                   break;
                 default:

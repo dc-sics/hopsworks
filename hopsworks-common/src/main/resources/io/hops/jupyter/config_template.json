@@ -55,7 +55,6 @@
     "archives": [%%archives%%],
     "jars": [%%jars%%],
     "pyFiles": [%%pyFiles%%],
-    "files": [%%files%%],
     "conf": {
       "spark.executorEnv.PATH": "%%spark_executorEnv_PATH%%",
       "spark.yarn.appMasterEnv.PYSPARK_PYTHON": "%%pyspark_bin%%",
@@ -71,6 +70,7 @@
       "spark.yarn.appMasterEnv.HDFS_BASE_DIR": "%%spark_yarn_appMasterEnv_HDFS_BASE_DIR%%",
       "spark.yarn.appMasterEnv.REST_ENDPOINT": "%%rest_endpoint%%",
       "spark.yarn.stagingDir": "%%spark_yarn_stagingDir%%",
+      "spark.yarn.dist.files": "%%spark_yarn_dist_files%%",
       "spark.driver.extraLibraryPath": "%%spark_driver_extraLibraryPath%%",
       "spark.driver.extraJavaOptions": "%%spark_driver_extraJavaOptions%%",
       "spark.driver.extraClassPath" : "%%spark_driver_extraClassPath%%",
