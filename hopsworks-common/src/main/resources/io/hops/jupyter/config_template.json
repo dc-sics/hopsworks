@@ -53,7 +53,6 @@
     "name": "%%spark_magic_name%%",
     "queue": "%%yarn_queue%%",
     "archives": [%%archives%%],
-    "jars": [%%jars%%],
     "pyFiles": [%%pyFiles%%],
     "conf": {
       "spark.executorEnv.PATH": "%%spark_executorEnv_PATH%%",

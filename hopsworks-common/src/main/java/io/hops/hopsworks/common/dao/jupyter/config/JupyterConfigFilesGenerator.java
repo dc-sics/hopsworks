@@ -355,6 +355,21 @@ public class JupyterConfigFilesGenerator {
           sparkFiles.append(",").append(file);
         }
       }
+  
+      String extraClassPath = settings.getHopsLeaderElectionJarPath()
+          + File.pathSeparator
+          +  settings.getHopsUtilFilename();
+      
+      if (!js.getJars().equals("")) {
+        //Split the comma-separated string and append the names to the driver and executor classpath
+        for (String jar : js.getJars().split(",")) {
+          sparkFiles.append(",").append(jar);
+          //Get jar name
+          String name = jar.substring(jar.lastIndexOf("/")+1);
+          extraClassPath += File.pathSeparator + name;
+        }
+      }
+      
 
       String sparkProps = js.getSparkParams();
       
@@ -377,9 +392,7 @@ public class JupyterConfigFilesGenerator {
           + " -D" + Settings.HOPSWORKS_PROJECTNAME_PROPERTY + "=" + project.getName()
           + " -Dlog4j.configuration=./log4j.properties";
           
-      String extraClassPath = settings.getHopsLeaderElectionJarPath()
-          + File.pathSeparator
-          +  settings.getHopsUtilFilename();
+     
   
       // Map of default/system Spark(Magic) properties <Property_Name, ConfigProperty>
       // Property_Name should be either the SparkMagic property name or Spark property name
@@ -407,7 +420,7 @@ public class JupyterConfigFilesGenerator {
           "remotesparkmagics-jupyter-" + js.getMode()));
       sparkMagicParams.put("queue", new ConfigProperty("yarn_queue", HopsUtils.IGNORE, "default"));
       sparkMagicParams.put("archives", new ConfigProperty("archives", HopsUtils.IGNORE, js.getArchives()));
-      sparkMagicParams.put("jars", new ConfigProperty("jars", HopsUtils.IGNORE, js.getJars()));
+//      sparkMagicParams.put("jars", new ConfigProperty("jars", HopsUtils.IGNORE, js.getJars()));
       sparkMagicParams.put("pyFiles", new ConfigProperty("pyFiles", HopsUtils.IGNORE, js.getPyFiles()));
       
       // Spark properties

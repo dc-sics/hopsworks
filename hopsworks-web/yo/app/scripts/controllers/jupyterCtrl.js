@@ -289,9 +289,9 @@ angular.module('hopsWorksApp')
                 case "JARS":
                   if (extension.toUpperCase() === "JAR") {
                     if (self.val.jars === "") {
-                      self.val.jars = "\"" + path + "\"";
+                      self.val.jars = path;
                     } else {
-                      self.val.jars = self.val.jars.concat(",").concat(" \"" + path + "\"");
+                      self.val.jars = self.val.jars.concat(",").concat(path);
                     }
                   } else {
                     growl.error("Invalid file type selected. Expecting .jar - Found: " + extension, {ttl: 10000});
