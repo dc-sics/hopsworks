@@ -331,8 +331,8 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
-                    .when('/project/:projectID/experiments', {
-                      templateUrl: 'views/experiments.html',
+                    .when('/project/:projectID/rstudio', {
+                      templateUrl: 'views/rstudio.html',
                       controller: 'ProjectCtrl as projectCtrl',
                       resolve: {
                         auth: ['$q', '$location', 'AuthService', '$cookies',
