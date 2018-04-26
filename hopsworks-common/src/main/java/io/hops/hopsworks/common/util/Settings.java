@@ -25,6 +25,7 @@ import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.dao.util.Variables;
 import io.hops.hopsworks.common.dela.AddressJSON;
 import io.hops.hopsworks.common.dela.DelaClientType;
@@ -205,6 +206,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_ANACONDA_INSTALLED = "anaconda_enabled";
   private static final String VARIABLE_ANACONDA_DEFAULT_REPO = "conda_default_repo";
 
+  private static final String VARIABLE_SUPPORT_EMAIL_ADDR = "support_email_addr";
   private static final String VARIABLE_HOPSUTIL_VERSION = "hopsutil_version";
   private static final String VARIABLE_HOPSEXAMPLES_VERSION = "hopsexamples_version";
 
@@ -431,6 +433,8 @@ public class Settings implements Serializable {
       INFLUXDB_PORT = setStrVar(VARIABLE_INFLUXDB_PORT, INFLUXDB_PORT);
       INFLUXDB_USER = setStrVar(VARIABLE_INFLUXDB_USER, INFLUXDB_USER);
       INFLUXDB_PW = setStrVar(VARIABLE_INFLUXDB_PW, INFLUXDB_PW);
+      SUPPORT_EMAIL_ADDR = setStrVar(VARIABLE_SUPPORT_EMAIL_ADDR, SUPPORT_EMAIL_ADDR);
+      UserAccountsEmailMessages.HOPSWORKS_SUPPORT_EMAIL = SUPPORT_EMAIL_ADDR;
       RESOURCE_DIRS = setStrVar(VARIABLE_RESOURCE_DIRS, RESOURCE_DIRS);
       MAX_STATUS_POLL_RETRY = setIntVar(VARIABLE_MAX_STATUS_POLL_RETRY, MAX_STATUS_POLL_RETRY);
       HOPS_RPC_TLS = setStrVar(VARIABLE_HOPS_RPC_TLS, HOPS_RPC_TLS);
@@ -1431,6 +1435,14 @@ public class Settings implements Serializable {
     return "https://" + HOPSWORKS_REST_ENDPOINT;
   }
 
+  private String SUPPORT_EMAIL_ADDR = "support@hops.io";
+  public synchronized String getSupportEmailAddr() {
+    checkCache();
+    return SUPPORT_EMAIL_ADDR;
+  }
+  
+  
+  
   private String FIRST_TIME_LOGIN = "0";
 
   public synchronized String getFirstTimeLogin() {
