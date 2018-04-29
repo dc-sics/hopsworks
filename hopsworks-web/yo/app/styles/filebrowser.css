@@ -414,7 +414,7 @@ md-backdrop.md-sidenav-backdrop {
   height: 88%;
 }
 
-.modal-body > content > ng-scope > img {
+.img-preview {
     max-height: 800 !important;
     max-width: 800 !important;
 }
