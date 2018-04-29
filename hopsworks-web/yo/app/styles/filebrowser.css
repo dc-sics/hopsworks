@@ -416,5 +416,5 @@ md-backdrop.md-sidenav-backdrop {
 
 .img-preview {
     max-height: 800 !important;
-    max-width: auto !important;
+    max-width: 800 !important;
 }
