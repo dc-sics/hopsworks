@@ -413,3 +413,8 @@ md-backdrop.md-sidenav-backdrop {
   overflow: auto;
   height: 88%;
 }
+
+.modal-body > content > img {
+    height:auto !important;
+    width: auto !important;
+}
