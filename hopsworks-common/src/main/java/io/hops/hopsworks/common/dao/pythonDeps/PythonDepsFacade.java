@@ -102,7 +102,6 @@ public class PythonDepsFacade {
   LIST,
   INSTALL,
   UNINSTALL,
-  LIB_SYNC,
   UPGRADE;
 
     public static boolean isEnvOp(CondaOp arg) {
@@ -141,9 +140,9 @@ public class PythonDepsFacade {
     private final Hosts host;
     private final CondaOp op;
     private final String arg;
+    private Object entity;
 
-    public AnacondaTask(WebCommunication web, String proj, Hosts host,
-        CondaOp op, String arg) {
+    public AnacondaTask(WebCommunication web, String proj, Hosts host, CondaOp op, String arg) {
       this.web = web;
       this.proj = proj;
       this.host = host;
@@ -154,13 +153,18 @@ public class PythonDepsFacade {
     @Override
     public void run() {
       try {
-        web.anaconda(host.getHostIp(), host.
+        entity = web.anaconda(host.getHostIp(), host.
             getAgentPassword(), op.toString(), proj, arg);
       } catch (Exception ex) {
         Logger.getLogger(PythonDepsFacade.class.getName()).log(Level.SEVERE,
             null, ex);
       }
     }
+
+    public Object getEntity() {
+      return entity;
+    }
+    
   }
 
   public class CondaTask implements Runnable {
@@ -171,6 +175,7 @@ public class PythonDepsFacade {
     private final Hosts host;
     private final CondaOp op;
     private final PythonDep dep;
+    private Object entity;
 
     public CondaTask(WebCommunication web, Project proj, Hosts host, CondaOp op,
         PythonDep dep) {
@@ -184,7 +189,7 @@ public class PythonDepsFacade {
     @Override
     public void run() {
       try {
-        web.conda(host.getHostIp(), host.
+        this.entity = web.conda(host.getHostIp(), host.
             getAgentPassword(), op.toString(), proj.getName(), dep.
             getRepoUrl().getUrl(), dep.getDependency(), dep.getVersion());
       } catch (Exception ex) {
@@ -192,6 +197,11 @@ public class PythonDepsFacade {
             null, ex);
       }
     }
+
+    public Object getEntity() {
+      return entity;
+    }
+    
   }
 
   public PythonDepsFacade() throws Exception {
@@ -832,6 +842,16 @@ public class PythonDepsFacade {
     query.setParameter("host", host);
     return query.getResultList();
   }
+
+  @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+  public List<CondaCommands> findByStatus(PythonDepsFacade.CondaStatus status) {
+    TypedQuery<CondaCommands> query = em.createNamedQuery("CondaCommands.findByStatus",
+        CondaCommands.class);
+    query.setParameter("status", status);
+    return query.getResultList();
+  }
+
+
   
 //  public void updateCondaComamandStatus(int commandId, String status, String arg) {
 //    PythonDepsFacade.CondaStatus s = PythonDepsFacade.CondaStatus.valueOf(

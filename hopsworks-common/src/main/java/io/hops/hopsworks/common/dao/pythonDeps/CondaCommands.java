@@ -320,8 +320,9 @@ public class CondaCommands implements Serializable {
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.pythonDeps.CondaCommands[ id=" + id +
-            " ]";
+    return "CondaCommand[ id=" + id + ", proj=" + proj  + ", op=" + op + ", installType=" + installType 
+        + ", hostType=" + machineType + ", lib=" + lib + ", version=" + version + ", arg=" + arg 
+        + ", channel=" + channelUrl + " ]";
   }
 
 }
