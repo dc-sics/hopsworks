@@ -71,11 +71,17 @@
             </p:column>
             <p:column headerText="Operation"><h:outputText value="#{command.op}"/></p:column>                        
             <p:column headerText="Command"><h:outputText value="#{command.toString()}"/></p:column>                        
-            <p:column headerText="Status"><h:outputText value="#{command.status}"/></p:column>                        
+            <p:column headerText="Status"><h:outputText value="#{command.status}"/></p:column>                  
             <p:column headerText="Retry Command">
               <p:commandButton value="Execute"
                                style="float:center" 
                                actionListener="#{condaController.execCommand(command)}" ajax ="true" update="@all">
+              </p:commandButton>              
+            </p:column>  
+            <p:column headerText="Delete Command">
+              <p:commandButton value="Delete"
+                               style="float:center" 
+                               actionListener="#{condaController.deleteCommand(command)}" ajax ="true" update="@all">
               </p:commandButton>              
             </p:column>  
           </p:dataTable>  

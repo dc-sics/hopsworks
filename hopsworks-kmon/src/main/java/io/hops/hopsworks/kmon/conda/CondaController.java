@@ -44,6 +44,7 @@ import javax.ejb.EJB;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
+import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import javax.faces.context.FacesContext;
 
@@ -76,6 +77,11 @@ public class CondaController implements Serializable {
     loadCommands();
   }
 
+  public void deleteCommand(CondaCommands command) {
+    pythonDepsFacade.removeCondaCommand(command.getId());
+  }
+  
+  
   public void execCommand(CondaCommands command) {
     // ssh to the host, run the command, print out the results to the terminal.
 
