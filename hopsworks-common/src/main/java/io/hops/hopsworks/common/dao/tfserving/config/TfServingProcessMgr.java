@@ -150,9 +150,7 @@ public class TfServingProcessMgr {
       String pidfile = secretDir + "/tfserving/tfserving-" + port.toString() + ".pid";
 
       // Read the pid for TensorFlow Serving server
-      String pidContents = com.google.common.io.Files.readFirstLine(
-              new File(
-                      pidfile), Charset.defaultCharset());
+      String pidContents = com.google.common.io.Files.readFirstLine(new File(pidfile), Charset.defaultCharset());
       pid = BigInteger.valueOf(Long.parseLong(pidContents));
 
     } catch (Exception ex) {
