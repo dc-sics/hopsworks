@@ -46,9 +46,15 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.Resource;
+import javax.faces.application.FacesMessage;
+import javax.faces.context.FacesContext;
+import javax.enterprise.concurrent.ManagedExecutorService;
 
 @ManagedBean(name = "nodesBean")
 @ViewScoped
@@ -64,11 +70,92 @@ public class NodesBean implements Serializable {
   @EJB
   private CertificatesMgmService certificatesMgmService;
 
+  @Resource(lookup = "concurrent/kagentExecutorService")
+  private ManagedExecutorService executorService;
+
   private List<Hosts> allNodes;
   private final Map<String, Object> dialogOptions;
   private String newNodeHostname;
   private String newNodeHostIp;
   private Hosts toBeDeletedNode;
+
+  private String output;
+  private Future<String> future;
+
+  public void syncAnaconda(FacesContext context, String hostAddress) {
+    CondaTask condaTask = new CondaTask(context, hostAddress);
+    this.future = executorService.submit(condaTask);
+  }
+
+  class CondaTask implements Callable<String> {
+
+    private final Logger logger = Logger.getLogger(getClass().getSimpleName());
+
+    private final FacesContext context;
+    private final String hostname;
+
+    public CondaTask(FacesContext context, String hostname) {
+      this.context = context;
+      this.hostname = hostname;
+    }
+
+    public String getHostname() {
+      return hostname;
+    }
+    
+    @Override
+    public String call() {
+      FacesMessage message;
+      String output = "";
+      try {
+
+        String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-rsync.sh";
+        int exitValue;
+        Integer id = 1;
+        String[] command = {prog, this.hostname};
+        ProcessBuilder pb = new ProcessBuilder(command);
+        try {
+          Process process = pb.start();
+          pb.redirectErrorStream(true);
+          BufferedReader br = new BufferedReader(new InputStreamReader(
+              process.getInputStream(), Charset.forName("UTF8")));
+          String line;
+          StringBuilder sb = new StringBuilder();
+
+          while ((line = br.readLine()) != null) {
+            sb.append(line).append("\r\n");
+          }
+          boolean status = process.waitFor(600, TimeUnit.SECONDS);
+          if (status == false) {
+            output = "COMMAND TIMED OUT: \r\n" + sb.toString();
+            return output;
+          }
+          exitValue = process.exitValue();
+          if (exitValue == 0) {
+            // delete from conda_commands tables
+            output = "SUCCESS. \r\n" + sb.toString();
+          } else {
+            output = "FAILED. \r\n" + sb.toString();
+          }
+
+        } catch (IOException | InterruptedException ex) {
+          logger.log(Level.SEVERE, "Problem zipping anaconda libraries for synchronization: {0}", ex.toString());
+          exitValue = -2;
+        }
+        if (exitValue != 0) {
+          MessagesController.addInfoMessage("Problem with synchronizing Anaconda libraries to host: " + hostname, null);
+        } else {
+          MessagesController.addInfoMessage("Succes: synchronized Anaconda libraries with host: " + hostname, null);
+        }
+
+      } catch (Exception e) {
+        output = "Error.";
+        message = new FacesMessage(FacesMessage.SEVERITY_FATAL,
+            "Communication Error", e.toString());
+      }
+      return output;
+    }
+  }
 
   public NodesBean() {
     dialogOptions = new HashMap<>(3);
@@ -161,33 +248,11 @@ public class NodesBean implements Serializable {
     return lastModifiedFileDate(file);
   }
 
-  
-  public void zipUpAnacondaLibs() {
+//  public void zipUpAnacondaLibs(String hostname) {
+  public void rsyncAnacondaLibs(String hostname) {
 
-    String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-prepare.sh";
-    int exitValue;
-    Integer id = 1;
-    String[] command = {"/usr/bin/sudo", prog};
-    ProcessBuilder pb = new ProcessBuilder(command);
-    try {
-      Process process = pb.start();
-      BufferedReader br = new BufferedReader(new InputStreamReader(
-          process.getInputStream(), Charset.forName("UTF8")));
-      String line;
-      while ((line = br.readLine()) != null) {
-        logger.info(line);
-      }
-      process.waitFor(10l, TimeUnit.SECONDS);
-      exitValue = process.exitValue();
-    } catch (IOException | InterruptedException ex) {
-      logger.log(Level.SEVERE, "Problem zipping anaconda libraries for synchronization: {0}", ex.toString());
-      exitValue = -2;
-    }
-    if (exitValue != 0) {
-      logger.log(Level.INFO, "Zipped up Anaconda libraries for the new node.");
-      MessagesController.addInfoMessage("Zipped up Anaconda libraries for the new node.", "Now install the new node"
-          + "using Chef to download/sync up the installed libraries");
-    }
+//    String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-prepare.sh";
+    syncAnaconda(FacesContext.getCurrentInstance(), hostname);
   }
 
   public void typedNewNodeDetails() {
@@ -235,10 +300,25 @@ public class NodesBean implements Serializable {
       }
     }
   }
-  
+
   public void rotateKeys() {
     certificatesMgmService.issueServiceKeyRotationCommand();
     MessagesController.addInfoMessage("Commands issued", "Issued command to rotate keys on hosts");
     logger.log(Level.INFO, "Issued key rotation command");
   }
+
+  public String getOutput() {
+    if (!isOutput()) {
+      return "No Output to show for command executions.";
+    }
+    return this.output;
+  }
+
+  public boolean isOutput() {
+    if (this.output == null || this.output.isEmpty()) {
+      return false;
+    }
+    return true;
+  }
+
 }

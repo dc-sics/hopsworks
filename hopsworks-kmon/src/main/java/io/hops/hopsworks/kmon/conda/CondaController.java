@@ -24,6 +24,7 @@ import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade.CondaStatus;
+import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.common.util.WebCommunication;
@@ -61,8 +62,14 @@ public class CondaController implements Serializable {
   ManagedExecutorService kagentExecutorService;
 
   private List<CondaCommands> failedCommands;
+  private List<CondaCommands> ongoingCommands;
+  private List<CondaCommands> newCommands;
 
   private String output;
+
+  private boolean showFailed = true;
+  private boolean showNew = false;
+  private boolean showOngoing = false;
 
   private static final Logger logger = Logger.getLogger(CondaController.class.getName());
 
@@ -78,7 +85,17 @@ public class CondaController implements Serializable {
 
   public void deleteAllFailedCommands() {
     pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.FAILED);
-    loadCommands();
+    loadFailedCommands();
+  }
+  
+  public void deleteAllOngoingCommands() {
+    pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.FAILED);
+    loadOngoingCommands();
+  }
+  
+  public void deleteAllNewCommands() {
+    pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.NEW);
+    loadNewCommands();
   }
 
   public void deleteCommand(CondaCommands command) {
@@ -121,21 +138,30 @@ public class CondaController implements Serializable {
           String line;
           StringBuilder sb = new StringBuilder();
           while ((line = br.readLine()) != null) {
-            sb.append(line);
+            sb.append(line).append("\r\n");
           }
           boolean status = process.waitFor(600, TimeUnit.SECONDS);
           if (status == false) {
-            this.output = "COMMAND TIMED OUT: \n" + sb.toString();
+            this.output = "COMMAND TIMED OUT: \r\n" + sb.toString();
             return;
           }
           if (process.exitValue() == 0) {
             // delete from conda_commands tables
             command.setStatus(CondaStatus.SUCCESS);
             pythonDepsFacade.removeCondaCommand(command.getId());
-            this.output = "SUCCESS. \n" + sb.toString();
+
+            this.output = "SUCCESS. \r\n" + sb.toString();
             loadCommands();
+
+            try {
+              pythonDepsFacade.updateCondaCommandStatus(command.getId(), CondaStatus.SUCCESS, command.getInstallType(),
+                  command.getMachineType(), command.getArg(), command.getProj(), command.getOp(), command.getLib(),
+                  command.getVersion(), command.getChannelUrl());
+            } catch (AppException ex) {
+              Logger.getLogger(CondaController.class.getName()).log(Level.SEVERE, null, ex);
+            }
           } else {
-            this.output = "FAILED. \n" + sb.toString();
+            this.output = "FAILED. \r\n" + sb.toString();
           }
         } else { // Conda operation
           Hosts host = command.getHostId();
@@ -156,21 +182,28 @@ public class CondaController implements Serializable {
           String line;
           StringBuilder sb = new StringBuilder();
           while ((line = br.readLine()) != null) {
-            sb.append(line);
+            sb.append(line).append("\r\n");
           }
           boolean status = process.waitFor(600, TimeUnit.SECONDS);
           if (status == false) {
-            this.output = "COMMAND TIMED OUT: \n" + sb.toString();
+            this.output = "COMMAND TIMED OUT: \r\n" + sb.toString();
             return;
           }
           if (process.exitValue() == 0) {
             // delete from conda_commands tables
             command.setStatus(CondaStatus.SUCCESS);
             pythonDepsFacade.removeCondaCommand(command.getId());
-            this.output = "SUCCESS. \n" + sb.toString();
+            this.output = "SUCCESS. \r\n" + sb.toString();
             loadCommands();
+            try {
+              pythonDepsFacade.updateCondaCommandStatus(command.getId(), CondaStatus.SUCCESS, command.getInstallType(),
+                  command.getMachineType(), command.getArg(), command.getProj(), command.getOp(), command.getLib(),
+                  command.getVersion(), command.getChannelUrl());
+            } catch (AppException ex) {
+              Logger.getLogger(CondaController.class.getName()).log(Level.SEVERE, null, ex);
+            }
           } else {
-            this.output = "FAILED. \n" + sb.toString();
+            this.output = "FAILED. \r\n" + sb.toString();
           }
         }
       }
@@ -183,21 +216,56 @@ public class CondaController implements Serializable {
   }
 
   public List<CondaCommands> getFailedCondaCommands() {
-    loadCommands();
+    loadFailedCommands();
     return failedCommands;
   }
 
-  private void loadCommands() {
+  public List<CondaCommands> getOngoingCondaCommands() {
+    loadOngoingCommands();
+    return ongoingCommands;
+  }
+  
+  public List<CondaCommands> getNewCondaCommands() {
+    loadNewCommands();
+    return newCommands;
+  }
+
+  private void loadFailedCommands() {
     failedCommands = pythonDepsFacade.findByStatus(PythonDepsFacade.CondaStatus.FAILED);
     if (failedCommands == null) {
       failedCommands = new ArrayList<>();
     }
+  }
+  private void loadOngoingCommands() {
+    ongoingCommands = pythonDepsFacade.findByStatus(PythonDepsFacade.CondaStatus.ONGOING);
+    if (ongoingCommands == null) {
+      ongoingCommands = new ArrayList<>();
+    }
+  }
+  private void loadNewCommands() {
+    newCommands = pythonDepsFacade.findByStatus(PythonDepsFacade.CondaStatus.NEW);
+    if (newCommands == null) {
+      newCommands = new ArrayList<>();
+    }
+  }
+  private void loadCommands() {
+    loadNewCommands();
+    loadOngoingCommands();
+    loadFailedCommands();
   }
 
   public List<CondaCommands> getFailedCommands() {
     return failedCommands;
   }
 
+  public List<CondaCommands> getOngoingCommands() {
+    return ongoingCommands;
+  }
+
+  public List<CondaCommands> getNewCommands() {
+    return newCommands;
+  }
+  
   public String getOutput() {
     if (!isOutput()) {
       return "No Output to show for command executions.";
@@ -211,4 +279,30 @@ public class CondaController implements Serializable {
     }
     return true;
   }
+
+  public boolean isShowFailed() {
+    return showFailed;
+  }
+
+  public boolean isShowNew() {
+    return showNew;
+  }
+
+  public boolean isShowOngoing() {
+    return showOngoing;
+  }
+
+  public void setShowFailed(boolean showFailed) {
+    this.showFailed = showFailed;
+  }
+
+  public void setShowNew(boolean showNew) {
+    this.showNew = showNew;
+  }
+
+  public void setShowOngoing(boolean showOngoing) {
+    this.showOngoing = showOngoing;
+  }
+
+ 
 }

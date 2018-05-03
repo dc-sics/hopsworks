@@ -570,7 +570,6 @@ public class PythonDepsFacade {
 
   }
 
-  // , PythonDep dep
   public List<OpStatus> opStatus(Project proj)
       throws AppException {
     Collection<CondaCommands> commands = proj.getCondaCommandsCollection();
