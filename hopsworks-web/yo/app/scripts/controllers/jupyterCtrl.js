@@ -278,9 +278,9 @@ angular.module('hopsWorksApp')
                           extension.toUpperCase() === "ZIP" ||
                           extension.toUpperCase() === "EGG") {
                     if (self.val.pyFiles === "") {
-                      self.val.pyFiles = "\"" + path + "\"";
+                      self.val.pyFiles = path;
                     } else {
-                      self.val.pyFiles = self.val.pyFiles.concat(",").concat(" \"" + path + "\"");
+                      self.val.pyFiles = self.val.pyFiles.concat(",").concat(path);
                     }
                   } else {
                     growl.error("Invalid file type selected. Expecting .py, .zip or .egg - Found: " + extension, {ttl: 10000});
@@ -301,9 +301,9 @@ angular.module('hopsWorksApp')
                   if (extension.toUpperCase() === "ZIP" || extension.toUpperCase() === "TGZ") {
                     path = path + "#" + fileName
                     if (self.val.archives === "") {
-                      self.val.archives = "\"" + path + "\"";
+                      self.val.archives = path;
                     } else {
-                      self.val.archives = self.val.archives.concat(",").concat(" \"" + path + "\"");
+                      self.val.archives = self.val.archives.concat(",").concat(path);
                     }
                   } else {
                     growl.error("Invalid file type selected. Expecting .zip Found: " + extension, {ttl: 10000});

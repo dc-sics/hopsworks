@@ -20,6 +20,7 @@
 
 package io.hops.hopsworks.common.dao.jupyter.config;
 
+import com.google.common.base.Strings;
 import io.hops.hopsworks.common.dao.jupyter.JupyterSettings;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.exception.AppException;
@@ -306,17 +307,17 @@ public class JupyterConfigFilesGenerator {
           jupyter_notebook_config.toString());
     }
     if (!sparkmagic_config_file.exists()) {
-
+  
       // TODO: Add this local file to 'spark: file' to copy it to hdfs and localize it.
       StringBuilder log4j_sb
           = ConfigFileGenerator.instantiateFromTemplate(
-              ConfigFileGenerator.LOG4J_TEMPLATE_JUPYTER,
-              "logstash_ip", settings.getLogstashIp(),
-              "logstash_port", settings.getLogstashPort().toString(),
-              "log_level", js.getLogLevel().toUpperCase()
-          );
+          ConfigFileGenerator.LOG4J_TEMPLATE_JUPYTER,
+          "logstash_ip", settings.getLogstashIp(),
+          "logstash_port", settings.getLogstashPort().toString(),
+          "log_level", js.getLogLevel().toUpperCase()
+      );
       ConfigFileGenerator.createConfigFile(log4j_file, log4j_sb.toString());
-
+  
       StringBuilder sparkFiles = new StringBuilder();
       sparkFiles
           // Keystore
@@ -337,7 +338,7 @@ public class JupyterConfigFilesGenerator {
           .append(",")
           // Add HopsUtil
           .append(settings.getHopsUtilHdfsPath());
-
+  
       // If RPC TLS is enabled, password file would be injected by the
       // NodeManagers. We don't need to add it as LocalResource
       if (!settings.getHopsRpcTls()) {
@@ -358,18 +359,30 @@ public class JupyterConfigFilesGenerator {
   
       String extraClassPath = settings.getHopsLeaderElectionJarPath()
           + File.pathSeparator
-          +  settings.getHopsUtilFilename();
-      
+          + settings.getHopsUtilFilename();
+  
       if (!js.getJars().equals("")) {
         //Split the comma-separated string and append the names to the driver and executor classpath
         for (String jar : js.getJars().split(",")) {
           sparkFiles.append(",").append(jar);
           //Get jar name
-          String name = jar.substring(jar.lastIndexOf("/")+1);
+          String name = jar.substring(jar.lastIndexOf("/") + 1);
           extraClassPath += File.pathSeparator + name;
         }
       }
-      
+  
+      //Prepare pyfiles
+      StringBuilder pyFilesBuilder = new StringBuilder();
+      if (!Strings.isNullOrEmpty(js.getPyFiles())) {
+        pyFilesBuilder= new StringBuilder();
+        for (String file : js.getPyFiles().split(",")) {
+          file += "#" + file.substring(file.lastIndexOf("/")+1);
+          pyFilesBuilder.append(file).append(",");
+        }
+        //Remove last comma character
+        pyFilesBuilder.deleteCharAt(pyFilesBuilder.length()-1);
+      }
+    
 
       String sparkProps = js.getSparkParams();
       
@@ -419,9 +432,6 @@ public class JupyterConfigFilesGenerator {
       sparkMagicParams.put("name", new ConfigProperty("spark_magic_name", HopsUtils.IGNORE,
           "remotesparkmagics-jupyter-" + js.getMode()));
       sparkMagicParams.put("queue", new ConfigProperty("yarn_queue", HopsUtils.IGNORE, "default"));
-      sparkMagicParams.put("archives", new ConfigProperty("archives", HopsUtils.IGNORE, js.getArchives()));
-//      sparkMagicParams.put("jars", new ConfigProperty("jars", HopsUtils.IGNORE, js.getJars()));
-      sparkMagicParams.put("pyFiles", new ConfigProperty("pyFiles", HopsUtils.IGNORE, js.getPyFiles()));
       
       // Spark properties
       sparkMagicParams.put("spark.executorEnv.PATH", new ConfigProperty("spark_executorEnv_PATH",
@@ -473,6 +483,14 @@ public class JupyterConfigFilesGenerator {
       sparkMagicParams.put("spark.yarn.dist.files", new ConfigProperty(
           "spark_yarn_dist_files", HopsUtils.IGNORE,
           sparkFiles.toString()));
+  
+      sparkMagicParams.put("spark.yarn.dist.archives", new ConfigProperty(
+          "spark_yarn_dist_archives", HopsUtils.IGNORE,
+          js.getArchives()));
+  
+      sparkMagicParams.put("spark.yarn.dist.pyFiles", new ConfigProperty(
+          "spark_yarn_dist_pyFiles", HopsUtils.IGNORE,
+          pyFilesBuilder.toString()));
     
       sparkMagicParams.put("spark.driver.extraLibraryPath", new ConfigProperty(
           "spark_driver_extraLibraryPath", HopsUtils.APPEND,

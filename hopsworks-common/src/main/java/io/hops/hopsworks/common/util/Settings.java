@@ -976,7 +976,7 @@ public class Settings implements Serializable {
   public static final String SPARK_BLACKLISTED_PROPS
       = "conf/spark-blacklisted-properties.txt";
   public static final int SPARK_MIN_EXECS = 1;
-  public static final int SPARK_MAX_EXECS = 300;
+  public static final int SPARK_MAX_EXECS = 1500;
   public static final int SPARK_INIT_EXECS = 1;
 
   //Flink constants
