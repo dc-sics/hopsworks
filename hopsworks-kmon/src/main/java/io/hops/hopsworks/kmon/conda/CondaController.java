@@ -78,10 +78,12 @@ public class CondaController implements Serializable {
 
   public void deleteAllFailedCommands() {
     pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.FAILED);
+    loadCommands();
   }
 
   public void deleteCommand(CondaCommands command) {
     pythonDepsFacade.removeCondaCommand(command.getId());
+    loadCommands();
   }
 
   public void execCommand(CondaCommands command) {
@@ -131,6 +133,7 @@ public class CondaController implements Serializable {
             command.setStatus(CondaStatus.SUCCESS);
             pythonDepsFacade.removeCondaCommand(command.getId());
             this.output = "SUCCESS. \n" + sb.toString();
+            loadCommands();
           } else {
             this.output = "FAILED. \n" + sb.toString();
           }
@@ -165,6 +168,7 @@ public class CondaController implements Serializable {
             command.setStatus(CondaStatus.SUCCESS);
             pythonDepsFacade.removeCondaCommand(command.getId());
             this.output = "SUCCESS. \n" + sb.toString();
+            loadCommands();
           } else {
             this.output = "FAILED. \n" + sb.toString();
           }

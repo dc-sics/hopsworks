@@ -56,10 +56,10 @@
 
       </h:form>
 
-      <h:form rendered="#{condaController.isOutput()}">
+      <h:form rendered="#{condaController.isOutput()}" >
         <p:outputPanel style="margin-left: 10px;">
           <h3>Logs</h3>
-          <h:inputTextarea value="#{condaController.getOutput()}" class="form-control" style="margin-left: 30px; min-width: 80%" rows="10"></h:inputTextarea>
+          <h:inputTextarea value="#{condaController.getOutput()}" class="form-control" style="margin-left: 30px; min-width: 80%" rows="6"></h:inputTextarea>
         </p:outputPanel>
       </h:form>
       
