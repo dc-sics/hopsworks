@@ -85,21 +85,25 @@ public class CondaController implements Serializable {
 
   public void deleteAllFailedCommands() {
     pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.FAILED);
+    message("deleting all commands with the state 'failed'");
     loadFailedCommands();
   }
-  
+
   public void deleteAllOngoingCommands() {
-    pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.FAILED);
+    pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.ONGOING);
+    message("deleting all commands with the state 'ongoing'");
     loadOngoingCommands();
   }
-  
+
   public void deleteAllNewCommands() {
     pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.NEW);
+    message("deleting all commands with the state 'new'");
     loadNewCommands();
   }
 
   public void deleteCommand(CondaCommands command) {
     pythonDepsFacade.removeCondaCommand(command.getId());
+    message("deleting");
     loadCommands();
   }
 
@@ -118,6 +122,7 @@ public class CondaController implements Serializable {
       if (command.getOp() == null) {
         this.output = "Conda command was null. Report a bug.";
       } else {
+        message("executing");
         PythonDepsFacade.CondaOp op = command.getOp();
         if (op.isEnvOp()) {
           // anaconda environment command: <host> <op> <proj> <arg> <offline> <hadoop_home>
@@ -224,7 +229,7 @@ public class CondaController implements Serializable {
     loadOngoingCommands();
     return ongoingCommands;
   }
-  
+
   public List<CondaCommands> getNewCondaCommands() {
     loadNewCommands();
     return newCommands;
@@ -236,18 +241,21 @@ public class CondaController implements Serializable {
       failedCommands = new ArrayList<>();
     }
   }
+
   private void loadOngoingCommands() {
     ongoingCommands = pythonDepsFacade.findByStatus(PythonDepsFacade.CondaStatus.ONGOING);
     if (ongoingCommands == null) {
       ongoingCommands = new ArrayList<>();
     }
   }
+
   private void loadNewCommands() {
     newCommands = pythonDepsFacade.findByStatus(PythonDepsFacade.CondaStatus.NEW);
     if (newCommands == null) {
       newCommands = new ArrayList<>();
     }
   }
+
   private void loadCommands() {
     loadNewCommands();
     loadOngoingCommands();
@@ -265,7 +273,7 @@ public class CondaController implements Serializable {
   public List<CondaCommands> getNewCommands() {
     return newCommands;
   }
-  
+
   public String getOutput() {
     if (!isOutput()) {
       return "No Output to show for command executions.";
@@ -304,5 +312,7 @@ public class CondaController implements Serializable {
     this.showOngoing = showOngoing;
   }
 
- 
+  public void message(String msg) {
+    FacesContext.getCurrentInstance().addMessage(null, new FacesMessage("Conda Command " + msg));
+  }
 }

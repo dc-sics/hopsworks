@@ -21,6 +21,9 @@ package io.hops.hopsworks.admin.maintenance;
 
 import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
+import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
+import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
+import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade.CondaStatus;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
@@ -69,6 +72,8 @@ public class NodesBean implements Serializable {
   private Settings settings;
   @EJB
   private CertificatesMgmService certificatesMgmService;
+  @EJB
+  private PythonDepsFacade pythonDepsFacade;
 
   @Resource(lookup = "concurrent/kagentExecutorService")
   private ManagedExecutorService executorService;
@@ -81,11 +86,6 @@ public class NodesBean implements Serializable {
 
   private String output;
   private Future<String> future;
-
-  public void syncAnaconda(FacesContext context, String hostAddress) {
-    CondaTask condaTask = new CondaTask(context, hostAddress);
-    this.future = executorService.submit(condaTask);
-  }
 
   class CondaTask implements Callable<String> {
 
@@ -102,7 +102,7 @@ public class NodesBean implements Serializable {
     public String getHostname() {
       return hostname;
     }
-    
+
     @Override
     public String call() {
       FacesMessage message;
@@ -248,11 +248,24 @@ public class NodesBean implements Serializable {
     return lastModifiedFileDate(file);
   }
 
-//  public void zipUpAnacondaLibs(String hostname) {
+  public String condaStyle(String hostname) {
+    Hosts h = hostsFacade.findByHostname(hostname);
+    if (h != null) {
+      List<CondaCommands> listCommands = pythonDepsFacade.findByHost(h);
+      for (CondaCommands cc : listCommands) {
+        if (cc.getStatus() == CondaStatus.FAILED) {
+          return "condaOutOfSync";
+        }
+      }
+    }
+    return "condaSync";
+  }
+
   public void rsyncAnacondaLibs(String hostname) {
 
-//    String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-prepare.sh";
-    syncAnaconda(FacesContext.getCurrentInstance(), hostname);
+    CondaTask condaTask = new CondaTask(FacesContext.getCurrentInstance(), hostname);
+    this.future = executorService.submit(condaTask);
+
   }
 
   public void typedNewNodeDetails() {

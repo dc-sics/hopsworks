@@ -47,47 +47,54 @@
       <!-- Progress Dialog - End -->
 
       <h:form id="select_op_type" styleClass="services-header">
-        <h:panelGrid columns="3" cellpadding="100" styleClass="iconsTable">
+        <h:panelGrid columns="3" cellpadding="10" styleClass="iconsTable">
           <p:column >
-            <p:checkbox onchange="#{condaController.setShowFailed(!condaController.showFailed)}" >Show Failed Ops</p:checkbox>
+            Show Failed Ops <p:selectBooleanCheckbox value="#{condaController.showFailed}" >
+              <p:ajax update="@all"/>
+            </p:selectBooleanCheckbox>
           </p:column>
           <p:column >
-            <p:checkbox onchange="#{condaController.setShowOngoing(!condaController.showOngoing)}" >Show Ongoing Ops</p:checkbox>
+            Show Ongoing Ops <p:selectBooleanCheckbox value="#{condaController.showOngoing}">
+              <p:ajax update="@all"/>
+            </p:selectBooleanCheckbox>
+
           </p:column>
           <p:column >
-            <p:checkbox onchange="#{condaController.setShowNew(!condaController.showNew)}" >Show New Ops</p:checkbox>
+            Show New Ops <p:selectBooleanCheckbox value="#{condaController.showNew}">
+              <p:ajax update="@all"/>
+            </p:selectBooleanCheckbox>
+
           </p:column>
         </h:panelGrid>
       </h:form>
 
 
-      <h:form id="failed_conda_count" styleClass="services-header">
-        #{condaController.failedCommands.size()} Host<h:outputText value ="s" rendered="#{condaController.showFailed()}"/> 
-        Failed Commands
-        <p:commandButton value="Delete All Failed Commands"
-                         style="float:center" 
-                         actionListener="#{condaController.deleteAllFailedCommands()}" ajax ="true" update="@all">
-        </p:commandButton>              
-
-      </h:form>
-
-      <h:form id="ongoing_conda_count" styleClass="services-header">
-        #{condaController.ongoingCommands.size()} Host<h:outputText value ="s" rendered="#{condaController.showOngoing()}"/> 
-        Ongoing Commands
-        <p:commandButton value="Delete All Ongoing Commands"
-                         style="float:center" 
-                         actionListener="#{condaController.deleteAllOngoingCommands()}" ajax ="true" update="@all">
-        </p:commandButton>              
-      </h:form>
-      
-      <h:form id="new_conda_count" styleClass="services-header">
-        #{condaController.newCommands.size()} Host<h:outputText value ="s" rendered="#{condaController.showNew()}"/> 
-        New Commands
-        <p:commandButton value="Delete All New Commands"
-                         style="float:center" 
-                         actionListener="#{condaController.deleteAllNewCommands()}" ajax ="true" update="@all">
-        </p:commandButton>              
-      </h:form>
+      <h:panelGrid columns="3" cellpadding="10" styleClass="iconsTable">
+        <p:column >
+          <h:form id="failed_conda_count" styleClass="services-header">
+            <p:commandButton value="Delete All #{condaController.failedCommands.size()} Failed Commands"
+                             style="float:center" disabled="#{condaController.failedCommands.size() == 0}"
+                             actionListener="#{condaController.deleteAllFailedCommands()}" ajax ="true" update="@all">
+            </p:commandButton>              
+          </h:form>
+        </p:column>
+        <p:column >
+          <h:form id="ongoing_conda_count" styleClass="services-header">
+            <p:commandButton value="Delete All #{condaController.ongoingCommands.size()} Ongoing Commands"
+                             style="float:center" disabled="#{condaController.ongoingCommands.size() == 0}"
+                             actionListener="#{condaController.deleteAllOngoingCommands()}" ajax ="true" update="@all">
+            </p:commandButton>              
+          </h:form>
+        </p:column>
+        <p:column >
+          <h:form id="new_conda_count" styleClass="services-header">
+            <p:commandButton value="Delete All #{condaController.newCommands.size()} New Commands"
+                             style="float:center" disabled="#{condaController.newCommands.size() == 0}"
+                             actionListener="#{condaController.deleteAllNewCommands()}" ajax ="true" update="@all">
+            </p:commandButton>              
+          </h:form>
+        </p:column>
+      </h:panelGrid>
 
       <h:form rendered="#{condaController.isOutput()}">
         <p:outputPanel style="margin-left: 10px;">
@@ -98,10 +105,9 @@
         </p:outputPanel>
       </h:form>
 
-<!--rendered="#{condaController.failedCommands.size() > 0}"-->
-      <p:panel rendered="#{condaController.showFailed()}" header="FailedCommands">  
-        <h:form id="form_conda">  
-          <p:dataTable id="command" var="command" value="#{condaController.failedCommands}">
+      <p:panel rendered="#{condaController.showFailed}" header="FailedCommands">  
+        <h:form id="failed_conda_commands">  
+          <p:dataTable id="command_failed" var="command" value="#{condaController.failedCommands}">
 
             <p:column headerText="Hostname">  
               <h:outputText value="#{command.hostId}" />
@@ -126,9 +132,9 @@
       </p:panel>
 
       <p:separator/>
-      <p:panel rendered="#{condaController.showOngoing()}" header="OngoingCommands">  
-        <h:form id="form_conda">  
-          <p:dataTable id="command" var="command" value="#{condaController.ongoingCommands}">
+      <p:panel rendered="#{condaController.showOngoing}" header="OngoingCommands">  
+        <h:form id="ongoing_conda_commands">  
+          <p:dataTable id="commannd_ongoing" var="command" value="#{condaController.ongoingCommands}">
 
             <p:column headerText="Hostname">  
               <h:outputText value="#{command.hostId}" />
@@ -153,13 +159,14 @@
       </p:panel>
 
       <p:separator/>
-      <p:panel rendered="#{condaController.showNew()}" header="NewCommands">  
-        <h:form id="form_conda">  
-          <p:dataTable id="command" var="command" value="#{condaController.newCommands}">
+      <p:panel rendered="#{condaController.showNew}" header="NewCommands">  
+        <h:form id="new_conda_commands">  
+          <p:dataTable id="command_new" var="command" value="#{condaController.newCommands}">
 
             <p:column headerText="Hostname">  
               <h:outputText value="#{command.hostId}" />
             </p:column>
+            <p:column headerText="Time Submitted" sortBy="#{command.created}"><h:outputText value="#{command.created}"/></p:column>
             <p:column headerText="Operation"><h:outputText value="#{command.op}"/></p:column>
             <p:column headerText="Status"><h:outputText value="#{command.status}"/></p:column>                  
             <p:column headerText="Command"  style="width:750px;"><h:outputText value="#{command.toString()}"/></p:column>
