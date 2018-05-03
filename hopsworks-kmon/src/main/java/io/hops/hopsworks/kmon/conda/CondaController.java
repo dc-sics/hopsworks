@@ -44,7 +44,6 @@ import javax.ejb.EJB;
 import javax.enterprise.concurrent.ManagedExecutorService;
 import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
-import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.RequestScoped;
 import javax.faces.context.FacesContext;
 
@@ -77,11 +76,14 @@ public class CondaController implements Serializable {
     loadCommands();
   }
 
+  public void deleteAllFailedCommands() {
+    pythonDepsFacade.deleteAllCommandsByStatus(CondaStatus.FAILED);
+  }
+
   public void deleteCommand(CondaCommands command) {
     pythonDepsFacade.removeCondaCommand(command.getId());
   }
-  
-  
+
   public void execCommand(CondaCommands command) {
     // ssh to the host, run the command, print out the results to the terminal.
 
@@ -95,84 +97,80 @@ public class CondaController implements Serializable {
       }
 
       if (command.getOp() == null) {
-        output = "Conda command was null. Report a bug.";
+        this.output = "Conda command was null. Report a bug.";
       } else {
         PythonDepsFacade.CondaOp op = command.getOp();
-        switch (op) { // anaconda environment op
-          case CREATE:
-          case REMOVE:
-          case CLONE: {
-            // anaconda environment command: <host> <op> <proj> <arg> <offline> <hadoop_home>
-            String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-command-ssh.sh";
-            String hostname = command.getHostId().getHostIp();
-            String projectName = command.getProj();
-            String arg = command.getArg();
-            String offline = "";
-            String hadoopHome = settings.getHadoopSymbolicLinkDir();
-            String[] scriptCommand = {prog, hostname, op.toString(), projectName, arg, offline, hadoopHome};
-            ProcessBuilder pb = new ProcessBuilder(scriptCommand);
-            Process process = pb.start();
-            // Send both stdout and stderr to the same stream
-            pb.redirectErrorStream(true);
-            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            StringBuilder sb = new StringBuilder();
-            while ((line = br.readLine()) != null) {
-              sb.append(line);
-            }
-            boolean status = process.waitFor(600, TimeUnit.SECONDS);
-            if (status == false) {
-              output = "COMMAND TIMED OUT: \n" + sb.toString();
-              return;
-            }
-            output = sb.toString();
-            if (process.exitValue() == 0) {
-              // delete from conda_commands tables
-              command.setStatus(CondaStatus.SUCCESS);
-              pythonDepsFacade.removeCondaCommand(command.getId());
-            }
-            break;
+        if (op.isEnvOp()) {
+          // anaconda environment command: <host> <op> <proj> <arg> <offline> <hadoop_home>
+          String prog = settings.getHopsworksDomainDir() + "/bin/anaconda-command-ssh.sh";
+          String hostname = command.getHostId().getHostIp();
+          String projectName = command.getProj();
+          String arg = command.getArg();
+          String offline = "";
+          String hadoopHome = settings.getHadoopSymbolicLinkDir();
+          String[] scriptCommand = {prog, hostname, op.toString(), projectName, arg, offline, hadoopHome};
+          String msg = String.join(" ", scriptCommand);
+          logger.log(Level.INFO, "Executing: {0}", msg);
+          ProcessBuilder pb = new ProcessBuilder(scriptCommand);
+          Process process = pb.start();
+          // Send both stdout and stderr to the same stream
+          pb.redirectErrorStream(true);
+          BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+          String line;
+          StringBuilder sb = new StringBuilder();
+          while ((line = br.readLine()) != null) {
+            sb.append(line);
           }
-          case INSTALL:
-          case UNINSTALL:
-          case UPGRADE: { // Conda operation
-            Hosts host = command.getHostId();
-            Project proj = command.getProjectId();
-            String prog = settings.getHopsworksDomainDir() + "/bin/conda-command-ssh.sh";
-            String hostname = command.getHostId().getHostIp();
-            String projectName = command.getProj();
-            String arg = command.getArg();
-            String channelUrl = command.getChannelUrl();
-            String[] scriptCommand = {prog, hostname, op.toString(), projectName, channelUrl, command.getInstallType().
-              toString(), command.getLib(), command.getVersion()};
-            ProcessBuilder pb = new ProcessBuilder(scriptCommand);
-            Process process = pb.start();
-            pb.redirectErrorStream(true); // Send both stdout and stderr to the same stream
-            BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            String line;
-            StringBuilder sb = new StringBuilder();
-            while ((line = br.readLine()) != null) {
-              sb.append(line);
-            }
-            boolean status = process.waitFor(600, TimeUnit.SECONDS);
-            if (status == false) {
-              output = "COMMAND TIMED OUT: \n" + sb.toString();
-              return;
-            }
-            output = sb.toString();
-            if (process.exitValue() == 0) {
-              // delete from conda_commands tables
-              command.setStatus(CondaStatus.SUCCESS);
-              pythonDepsFacade.removeCondaCommand(command.getId());
-            }
-            break;
+          boolean status = process.waitFor(600, TimeUnit.SECONDS);
+          if (status == false) {
+            this.output = "COMMAND TIMED OUT: \n" + sb.toString();
+            return;
           }
-          default:
-            // Conda operation
-            output = "Invalid conda command.";
-            break;
+          if (process.exitValue() == 0) {
+            // delete from conda_commands tables
+            command.setStatus(CondaStatus.SUCCESS);
+            pythonDepsFacade.removeCondaCommand(command.getId());
+            this.output = "SUCCESS. \n" + sb.toString();
+          } else {
+            this.output = "FAILED. \n" + sb.toString();
+          }
+        } else { // Conda operation
+          Hosts host = command.getHostId();
+          Project proj = command.getProjectId();
+          String prog = settings.getHopsworksDomainDir() + "/bin/conda-command-ssh.sh";
+          String hostname = command.getHostId().getHostIp();
+          String projectName = command.getProj();
+          String arg = command.getArg();
+          String channelUrl = command.getChannelUrl();
+          String[] scriptCommand = {prog, hostname, op.toString(), projectName, channelUrl, command.getInstallType().
+            toString(), command.getLib(), command.getVersion()};
+          String msg = String.join(" ", scriptCommand);
+          logger.log(Level.INFO, "Executing: {0}", msg);
+          ProcessBuilder pb = new ProcessBuilder(scriptCommand);
+          Process process = pb.start();
+          pb.redirectErrorStream(true); // Send both stdout and stderr to the same stream
+          BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+          String line;
+          StringBuilder sb = new StringBuilder();
+          while ((line = br.readLine()) != null) {
+            sb.append(line);
+          }
+          boolean status = process.waitFor(600, TimeUnit.SECONDS);
+          if (status == false) {
+            this.output = "COMMAND TIMED OUT: \n" + sb.toString();
+            return;
+          }
+          if (process.exitValue() == 0) {
+            // delete from conda_commands tables
+            command.setStatus(CondaStatus.SUCCESS);
+            pythonDepsFacade.removeCondaCommand(command.getId());
+            this.output = "SUCCESS. \n" + sb.toString();
+          } else {
+            this.output = "FAILED. \n" + sb.toString();
+          }
         }
       }
+      logger.log(Level.INFO, "Output: {0}", this.output);
 
     } catch (IOException | InterruptedException ex) {
       Logger.getLogger(HopsUtils.class.getName()).log(Level.SEVERE, null, ex);
@@ -192,8 +190,21 @@ public class CondaController implements Serializable {
     }
   }
 
-  public String getOutput() {
-    return output;
+  public List<CondaCommands> getFailedCommands() {
+    return failedCommands;
   }
 
+  public String getOutput() {
+    if (!isOutput()) {
+      return "No Output to show for command executions.";
+    }
+    return this.output;
+  }
+
+  public boolean isOutput() {
+    if (this.output == null || this.output.isEmpty()) {
+      return false;
+    }
+    return true;
+  }
 }

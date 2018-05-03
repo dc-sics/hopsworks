@@ -82,6 +82,9 @@ import javax.xml.bind.annotation.XmlRootElement;
   @NamedQuery(name = "CondaCommands.findByCreated",
           query
           = "SELECT c FROM CondaCommands c WHERE c.created = :created"),
+  @NamedQuery(name = "CondaCommands.deleteAllFailedCommands",
+          query
+          = "DELETE FROM CondaCommands c WHERE c.status = :status"),
   @NamedQuery(name = "CondaCommands.findByHost",
           query = "SELECT c FROM CondaCommands c WHERE c.hostId = :host")})
 public class CondaCommands implements Serializable {
@@ -320,7 +323,7 @@ public class CondaCommands implements Serializable {
 
   @Override
   public String toString() {
-    return "CondaCommand[ id=" + id + ", proj=" + proj  + ", op=" + op + ", installType=" + installType 
+    return "[ id=" + id + ", proj=" + proj  + ", op=" + op + ", installType=" + installType 
         + ", hostType=" + machineType + ", lib=" + lib + ", version=" + version + ", arg=" + arg 
         + ", channel=" + channelUrl + " ]";
   }

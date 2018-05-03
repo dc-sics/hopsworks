@@ -46,32 +46,39 @@
 
       <!-- Progress Dialog - End -->
 
-      <!--Navigation Bar - Begin -->
-      <h:form styleClass="styleNav">
-        <p:panelGrid>  
-          <p:row>  
-            <p:column>
-              <h:outputText value="Hosts"/>
-            </p:column>
-          </p:row>
-        </p:panelGrid>
-      </h:form>
-      <!--Navigation Bar - End-->
 
       <h:form id="form_conda_count" styleClass="services-header">
-        #{condaController.failedCommands.size()} Host<h:outputText value ="s" rendered="#{condaController.failedCommands.size()>1}"/> Failed Commands:
+        #{condaController.failedCommands.size()} Host<h:outputText value ="s" rendered="#{condaController.failedCommands.size()>1}"/> Failed Commands
+        <p:commandButton value="Delete All Failed Commands"
+                         style="float:center" 
+                         actionListener="#{condaController.deleteAllFailedCommands()}" ajax ="true" update="@all">
+        </p:commandButton>              
+
       </h:form>
 
-      <p:panel header="FailedCommands">  
+      <h:form rendered="#{condaController.isOutput()}">
+        <p:outputPanel style="margin-left: 10px;">
+          <h3>Logs</h3>
+          <h:inputTextarea value="#{condaController.getOutput()}" class="form-control" style="margin-left: 30px; min-width: 80%" rows="10"></h:inputTextarea>
+        </p:outputPanel>
+      </h:form>
+      
+      <p:panel header="FailedCommands" rendered="#{condaController.failedCommands.size() > 0}">  
         <h:form id="form_conda">  
           <p:dataTable id="command" var="command" value="#{condaController.failedCommands}">
 
-            <p:column  headerText="Hostname">  
+            <p:column headerText="Hostname">  
               <h:outputText value="#{command.hostId}" />
             </p:column>
             <p:column headerText="Operation"><h:outputText value="#{command.op}"/></p:column>                        
-            <p:column headerText="Command"><h:outputText value="#{command.toString()}"/></p:column>                        
+            <p:column rendered="#{command.op.isEnvOp() == false}" headerText="Library">
+              <h:outputText value="#{command.lib}"/>
+            </p:column>                        
+            <p:column rendered="#{command.op.isEnvOp()== false}" headerText="Version">
+              <h:outputText value="#{command.version}"/>
+            </p:column>                        
             <p:column headerText="Status"><h:outputText value="#{command.status}"/></p:column>                  
+            <p:column headerText="Command"><h:outputText value="#{command.toString()}"/></p:column>
             <p:column headerText="Retry Command">
               <p:commandButton value="Execute"
                                style="float:center" 
@@ -88,12 +95,6 @@
         </h:form> 
       </p:panel>
 
-      <h:form>
-        <p:outputPanel deferred="true">
-          <h3>Logs</h3>
-          <h:inputTextarea value="#{condaController.output}" class="form-control" rows="30"></h:inputTextarea>
-        </p:outputPanel>
-      </h:form>
     </ui:define>
 
   </ui:composition>
