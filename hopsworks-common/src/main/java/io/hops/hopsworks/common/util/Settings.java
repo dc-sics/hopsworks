@@ -602,7 +602,7 @@ public class Settings implements Serializable {
   public static final String SPARK_PY_MAINCLASS
       = "org.apache.spark.deploy.PythonRunner";
   public static final String PYSPARK_ZIP = "pyspark.zip";
-  public static final String PYSPARK_PY4J = "py4j-0.10.4-src.zip";
+  public static final String PYSPARK_PY4J = "py4j-0.10.6-src.zip";
 
   public synchronized String getSparkDir() {
     checkCache();
