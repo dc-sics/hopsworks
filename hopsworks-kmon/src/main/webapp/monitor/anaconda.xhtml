@@ -46,32 +46,32 @@
 
       <!-- Progress Dialog - End -->
 
-      <h:form id="select_op_type" styleClass="services-header">
+<!--      <h:form id="select_op_type" styleClass="services-header">
         <h:panelGrid columns="4" cellpadding="10" styleClass="iconsTable">
           <p:column >
             Show All <p:selectBooleanCheckbox value="#{condaController.setShowAll(!condaController.getShowAll())}" >
-              <p:ajax update="panelOngoing panelFailed panelNew"/>
+              <p:ajax update="select_op_type panelOngoing panelFailed panelNew"/>
             </p:selectBooleanCheckbox>
           </p:column>
           <p:column >
-            Show Failed <p:selectBooleanCheckbox value="#{condaController.showFailed}" >
-              <p:ajax update="panelFailed"/>
+            Show Failed <p:selectBooleanCheckbox value="#{condaController.setShowFailed(!condaController.showFailed)}" >
+              <p:ajax update="select_op_type panelFailed"/>
             </p:selectBooleanCheckbox>
           </p:column>
           <p:column >
-            Show Ongoing <p:selectBooleanCheckbox value="#{condaController.showOngoing}">
-              <p:ajax update="panelOngoing"/>
+            Show Ongoing <p:selectBooleanCheckbox value="#{condaController.setShowOngoing(condaController.showOngoing)}">
+              <p:ajax update="select_op_type panelOngoing"/>
             </p:selectBooleanCheckbox>
 
           </p:column>
           <p:column >
-            Show New <p:selectBooleanCheckbox value="#{condaController.showNew}">
-              <p:ajax update="panelNew"/>
+            Show New <p:selectBooleanCheckbox value="#{condaController.setShowNew(condaController.showNew)}">
+              <p:ajax update="select_op_type panelNew"/>
             </p:selectBooleanCheckbox>
 
           </p:column>
         </h:panelGrid>
-      </h:form>
+      </h:form>-->
 
 
       <h:panelGrid id="commandButtons" columns="3" cellpadding="10" styleClass="iconsTable">
