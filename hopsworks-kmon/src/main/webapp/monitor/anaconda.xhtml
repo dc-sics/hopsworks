@@ -47,20 +47,25 @@
       <!-- Progress Dialog - End -->
 
       <h:form id="select_op_type" styleClass="services-header">
-        <h:panelGrid columns="3" cellpadding="10" styleClass="iconsTable">
+        <h:panelGrid columns="4" cellpadding="10" styleClass="iconsTable">
           <p:column >
-            Show Failed Ops <p:selectBooleanCheckbox value="#{condaController.showFailed}" >
+            Show All <p:selectBooleanCheckbox value="#{condaController.setShowAll(!condaController.getShowAll())}" >
               <p:ajax update="@all"/>
             </p:selectBooleanCheckbox>
           </p:column>
           <p:column >
-            Show Ongoing Ops <p:selectBooleanCheckbox value="#{condaController.showOngoing}">
+            Show Failed <p:selectBooleanCheckbox value="#{condaController.showFailed}" >
+              <p:ajax update="@all"/>
+            </p:selectBooleanCheckbox>
+          </p:column>
+          <p:column >
+            Show Ongoing <p:selectBooleanCheckbox value="#{condaController.showOngoing}">
               <p:ajax update="@all"/>
             </p:selectBooleanCheckbox>
 
           </p:column>
           <p:column >
-            Show New Ops <p:selectBooleanCheckbox value="#{condaController.showNew}">
+            Show New <p:selectBooleanCheckbox value="#{condaController.showNew}">
               <p:ajax update="@all"/>
             </p:selectBooleanCheckbox>
 

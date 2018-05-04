@@ -67,7 +67,7 @@ public class CondaController implements Serializable {
 
   private String output;
 
-  private boolean showFailed = true;
+  private boolean showFailed = false;
   private boolean showNew = false;
   private boolean showOngoing = false;
 
@@ -310,6 +310,16 @@ public class CondaController implements Serializable {
 
   public void setShowOngoing(boolean showOngoing) {
     this.showOngoing = showOngoing;
+  }
+
+  public void setShowAll(boolean show) {
+    this.showOngoing = show;
+    this.showFailed = show;
+    this.showNew = show;
+  }
+  
+  public boolean getShowAll() {
+    return (this.showOngoing || this.showFailed || this.showNew);
   }
 
   public void message(String msg) {
