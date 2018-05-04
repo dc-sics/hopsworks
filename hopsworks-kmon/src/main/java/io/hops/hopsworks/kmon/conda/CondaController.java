@@ -67,9 +67,9 @@ public class CondaController implements Serializable {
 
   private String output;
 
-  private boolean showFailed = false;
-  private boolean showNew = false;
-  private boolean showOngoing = false;
+  private boolean showFailed = true;
+  private boolean showNew = true;
+  private boolean showOngoing = true;
 
   private static final Logger logger = Logger.getLogger(CondaController.class.getName());
 
