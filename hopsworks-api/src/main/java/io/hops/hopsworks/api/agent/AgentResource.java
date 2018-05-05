@@ -166,8 +166,7 @@ public class AgentResource {
       host.setLoad1(json.getJsonNumber("load1").doubleValue());
       host.setLoad5(json.getJsonNumber("load5").doubleValue());
       host.setLoad15(json.getJsonNumber("load15").doubleValue());
-      Integer numGpus = json.getJsonNumber("num-gpus").intValue();
-      host.setNumGpus(numGpus);  // '1' means has a GPU, '0' means doesn't have one.
+      host.setNumGpus(json.getJsonNumber("num-gpus").intValue());
       Long previousDiskUsed = host.getDiskUsed() == null ? 0l : host.getDiskUsed();
       host.setDiskUsed(json.getJsonNumber("disk-used").longValue());
       host.setMemoryUsed(json.getJsonNumber("memory-used").longValue());
@@ -181,7 +180,7 @@ public class AgentResource {
       }
       host.setMemoryCapacity(json.getJsonNumber("memory-capacity").longValue());
       host.setCores(json.getInt("cores"));
-      hostFacade.storeHost(host, false);
+      hostFacade.storeHost(host);
 
       JsonArray roles = json.getJsonArray("services");
       for (int i = 0; i < roles.size(); i++) {
@@ -266,8 +265,6 @@ public class AgentResource {
         processSystemCommands(systemOps);
       }
 
-      List<CondaCommands> differenceList = new ArrayList<>();
-
       List<CondaCommands> allCommandsForHost = pythonDepsFacade.findByHost(host);
 
       Collection<CondaCommands> commandsToExec = new ArrayList<>();
@@ -278,7 +275,6 @@ public class AgentResource {
         }
       }
       commands.addAll(commandsToExec);
-      commands.addAll(differenceList);
 
       List<SystemCommand> pendingCommands = systemCommandFacade.findByHost(host);
       for (SystemCommand pendingCommand : pendingCommands) {
