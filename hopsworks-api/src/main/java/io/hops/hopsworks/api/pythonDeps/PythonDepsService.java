@@ -200,7 +200,7 @@ public class PythonDepsService {
   @Produces(MediaType.TEXT_PLAIN)
   public Response installed() throws AppException {
     String defaultRepo = settings.getCondaDefaultRepo();
-    if (settings.isAnacondaInstalled()) {
+    if (settings.isAnacondaEnabled()) {
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK)
           .entity(defaultRepo).build();
     }

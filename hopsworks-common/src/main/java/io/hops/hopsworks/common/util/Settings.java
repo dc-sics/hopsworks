@@ -203,7 +203,7 @@ public class Settings implements Serializable {
   private static final String VARIABLE_CUDA_DIR = "conda_dir";
   private static final String VARIABLE_ANACONDA_USER = "anaconda_user";
   private static final String VARIABLE_ANACONDA_DIR = "anaconda_dir";
-  private static final String VARIABLE_ANACONDA_INSTALLED = "anaconda_enabled";
+  private static final String VARIABLE_ANACONDA_ENABLED = "anaconda_enabled";
   private static final String VARIABLE_ANACONDA_DEFAULT_REPO = "conda_default_repo";
 
   private static final String VARIABLE_SUPPORT_EMAIL_ADDR = "support_email_addr";
@@ -427,8 +427,8 @@ public class Settings implements Serializable {
       ANACONDA_DIR = setDirVar(VARIABLE_ANACONDA_DIR, ANACONDA_DIR);
       ANACONDA_ENV = setStrVar(VARIABLE_ANACONDA_ENV, ANACONDA_ENV);
       ANACONDA_DEFAULT_REPO = setStrVar(VARIABLE_ANACONDA_DEFAULT_REPO, ANACONDA_DEFAULT_REPO);
-      ANACONDA_INSTALLED = Boolean.parseBoolean(setStrVar(
-          VARIABLE_ANACONDA_INSTALLED, ANACONDA_INSTALLED.toString()));
+      ANACONDA_ENABLED = Boolean.parseBoolean(setStrVar(
+          VARIABLE_ANACONDA_ENABLED, ANACONDA_ENABLED.toString()));
       INFLUXDB_IP = setStrVar(VARIABLE_INFLUXDB_IP, INFLUXDB_IP);
       INFLUXDB_PORT = setStrVar(VARIABLE_INFLUXDB_PORT, INFLUXDB_PORT);
       INFLUXDB_USER = setStrVar(VARIABLE_INFLUXDB_USER, INFLUXDB_USER);
@@ -1414,11 +1414,11 @@ public class Settings implements Serializable {
     return ANACONDA_ENV;
   }
 
-  private Boolean ANACONDA_INSTALLED = false;
+  private Boolean ANACONDA_ENABLED = true;
 
-  public synchronized Boolean isAnacondaInstalled() {
+  public synchronized Boolean isAnacondaEnabled() {
     checkCache();
-    return ANACONDA_INSTALLED;
+    return ANACONDA_ENABLED;
   }
 
 //  private String CONDA_CHANNEL_URL = "https://repo.continuum.io/pkgs/free/linux-64/";
