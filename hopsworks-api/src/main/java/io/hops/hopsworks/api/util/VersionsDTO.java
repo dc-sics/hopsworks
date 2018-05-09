@@ -20,16 +20,17 @@
 package io.hops.hopsworks.api.util;
 
 import io.hops.hopsworks.common.util.Settings;
+import java.util.ArrayList;
 import java.util.List;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class VersionsDTO {
 
-  private List<Version> versions;
+  private List<Version> versions = new ArrayList<Version>();
 
   @XmlRootElement
-  public static class Version {
+  public static class Version implements Comparable {
 
     private String software;
     private String version;
@@ -38,6 +39,9 @@ public class VersionsDTO {
     }
 
     public Version(String software, String version) {
+      if (software == null || version == null) {
+        throw new NullPointerException("Software and/or version cannot be null");
+      }
       this.software = software;
       this.version = version;
     }
@@ -50,6 +54,23 @@ public class VersionsDTO {
       return version;
     }
 
+    public void setSoftware(String software) {
+      this.software = software;
+    }
+
+    public void setVersion(String version) {
+      this.version = version;
+    }
+
+    @Override
+    public int compareTo(Object o) {
+      if (o instanceof Version == false) {
+        return -1;
+      }
+      Version other = (Version) o;
+      return this.software.compareToIgnoreCase(other.software);
+    }
+    
   }
 
   public VersionsDTO() {

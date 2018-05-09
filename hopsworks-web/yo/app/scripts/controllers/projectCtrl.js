@@ -201,6 +201,7 @@ angular.module('hopsWorksApp')
                         });
                       }
               );
+
             };
 
 
@@ -712,16 +713,18 @@ angular.module('hopsWorksApp')
               return idx === -1;
             };
 
-            self.getVersions = function () {
+            var getVersions = function () {
+              if (self.versions.length === 0) {
 
-              VariablesService.getVersions()
-                      .then(function (success) {
-                        self.versions =success;
+                VariablesService.getVersions()
+                        .then(function (success) {
+                          self.versions = success.data;
 
-                      }, function (error) {
-                        growl.error(error.data.errorMsg, {title: 'Failed to get Versions', ttl: 5000});
-                      });
-
+                        }, function (error) {
+                          console.log("Failed to get versions");
+                        });
+              }
             };
+            getVersions();
 
           }]);

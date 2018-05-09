@@ -2608,168 +2608,168 @@ public class Settings implements Serializable {
     return timeUnitStr == null ? TimeUnit.MINUTES : TIME_SUFFIXES.get(timeUnitStr.toLowerCase());
   }
 
-  private static String HOPSWORKS_VERSION;
+  private String HOPSWORKS_VERSION;
 
   public synchronized String getHopsworksVersion() {
     checkCache();
     return HOPSWORKS_VERSION;
   }
 
-  private static String CUDA_VERSION;
+  private String CUDA_VERSION;
 
   public synchronized String getCudaVersion() {
     checkCache();
     return CUDA_VERSION;
   }
 
-  private static String TENSORFLOW_VERSION;
+  private String TENSORFLOW_VERSION;
 
   public synchronized String getTensorflowVersion() {
     checkCache();
     return TENSORFLOW_VERSION;
   }
 
-  private static String DRELEPHANT_VERSION;
+  private String DRELEPHANT_VERSION;
 
   public synchronized String getDrelephantVersion() {
     checkCache();
     return DRELEPHANT_VERSION;
   }
 
-  private static String ELASTIC_VERSION;
+  private String ELASTIC_VERSION;
 
   public synchronized String getElasticVersion() {
     checkCache();
     return ELASTIC_VERSION;
   }
 
-  private static String KAFKA_VERSION;
+  private String KAFKA_VERSION;
 
   public synchronized String getKafkaVersion() {
     checkCache();
     return KAFKA_VERSION;
   }
 
-  private static String DELA_VERSION;
+  private String DELA_VERSION;
 
   public synchronized String getDelaVersion() {
     checkCache();
     return DELA_VERSION;
   }
 
-  private static String EPIPE_VERSION;
+  private String EPIPE_VERSION;
 
   public synchronized String getEpipeVersion() {
     checkCache();
     return EPIPE_VERSION;
   }
 
-  private static String FLINK_VERSION;
+  private String FLINK_VERSION;
 
   public synchronized String getFlinkVersion() {
     checkCache();
     return FLINK_VERSION;
   }
 
-  private static String SPARK_VERSION;
+  private String SPARK_VERSION;
 
   public synchronized String getSparkVersion() {
     checkCache();
     return SPARK_VERSION;
   }
 
-  private static String SLIDER_VERSION;
+  private String SLIDER_VERSION;
 
   public synchronized String getSliderVersion() {
     checkCache();
     return SLIDER_VERSION;
   }
 
-  private static String TEZ_VERSION;
+  private String TEZ_VERSION;
 
   public synchronized String getTezVersion() {
     checkCache();
     return TEZ_VERSION;
   }
 
-  private static String HIVE2_VERSION;
+  private String HIVE2_VERSION;
 
   public synchronized String getHive2Version() {
     checkCache();
     return HIVE2_VERSION;
   }
 
-  private static String ZEPPELIN_VERSION;
+  private String ZEPPELIN_VERSION;
 
   public synchronized String getZeppelinVersion() {
     checkCache();
     return ZEPPELIN_VERSION;
   }
 
-  private static String LIVY_VERSION;
+  private String LIVY_VERSION;
 
   public synchronized String getLivyVersion() {
     checkCache();
     return LIVY_VERSION;
   }
 
-  private static String NDB_VERSION;
+  private String NDB_VERSION;
 
   public synchronized String getNdbVersion() {
     checkCache();
     return NDB_VERSION;
   }
 
-  private static String FILEBEAT_VERSION;
+  private String FILEBEAT_VERSION;
 
   public synchronized String getFilebeatVersion() {
     checkCache();
     return FILEBEAT_VERSION;
   }
 
-  private static String KIBANA_VERSION;
+  private String KIBANA_VERSION;
 
   public synchronized String getKibanaVersion() {
     checkCache();
     return KIBANA_VERSION;
   }
 
-  private static String LOGSTASH_VERSION;
+  private String LOGSTASH_VERSION;
 
   public synchronized String getLogstashVersion() {
     checkCache();
     return LOGSTASH_VERSION;
   }
 
-  private static String KAPACITOR_VERSION;
+  private String KAPACITOR_VERSION;
 
   public synchronized String getKapacitorVersion() {
     checkCache();
     return KAPACITOR_VERSION;
   }
 
-  private static String TELEGRAF_VERSION;
+  private String TELEGRAF_VERSION;
 
   public synchronized String getTelegrafVersion() {
     checkCache();
     return TELEGRAF_VERSION;
   }
 
-  private static String GRAFANA_VERSION;
+  private String GRAFANA_VERSION;
 
   public synchronized String getGrafanaVersion() {
     checkCache();
     return GRAFANA_VERSION;
   }
 
-  private static String INFLUXDB_VERSION;
+  private String INFLUXDB_VERSION;
 
   public synchronized String getInfluxdbVersion() {
     checkCache();
     return INFLUXDB_VERSION;
   }
 
-  private static String ZOOKEEPER_VERSION;
+  private String ZOOKEEPER_VERSION;
 
   public synchronized String getZookeeperVersion() {
     checkCache();

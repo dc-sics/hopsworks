@@ -311,23 +311,23 @@
                 </form>
               </uib-tab>
 
-              <uib-tab index="2" heading="Versions" ng-click="projectCtrl.getVersion()">
+              <uib-tab index="2" heading="Versions">
 
                 <h3>Hopsworks Software Versions</h3>
                 <table st-table="rowCollection" class="table table-striped" ng-show="projectCtrl.versions.length > 0">
                   <thead>
                     <tr>
                       <th class="col-sm-3">Software</th>
-                      <th class="col-sm-4">Version</th>
+                      <th class="col-sm-9">Version</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr ng-repeat="version in projectCtrl.versions">
-                      <td class="col-sm-3">
-                        <div class="row" style="margin-left: 10px;"><b>{{version.software}}</b></div>
+                    <tr ng-repeat="version in projectCtrl.versions" class="row">
+                      <td class="col-sm-3 pull-left">
+                        <div style="margin-left: 10px;"><b>{{version.software}}</b></div>
                       </td>                
-                      <td class="col-sm-4">
-                        <div class="row" style="margin-left: 10px;"><b>{{version.version}}</b></div>
+                      <td class="col-sm-9">
+                        <div style="margin-left: 10px;"><b>{{version.version}}</b></div>
                       </td>                
                     </tr>
                   </tbody>

@@ -23,6 +23,7 @@ import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
+import java.util.Collections;
 import java.util.List;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
@@ -88,8 +89,10 @@ public class VariablesService {
   @Produces(MediaType.APPLICATION_JSON)
   public Response getVersions() throws AppException {
     VersionsDTO dto = new VersionsDTO(settings);
+    List<VersionsDTO.Version> list = dto.getVersions();
+    Collections.sort(list);
     GenericEntity<List<VersionsDTO.Version>> versions
-        = new GenericEntity<List<VersionsDTO.Version>>(dto.getVersions()) { };
+        = new GenericEntity<List<VersionsDTO.Version>>(list) { };
 
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(versions).build();
   }
