@@ -162,8 +162,7 @@ public class JupyterService {
     listServers.addAll(servers);
 
     GenericEntity<List<JupyterProject>> notebookServers
-        = new GenericEntity<List<JupyterProject>>(listServers) {
-    };
+        = new GenericEntity<List<JupyterProject>>(listServers) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         notebookServers).build();
   }
@@ -179,8 +178,7 @@ public class JupyterService {
     List<LivyMsg.Session> sessions = livyService.getLivySessionsForProjectUser(this.project, user,
         ProjectServiceEnum.JUPYTER);
     GenericEntity<List<LivyMsg.Session>> livyActive
-        = new GenericEntity<List<LivyMsg.Session>>(sessions) {
-    };
+        = new GenericEntity<List<LivyMsg.Session>>(sessions) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(livyActive).build();
   }
 
