@@ -103,11 +103,24 @@ angular.module('hopsWorksApp')
             self.changeShutdownLevel = function () {
               self.val.shutdownLevel = self.shutdownLevelSelected.name;
             };
+            
+            self.updateShutdownLevel = function () {
+              self.val.shutdownLevel = self.shutdownLevelSelected.name;
+              self.loadingText = "Updating Jupyter Shutdown Time";
+              JupyterService.update(self.projectId, self.val).then(
+                      function (success) {
+                        self.val.shutdownLevel = success.data.shutdownLevel;
+                        growl.info("Updated... notebook will close automatically in " + self.val.shutdownLevel + " hours.", 
+                        {title: 'Info', ttl: 3000});
+                      }, function (error) {
+                  growl.error("Could not update shutdown time for Jupyter notebook. If this problem persists please contact your system administrator.");
+              }
+              );
+            };
 
             self.changeUmask = function () {
               self.val.umask = self.umask.name;
             };
-
 
             self.changeBaseDir = function () {
               self.val.baseDir = self.selected.name;

@@ -505,7 +505,24 @@
                 <div>$PDIR <i class="fa fa-info-circle" uib-tooltip="Private local directory on this server for Python Notebooks." style="margin-left: 10px"></i>
                   <span style="margin-left: 10px;">{{jupyterCtrl.val.privateDir}}</span>
                 </div>
-              </div>   
+              </div>
+              
+              <div>
+                Automatic Notebook Shutdown in <span style="font-weight: bold;">{{jupyterCtrl.val.shutdownLevel}} minutes. </span>
+                  Update: <div class="col-md-2 jupyter-left">
+                    <ui-select ng-model="jupyterCtrl.shutdownLevelSelected" theme="bootstrap"
+                               on-select="jupyterCtrl.updateShutdownLevel()">
+                      <ui-select-match >
+                        <span ng-bind="jupyterCtrl.shutdownLevelSelected.name"></span>
+                      </ui-select-match>
+                      <ui-select-choices repeat="level in (jupyterCtrl.shutdown_levels | filter: $select.search) track by level.name">
+                        <span ng-bind="level.name | highlight: $select.search"></span>
+                      </ui-select-choices>
+                    </ui-select>
+                  </div>
+                
+                
+              </div>
               <!--              <div class="row top-buffer">
                               <div class="text-right col-md-2"></div>
                               <i class="fa fa-info" aria-hidden="true" uib-tooltip="Info: You cannot create notebooks in the '/' (root) folder of your project as you cannot store files in the project root directory. Notebooks are stored as files in HDFS, and files must be stored in datasets in Hopsworks. So, in Jupyter, navigate to a dataset from where you can create/save a new Notebook :)">
