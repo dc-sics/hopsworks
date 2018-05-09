@@ -508,8 +508,8 @@
               </div>
               
               <div>
-                Automatic Notebook Shutdown in <span style="font-weight: bold;">{{jupyterCtrl.val.shutdownLevel}} minutes. </span>
-                  Update: <div class="col-md-2 jupyter-left">
+                Automatic Notebook Shutdown in <span style="font-weight: bold;">{{jupyterCtrl.val.shutdownLevel}} hour(s). </span>
+                  Update: <div>
                     <ui-select ng-model="jupyterCtrl.shutdownLevelSelected" theme="bootstrap"
                                on-select="jupyterCtrl.updateShutdownLevel()">
                       <ui-select-match >
