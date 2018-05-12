@@ -85,7 +85,6 @@ public class JupyterNotebookCleaner {
       for (JupyterProject jp : servers) {
         List<Session> sessions = livyService.getLivySessions(jp.getProjectId(), ProjectServiceEnum.JUPYTER);
 
-//        HdfsUsers hdfsUser = hdfsUsersFacade.findById(jp.getHdfsUserId());
         HdfsUsers hdfsUser = hdfsUsersFacade.find(jp.getHdfsUserId());
         // 3. If there is an active livy session, update the lastModified column
         if (!sessions.isEmpty()) {
@@ -95,7 +94,6 @@ public class JupyterNotebookCleaner {
               if (h.compareTo(hdfsUser.getUsername()) == 0) {
                 jp.setLastAccessed(new Date(System.currentTimeMillis()));
                 jupyterFacade.update(jp);
-
               }
             }
           }

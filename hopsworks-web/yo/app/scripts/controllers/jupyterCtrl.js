@@ -74,6 +74,8 @@ angular.module('hopsWorksApp')
               {id: 5, name: '1000'}
             ];
             self.shutdownLevelSelected;
+            self.timeLeftInMinutes = 0;
+            self.addShutdownHours;
 
 
 //  (Group/World readable, not writable)
@@ -105,7 +107,10 @@ angular.module('hopsWorksApp')
             };
             
             self.updateShutdownLevel = function () {
-              self.val.shutdownLevel = self.shutdownLevelSelected.name;
+              var currentHours = self.val.shutdownLevel;
+              
+              self.val.shutdownLevel = Number(currentHours) + Number(self.shutdownLevelSelected.name);
+              
               self.loadingText = "Updating Jupyter Shutdown Time";
               JupyterService.update(self.projectId, self.val).then(
                       function (success) {
@@ -117,6 +122,14 @@ angular.module('hopsWorksApp')
               }
               );
             };
+            
+            self.timeToShutdown = function() {              
+              var d = new Date();
+              var currentTimeMs = d.getTime();
+              var timeSinceLastAccess = currentTimeMs - self.config.lastAccessed; 
+              self.timeLeftInMinutes = ((self.val.shutdownLevel * 60 * 60 * 1000) - timeSinceLastAccess) / (60*1000);
+            };
+            
 
             self.changeUmask = function () {
               self.val.umask = self.umask.name;
@@ -154,8 +167,6 @@ angular.module('hopsWorksApp')
               );
 
             };
-
-
 
             self.showLivyUI = function (appId) {
               self.job.type = "TENSORFLOW";
@@ -438,6 +449,8 @@ angular.module('hopsWorksApp')
                           self.umask = self.umasks[0];                          
                         }
                         
+                        self.timeToShutdown();
+                        
                       }, function (error) {
                 growl.error("Could not get Jupyter Notebook Server Settings.");
               }
@@ -445,6 +458,8 @@ angular.module('hopsWorksApp')
               self.livySessions(self.projectId);
 
             };
+
+
 
             self.openWindow = function () {
               $window.open(self.ui, '_blank');
