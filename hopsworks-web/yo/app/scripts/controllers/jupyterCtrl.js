@@ -123,7 +123,7 @@ angular.module('hopsWorksApp')
               );
             };
             
-            self.timeToShutdown = function() {              
+            var timeToShutdown = function() {              
               var d = new Date();
               var currentTimeMs = d.getTime();
               var timeSinceLastAccess = currentTimeMs - self.config.lastAccessed; 
@@ -449,7 +449,7 @@ angular.module('hopsWorksApp')
                           self.umask = self.umasks[0];                          
                         }
                         
-                        self.timeToShutdown();
+                        timeToShutdown();
                         
                       }, function (error) {
                 growl.error("Could not get Jupyter Notebook Server Settings.");

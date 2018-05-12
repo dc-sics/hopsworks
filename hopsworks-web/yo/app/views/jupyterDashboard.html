@@ -383,8 +383,8 @@
                   <div class="text-right col-md-6">
                     <label for="pyFiles">
                       <button
-                              uib-tooltip='Comma-separated list of .py, .zip or .egg files that should be added to PYTHONPATH. This option corresponds to --pyFiles option in Spark. ' id="selectPyFileButton" class="btn btn-default"
-                              ng-click="jupyterCtrl.selectFile('pyfiles')">
+                        uib-tooltip='Comma-separated list of .py, .zip or .egg files that should be added to PYTHONPATH. This option corresponds to --pyFiles option in Spark. ' id="selectPyFileButton" class="btn btn-default"
+                        ng-click="jupyterCtrl.selectFile('pyfiles')">
                         <span>Add python file</span>
                       </button>
                     </label>                      
@@ -393,9 +393,9 @@
                   <div class="col-md-4 jupyter-left">
 
                     <input
-                            uib-tooltip="Comma-separated list of .py, .zip or .egg files that should be added to PYTHONPATH. This option corresponds to --pyFiles option in Spark. "
-                           ng-init="jupyterCtrl.val.pyFiles = ''" type="text" class="form-control"
-                           id="pyFiles" ng-model="jupyterCtrl.val.pyFiles">
+                      uib-tooltip="Comma-separated list of .py, .zip or .egg files that should be added to PYTHONPATH. This option corresponds to --pyFiles option in Spark. "
+                      ng-init="jupyterCtrl.val.pyFiles = ''" type="text" class="form-control"
+                      id="pyFiles" ng-model="jupyterCtrl.val.pyFiles">
                   </div>
                 </div>
 
@@ -506,22 +506,22 @@
                   <span style="margin-left: 10px;">{{jupyterCtrl.val.privateDir}}</span>
                 </div>
               </div>
-              
+
               <div>
                 Automatic Notebook Shutdown in <span style="font-weight: bold;">{{jupyterCtrl.timeLeftInMinutes}} minutes. </span>
-                  Update: <div>
-                    <ui-select ng-model="jupyterCtrl.shutdownLevelSelected" theme="bootstrap"
-                               on-select="jupyterCtrl.updateShutdownLevel()">
-                      <ui-select-match >
-                        <span ng-bind="jupyterCtrl.shutdownLevelSelected.name"></span>
-                      </ui-select-match>
-                      <ui-select-choices repeat="level in (jupyterCtrl.shutdown_levels | filter: $select.search) track by level.name">
-                        <span ng-bind="level.name | highlight: $select.search"></span>
-                      </ui-select-choices>
-                    </ui-select>
-                  </div>
-                
-                
+                <span class="pull-right">  Add hour(s):
+                  <ui-select ng-model="jupyterCtrl.shutdownLevelSelected" theme="bootstrap"
+                             on-select="jupyterCtrl.updateShutdownLevel()">
+                    <ui-select-match >
+                      <span ng-bind="jupyterCtrl.shutdownLevelSelected.name"></span>
+                    </ui-select-match>
+                    <ui-select-choices repeat="level in (jupyterCtrl.shutdown_levels | filter: $select.search) track by level.name">
+                      <span ng-bind="level.name | highlight: $select.search"></span>
+                    </ui-select-choices>
+                  </ui-select>
+                </span>
+
+
               </div>
               <!--              <div class="row top-buffer">
                               <div class="text-right col-md-2"></div>
