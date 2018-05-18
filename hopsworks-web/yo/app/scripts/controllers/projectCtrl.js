@@ -339,13 +339,6 @@ angular.module('hopsWorksApp')
             };
 
             self.goToJobs = function () {
-              ProjectService.enableLogs({id: self.currentProject.projectId}).$promise.then(
-                      function (success) {
-
-                      }, function (error) {
-                growl.error(error.data.errorMsg, {title: 'Could not enable logging services', ttl: 5000});
-              });
-
               self.goToUrl('jobs');
               if (self.tourService.currentStep_TourTwo > -1) {
                 self.tourService.resetTours();
@@ -404,6 +397,10 @@ angular.module('hopsWorksApp')
 
             self.goToPython = function () {
               self.goToUrl('python');
+            };
+
+            self.goToExperiments = function () {
+              self.goToUrl('experiments');
             };
 
             self.goToKafka = function () {
@@ -485,6 +482,10 @@ angular.module('hopsWorksApp')
 
             self.showJobs = function () {
               return showService("Jobs");
+            };
+
+            self.showExperiments = function () {
+              return showService("Experiments");
             };
 
             self.showSsh = function () {

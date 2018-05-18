@@ -17,31 +17,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-package io.hops.hopsworks.common.dao.project.service;
 
-public enum ProjectServiceEnum {
+'use strict';
 
-  ZEPPELIN("Zeppelin"),
-  KAFKA("Kafka"),
-  HISTORY("History"),
-  DELA("Dela"),
-  JUPYTER("Jupyter"),
-  JOBS("Jobs"),
-  HIVE("Hive"),
-  SERVING("Serving"),
-  RSTUDIO("RStudio"),
-  PYTHON("Python"),
-  EXPERIMENTS("Experiments");
-
-  private final String readable;
-
-  private ProjectServiceEnum(String readable) {
-    this.readable = readable;
-  }
-
-  @Override
-  public String toString() {
-    return readable;
-  }
-
-}
+angular.module('hopsWorksApp')
+        .factory('TensorBoardService', ['$http', function ($http) {
+            return {
+              running: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/tensorboard/running');
+              },
+              start: function (projectId, elasticId) {
+                return $http.get('/api/project/' + projectId + '/tensorboard/start/' + elasticId);
+              },
+              view: function (projectId, elasticId) {
+                return $http.get('/api/project/' + projectId + '/tensorboard/view');
+              },
+              stop: function (projectId) {
+                return $http.get('/api/project/' + projectId + '/tensorboard/stop');
+              }
+            };
+          }]);
