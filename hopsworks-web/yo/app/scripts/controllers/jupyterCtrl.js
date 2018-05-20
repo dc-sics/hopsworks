@@ -389,7 +389,7 @@ angular.module('hopsWorksApp')
                         self.toggleValue = true;
                         timeToShutdown();
                       }, function (error) {
-                        self.val.shutdownLevel = 1;
+                        self.val.shutdownLevel = 3;
                 // nothing to do
               }
               );
