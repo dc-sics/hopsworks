@@ -1581,11 +1581,13 @@ public class Settings implements Serializable {
   public static final String META_NAME_FIELD = "name";
   public static final String META_DESCRIPTION_FIELD = "description";
   public static final String META_INDEX = "projects";
-  public static final String META_PROJECT_TYPE = "proj";
-  public static final String META_DATASET_TYPE = "ds";
-  public static final String META_INODE_TYPE = "inode";
+  public static final String META_DEFAULT_TYPE = "_doc";
   public static final String META_PROJECT_ID_FIELD = "project_id";
   public static final String META_DATASET_ID_FIELD = "dataset_id";
+  public static final String META_DOC_TYPE_FIELD = "doc_type";
+  public static final String DOC_TYPE_PROJECT = "proj";
+  public static final String DOC_TYPE_DATASET = "ds";
+  public static final String DOC_TYPE_INODE = "inode";
   public static final String META_ID = "_id";
   public static final String META_DATA_NESTED_FIELD = "xattr";
   public static final String META_DATA_FIELDS = META_DATA_NESTED_FIELD + ".*";

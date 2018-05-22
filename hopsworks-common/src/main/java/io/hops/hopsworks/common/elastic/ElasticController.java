@@ -39,13 +39,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
+import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
@@ -57,11 +59,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.IndicesAdminClient;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.query.QueryBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.hasParentQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchPhraseQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -71,7 +71,10 @@ import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import org.elasticsearch.search.SearchHit;
 import org.json.JSONObject;
 import static org.elasticsearch.index.query.QueryBuilders.fuzzyQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 /**
  *
@@ -89,6 +92,22 @@ public class ElasticController {
 
   private static final Logger LOG = Logger.getLogger(ElasticController.class.getName());
 
+  private Client elasticClient = null;
+  
+  @PostConstruct
+  private void initClient() {
+    try {
+      getClient();
+    } catch (AppException ex) {
+      LOG.log(Level.SEVERE, null, ex);
+    }
+  }
+  
+  @PreDestroy
+  private void closeClient(){
+    shutdownClient();
+  }
+  
   public List<ElasticHit> globalSearch(String searchTerm) throws AppException {
     //some necessary client settings
     Client client = getClient();
@@ -102,21 +121,13 @@ public class ElasticController {
 
     LOG.log(Level.INFO, "Found elastic index, now executing the query.");
 
-    /*
-     * If projects contain a searchable field then the client can hit both
-     * indices (projects, datasets) with a single query. Right now the single
-     * query fails because of the lack of a searchable field in the projects.
-     * ADDED MANUALLY A SEARCHABLE FIELD IN THE RIVER. MAKES A PROJECT
-     * SEARCHABLE BY DEFAULT. NEEDS REFACTORING
-     */
     //hit the indices - execute the queries
     SearchRequestBuilder srb = client.prepareSearch(Settings.META_INDEX);
-    srb = srb.setTypes(Settings.META_PROJECT_TYPE,
-        Settings.META_DATASET_TYPE);
+    srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
     srb = srb.setQuery(this.globalSearchQuery(searchTerm.toLowerCase()));
-    srb = srb.addHighlightedField("name");
+    srb = srb.highlighter(new HighlightBuilder().field("name"));
     LOG.log(Level.INFO, "Global search Elastic query is: {0}", srb.toString());
-    ListenableActionFuture<SearchResponse> futureResponse = srb.execute();
+    ActionFuture<SearchResponse> futureResponse = srb.execute();
     SearchResponse response = futureResponse.actionGet();
 
     if (response.status().getStatus() == 200) {
@@ -138,12 +149,11 @@ public class ElasticController {
         }
       }
 
-      this.clientShutdown(client);
       return elasticHits;
     } else {
       LOG.log(Level.WARNING, "Elasticsearch error code: {0}", response.status().getStatus());
       //something went wrong so throw an exception
-      this.clientShutdown(client);
+      shutdownClient();
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_SERVER_NOT_FOUND);
     }
@@ -156,20 +166,19 @@ public class ElasticController {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_INDEX_NOT_FOUND);
     } else if (!this.typeExists(client, Settings.META_INDEX,
-        Settings.META_INODE_TYPE)) {
+        Settings.META_DEFAULT_TYPE)) {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_TYPE_NOT_FOUND);
     }
 
     SearchRequestBuilder srb = client.prepareSearch(Settings.META_INDEX);
-    srb = srb.setTypes(Settings.META_INODE_TYPE, Settings.META_DATASET_TYPE);
-    srb = srb.setQuery(projectSearchQuery(searchTerm.toLowerCase()));
-    srb = srb.addHighlightedField("name");
-    srb = srb.setRouting(String.valueOf(projectId));
+    srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
+    srb = srb.setQuery(projectSearchQuery(projectId, searchTerm.toLowerCase()));
+    srb = srb.highlighter(new HighlightBuilder().field("name"));
 
     LOG.log(Level.INFO, "Project Elastic query is: {0} {1}", new String[]{
       String.valueOf(projectId), srb.toString()});
-    ListenableActionFuture<SearchResponse> futureResponse = srb.execute();
+    ActionFuture<SearchResponse> futureResponse = srb.execute();
     SearchResponse response = futureResponse.actionGet();
 
     if (response.status().getStatus() == 200) {
@@ -186,11 +195,10 @@ public class ElasticController {
       }
 
       projectSearchInSharedDatasets(client, projectId, searchTerm, elasticHits);
-      this.clientShutdown(client);
       return elasticHits;
     }
 
-    this.clientShutdown(client);
+    shutdownClient();
     throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
         getStatusCode(), ResponseMessages.ELASTIC_SERVER_NOT_FOUND);
   }
@@ -203,7 +211,7 @@ public class ElasticController {
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_INDEX_NOT_FOUND);
     } else if (!this.typeExists(client, Settings.META_INDEX,
-        Settings.META_INODE_TYPE)) {
+        Settings.META_DEFAULT_TYPE)) {
 
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
           getStatusCode(), ResponseMessages.ELASTIC_TYPE_NOT_FOUND);
@@ -224,14 +232,11 @@ public class ElasticController {
 
     //hit the indices - execute the queries
     SearchRequestBuilder srb = client.prepareSearch(Settings.META_INDEX);
-    srb = srb.setTypes(Settings.META_INODE_TYPE);
+    srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
     srb = srb.setQuery(this.datasetSearchQuery(datasetId, searchTerm.toLowerCase()));
-    //TODO: https://github.com/elastic/elasticsearch/issues/14999 
-    //srb = srb.addHighlightedField("name");
-    srb = srb.setRouting(String.valueOf(project.getId()));
 
     LOG.log(Level.INFO, "Dataset Elastic query is: {0}", srb.toString());
-    ListenableActionFuture<SearchResponse> futureResponse = srb.execute();
+    ActionFuture<SearchResponse> futureResponse = srb.execute();
     SearchResponse response = futureResponse.actionGet();
 
     if (response.status().getStatus() == 200) {
@@ -246,11 +251,10 @@ public class ElasticController {
           elasticHits.add(eHit);
         }
       }
-
-      this.clientShutdown(client);
       return elasticHits;
     }
-    this.clientShutdown(client);
+    
+    shutdownClient();
     throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
         getStatusCode(), ResponseMessages.ELASTIC_SERVER_NOT_FOUND);
   }
@@ -274,15 +278,18 @@ public class ElasticController {
   }
 
   private Client getClient() throws AppException {
-    final org.elasticsearch.common.settings.Settings settings
-        = org.elasticsearch.common.settings.Settings.settingsBuilder()
-            .put("client.transport.sniff", true) //being able to retrieve other nodes 
-            .put("cluster.name", "hops").build();
+    if (elasticClient == null) {
+      final org.elasticsearch.common.settings.Settings settings
+          = org.elasticsearch.common.settings.Settings.builder()
+              .put("client.transport.sniff", true) //being able to retrieve other nodes 
+              .put("cluster.name", "hops").build();
 
-    return TransportClient.builder().settings(settings).build()
-        .addTransportAddress(new InetSocketTransportAddress(
-            new InetSocketAddress(getElasticIpAsString(),
-                this.settings.getElasticPort())));
+      elasticClient = new PreBuiltTransportClient(settings)
+          .addTransportAddress(new TransportAddress(
+              new InetSocketAddress(getElasticIpAsString(),
+                  this.settings.getElasticPort())));
+    }
+    return elasticClient;
   }
 
   private void projectSearchInSharedDatasets(Client client, Integer projectId,
@@ -294,16 +301,12 @@ public class ElasticController {
         List<Dataset> dss = datasetFacade.findByInode(ds.getInode());
         for (Dataset sh : dss) {
           if (!sh.isShared()) {
-            int datasetId = ds.getInodeId();
-            String ownerProjectId = String.valueOf(sh.getProject().getId());
-
+            int datasetId = ds.getInodeId();            
             executeProjectSearchQuery(client, searchSpecificDataset(datasetId,
-                searchTerm), Settings.META_DATASET_TYPE, ownerProjectId,
-                elasticHits);
+                searchTerm), elasticHits);
 
             executeProjectSearchQuery(client, datasetSearchQuery(datasetId,
-                searchTerm), Settings.META_INODE_TYPE, ownerProjectId,
-                elasticHits);
+                searchTerm), elasticHits);
 
           }
         }
@@ -311,17 +314,14 @@ public class ElasticController {
     }
   }
 
-  private void executeProjectSearchQuery(Client client, QueryBuilder query, String type,
-      String routing, List<ElasticHit> elasticHits) {
+  private void executeProjectSearchQuery(Client client, QueryBuilder query, List<ElasticHit> elasticHits) {
     SearchRequestBuilder srb = client.prepareSearch(Settings.META_INDEX);
-    srb = srb.setTypes(type);
+    srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
     srb = srb.setQuery(query);
-    srb = srb.addHighlightedField("name");
-    srb = srb.setRouting(routing);
+    srb = srb.highlighter(new HighlightBuilder().field("name"));
 
-    LOG.log(Level.INFO, "Project Elastic query in Shared Dataset [{0}] is: {1} {2}", new String[]{
-      type, routing, srb.toString()});
-    ListenableActionFuture<SearchResponse> futureResponse = srb.execute();
+    LOG.log(Level.INFO, "Project Elastic query in Shared Dataset : {0}", srb.toString());
+    ActionFuture<SearchResponse> futureResponse = srb.execute();
     SearchResponse response = futureResponse.actionGet();
 
     if (response.status().getStatus() == 200) {
@@ -351,8 +351,10 @@ public class ElasticController {
    */
   private QueryBuilder globalSearchQuery(String searchTerm) {
     QueryBuilder nameDescQuery = getNameDescriptionMetadataQuery(searchTerm);
-
+    QueryBuilder onlyDatasetsAndProjectsQuery = termsQuery(Settings.META_DOC_TYPE_FIELD,
+        Settings.DOC_TYPE_DATASET, Settings.DOC_TYPE_PROJECT);
     QueryBuilder query = boolQuery()
+        .must(onlyDatasetsAndProjectsQuery)
         .must(nameDescQuery);
 
     return query;
@@ -364,10 +366,15 @@ public class ElasticController {
    * @param searchTerm
    * @return
    */
-  private QueryBuilder projectSearchQuery(String searchTerm) {
+  private QueryBuilder projectSearchQuery(Integer projectId, String searchTerm) {
+    QueryBuilder projectIdQuery = termQuery(Settings.META_PROJECT_ID_FIELD, projectId);
     QueryBuilder nameDescQuery = getNameDescriptionMetadataQuery(searchTerm);
-
+    QueryBuilder onlyDatasetsAndInodes = termsQuery(Settings.META_DOC_TYPE_FIELD,
+        Settings.DOC_TYPE_DATASET, Settings.DOC_TYPE_INODE);
+    
     QueryBuilder query = boolQuery()
+        .must(projectIdQuery)
+        .must(onlyDatasetsAndInodes)
         .must(nameDescQuery);
 
     return query;
@@ -380,13 +387,14 @@ public class ElasticController {
    * @return
    */
   private QueryBuilder datasetSearchQuery(int datasetId, String searchTerm) {
-    QueryBuilder hasParent = hasParentQuery(
-        Settings.META_DATASET_TYPE, matchQuery(Settings.META_ID, datasetId));
-
+    QueryBuilder datasetIdQuery = termQuery(Settings.META_DATASET_ID_FIELD, datasetId);
     QueryBuilder query = getNameDescriptionMetadataQuery(searchTerm);
-
+    QueryBuilder onlyInodes = termQuery(Settings.META_DOC_TYPE_FIELD,
+        Settings.DOC_TYPE_INODE);
+    
     QueryBuilder cq = boolQuery()
-        .must(hasParent)
+        .must(datasetIdQuery)
+        .must(onlyInodes)
         .must(query);
     return cq;
   }
@@ -495,7 +503,7 @@ public class ElasticController {
         .lenient(Boolean.TRUE)
         .field(Settings.META_DATA_FIELDS);
     QueryBuilder nestedQuery = nestedQuery(Settings.META_DATA_NESTED_FIELD,
-        metadataQuery);
+        metadataQuery, ScoreMode.Avg);
 
     return nestedQuery;
   }
@@ -544,14 +552,14 @@ public class ElasticController {
   /**
    * Shuts down the client and clears the cache
    * <p/>
-   * @param client
    */
-  private void clientShutdown(Client client) {
-
-    client.admin().indices().clearCache(new ClearIndicesCacheRequest(
-        Settings.META_INDEX));
-
-    client.close();
+  private void shutdownClient() {
+    if (elasticClient != null) {
+      elasticClient.admin().indices().clearCache(new ClearIndicesCacheRequest(
+          Settings.META_INDEX));
+      elasticClient.close();
+      elasticClient = null;
+    }
   }
 
   /**
