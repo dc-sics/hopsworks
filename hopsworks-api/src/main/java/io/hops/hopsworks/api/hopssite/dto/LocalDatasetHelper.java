@@ -38,11 +38,10 @@ public class LocalDatasetHelper {
       Date date = new Date(d.getInode().getModificationTime().longValue());
       Path path = datasetCtrl.getDatasetPath(d);
       long size;
-      try {
-        size = dfso.getLastUpdatedDatasetSize(path);
-      } catch (IOException ex) {
+        //TODO Alex - if we want to still get size, it should either be immutable for dataset, 
+        //or updated periodically into the db and provide this approximate version when requested
         size = -1;
-      }
+//        size = dfso.getLastUpdatedDatasetSize(path);
       localDS.add(new LocalDatasetDTO(d.getInodeId(), d.getName(), d.getDescription(), d.getProject().getName(), date,
         date, size));
     }
