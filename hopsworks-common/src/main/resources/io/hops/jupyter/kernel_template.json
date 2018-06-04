@@ -10,6 +10,7 @@
   ],
   "env": {
     "HADOOP_HOME": "%%hadoop_home%%",
+    "HADOOP_HDFS_HOME": "%%hadoop_home%%",
     "HADOOP_CONF_DIR": "%%hadoop_home%%/etc/hadoop",
     "LIBHDFS_OPTS": "-Xmx96m",
     "PDIR": "%%secret_dir%%",
