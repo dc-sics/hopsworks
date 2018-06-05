@@ -18,7 +18,7 @@
  *
  */
 
-package io.hops.hopsworks.api.annotation;
+package io.hops.hopsworks.ca.api.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

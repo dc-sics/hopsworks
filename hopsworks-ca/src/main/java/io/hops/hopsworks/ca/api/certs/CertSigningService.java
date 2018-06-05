@@ -17,11 +17,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-package io.hops.hopsworks.api.certs;
+package io.hops.hopsworks.ca.api.certs;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import io.hops.hopsworks.api.annotation.AllowCORS;
+import io.hops.hopsworks.ca.api.annotation.AllowCORS;
 import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.kafka.CsrDTO;

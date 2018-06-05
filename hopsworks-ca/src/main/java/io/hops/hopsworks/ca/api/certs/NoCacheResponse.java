@@ -18,7 +18,7 @@
  *
  */
 
-package io.hops.hopsworks.api.certs;
+package io.hops.hopsworks.ca.api.certs;
 
 import javax.ejb.Stateless;
 import javax.ws.rs.core.CacheControl;
