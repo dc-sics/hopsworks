@@ -18,7 +18,7 @@
  *
  */
 
-package io.hops.hopsworks.ca.rest.application.config;
+package io.hops.hopsworks.ca.api;
 
 import io.swagger.annotations.Api;
 import org.glassfish.jersey.server.ResourceConfig;
