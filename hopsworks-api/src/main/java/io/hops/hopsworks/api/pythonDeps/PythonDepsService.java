@@ -589,23 +589,7 @@ public class PythonDepsService {
         libsFound).build();
   }
 
-  
-  @GET
-  @Path("/diskusage")
-  @Produces(MediaType.TEXT_PLAIN)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
-  public Response diskUsageInMB(@Context SecurityContext sc, @Context HttpServletRequest req) throws AppException {
-
-    String totalBytes;
-    try {
-      totalBytes = LocalhostServices.du(new File(settings.getAnacondaDir()));
-    } catch (IOException ex) {
-      Logger.getLogger(PythonDepsService.class.getName()).log(Level.SEVERE, null, ex);
-      throw  new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Problem calculating disk usage.");
-    }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(totalBytes).build();
-  }
-    
+     
   
   private Collection<LibVersions> findCondaLib(PythonDepJson lib) throws
       AppException {
