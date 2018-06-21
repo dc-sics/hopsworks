@@ -71,7 +71,7 @@ c.NotebookApp.allow_origin = '*'
 
 c.NotebookApp.tornado_settings = {
     'headers': {
-        'Content-Security-Policy': "child-src * "
+        'Content-Security-Policy': "frame-ancestors 'self' "
 #'Content-Security-Policy': "frame-ancestors 'https://%%hopsworks_endpoint%%' 'self' "
     }
 }
