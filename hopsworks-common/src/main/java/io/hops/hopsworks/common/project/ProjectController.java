@@ -410,15 +410,6 @@ public class ProjectController {
       }
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 9 (members): {0}", System.currentTimeMillis() - startTime);
 
-      //Create Template for this project in elasticsearch
-      try {
-        addElasticsearch(project.getName());
-      } catch (IOException ex) {
-        LOGGER.log(Level.SEVERE, "Error while adding elasticsearch service for project:" + projectName, ex);
-        cleanup(project, sessionId, certsGenerationFuture);
-      }
-      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 10 (elastic): {0}", System.currentTimeMillis() - startTime);
-
       try {
         if (certsGenerationFuture != null) {
           certsGenerationFuture.get();
@@ -437,7 +428,7 @@ public class ProjectController {
       if (dfso != null) {
         dfso.close();
       }
-      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 11 (close): {0}", System.currentTimeMillis() - startTime);
+      LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 10 (close): {0}", System.currentTimeMillis() - startTime);
     }
 
   }
@@ -771,6 +762,9 @@ public class ProjectController {
       case SERVING:
         toPersist= addServiceDataset(project, user,
             Settings.ServiceDataset.SERVING, dfso, udfso);
+        break;
+      case JOBS:
+        toPersist = addElasticsearch(project.getName(), ProjectServiceEnum.JOBS);
         break;
       default:
         toPersist = true;
@@ -1132,7 +1126,7 @@ public class ProjectController {
 
         // Delete elasticsearch template for this project
         try {
-          removeElasticsearch(project.getName());
+          removeElasticsearch(project);
           cleanupLogger.logSuccess("Removed ElasticSearch");
         } catch (Exception ex) {
           cleanupLogger.logError("Error when removing elastic during project cleanup");          
@@ -1241,7 +1235,7 @@ public class ProjectController {
 
         // Remove ElasticSearch index
         try {
-          removeElasticsearch(projectName);
+          removeElasticsearch(project);
           cleanupLogger.logSuccess("Removed ElasticSearch");
         } catch (IOException ex) {
           cleanupLogger.logError(ex.getMessage());
@@ -1581,7 +1575,7 @@ public class ProjectController {
       hiveController.dropDatabase(project, dfso, false);
 
       //Delete elasticsearch template for this project
-      removeElasticsearch(project.getName());
+      removeElasticsearch(project);
 
       //delete project group and users
       removeGroupAndUsers(groupsToClean, usersToClean);
@@ -2374,142 +2368,82 @@ public class ProjectController {
    *
    * @param project
    * @return
-   * @throws java.io.IOException
    */
-  public boolean addElasticsearch(String project) throws IOException {
+  public boolean addElasticsearch(String project, ProjectServiceEnum serviceEnum) {
     project = project.toLowerCase();
     Map<String, String> params = new HashMap<>();
 
-    params.put("op", "PUT");
-    params.put("project", project);
-    params.put("resource", "_template");
-    params.put("data", "{\"template\":\"" + project
-        + "\",\"mappings\":{\"logs\":{\"properties\":{\"application\":"
-        + "{\"type\":\"string\",\"index\":\"not_analyzed\"},\"host"
-        + "\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
-        + "\"jobname\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
-        + "\"file\":{\"type\":\"string\",\"index\":\"not_analyzed\"},"
-        + "\"timestamp\":{\"type\":\"date\",\"index\":\"not_analyzed\"},"
-        + "\"project\":{\"type\":\"string\",\"index\":\"not_analyzed\"}},\n"
-        + "\"_ttl\": {\n" + "\"enabled\": true,\n" + "\"default\": \""
-        + settings.getJobLogsExpiration() + "s\"\n" + "}}}}");
+    if(serviceEnum.equals(ProjectServiceEnum.JOBS)) {
 
-    JSONObject resp = elasticController.sendElasticsearchReq(params);
-    boolean templateCreated = false;
-    if (resp.has("acknowledged")) {
-      templateCreated = (Boolean) resp.get("acknowledged");
+      params.put("op", "PUT");
+      params.put("project", project + "_logs");
+      params.put("resource", "");
+      params.put("data", "{}");
+
+      JSONObject resp = elasticController.sendElasticsearchReq(params);
+
+      boolean elasticIndexCreated = false;
+      if (resp.has("acknowledged")) {
+        elasticIndexCreated = (Boolean) resp.get("acknowledged");
+      }
+
+      if (elasticIndexCreated == false) {
+        LOGGER.log(Level.SEVERE, "Could not create elastic index " +
+                project + "_logs " + "for project " + project);
+      }
+      params.clear();
+      params.put("op", "POST");
+      params.put("project", project + "_logs");
+      params.put("resource", "");
+      params.put("data", "{\"attributes\": {\"title\": \"" + project + "_logs"  + "\"}}");
+
+      resp = elasticController.sendKibanaReq(params, "index-pattern", project + "_logs");
+
+      LOGGER.log(Level.SEVERE, resp.toString(2));
+
+      boolean kibanaPatternCreated = false;
+      if (resp.has("updated_at")) {
+        kibanaPatternCreated = true;
+      }
+
+      if (kibanaPatternCreated == false) {
+        LOGGER.log(Level.SEVERE, ("Could not create logs index for project " + project));
+      }
+
+      return elasticIndexCreated && kibanaPatternCreated;
     }
-
-    //Create Kibana index
-    params.clear();
-    params.put("op", "PUT");
-    params.put("project", project);
-    params.put("resource", ".kibana/index-pattern");
-    params.put("data", "{\"title\" : \"" + project
-        + "\", \"fields\" : \"[{\\\"name\\\":\\\"_index\\\",\\\"type\\\":"
-        + "\\\"string\\\",\\\"count\\\":0,\\\"scripted\\\":false,"
-        + "\\\"indexed\\\":false,\\\"analyzed\\\":false,\\\""
-        + "doc_values\\\":false},{\\\"name\\\":\\\"project\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":false,"
-        + "\\\"doc_values\\\":true},{\\\"name\\\":\\\"path\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"file\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":false,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"@version\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"host\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":false,"
-        + "\\\"doc_values\\\":true},{\\\"name\\\":\\\"logger_name\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"class\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"jobname\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":false,"
-        + "\\\"doc_values\\\":true},{\\\"name\\\":\\\"timestamp\\\","
-        + "\\\"type\\\":\\\"date\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":false,"
-        + "\\\"doc_values\\\":true},{\\\"name\\\":\\\"method\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"thread\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"message\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"priority\\\","
-        + "\\\"type\\\":\\\"string\\\",\\\"count\\\":0,\\\"scripted"
-        + "\\\":false,\\\"indexed\\\":true,\\\"analyzed\\\":true,"
-        + "\\\"doc_values\\\":false},{\\\"name\\\":\\\"@timestamp"
-        + "\\\",\\\"type\\\":\\\"date\\\",\\\"count\\\":0,"
-        + "\\\"scripted\\\":false,\\\"indexed\\\":true,\\\"analyzed"
-        + "\\\":false,\\\"doc_values\\\":true},{\\\"name\\\":"
-        + "\\\"application\\\",\\\"type\\\":\\\"string\\\",\\\"count"
-        + "\\\":0,\\\"scripted\\\":false,\\\"indexed\\\":true,"
-        + "\\\"analyzed\\\":false,\\\"doc_values\\\":true},{"
-        + "\\\"name\\\":\\\"_source\\\",\\\"type\\\":\\\"_source"
-        + "\\\",\\\"count\\\":0,\\\"scripted\\\":false,\\\"indexed"
-        + "\\\":false,\\\"analyzed\\\":false,\\\"doc_values\\\":false},"
-        + "{\\\"name\\\":\\\"_id\\\",\\\"type\\\":\\\"string\\\","
-        + "\\\"count\\\":0,\\\"scripted\\\":false,\\\"indexed\\\":false,"
-        + "\\\"analyzed\\\":false,\\\"doc_values\\\":false},{\\\"name\\\":"
-        + "\\\"_type\\\",\\\"type\\\":\\\"string\\\",\\\"count"
-        + "\\\":0,\\\"scripted\\\":false,\\\"indexed\\\":false,"
-        + "\\\"analyzed\\\":false,\\\"doc_values\\\":false},{"
-        + "\\\"name\\\":\\\"_score\\\",\\\"type\\\":\\\"number\\\","
-        + "\\\"count\\\":0,\\\"scripted\\\":false,\\\"indexed"
-        + "\\\":false,\\\"analyzed\\\":false,\\\"doc_values"
-        + "\\\":false}]\"}");
-    resp = elasticController.sendElasticsearchReq(params);
-    boolean kibanaIndexCreated = false;
-    if (resp.has("acknowledged")) {
-      kibanaIndexCreated = (Boolean) resp.get("acknowledged");
-    }
-
-    if (kibanaIndexCreated && templateCreated) {
-      return true;
-    }
-
     return false;
   }
 
-  public boolean removeElasticsearch(String project) throws IOException {
-    project = project.toLowerCase();
+  public boolean removeElasticsearch(Project project) throws IOException {
+    //project = project.toLowerCase();
     Map<String, String> params = new HashMap<>();
-    //1. Delete Kibana index
-    params.put("project", project);
-    params.put("op", "DELETE");
-    params.put("resource", ".kibana/index-pattern");
-    JSONObject resp = elasticController.sendElasticsearchReq(params);
-    boolean kibanaIndexDeleted = false;
-    if (resp != null && resp.has("acknowledged")) {
-      kibanaIndexDeleted = (Boolean) resp.get("acknowledged");
-    }
 
-    //2. Delete Elasticsearch Index
-    params.put("resource", "");
-    resp = elasticController.sendElasticsearchReq(params);
-    boolean elasticIndexDeleted = false;
-    if (resp != null && resp.has("acknowledged")) {
-      elasticIndexDeleted = (Boolean) resp.get("acknowledged");
-    }
-    //3. Delete Elasticsearch Template
-    params.put("resource", "_template");
-    boolean templateDeleted = false;
-    resp = elasticController.sendElasticsearchReq(params);
-    if (resp != null && resp.has("acknowledged")) {
-      templateDeleted = (Boolean) resp.get("acknowledged");
-    }
+    List<ProjectServiceEnum> projectServices = projectServicesFacade.
+            findEnabledServicesForProject(project);
 
-    return elasticIndexDeleted && templateDeleted && kibanaIndexDeleted;
+    String projectName = project.getName().toLowerCase();
+
+    for(ProjectServiceEnum service: projectServices) {
+      if(service.equals(ProjectServiceEnum.JOBS)) {
+        //1. Delete Elasticsearch Index
+        params.clear();
+        params.put("op", "DELETE");
+        params.put("resource", "");
+        params.put("project", projectName + "_logs");
+        JSONObject resp = elasticController.sendElasticsearchReq(params);
+        LOGGER.log(Level.SEVERE, resp.toString(4));
+
+        //2. Delete Kibana Index
+        params.clear();
+        params.put("op", "DELETE");
+        params.put("resource", "");
+        params.put("project", projectName + "_logs");
+        resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs");
+        LOGGER.log(Level.SEVERE, resp.toString(4));
+      }
+    }
+    return true;
   }
 
   /**
