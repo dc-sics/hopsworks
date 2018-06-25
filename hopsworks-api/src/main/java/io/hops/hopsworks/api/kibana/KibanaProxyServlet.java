@@ -78,8 +78,8 @@ public class KibanaProxyServlet extends ProxyServlet {
    */
   @Override
   protected void service(HttpServletRequest servletRequest,
-      HttpServletResponse servletResponse) throws ServletException,
-      IOException {
+                         HttpServletResponse servletResponse) throws ServletException,
+          IOException {
     if (servletRequest.getUserPrincipal() == null) {
       servletResponse.sendError(403, "User is not logged in");
       return;
@@ -100,24 +100,24 @@ public class KibanaProxyServlet extends ProxyServlet {
       } catch (AppException ex) {
         LOG.log(Level.SEVERE, null, ex);
         servletResponse.sendError(403,
-            "Kibana was not accessed from Hopsworks, no current project information is available.");
+                "Kibana was not accessed from Hopsworks, no current project information is available.");
         return;
       }
     }
     MyRequestWrapper myRequestWrapper = new MyRequestWrapper(
-        (HttpServletRequest) servletRequest);
+            (HttpServletRequest) servletRequest);
     KibanaFilter kibanaFilter = null;
     //Filter requests based on path
     if (servletRequest.getRequestURI().contains(
-        "elasticsearch/.kibana/index-pattern/_search")) {
+            "elasticsearch/.kibana/index-pattern/_search")) {
       kibanaFilter = KibanaFilter.KIBANA_INDEXPATTERN_SEARCH;
 
     } else if (servletRequest.getRequestURI().contains(
-        "elasticsearch/.kibana/index-pattern")) {
+            "elasticsearch/.kibana/index-pattern")) {
       kibanaFilter = KibanaFilter.KIBANA_INDEXPATTERN;
       //Get index from URI
       index = servletRequest.getRequestURI().substring(servletRequest.
-          getRequestURI().lastIndexOf("/")).replace("/", "");
+              getRequestURI().lastIndexOf("/")).replace("/", "");
       //Check if this user has access to this project
       if (!isAuthorized(servletResponse, index, email)) {
         return;
@@ -135,7 +135,7 @@ public class KibanaProxyServlet extends ProxyServlet {
         }
       }
     } else if (servletRequest.getRequestURI().contains(
-        "elasticsearch/") && servletRequest.getRequestURI().contains(
+            "elasticsearch/") && servletRequest.getRequestURI().contains(
             "_mapping/field")) {
       //Check if this user has access to this project
       index = servletRequest.getRequestURI().split("/")[4];
@@ -159,13 +159,13 @@ public class KibanaProxyServlet extends ProxyServlet {
     HttpRequest proxyRequest;
     //spec: RFC 2616, sec 4.3: either of these two headers signal that there is a message body.
     if (servletRequest.getHeader(HttpHeaders.CONTENT_LENGTH) != null
-        || servletRequest.getHeader(HttpHeaders.TRANSFER_ENCODING) != null) {
+            || servletRequest.getHeader(HttpHeaders.TRANSFER_ENCODING) != null) {
       HttpEntityEnclosingRequest eProxyRequest
-          = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
+              = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
       // Add the input entity (streamed)
       //  note: we don't bother ensuring we close the servletInputStream since the container handles it
       eProxyRequest.setEntity(new InputStreamEntity(myRequestWrapper.
-          getInputStream(), servletRequest.getContentLength()));
+              getInputStream(), servletRequest.getContentLength()));
       proxyRequest = eProxyRequest;
     } else {
       proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
@@ -180,16 +180,16 @@ public class KibanaProxyServlet extends ProxyServlet {
       // Execute the request
       if (doLog) {
         log("proxy " + method + " uri: " + servletRequest.getRequestURI()
-            + " -- " + proxyRequest.getRequestLine().getUri());
+                + " -- " + proxyRequest.getRequestLine().getUri());
       }
       proxyResponse = super.proxyClient.execute(super.getTargetHost(
-          myRequestWrapper), proxyRequest);
+              myRequestWrapper), proxyRequest);
 
       // Process the response
       int statusCode = proxyResponse.getStatusLine().getStatusCode();
 
       if (doResponseRedirectOrNotModifiedLogic(myRequestWrapper, servletResponse,
-          proxyResponse, statusCode)) {
+              proxyResponse, statusCode)) {
         //the response is already "committed" now without any body to send
         //TODO copy response headers?
         return;
@@ -199,19 +199,19 @@ public class KibanaProxyServlet extends ProxyServlet {
       // deprecated but it's the only way to pass the reason along too.
       //noinspection deprecation
       servletResponse.setStatus(statusCode, proxyResponse.getStatusLine().
-          getReasonPhrase());
+              getReasonPhrase());
 
       copyResponseHeaders(proxyResponse, servletRequest, servletResponse);
 
       // Send the content to the client
       copyResponseEntity(proxyResponse, servletResponse, kibanaFilter, email,
-          index);
+              index);
 
     } catch (Exception e) {
       //abort request, according to best practice with HttpClient
       if (proxyRequest instanceof AbortableHttpRequest) {
         AbortableHttpRequest abortableHttpRequest
-            = (AbortableHttpRequest) proxyRequest;
+                = (AbortableHttpRequest) proxyRequest;
         abortableHttpRequest.abort();
       }
       if (e instanceof RuntimeException) {
@@ -248,9 +248,9 @@ public class KibanaProxyServlet extends ProxyServlet {
    * @throws java.io.IOException
    */
   protected void copyResponseEntity(HttpResponse proxyResponse,
-      HttpServletResponse servletResponse, KibanaFilter kibanaFilter,
-      String email, String index) throws
-      IOException {
+                                    HttpServletResponse servletResponse, KibanaFilter kibanaFilter,
+                                    String email, String index) throws
+          IOException {
     if (kibanaFilter == null) {
       super.copyResponseEntity(proxyResponse, servletResponse);
     } else {
@@ -259,7 +259,7 @@ public class KibanaProxyServlet extends ProxyServlet {
           HttpEntity entity = proxyResponse.getEntity();
           if (entity != null) {
             GzipDecompressingEntity gzipEntity = new GzipDecompressingEntity(
-                entity);
+                    entity);
             String resp = EntityUtils.toString(gzipEntity);
             BasicHttpEntity basic = new BasicHttpEntity();
             JSONObject indices = new JSONObject(resp);
@@ -272,12 +272,12 @@ public class KibanaProxyServlet extends ProxyServlet {
               String projectName = hits.getJSONObject(i).getString("_id");
               if (index != null) {
                 if ((!currentProjects.get(email).equalsIgnoreCase(projectName) || !projects.contains(projectName))
-                    && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX) && !projectName.equals(index)) {
+                        && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX) && !projectName.equals(index)) {
                   hits.remove(i);
                 }
               } else {
                 if ((!currentProjects.get(email).equalsIgnoreCase(projectName) || !projects.contains(projectName))
-                    && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX)) {
+                        && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX)) {
                   hits.remove(i);
                 }
               }
@@ -303,15 +303,30 @@ public class KibanaProxyServlet extends ProxyServlet {
    *
    */
   private boolean isAuthorized(HttpServletResponse servletResponse, String index,
-      String email)
-      throws IOException {
+                               String email)
+          throws IOException {
+
+    //The index could be either projectname_logs or projectname_experiments
+    //Get the last part to figure that out
+    String[] indexParts = index.split("_");
+    String indexType = indexParts[indexParts.length-1];
 
     List<String> projects = projectController.findProjectNamesByUser(
-        email, true);
-    if (!projects.contains(index) && !index.equals(
-        Settings.KIBANA_DEFAULT_INDEX)) {
+            email, true);
+
+    boolean projectIsValid = false;
+
+    for(String project: projects){
+      String projectIndex = project + "_" + indexType;
+      if(projectIndex.equals(index)) {
+        projectIsValid = true;
+      }
+    }
+
+    if (!projectIsValid && !index.equals(
+            Settings.KIBANA_DEFAULT_INDEX)) {
       servletResponse.sendError(403,
-          "User is not authorized to access this index");
+              "User is not authorized to access this index");
       return false;
     }
     return true;
