@@ -28,7 +28,6 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.Ip;
 import io.hops.hopsworks.common.util.Settings;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -593,13 +592,16 @@ public class ElasticController {
    *
    * @param params
    * @return
-   * @throws IOException
    */
-  public JSONObject sendElasticsearchReq(Map<String, String> params) throws IOException {
+  public JSONObject sendElasticsearchReq(Map<String, String> params) {
     String templateUrl;
     if (!params.containsKey("url")) {
-      templateUrl = "http://" + settings.getElasticRESTEndpoint() + "/" + params.get("resource") + "/" + params.get(
-          "project");
+      if (params.get("resource").isEmpty()) {
+        templateUrl = "http://"+settings.getElasticRESTEndpoint() + "/" + params.get("project");
+      } else {
+        templateUrl = "http://"+settings.getElasticRESTEndpoint() + "/" + params.get("resource") + "/" +
+          params.get("project");
+      }
     } else {
       templateUrl = params.get("url");
     }
@@ -626,15 +628,25 @@ public class ElasticController {
         return new JSONObject(ClientBuilder.newClient()
             .target(templateUrl)
             .request()
+            .header("kbn-xsrf", "required")
+            .header("Content-Type", "application/json")
             .method(params.get("op"), Entity.json(params.get("data")))
             .readEntity(String.class));
       } else {
         return new JSONObject(ClientBuilder.newClient()
             .target(templateUrl)
             .request()
+            .header("kbn-xsrf", "required")
             .method(params.get("op"))
             .readEntity(String.class));
       }
     }
+  }
+
+  public JSONObject sendKibanaReq(Map<String, String> params, String kibanaType, String id) {
+    String templateUrl = settings.getKibanaUri() + "/api/saved_objects/" + kibanaType + "/" + id;
+
+    LOG.log(Level.SEVERE, templateUrl);
+    return sendElasticsearchReq(templateUrl, params, false);
   }
 }
