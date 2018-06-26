@@ -9,7 +9,6 @@
     "{connection_file}"
   ],
   "env": {
-    "HADOOP_HDFS_HOME": "%%hadoop_home%%",
     "HADOOP_HOME": "%%hadoop_home%%",
     "HADOOP_HDFS_HOME": "%%hadoop_home%%",
     "HADOOP_CONF_DIR": "%%hadoop_home%%/etc/hadoop",
