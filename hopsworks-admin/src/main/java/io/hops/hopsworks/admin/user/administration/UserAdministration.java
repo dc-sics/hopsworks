@@ -20,8 +20,8 @@
 
 package io.hops.hopsworks.admin.user.administration;
 
-import io.hops.hopsworks.admin.lims.ClientSessionState;
-import io.hops.hopsworks.admin.lims.MessagesController;
+import io.hops.hopsworks.admin.maintenance.ClientSessionState;
+import io.hops.hopsworks.admin.maintenance.MessagesController;
 import io.hops.hopsworks.common.util.EmailBean;
 import java.io.IOException;
 import java.io.Serializable;
@@ -320,22 +320,21 @@ public class UserAdministration implements Serializable {
   /**
    * Reject users that are not validated.
    *
-   * @param user1
    */
-  public void rejectUser(Users user1) {
-
+  public void rejectUser() {
+  
     FacesContext context = FacesContext.getCurrentInstance();
     HttpServletRequest request = (HttpServletRequest) context.getExternalContext().getRequest();
-
-    if (user1 == null) {
+    Users user = userFacade.findByEmail(userMail);
+    if (user == null) {
       MessagesController.addErrorMessage("Error", "No user found!");
       return;
     }
     try {
-      usersController.changeAccountStatus(user1.getUid(), UserAccountStatus.SPAM_ACCOUNT.toString(),
+      usersController.changeAccountStatus(user.getUid(), UserAccountStatus.SPAM_ACCOUNT.toString(),
           UserAccountStatus.SPAM_ACCOUNT);
-      MessagesController.addInfoMessage(user1.getEmail() + " was rejected.");
-      spamUsers.add(user1);
+      MessagesController.addInfoMessage(user.getEmail() + " was rejected.");
+      spamUsers.add(user);
     } catch (RuntimeException ex) {
       MessagesController.addSecurityErrorMessage("Rejection failed. " + ex.
           getMessage());
@@ -343,11 +342,11 @@ public class UserAdministration implements Serializable {
     }
     try {
       // Send rejection email
-      emailBean.sendEmail(user1.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REJECT,
+      emailBean.sendEmail(user.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REJECT,
           UserAccountsEmailMessages.accountRejectedMessage());
     } catch (MessagingException e) {
-      MessagesController.addSecurityErrorMessage("Could not send email to " + user1.getEmail());
-      LOGGER.log(Level.SEVERE, "Could not send email to {0}. {1}", new Object[]{user1.getEmail(), e});
+      MessagesController.addSecurityErrorMessage("Could not send email to " + user.getEmail());
+      LOGGER.log(Level.SEVERE, "Could not send email to {0}. {1}", new Object[]{user.getEmail(), e});
     }
   }
 
@@ -447,8 +446,9 @@ public class UserAdministration implements Serializable {
     this.selectedUsers = users;
   }
 
-  public void activateUser(Users user1) {
-    if (user1 == null) {
+  public void activateUser() {
+    Users user = userFacade.findByEmail(userMail);
+    if (user == null) {
       MessagesController.addSecurityErrorMessage("User is null.");
       return;
     }
@@ -458,27 +458,26 @@ public class UserAdministration implements Serializable {
 
     HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
         getCurrentInstance().getExternalContext().getRequest();
-    String message = usersController.activateUser(role, user1, sessionState.getLoggedInUser(), httpServletRequest);
+    String message = usersController.activateUser(role, user, sessionState.getLoggedInUser(), httpServletRequest);
     if(Strings.isNullOrEmpty(message)){
-      MessagesController.addInfoMessage("User "+user1.getEmail()+ " activated successfully", message);
+      MessagesController.addInfoMessage("User "+user.getEmail()+ " activated successfully", message);
     } else {
       MessagesController.addSecurityErrorMessage(message);
     }
     try {
       //send confirmation email
-      emailBean.sendEmail(user1.getEmail(), RecipientType.TO,
+      emailBean.sendEmail(user.getEmail(), RecipientType.TO,
           UserAccountsEmailMessages.ACCOUNT_CONFIRMATION_SUBJECT,
           UserAccountsEmailMessages.
-              accountActivatedMessage(user1.getEmail()));
+              accountActivatedMessage(user.getEmail()));
     } catch (MessagingException e) {
       MessagesController.addSecurityErrorMessage("Could not send email to "
-          + user1.getEmail() + ". " + e.getMessage());
+          + user.getEmail() + ". " + e.getMessage());
       Logger.getLogger(UserAdministration.class.getName()).log(Level.SEVERE,
-          "Could not send email to {0}. {1}", new Object[]{user1.getEmail(),
-            e});
+          "Could not send email to {0}. {1}", new Object[]{user.getEmail(),e});
     }
 
-    requests.remove(user1);
+    requests.remove(user);
   }
 
   public boolean notVerified(Users user) {
@@ -491,12 +490,11 @@ public class UserAdministration implements Serializable {
     return true;
   }
 
-  public void resendAccountVerificationEmail(Users user) throws
+  public void resendAccountVerificationEmail() throws
       MessagingException {
     FacesContext context = FacesContext.getCurrentInstance();
-    HttpServletRequest request = (HttpServletRequest) context.
-        getExternalContext().getRequest();
-
+    HttpServletRequest request = (HttpServletRequest) context.getExternalContext().getRequest();
+    Users user = userFacade.findByEmail(userMail);
     String activationKey = SecurityUtils.getRandomPassword(64);
     emailBean.sendEmail(user.getEmail(), RecipientType.TO, UserAccountsEmailMessages.ACCOUNT_REQUEST_SUBJECT,
         UserAccountsEmailMessages.buildMobileRequestMessage(FormatUtils.getUserURL(request), user.getUsername()
@@ -517,7 +515,19 @@ public class UserAdministration implements Serializable {
     MessagesController.addInfoMessage("User successfully modified for " + user1.getEmail());
     return "admin_profile";
   }
-//
+  
+  public String showProfile() {
+    String email = FacesContext.getCurrentInstance().getExternalContext().getRemoteUser();
+    Users user1 = userFacade.findByEmail(email);
+    FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("editinguser", user1);
+
+    Userlogins login = auditManager.getLastUserLogin(user1);
+    FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("editinguser_logins", login);
+
+    MessagesController.addInfoMessage("User successfully modified for " + user1.getEmail());
+    return "admin_profile";
+  }
+
   public List<Users> getSpamUsers() {
     return spamUsers = userFacade.findAllByStatus(UserAccountStatus.SPAM_ACCOUNT);
   }

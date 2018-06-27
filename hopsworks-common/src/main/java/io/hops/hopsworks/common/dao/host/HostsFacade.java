@@ -20,6 +20,8 @@
 
 package io.hops.hopsworks.common.dao.host;
 
+import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
+
 import java.io.Serializable;
 import java.util.List;
 import javax.ejb.Stateless;
@@ -84,29 +86,37 @@ public class HostsFacade implements Serializable {
     return query.getResultList();
   }
 
+  public String findCPUHost() {
+    List<Hosts> hosts = find();
+    for(Hosts host: hosts){
+      if(host.getNumGpus() == 0 && host.getCondaEnabled()){
+        return host.getHostname();
+      }
+    }
+    return null;
+  }
+
+  public String findGPUHost() {
+    List<Hosts> hosts = find();
+    for(Hosts host: hosts){
+      if(host.getNumGpus() > 0 && host.getCondaEnabled()){
+        return host.getHostname();
+      }
+    }
+    return null;
+  }
+
+
   public boolean hostExists(String hostId) {
     try {
-      if (findByHostname(hostId) != null) {
-        return true;
-      }
-      return false;
+      return findByHostname(hostId) != null;
     } catch (Exception e) {
       return false;
     }
   }
 
-  public Hosts storeHost(Hosts host, boolean register) {
-    if (register) {
-      em.merge(host);
-    } else {
-      Hosts h = findByHostname(host.getHostname());
-      host.setPrivateIp(h.getPrivateIp());
-      host.setPublicIp(h.getPublicIp());
-      host.setCores(h.getCores());
-      host.setId(h.getId());
-      em.merge(host);
-    }
-    return host;
+  public Hosts storeHost(Hosts host) {
+    return em.merge(host);
   }
   
   public boolean removeByHostname(String hostname) {
@@ -116,5 +126,21 @@ public class HostsFacade implements Serializable {
       return true;
     }
     return false;
+  }
+
+  public List<Hosts> getCondaHosts(PythonDepsFacade.MachineType machineType) {
+    TypedQuery<Hosts> query;
+    switch (machineType) {
+      case CPU:
+        query = em.createNamedQuery("Hosts.findBy-conda-enabled-cpu", Hosts.class);
+        break;
+      case GPU:
+        query = em.createNamedQuery("Hosts.findBy-conda-enabled-gpu", Hosts.class);
+        break;
+      default:
+        query = em.createNamedQuery("Hosts.findBy-conda-enabled", Hosts.class);
+    }
+
+    return query.getResultList();
   }
 }

@@ -31,7 +31,10 @@ public enum TfServingStatusEnum {
   @XmlEnumValue("Stopped")
   STOPPED("Stopped"),
   @XmlEnumValue("Starting")
-  STARTING("Starting");
+  STARTING("Starting"),
+  @XmlEnumValue("Transforming")
+  TRANSFORMING("Transforming")
+  ;
 
   private final String readable;
 
@@ -49,6 +52,8 @@ public enum TfServingStatusEnum {
         return TfServingStatusEnum.STOPPED;
       case "Starting":
         return TfServingStatusEnum.STARTING;
+      case "Transforming":
+        return TfServingStatusEnum.TRANSFORMING;
       default:
         throw new IllegalArgumentException("ShortName [" + shortName + "] not supported.");
     }

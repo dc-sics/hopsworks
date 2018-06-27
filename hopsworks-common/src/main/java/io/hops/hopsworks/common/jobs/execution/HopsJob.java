@@ -26,7 +26,6 @@ import java.security.PrivilegedExceptionAction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.yarn.YarnClientWrapper;
 import org.apache.hadoop.security.UserGroupInformation;
 import io.hops.hopsworks.common.jobs.AsynchronousJobExecutor;
@@ -167,8 +166,6 @@ public abstract class HopsJob {
             if (dfso != null) {
               dfso.close();
             }
-            String[] tokens = hdfsUser.getUserName().split(
-                HdfsUsersController.USER_NAME_DELIMITER);
             if (null != udfso) {
               services.getFsService().closeDfsClient(udfso);
             }

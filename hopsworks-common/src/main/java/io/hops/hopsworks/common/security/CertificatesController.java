@@ -21,12 +21,13 @@ package io.hops.hopsworks.common.security;
 
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
 import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.util.HopsUtils;
-import io.hops.hopsworks.common.util.LocalhostServices;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.security.HopsUtil;
 
 import javax.ejb.AsyncResult;
 import javax.ejb.Asynchronous;
@@ -38,10 +39,9 @@ import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.concurrent.Future;
@@ -61,6 +61,8 @@ public class CertificatesController {
   private CertsFacade certsFacade;
   @EJB
   private CertificatesMgmService certificatesMgmService;
+  @EJB
+  private OpensslOperations opensslOperations;
   
   /**
    * Creates x509 certificates for a project specific user and project generic
@@ -82,8 +84,8 @@ public class CertificatesController {
     ReentrantLock lock = certificatesMgmService.getOpensslLock();
     try {
       lock.lock();
-      LocalhostServices.createUserCertificates(settings.getIntermediateCaDir(),
-          project.getName(),
+      
+      opensslOperations.createUserCertificate(project.getName(),
           user.getUsername(),
           user.getAddress().getCountry(),
           user.getAddress().getCity(),
@@ -102,8 +104,7 @@ public class CertificatesController {
     if (generateProjectWideCerts) {
       try {
         lock.lock();
-        LocalhostServices.createServiceCertificates(settings.getIntermediateCaDir(),
-            project.getProjectGenericUser(),
+        opensslOperations.createServiceCertificate(project.getProjectGenericUser(),
             user.getAddress().getCountry(),
             user.getAddress().getCity(),
             user.getOrganization().getOrgName(),
@@ -129,9 +130,19 @@ public class CertificatesController {
     ReentrantLock lock = certificatesMgmService.getOpensslLock();
     try {
       lock.lock();
-      LocalhostServices.deleteProjectCertificates(settings.getIntermediateCaDir(),
-          projectName);
+      // Iterate through Project members and delete their certificates
+      for (ProjectTeam team : project.getProjectTeamCollection()) {
+        String certificateIdentifier = projectName + HdfsUsersController.USER_NAME_DELIMITER + team.getUser()
+            .getUsername();
+        // Ordering here is important
+        // *First* revoke and *then* delete the certificate
+        opensslOperations.revokeCertificate(certificateIdentifier, true, false);
+        opensslOperations.deleteUserCertificate(certificateIdentifier);
+      }
+      opensslOperations.revokeCertificate(project.getProjectGenericUser(), true, false);
+      opensslOperations.deleteProjectCertificate(projectName);
     } finally {
+      opensslOperations.createCRL(true);
       lock.unlock();
     }
     
@@ -149,8 +160,10 @@ public class CertificatesController {
     ReentrantLock lock = certificatesMgmService.getOpensslLock();
     try {
       lock.lock();
-      LocalhostServices.deleteUserCertificates(settings.getIntermediateCaDir(),
-          hdfsUsername);
+      // Ordering here is important
+      // *First* revoke and *then* delete the certificate
+      opensslOperations.revokeCertificate(hdfsUsername, true, true);
+      opensslOperations.deleteUserCertificate(hdfsUsername);
     } finally {
       lock.unlock();
     }
@@ -167,34 +180,36 @@ public class CertificatesController {
   public String extractCNFromCertificate(byte[] rawKeyStore,
       char[] keystorePwd, String certificateAlias) throws AppException {
     try {
-      KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      InputStream inStream = new ByteArrayInputStream(rawKeyStore);
-      keyStore.load(inStream, keystorePwd);
       
-      if (certificateAlias == null) {
-        Enumeration<String> aliases = keyStore.aliases();
-        while (aliases.hasMoreElements()) {
-          certificateAlias = aliases.nextElement();
-          if (!certificateAlias.equals("caroot")) {
-            break;
-          }
-        }
+      X509Certificate certificate = getCertificateFromKeyStore(rawKeyStore, keystorePwd, certificateAlias);
+      if (certificate == null) {
+        throw new GeneralSecurityException("Could not get certificate from keystore");
       }
-      
-      X509Certificate certificate = (X509Certificate) keyStore
-          .getCertificate(certificateAlias.toLowerCase());
       String subjectDN = certificate.getSubjectX500Principal()
           .getName("RFC2253");
-      String[] dnTokens = subjectDN.split(",");
-      String[] cnTokens = dnTokens[0].split("=", 2);
-      
-      return cnTokens[1];
-    } catch (KeyStoreException | IOException | NoSuchAlgorithmException
-        | CertificateException ex) {
+      String cn = HopsUtil.extractCNFromSubject(subjectDN);
+      if (cn == null) {
+        throw new KeyStoreException("Could not extract CN from client certificate");
+      }
+      return cn;
+    } catch (GeneralSecurityException | IOException ex) {
       LOG.log(Level.SEVERE, "Error while extracting CN from certificate", ex);
       throw new AppException(Response.Status.INTERNAL_SERVER_ERROR
           .getStatusCode(), ex.getMessage());
     }
+  }
+  
+  @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
+  public String validateCertificate(byte[] rawKeyStore, char[] keyStorePassword)
+      throws GeneralSecurityException, IOException {
+  
+    X509Certificate certificate = getCertificateFromKeyStore(rawKeyStore, keyStorePassword, null);
+    if (certificate == null) {
+      throw new GeneralSecurityException("Could not get certificate from keystore");
+    }
+  
+    opensslOperations.validateCertificate(certificate);
+    return certificate.getSubjectX500Principal().getName("RFC2253");
   }
   
   public class CertsResult {
@@ -213,5 +228,24 @@ public class CertificatesController {
     public String getUsername() {
       return username;
     }
+  }
+  
+  private X509Certificate getCertificateFromKeyStore(byte[] rawKeyStore, char[] keyStorePwd, String certificateAlias)
+    throws GeneralSecurityException, IOException {
+    KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+    InputStream inStream = new ByteArrayInputStream(rawKeyStore);
+    keyStore.load(inStream, keyStorePwd);
+  
+    if (certificateAlias == null) {
+      Enumeration<String> aliases = keyStore.aliases();
+      while (aliases.hasMoreElements()) {
+        certificateAlias = aliases.nextElement();
+        if (!certificateAlias.equals("caroot")) {
+          break;
+        }
+      }
+    }
+  
+    return (X509Certificate) keyStore.getCertificate(certificateAlias.toLowerCase());
   }
 }

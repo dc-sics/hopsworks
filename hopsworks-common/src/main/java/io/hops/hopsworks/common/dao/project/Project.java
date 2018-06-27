@@ -17,7 +17,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 package io.hops.hopsworks.common.dao.project;
 
 import java.io.Serializable;
@@ -123,8 +122,13 @@ public class Project implements Serializable {
   @OneToMany(cascade = CascadeType.ALL,
       mappedBy = "project")
   private Collection<JupyterSettings> jupyterSettingsCollection;
-  @OneToMany(cascade = CascadeType.ALL, mappedBy = "project")
+  @OneToMany(cascade = CascadeType.ALL,
+      mappedBy = "project")
   private Collection<TfServing> tfServingCollection;
+
+//  @OneToMany(cascade = CascadeType.ALL,
+//      mappedBy = "projectId")
+//  private Collection<Pia> piaCollection;
   private static final long serialVersionUID = 1L;
 
   @Id
@@ -172,6 +176,11 @@ public class Project implements Serializable {
 
   @Basic(optional = false)
   @NotNull
+  @Column(name = "kafka_max_num_topics")
+  private Integer kafkaMaxNumTopics = 10;
+
+  @Basic(optional = false)
+  @NotNull
   @Column(name = "last_quota_update")
   @Temporal(TemporalType.TIMESTAMP)
   private Date lastQuotaUpdate;
@@ -204,9 +213,6 @@ public class Project implements Serializable {
       mappedBy = "projectId")
   private Collection<JupyterProject> jupyterProjectCollection;
 
-//  @OneToMany(cascade = CascadeType.ALL,
-//      mappedBy = "projectId")
-//  private Collection<TfServing> tfServingCollection;
   public Project() {
   }
 
@@ -457,7 +463,7 @@ public class Project implements Serializable {
     return tfServingCollection;
   }
 
-  public void setTfServingCollection(Collection <TfServing> tfServingCollection) {
+  public void setTfServingCollection(Collection<TfServing> tfServingCollection) {
     this.tfServingCollection = tfServingCollection;
   }
 
@@ -465,12 +471,29 @@ public class Project implements Serializable {
     return name + Settings.PROJECT_GENERIC_USER_SUFFIX;
   }
 
-  public Date getLastQuotaUpdate() { return lastQuotaUpdate; }
+  public Date getLastQuotaUpdate() {
+    return lastQuotaUpdate;
+  }
 
   public void setLastQuotaUpdate(Date lastQuotaUpdate) {
     this.lastQuotaUpdate = lastQuotaUpdate;
   }
-  
+
+//  public Collection<Pia> getPiaCollection() {
+//    return piaCollection;
+//  }
+//
+//  public void setPiaCollection(Collection<Pia> piaCollection) {
+//    this.piaCollection = piaCollection;
+//  }
+  public Integer getKafkaMaxNumTopics() {
+    return kafkaMaxNumTopics;
+  }
+
+  public void setKafkaMaxNumTopics(Integer kafkaMaxNumTopics) {
+    this.kafkaMaxNumTopics = kafkaMaxNumTopics;
+  }
+
   @Override
   public String toString() {
     return "se.kth.bbc.project.Project[ name=" + this.name + ", id=" + this.id

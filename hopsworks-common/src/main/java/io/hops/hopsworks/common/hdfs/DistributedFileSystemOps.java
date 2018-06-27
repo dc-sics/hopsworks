@@ -43,6 +43,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.protocol.LastUpdatedContentSummary;
 import org.apache.hadoop.security.UserGroupInformation;
 
 public class DistributedFileSystemOps {
@@ -342,6 +343,10 @@ public class DistributedFileSystemOps {
     Path location = new Path(path);
     return dfs.exists(location);
   }
+  
+  public boolean exists(Path path) throws IOException {
+    return dfs.exists(path);
+  }
 
   /**
    * Copy a file within HDFS. Largely taken from Hadoop code.
@@ -377,6 +382,10 @@ public class DistributedFileSystemOps {
       dfs.mkdirs(dirsPath);
     }
     return dfs.create(dstPath);
+  }
+  
+  public FSDataOutputStream create(Path path) throws IOException {
+    return create(path.toString());
   }
 
   /**
@@ -654,8 +663,17 @@ public class DistributedFileSystemOps {
     return -1;
   }
 
+  public long getLength(Path path) throws IOException {
+    return dfs.getLength(path);
+  }
+  
   public long getDatasetSize(Path datasetPath) throws IOException {
     ContentSummary cs = dfs.getContentSummary(datasetPath);
     return cs.getLength();
+  }
+  
+  public long getLastUpdatedDatasetSize(Path datasetPath) throws IOException {
+    LastUpdatedContentSummary cs = dfs.getLastUpdatedContentSummary(datasetPath);
+    return cs.getSpaceConsumed();
   }
 }

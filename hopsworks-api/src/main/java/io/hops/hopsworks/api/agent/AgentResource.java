@@ -17,7 +17,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 package io.hops.hopsworks.api.agent;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -26,8 +25,8 @@ import io.hops.hopsworks.common.dao.alert.Alert;
 import io.hops.hopsworks.common.dao.alert.AlertEJB;
 import io.hops.hopsworks.common.dao.command.KagentCommands;
 import io.hops.hopsworks.common.dao.command.SystemCommand;
+import io.hops.hopsworks.common.dao.command.SystemCommandFacade;
 import io.hops.hopsworks.common.dao.host.Health;
-
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -56,7 +55,6 @@ import io.hops.hopsworks.common.dao.kagent.HostServicesFacade;
 import io.hops.hopsworks.common.dao.host.Status;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
-import io.hops.hopsworks.common.dao.pythonDeps.BlockReport;
 import io.hops.hopsworks.common.dao.pythonDeps.CondaCommands;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDep;
 import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade;
@@ -65,6 +63,7 @@ import io.hops.hopsworks.common.dao.pythonDeps.PythonDepsFacade.CondaStatus;
 import io.hops.hopsworks.common.dao.pythonDeps.AnacondaRepo;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.security.CertificatesMgmService;
 import io.hops.hopsworks.common.util.EmailBean;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
@@ -74,9 +73,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -109,6 +106,10 @@ public class AgentResource {
   private Settings settings;
   @EJB
   private EmailBean emailBean;
+  @EJB
+  private SystemCommandFacade systemCommandFacade;
+  @EJB
+  private CertificatesMgmService certificatesMgmService;
 
   final static Logger logger = Logger.getLogger(AgentResource.class.getName());
 
@@ -143,6 +144,7 @@ public class AgentResource {
     // Commands are sent back to the kagent as a response to this heartbeat.
     // Kagent then executes the commands received in order.
     List<CondaCommands> commands = new ArrayList<>();
+    List<SystemCommand> systemCommands = new ArrayList<>();
 
     try {
 
@@ -164,8 +166,7 @@ public class AgentResource {
       host.setLoad1(json.getJsonNumber("load1").doubleValue());
       host.setLoad5(json.getJsonNumber("load5").doubleValue());
       host.setLoad15(json.getJsonNumber("load15").doubleValue());
-      Integer numGpus = json.getJsonNumber("num-gpus").intValue();
-      host.setNumGpus( numGpus);  // '1' means has a GPU, '0' means doesn't have one.
+      host.setNumGpus(json.getJsonNumber("num-gpus").intValue());
       Long previousDiskUsed = host.getDiskUsed() == null ? 0l : host.getDiskUsed();
       host.setDiskUsed(json.getJsonNumber("disk-used").longValue());
       host.setMemoryUsed(json.getJsonNumber("memory-used").longValue());
@@ -179,7 +180,7 @@ public class AgentResource {
       }
       host.setMemoryCapacity(json.getJsonNumber("memory-capacity").longValue());
       host.setCores(json.getInt("cores"));
-      hostFacade.storeHost(host, false);
+      hostFacade.storeHost(host);
 
       JsonArray roles = json.getJsonArray("services");
       for (int i = 0; i < roles.size(); i++) {
@@ -259,83 +260,113 @@ public class AgentResource {
         JsonObject commandsReply = json.getJsonObject("commands-reply");
         JsonArray condaOps = commandsReply.getJsonArray("condaCommands");
         JsonArray systemOps = commandsReply.getJsonArray("systemCommands");
-        
+
         processCondaCommands(condaOps);
+        processSystemCommands(systemOps);
       }
 
-      List<CondaCommands> differenceList = new ArrayList<>();
-
-      if (json.containsKey("block-report")) {
-        // Map<'project', 'installed-libs'>
-        Map<String, BlockReport> mapReports = new HashMap<>();
-
-        JsonObject envs = json.getJsonObject("block-report");
-        for (String s : envs.keySet()) {
-          JsonArray installedLibs = envs.getJsonArray(s);
-
-          String projName = s;
-          BlockReport br = new BlockReport();
-          mapReports.put(projName, br);
-          br.setProject(projName);
-          for (int k = 0; k < installedLibs.size(); k++) {
-            JsonObject libObj = installedLibs.getJsonObject(k);
-            String libName = libObj.getString("name");
-            String libUrl = libObj.getString("channel");
-            String libInstallType = libObj.getString("installtype");
-            String libVersion = libObj.getString("version");
-            br.addLib(libName, libUrl, libInstallType, libVersion);
-          }
-        }
-      }
-
-      Collection<CondaCommands> allCommands = host.
-          getCondaCommandsCollection();
+      List<CondaCommands> allCommandsForHost = pythonDepsFacade.findByHost(host);
 
       Collection<CondaCommands> commandsToExec = new ArrayList<>();
-      for (CondaCommands cc : allCommands) {
-        if (cc.getStatus() != PythonDepsFacade.CondaStatus.FAILED) {
+      for (CondaCommands cc : allCommandsForHost) {
+        if (cc.getStatus().equals(CondaStatus.NEW)) {
           commandsToExec.add(cc);
           cc.setHostId(host);
         }
       }
       commands.addAll(commandsToExec);
-      commands.addAll(differenceList);
 
+      List<SystemCommand> pendingCommands = systemCommandFacade.findByHost(host);
+      for (SystemCommand pendingCommand : pendingCommands) {
+        if (pendingCommand.getStatus().equals(SystemCommandFacade.STATUS.NEW)) {
+          systemCommands.add(pendingCommand);
+        }
+      }
 
     } catch (Exception ex) {
-      logger.log(Level.SEVERE, ex.getMessage());
+      logger.log(Level.SEVERE, "Error processing Kagent heartbeat: " + ex.getMessage(), ex);
       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
     }
 
     Collections.sort(commands, new CondaCommandsComparator());
-    List<SystemCommand> systemCommands = new ArrayList<>();
+    Collections.sort(systemCommands, new Comparator<SystemCommand>() {
+      @Override
+      public int compare(SystemCommand command0, SystemCommand command1) {
+        if (command0.getId() > command1.getId()) {
+          return 1;
+        } else if (command0.getId() < command1.getId()) {
+          return -1;
+        }
+        return 0;
+      }
+    });
+
     KagentCommands kagentCommands = new KagentCommands(systemCommands, commands);
-    
-    GenericEntity<KagentCommands> kcs = new GenericEntity<KagentCommands>(kagentCommands) {};
+
+    GenericEntity<KagentCommands> kcs = new GenericEntity<KagentCommands>(kagentCommands) { };
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
         kcs).build();
   }
 
+  private void processSystemCommands(JsonArray systemOps) {
+    for (int i = 0; i < systemOps.size(); ++i) {
+      JsonObject jsonCommand = systemOps.getJsonObject(i);
+      Integer id = jsonCommand.getInt("id");
+      String opStr = jsonCommand.getString("op");
+      String statusStr = jsonCommand.getString("status");
+
+      SystemCommandFacade.OP op = SystemCommandFacade.OP.valueOf(opStr.toUpperCase());
+      SystemCommandFacade.STATUS status = SystemCommandFacade.STATUS.valueOf(statusStr.toUpperCase());
+
+      SystemCommand systemCommand = systemCommandFacade.findById(id);
+      if (systemCommand == null) {
+        throw new IllegalArgumentException("System command with ID: " + id + " is not in the system");
+      }
+
+      if (op.equals(SystemCommandFacade.OP.SERVICE_KEY_ROTATION)) {
+        processServiceKeyRotationCommand(systemCommand, status);
+      }
+    }
+  }
+
+  private void processServiceKeyRotationCommand(SystemCommand command, SystemCommandFacade.STATUS status) {
+    if (status.equals(SystemCommandFacade.STATUS.FINISHED)) {
+      try {
+        certificatesMgmService.deleteServiceCertificate(command.getHost(), command.getId());
+      } catch (IOException ex) {
+        logger.log(Level.WARNING, "Could not revoke certificate for host: " + command.getHost().getHostname(), ex);
+      }
+      systemCommandFacade.delete(command);
+    } else {
+      command.setStatus(status);
+      systemCommandFacade.update(command);
+    }
+  }
+
   private void processCondaCommands(JsonArray condaOps) throws AppException {
     for (int j = 0; j < condaOps.size(); j++) {
+
       JsonObject entry = condaOps.getJsonObject(j);
-    
+
       String projName = entry.getString("proj");
       String op = entry.getString("op");
       PythonDepsFacade.CondaOp opType = PythonDepsFacade.CondaOp.valueOf(op.toUpperCase());
-      String channelurl = entry.getString("channelurl");
+      String channelurl = entry.getString("channelUrl");
       String lib = entry.containsKey("lib") ? entry.getString("lib") : "";
       String version = entry.containsKey("version") ? entry.getString("version") : "";
       String arg = entry.containsKey("arg") ? entry.getString("arg") : "";
       String status = entry.getString("status");
       PythonDepsFacade.CondaStatus agentStatus = PythonDepsFacade.CondaStatus.valueOf(status.toUpperCase());
-      int commmandId = Integer.parseInt(entry.getString("id"));
-    
+      int commmandId = entry.getInt("id");
+
       CondaCommands command = pythonDepsFacade.
           findCondaCommand(commmandId);
       // If the command object does not exist, then the project
       // has probably been removed. We needed to send a compensating action if
       // this action was successful.
+
+      // Command would be null when we are deleting a Project and kagent reports that the
+      // REMOVE operation has changed state from ONGOING to SUCCESS
       if (command != null) {
         if (agentStatus == PythonDepsFacade.CondaStatus.SUCCESS) {
           // remove command from the DB
@@ -347,57 +378,56 @@ public class AgentResource {
               updateCondaCommandStatus(commmandId, agentStatus, command.getInstallType(),
                   command.getMachineType(), arg, projName, opType, lib, version, channelurl);
         }
-      }
-    
-    
-      //sync local libs as the ones installed
-      if(command.getOp().equals(CondaOp.CREATE)) {
-      
-        //only sync on hopsworks server
-        if(settings.getHopsworksIp().equals(command.getHostId().getHostIp())) {
-        
-          Project projectId = command.getProjectId();
-        
-          String envStr = listCondaEnvironment(projName);
-        
-          Collection<PythonDep> pythonDeps = synchronizeDependencies(projectId,
-              envStr, projectId.getPythonDepCollection());
-        
-          //Remove existing deps
-          pythonDepsFacade.removePythonDepsForProject(projectId);
-        
-          //Insert all deps in current listing
-          pythonDepsFacade.addPythonDepsForProject(projectId, pythonDeps);
+
+        //sync local libs as the ones installed
+        if (command.getOp().equals(CondaOp.CREATE) || command.getOp().equals(CondaOp.YML)) {
+
+          //only sync on hopsworks server
+          if (settings.getHopsworksIp().equals(command.getHostId().getHostIp())) {
+
+            Project projectId = command.getProjectId();
+
+            String envStr = listCondaEnvironment(projName);
+
+            Collection<PythonDep> pythonDeps = synchronizeDependencies(projectId,
+                envStr, projectId.getPythonDepCollection());
+
+            //Remove existing deps
+            pythonDepsFacade.removePythonDepsForProject(projectId);
+
+            //Insert all deps in current listing
+            pythonDepsFacade.addPythonDepsForProject(projectId, pythonDeps);
+          }
+
         }
-      
-      }
-    
-      //an upgrade results in an unknown version installed, query local conda env to figure it out
-      if(command.getOp().equals(CondaOp.UPGRADE)) {
-      
-        command.setVersion(getLocalLibraryVersion(command.getLib(), command.getVersion(), projName));
-      
-        if(settings.getHopsworksIp().equals(command.getHostId().getHostIp())) {
-          Project projectId = command.getProjectId();
-        
-          Collection<PythonDep> pythonDeps = projectId.getPythonDepCollection();
-          for(PythonDep pythonDep: pythonDeps) {
-            if(pythonDep.getDependency().equals(command.getLib()) &&
-                pythonDep.getVersion().equals(command.getVersion())) {
-            
-              String localVersion = getLocalLibraryVersion(command.getLib(), command.getVersion(), projName);
-            
-              if(!localVersion.equals(command.getVersion())) {
-                Collection<PythonDep> deps = projectId.getPythonDepCollection();
-              
-                for(PythonDep dep: deps) {
-                  if(dep.getDependency().equals(command.getLib())) {
-                    PythonDep newDep = pythonDepsFacade.getDep(dep.getRepoUrl(), dep.getMachineType(),
-                        command.getInstallType(), command.getLib(), localVersion, true, false);
-                    deps.remove(dep);
-                    deps.add(newDep);
-                    projFacade.update(projectId);
-                    break;
+
+        //an upgrade results in an unknown version installed, query local conda env to figure it out
+        if (command.getOp().equals(CondaOp.UPGRADE)) {
+
+          command.setVersion(getLocalLibraryVersion(command.getLib(), command.getVersion(), projName));
+
+          if (settings.getHopsworksIp().equals(command.getHostId().getHostIp())) {
+            Project projectId = command.getProjectId();
+
+            Collection<PythonDep> pythonDeps = projectId.getPythonDepCollection();
+            for (PythonDep pythonDep : pythonDeps) {
+              if (pythonDep.getDependency().equals(command.getLib()) && pythonDep.getVersion().equals(command.
+                  getVersion())) {
+
+                String localVersion = getLocalLibraryVersion(command.getLib(), command.getVersion(), projName);
+
+                if (!localVersion.equals(command.getVersion())) {
+                  Collection<PythonDep> deps = projectId.getPythonDepCollection();
+
+                  for (PythonDep dep : deps) {
+                    if (dep.getDependency().equals(command.getLib())) {
+                      PythonDep newDep = pythonDepsFacade.getDep(dep.getRepoUrl(), dep.getMachineType(),
+                          command.getInstallType(), command.getLib(), localVersion, true, false);
+                      deps.remove(dep);
+                      deps.add(newDep);
+                      projFacade.update(projectId);
+                      break;
+                    }
                   }
                 }
               }
@@ -407,7 +437,7 @@ public class AgentResource {
       }
     }
   }
-  
+
   private void emailAlert(String subject, String body) {
     try {
       emailBean.sendEmails(settings.getAlertEmailAddrs(), subject, body);
@@ -483,25 +513,23 @@ public class AgentResource {
     return Response.ok().build();
   }
 
-
-
   //SAMPLE OUTPUT
   /*
-  # packages in environment at /srv/hops/anaconda/anaconda-2-5.0.1/envs/demo_tensorflow_admin000:
-  #
-  # Name                    Version                   Build  Channel
-  absl-py                   0.1.10                    <pip>
-  backports-abc             0.5                       <pip>
-  backports.shutil-get-terminal-size 1.0.0                     <pip>
-  backports.weakref         1.0.post1                 <pip>
-  bleach                    2.1.2                     <pip>
-  ca-certificates           2017.08.26           h1d4fec5_0
-  certifi                   2018.1.18                py27_0
-
+   * # packages in environment at /srv/hops/anaconda/anaconda-2-5.0.1/envs/demo_tensorflow_admin000:
+   * #
+   * # Name Version Build Channel
+   * absl-py 0.1.10 <pip>
+   * backports-abc 0.5 <pip>
+   * backports.shutil-get-terminal-size 1.0.0 <pip>
+   * backports.weakref 1.0.post1 <pip>
+   * bleach 2.1.2 <pip>
+   * ca-certificates 2017.08.26 h1d4fec5_0
+   * certifi 2018.1.18 py27_0
+   *
    */
-
   /**
    * List installed libraries in the anaconda environment for the project
+   *
    * @param project
    * @return
    */
@@ -513,7 +541,7 @@ public class AgentResource {
     try {
       Process process = pb.start();
       BufferedReader br = new BufferedReader(new InputStreamReader(
-              process.getInputStream(), Charset.forName("UTF8")));
+          process.getInputStream(), Charset.forName("UTF8")));
       String line;
       while ((line = br.readLine()) != null) {
         sb.append(line + System.getProperty("line.separator"));
@@ -521,7 +549,7 @@ public class AgentResource {
       process.waitFor();
     } catch (IOException | InterruptedException ex) {
       logger.log(Level.SEVERE, "Problem listing conda environment: {0}", ex.
-              toString());
+          toString());
     }
     return sb.toString();
   }
@@ -529,7 +557,6 @@ public class AgentResource {
   //since we only want to show certain predefined libs or those user have installed we need to be selective about
   //which python deps should be put in the database
   //check that library is part of preinstalled libs OR in provided library list, only then add it
-
   /**
    * For each locally installed library in the conda environment on the hopsworks server, figure out the version
    * if it is listed as a preinstalled or provided library. A preinstalled libary can't be modified once it has been
@@ -542,53 +569,53 @@ public class AgentResource {
    * @throws AppException
    */
   private Collection<PythonDep> synchronizeDependencies(Project project, String condaListStr,
-                                  Collection<PythonDep> currentlyInstalledPyDeps) throws AppException {
+      Collection<PythonDep> currentlyInstalledPyDeps) throws AppException {
 
     Collection<PythonDep> deps = new ArrayList();
 
     String[] lines = condaListStr.split(System.getProperty("line.separator"));
 
-    for(int i = 3; i < lines.length; i++) {
+    for (int i = 3; i < lines.length; i++) {
 
       String line = lines[i];
 
-      String [] split = line.split(" +");
+      String[] split = line.split(" +");
 
       String libraryName = split[0];
       String version = split[1];
 
-      if(PythonDepsService.preInstalledLibraryNames.contains(libraryName)) {
-        AnacondaRepo repo = pythonDepsFacade.getRepo(project, "PyPi",true);
+      if (PythonDepsService.preInstalledLibraryNames.contains(libraryName)) {
+        AnacondaRepo repo = pythonDepsFacade.getRepo(project, "PyPi", true);
 
         //Special case for tensorflow
-        if(libraryName.equals("tensorflow")) {
+        if (libraryName.equals("tensorflow")) {
           PythonDep tensorflowCPU = pythonDepsFacade.getDep(repo, PythonDepsFacade.MachineType.CPU,
-                  PythonDepsFacade.CondaInstallType.PIP, libraryName, version, true, true);
+              PythonDepsFacade.CondaInstallType.PIP, libraryName, version, true, true);
           tensorflowCPU.setStatus(CondaStatus.SUCCESS);
           deps.add(tensorflowCPU);
           PythonDep tensorflowGPU = pythonDepsFacade.getDep(repo, PythonDepsFacade.MachineType.GPU,
-                  PythonDepsFacade.CondaInstallType.PIP, libraryName + "-gpu", version, true, true);
+              PythonDepsFacade.CondaInstallType.PIP, libraryName + "-gpu", version, true, true);
           tensorflowGPU.setStatus(CondaStatus.SUCCESS);
           deps.add(tensorflowGPU);
           continue;
         }
 
         PythonDep pyDep = pythonDepsFacade.getDep(repo, PythonDepsFacade.MachineType.ALL,
-                PythonDepsFacade.CondaInstallType.PIP, libraryName, version, true, true);
+            PythonDepsFacade.CondaInstallType.PIP, libraryName, version, true, true);
         pyDep.setStatus(CondaStatus.SUCCESS);
         deps.add(pyDep);
         continue;
       }
 
-      if(PythonDepsService.providedLibraryNames.contains(libraryName)) {
-        AnacondaRepo repo = pythonDepsFacade.getRepo(project, "PyPi",true);
+      if (PythonDepsService.providedLibraryNames.contains(libraryName)) {
+        AnacondaRepo repo = pythonDepsFacade.getRepo(project, "PyPi", true);
         PythonDep pyDep = pythonDepsFacade.getDep(repo, PythonDepsFacade.MachineType.ALL,
-                PythonDepsFacade.CondaInstallType.PIP, libraryName, version, true, false);
+            PythonDepsFacade.CondaInstallType.PIP, libraryName, version, true, false);
         pyDep.setStatus(CondaStatus.SUCCESS);
         deps.add(pyDep);
       } else {
-        for(PythonDep pyDep: currentlyInstalledPyDeps) {
-          if(libraryName.equals(pyDep.getDependency())) {
+        for (PythonDep pyDep : currentlyInstalledPyDeps) {
+          if (libraryName.equals(pyDep.getDependency())) {
             pyDep.setVersion(split[1]);
             deps.add(pyDep);
           }
@@ -611,14 +638,14 @@ public class AgentResource {
 
     String[] lines = condaListStr.split(System.getProperty("line.separator"));
 
-    for(int i = 3; i < lines.length; i++) {
+    for (int i = 3; i < lines.length; i++) {
 
       String line = lines[i];
 
-      String [] split = line.split(" +");
+      String[] split = line.split(" +");
       String localLib = split[0];
 
-      if(localLib.equals(library)) {
+      if (localLib.equals(library)) {
         return split[1];
       }
     }

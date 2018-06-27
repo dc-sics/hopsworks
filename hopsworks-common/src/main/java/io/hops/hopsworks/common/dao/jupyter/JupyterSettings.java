@@ -138,93 +138,125 @@ public class JupyterSettings implements Serializable {
   private static final long serialVersionUID = 1L;
   @EmbeddedId
   protected JupyterSettingsPK jupyterSettingsPK;
+
   @Basic(optional = false)
   @Column(name = "num_tf_ps")
-  private int numTfPs = 0;
+  private int numTfPs = 1;
+
   @Basic(optional = false)
   @Column(name = "num_tf_gpus")
   private int numTfGpus = 0;
+
   @Basic(optional = false)
   @Column(name = "num_mpi_np")
-  private int numMpiNp = 0;
+  private int numMpiNp = 1;
+
   @Basic(optional = false)
   @Column(name = "appmaster_cores")
   private int appmasterCores = 1;
+
   @Basic(optional = false)
   @Column(name = "appmaster_memory")
   private int appmasterMemory = 1024;
+
   @Basic(optional = false)
   @Column(name = "num_executors")
   private int numExecutors = 1;
+
   @Basic(optional = false)
   @Column(name = "num_executor_cores")
   private int numExecutorCores = 1;
+
   @Basic(optional = false)
   @Column(name = "executor_memory")
   private int executorMemory = 4096;
+
   @Basic(optional = false)
   @Column(name = "dynamic_initial_executors")
   private int dynamicInitialExecutors = 1;
+
   @Basic(optional = false)
   @Column(name = "dynamic_min_executors")
   private int dynamicMinExecutors = 1;
+
   @Basic(optional = false)
   @Column(name = "dynamic_max_executors")
   private int dynamicMaxExecutors = 100;
+
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 255)
   @Column(name = "secret")
   private String secret;
+
   @Size(max = 32)
   @Column(name = "log_level")
   private String logLevel = "INFO";
+
+  @Basic(optional = false)
+  @Column(name = "shutdown_level")
+  private int shutdownLevel=4;
+
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 32)
   @Column(name = "mode")
   private String mode = "dynamicSpark";
+
   @Basic(optional = false)
   @Column(name = "advanced")
   private boolean advanced = false;
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "archives")
   private String archives = "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "jars")
   private String jars= "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "files")
   private String files= "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "py_files")
   private String pyFiles= "";
+
   @Basic(optional = false)
   @Size(min = 0,
       max = 6500)
   @Column(name = "spark_params")
   private String sparkParams= "";
+
   @Basic(optional = false)
   @Size(min = 3,
       max = 4)
   @Column(name = "umask")
   private String umask = "022";
+
+  @Basic(optional = false)
+  @NotNull
+  @Column(name = "fault_tolerant")
+  private boolean faultTolerant;
+
   @JoinColumn(name = "team_member",
       referencedColumnName = "email",
       insertable = false,
       updatable = false)
   @ManyToOne(optional = false)
   private Users users;
+
   @JoinColumn(name = "project_id",
       referencedColumnName = "id",
       insertable = false,
@@ -248,7 +280,8 @@ public class JupyterSettings implements Serializable {
   public JupyterSettings(JupyterSettingsPK jupyterSettingsPK, int numTfPs, int numTfGpus, int numMpiNp,
       int appmasterCores, int appmasterMemory, int numExecutors, int numExecutorCores, int executorMemory,
       int dynamicInitialExecutors, int dynamicMinExecutors, int dynamicMaxExecutors, String secret, String mode,
-      boolean advanced, String archives, String jars, String files, String pyFiles, String sparkParams, String umask) {
+      boolean advanced, String archives, String jars, String files, String pyFiles, String sparkParams, String umask,
+                         boolean faultTolerant) {
     this.jupyterSettingsPK = jupyterSettingsPK;
     this.numTfPs = numTfPs;
     this.numTfGpus = numTfGpus;
@@ -270,6 +303,7 @@ public class JupyterSettings implements Serializable {
     this.pyFiles = pyFiles;
     this.sparkParams = sparkParams;
     this.umask = umask;
+    this.faultTolerant = faultTolerant;
   }
 
   public JupyterSettings(int projectId, String email) {
@@ -511,4 +545,19 @@ public class JupyterSettings implements Serializable {
     this.privateDir = privateDir;
   }
 
+  public int getShutdownLevel() {
+    return shutdownLevel;
+  }
+
+  public void setShutdownLevel(int shutdownLevel) {
+    this.shutdownLevel = shutdownLevel;
+  }
+
+  public boolean getFaultTolerant() {
+    return faultTolerant;
+  }
+
+  public void setFaultTolerant(boolean faultTolerant) {
+    this.faultTolerant = faultTolerant;
+  }
 }

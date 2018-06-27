@@ -160,7 +160,7 @@ angular.module('hopsWorksApp')
               max: 10,
               options: {
                 floor: 0,
-                ceil: 500
+                ceil: 1500
               },
               getPointerColor: function (value) {
                 return '#4b91ea';
@@ -233,11 +233,11 @@ angular.module('hopsWorksApp')
               "visible": false,
               "value": "",
               "title": "Configure and create"};
-            this.accordion6 = {//Contains the pre-configuration and proposals for auto-configuration
-              "isOpen": false,
-              "visible": false,
-              "value": "",
-              "title": "Pre-Configuration"};
+            // this.accordion6 = {//Contains the pre-configuration and proposals for auto-configuration
+            //   "isOpen": false,
+            //   "visible": false,
+            //   "value": "",
+            //   "title": "Pre-Configuration"};
 
             this.undoable = false; //Signify if a clear operation can be undone.
 
@@ -256,7 +256,7 @@ angular.module('hopsWorksApp')
                 "flinkState": self.flinkState,
                 "tensorflowState" : self.tensorflowState,
                 "adamState": self.adamState,
-                "accordions": [self.accordion1, self.accordion2, self.accordion3, self.accordion4, self.accordion5, self.accordion6]
+                "accordions": [self.accordion1, self.accordion2, self.accordion3, self.accordion4, self.accordion5/*, self.accordion6*/]
               };
               self.undoneState = state;
               self.undoable = true;
@@ -305,11 +305,11 @@ angular.module('hopsWorksApp')
                 "visible": false,
                 "value": "",
                 "title": "Configure and create"};
-              self.accordion6 = {//Contains the pre-configuration and proposals for auto-configuration
-                "isOpen": false,
-                "visible": false,
-                "value": "",
-                "title": "Pre-Configuration"};
+              // self.accordion6 = {//Contains the pre-configuration and proposals for auto-configuration
+              //   "isOpen": false,
+              //   "visible": false,
+              //   "value": "",
+              //   "title": "Pre-Configuration"};
             };
 
             self.exitToJobs = function () {
@@ -335,7 +335,7 @@ angular.module('hopsWorksApp')
                 self.accordion3 = self.undoneState.accordions[2];
                 self.accordion4 = self.undoneState.accordions[3];
                 self.accordion5 = self.undoneState.accordions[4];
-                self.accordion6 = self.undoneState.accordions[4];
+                //self.accordion6 = self.undoneState.accordions[4];
               }
               self.unodeState = null;
               self.undoable = false;
@@ -447,6 +447,12 @@ angular.module('hopsWorksApp')
               if(self.getJobType() === "TFSPARK" && self.tfOnSpark === true){
                 self.runConfig.tfOnSpark = true;
               }
+              if (self.getJobType() === "SPARK" || self.getJobType() === "FLINK"){
+                  if(typeof self.runConfig.mainClass === 'undefined' || self.runConfig.mainClass==="" ){
+                      growl.warning( "Please specify main class first", {ttl: 5000});
+                      return;
+                  }
+              }
               if (self.tourService.currentStep_TourFour > -1) {
                 //self.tourService.resetTours();
                 self.tourService.currentStep_TourThree = 2;
@@ -474,7 +480,7 @@ angular.module('hopsWorksApp')
                           self.removed = true;
                         }
                       }, function (error) {
-                growl.error(error.data.errorMsg, {title: 'Error', ttl: 10000});
+                growl.error(error.data.errorMsg, {ttl: 10000});
               });
             };
 
@@ -494,8 +500,7 @@ angular.module('hopsWorksApp')
                   if(self.projectName.startsWith("demo_tensorflow")){
                     self.jobname = "Mnist-training-QueueRunners";
                   } else {
-                    var date = new Date().getTime() / 1000;
-                    self.jobname = "Job-" + date;
+                    self.jobname = "Job-" + Math.round(new Date().getTime() / 1000);
                   }
                 }
                 self.phase = 1;
@@ -513,10 +518,12 @@ angular.module('hopsWorksApp')
 
             self.guideSetJobName = function () {
               var jobState = self.tourService.kafkaJobCreationState;
-              if (angular.equals('producer', jobState)) {
-                self.jobname = "KafkaDemoProducer";
-              } else {
-                self.jobname = "KafkaDemoConsumer";
+              if((typeof self.jobname === 'undefined' || self.jobname === '')){
+                if (angular.equals('producer', jobState)) {
+                      self.jobname = "KafkaDemoProducer";
+                  } else {
+                      self.jobname = "KafkaDemoConsumer";
+                  }
               }
             };
 
@@ -576,7 +583,7 @@ angular.module('hopsWorksApp')
               self.accordion4.isOpen = false; //Close job setup
               self.accordion4.visible = false; //Hide job setup
               self.accordion5.visible = false; // Hide job configuration
-              self.accordion6.visible = false; // Hide job pre-configuration
+              //self.accordion6.visible = false; // Hide job pre-configuration
               self.accordion3.value = ""; //Reset selected file
               if (self.tourService.currentStep_TourFour > -1) {
                 self.tourService.currentStep_TourFour = 4;
@@ -618,8 +625,12 @@ angular.module('hopsWorksApp')
             };
 
             self.chooseParameters = function () {
-              if (self.jobtype === 1 && !self.runConfig.mainClass && !self.runConfig.args) {
+              if (self.jobtype === 1 &&  self.projectIsGuide &&
+                  (typeof self.runConfig.mainClass === 'undefined' || self.runConfig.mainClass === '')) {
                   self.runConfig.mainClass = 'org.apache.spark.examples.SparkPi';
+              }
+              if (self.jobtype === 1 &&  self.projectIsGuide &&
+                  (typeof self.runConfig.args === 'undefined' || self.runConfig.args === '')) {
                   self.runConfig.args = '10';
               }
               // For Kafka tour
@@ -684,7 +695,7 @@ angular.module('hopsWorksApp')
               self.accordion4.isOpen = true; // Open job setup
               self.accordion4.visible = true; // Show job setup
               self.accordion5.visible = true; // Show job config
-              self.accordion6.visible = true; // Show job config
+              //self.accordion6.visible = true; // Show job config
               self.accordion3.value = " - " + path; // Set file selection title
               self.accordion3.isOpen = false; //Close file selection
             };
@@ -807,8 +818,8 @@ angular.module('hopsWorksApp')
              * @returns {undefined}
              */
             this.selectFile = function (reason, parameter) {
-              self.accordion6.visible = false;
-              self.accordion6.isOpen = false;
+              //self.accordion6.visible = false;
+              //self.accordion6.isOpen = false;
               if (reason.toUpperCase() === "ADAM") {
                 self.adamState.processparameter = parameter;
               }
@@ -894,7 +905,7 @@ angular.module('hopsWorksApp')
                 "accordion3": self.accordion3,
                 "accordion4": self.accordion4,
                 "accordion5": self.accordion5,
-                "accordion6": self.accordion6
+                //"accordion6": self.accordion6
               };
               StorageService.store(self.newJobName, state);
             });
@@ -911,6 +922,10 @@ angular.module('hopsWorksApp')
                   self.tfOnSpark = true;
                 }
                 self.jobname = stored.jobname;
+                if(typeof self.jobname !== "undefined"){
+                  self.jobname = self.jobname  + "." + Math.floor(Math.random() * 10);
+                  stored.accordion1.value = " - " + self.jobname;
+                }
                 self.localResources = stored.runConfig.localResources;
                 if(typeof self.localResources === "undefined"){
                   self.localResources = [];
@@ -987,7 +1002,7 @@ angular.module('hopsWorksApp')
                 self.accordion3 = stored.accordion3;
                 self.accordion4 = stored.accordion4;
                 self.accordion5 = stored.accordion5;
-                self.accordion6 = stored.accordion6;
+                //self.accordion6 = stored.accordion6;
               }
 
               // Check if it's a guide project

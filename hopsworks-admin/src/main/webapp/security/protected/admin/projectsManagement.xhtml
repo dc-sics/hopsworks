@@ -17,7 +17,7 @@
   ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   ~
-  -->
+-->
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -32,10 +32,9 @@
 
     <h:head>
       <title><ui:insert name="title">HopsWorks</ui:insert></title>
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/layout.css']}" />
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/security.css']}" />
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/userMgmt.css']}" />
-      <link rel="stylesheet" type="text/css" href="#{resource['/css/lims.css']}" />
+      <link rel="icon" type="image/png" href="#{resource['images/hops-black.png']}" />
+      <link rel="stylesheet" type="text/css" href="#{resource['/css/main.css']}" />
+      <link rel="stylesheet" type="text/css" href="#{resource['/css/theme.css']}" />
       <meta http-equiv="refresh" content="#{facesContext.externalContext.sessionMaxInactiveInterval};url=#{request.contextPath}/index.xhtml"/>
       <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet"/>
     </h:head>
@@ -48,12 +47,12 @@
       <pe:blockUI target="projectmodifyForm" widgetVar="blockUIWidget">
         <h:panelGrid columns="2">
           <h:graphicImage library="images" name="ajax-loader1.gif"
-			  style="vertical-align: middle;"/>
+                          style="vertical-align: middle;"/>
           <h:outputText value="Please wait..." style="white-space: nowrap;"/>
         </h:panelGrid>
       </pe:blockUI>
 
-      <p:layout id="UserMgmLayout" styleClass="BbcMainLayoutUser" rendered="#{roleEnforcementPoint.admin}">
+      <p:layout id="UserMgmLayout" styleClass="admin-main-layout" rendered="#{roleEnforcementPoint.admin}">
 
         <p:layoutUnit id="centerLayout" position="center">
 
@@ -73,6 +72,7 @@
                              rowKey="#{ProjectQuotas.name}"
                              emptyMessage="No projects found with given criteria"
                              style="table-layout: auto"
+			     resizableColumns="true" liveResize="true"
                              sortMode="multiple"
                              editable="true"
                              scrollable="false"
@@ -83,16 +83,16 @@
                              selectionMode="single"
                              selection="#{projectsmanagement.projectQuotasSelected}">
 
-		  <f:facet name="header">
-		    <p:commandButton value="Force remove"
-				     style="float:right" styleClass="ui-button-danger"
-				     actionListener="#{projectsmanagement.dialogForceCleanup}">
-		      <p:ajax event="dialogReturn"
-			      listener="#{projectsmanagement.onProjectForceCleanupChosen}"
-			      update=":projectmodifyForm:msgs @form"/>
-		    </p:commandButton>
-		  </f:facet>
-		
+                  <f:facet name="header">
+                    <p:commandButton value="Force remove"
+                                     style="margin-right: -1575px;" styleClass="ui-button-danger"
+                                     actionListener="#{projectsmanagement.dialogForceCleanup}">
+                      <p:ajax event="dialogReturn"
+                              listener="#{projectsmanagement.onProjectForceCleanupChosen}"
+                              update=":projectmodifyForm:msgs @form"/>
+                    </p:commandButton>
+                  </f:facet>
+
                   <p:ajax event="rowEdit"
                           listener="#{projectsmanagement.onRowEdit}"
                           update=":projectmodifyForm:msgs" />
@@ -124,7 +124,7 @@
                   </p:column>
 
                   <p:column id="yarntotalquotaColumn"
-                            headerText="Yarn quota to date"
+                            headerText="Yarn used"
                             filterBy="#{ProjectQuotas.yarnTotalQuota}"
                             filterMatchMode="contains"
                             style=" font-size: 12px; text-align: center;">
@@ -132,6 +132,22 @@
                       value="#{ProjectQuotas.yarnTotalQuota}" />
                   </p:column>
 
+                  <p:column id="kafkaQuotaColumn"
+                            headerText="# Kafka Topics"
+                            filterBy="#{ProjectQuotas.kafkaMaxNumTopics}"
+                            filterMatchMode="contains"
+                            style=" font-size: 12px; text-align: center;">
+                    <p:cellEditor>
+                      <f:facet name="output">
+                        <h:outputText value="#{ProjectQuotas.kafkaMaxNumTopics}" />
+                      </f:facet>
+                      <f:facet name="input">
+                        <p:inputText id="number" value="#{ProjectQuotas.kafkaMaxNumTopics}" label="Num Topics">
+                          <f:validateLongRange minimum="0" maximum="65536" />
+                        </p:inputText>
+                      </f:facet>
+                    </p:cellEditor>
+                  </p:column>                  
                   <p:column id="hdfsquotaColumn"
                             headerText="Disk quota"
                             filterBy="#{ProjectQuotas.hdfsQuota}"
@@ -188,7 +204,7 @@
                   </p:column>
 
                   <p:column id="hiveHdfsquotaColumn"
-                            headerText="HiveDB Disk Quota"
+                            headerText="HiveDB Quota"
                             filterBy="#{ProjectQuotas.hiveHdfsQuota}"
                             filterMatchMode="contains"
                             style=" font-size: 12px; text-align: center;">
@@ -207,7 +223,7 @@
                   </p:column>
 
                   <p:column id="hiveDiskUsedColumn"
-                            headerText="HiveDB Disk Used"
+                            headerText="HiveDB Used"
                             filterBy="#{ProjectQuotas.hiveUsedHdfsQuota}"
                             filterMatchMode="contains"
                             style=" font-size: 12px; text-align: left;">
@@ -285,7 +301,7 @@
                       </f:facet>
                     </p:cellEditor>
                   </p:column>
-                  
+
                   <p:column id="lastQuotaUpdateColumn"
                             headerText="Last Update"
                             filterBy="#{ProjectQuotas.lastQuotaUpdate}"
@@ -303,13 +319,13 @@
 
                 <p:contextMenu for="projectsTable">
                   <p:menuitem value="Delete project"
-                          update="@form"
-                          icon="ui-icon-close"
-                          actionListener="#{projectsmanagement.deleteProject}"
-                          onstart="PF('blockUIWidget').block()"
-                          oncomplete="PF('blockUIWidget').unblock()">
+                              update="@form"
+                              icon="ui-icon-close"
+                              actionListener="#{projectsmanagement.deleteProject}"
+                              onstart="PF('blockUIWidget').block()"
+                              oncomplete="PF('blockUIWidget').unblock()">
                     <p:confirm header="Delete project" message="Are
-                          you sure you want to delete the project and its files?" icon="ui-icon-alert"/>
+                               you sure you want to delete the project and its files?" icon="ui-icon-alert"/>
                   </p:menuitem>
                 </p:contextMenu>
 

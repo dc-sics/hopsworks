@@ -176,7 +176,7 @@ angular.module('hopsWorksApp')
               },
               createProject: function (size) {
                 var modalInstance = $uibModal.open({
-                  templateUrl: 'views/newProject.html',
+                  templateUrl: 'views/projectCreateModal.html',
                   controller: 'ProjectCreatorCtrl as projectCreatorCtrl',
                   size: size,
                   resolve: {
@@ -527,6 +527,33 @@ angular.module('hopsWorksApp')
                 });
                 return modalInstance.result;
               },
+              selectEnvironmentYml: function (size, regex, errorMsg) {
+                              var modalInstance = $uibModal.open({
+                                templateUrl: 'views/selectEnvYml.html',
+                                controller: 'SelectEnvYmlCtrl as selectEnvYmlCtrl',
+                                size: size,
+                                resolve: {
+                                  auth: ['$q', '$location', 'AuthService',
+                                    function ($q, $location, AuthService) {
+                                      return AuthService.session().then(
+                                              function (success) {
+                                              },
+                                              function (err) {
+                                                $location.path('/login');
+                                                $location.replace();
+                                                return $q.reject(err);
+                                              });
+                                    }],
+                                  regex: function () {
+                                    return regex;
+                                  },
+                                  errorMsg: function () {
+                                    return errorMsg;
+                                  }
+                                }
+                              });
+                              return modalInstance.result;
+                            },
               selectDir: function (size, regex, errorMsg) {
                 var modalInstance = $uibModal.open({
                   templateUrl: 'views/selectDir.html',
@@ -1112,44 +1139,21 @@ angular.module('hopsWorksApp')
 //                });
 //                return modalInstance.result;
 //              },
-              allocateTensorflowCluster: function (size) {
+              transformGraph: function (size, servingId, inGraph, outGraph) {
                 var modalInstance = $uibModal.open({
-                  templateUrl: 'views/tensorflowModal.html',
-                  controller: 'TensorflowCtrl as tensorflowCtrl',
+                  templateUrl: 'views/transformGraphModal.html',
+                  controller: 'TransformGraphCtrl as transformGraphCtrl',
                   size: size,
                   resolve: {
-                    auth: ['$q', '$location', 'AuthService',
-                     function ($q, $location, AuthService) {
-                        return AuthService.session().then(
-                          function (success) {
-                          },
-                          function (err) {
-                            $location.path('/login');
-                            $location.replace();
-                            return $q.reject(err);
-                          });
-                      }]
-                  }
-                });
-                return modalInstance.result;
-              },
-              newWorkflow: function (size) {
-                var modalInstance = $uibModal.open({
-                  templateUrl: 'views/newWorkflow.html',
-                  controller: 'WorkflowCreatorCtrl as workflowCreatorCtrl',
-                  size: size,
-                  resolve: {
-                    auth: ['$q', '$location', 'AuthService',
-                      function ($q, $location, AuthService) {
-                        return AuthService.session().then(
-                            function (success) {
-                            },
-                            function (err) {
-                              $location.path('/login');
-                              $location.replace();
-                              return $q.reject(err);
-                            });
-                      }]
+                    servingId: function () {
+                      return servingId;
+                    },
+                    inGraph: function () {
+                      return inGraph;
+                    },
+                    outGraph: function () {
+                      return outGraph;
+                    }
                   }
                 });
                 return modalInstance.result;

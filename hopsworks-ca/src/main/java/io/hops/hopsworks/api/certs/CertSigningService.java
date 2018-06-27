@@ -17,7 +17,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 package io.hops.hopsworks.api.certs;
 
 import com.google.common.base.Charsets;
@@ -31,7 +30,10 @@ import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.cluster.ClusterCert;
 import io.hops.hopsworks.common.dao.user.cluster.ClusterCertFacade;
 import io.hops.hopsworks.common.exception.AppException;
+import io.hops.hopsworks.common.security.CertificatesMgmService;
+import io.hops.hopsworks.common.security.OpensslOperations;
 import io.hops.hopsworks.common.security.PKIUtils;
+import io.hops.hopsworks.common.security.ServiceCertificateRotationTimer;
 import io.hops.hopsworks.common.util.Settings;
 import io.swagger.annotations.Api;
 import java.io.File;
@@ -40,6 +42,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -58,17 +62,20 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
+
+import org.apache.commons.io.FileExistsException;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONObject;
 
 @Path("/agentservice")
 @Stateless
-@Api(value = "Certificate Signing", description = "Sign certificates for hosts or clusters")
+@Api(value = "Certificate Signing",
+    description = "Sign certificates for hosts or clusters")
 public class CertSigningService {
-
+  
   final static Logger logger = Logger.getLogger(CertSigningService.class.
       getName());
-
+  
   @EJB
   private NoCacheResponse noCacheResponse;
   @EJB
@@ -79,52 +86,138 @@ public class CertSigningService {
   private UserFacade userBean;
   @EJB
   private ClusterCertFacade clusterCertFacade;
-
+  @EJB
+  private OpensslOperations opensslOperations;
+  @EJB
+  private ServiceCertificateRotationTimer serviceCertificateRotationTimer;
+  
   @POST
   @Path("/register")
   @RolesAllowed({"AGENT"})
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public Response register(@Context HttpServletRequest req, String jsonString)
-          throws AppException {
+      throws AppException {
     logger.log(Level.INFO, "Request to sign host certificate: \n{0}", jsonString);
     JSONObject json = new JSONObject(jsonString);
-    String pubAgentCert = "no certificate";
-    String caPubCert = "no certificate";
+    String hostId = json.getString("host-id");
+    CsrDTO responseDto = null;
     if (json.has("csr")) {
       String csr = json.getString("csr");
-      try {
-        
-        pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
-        logger.info("Signed host certificate.");        
-        caPubCert = Files.toString(new File(settings.getIntermediateCaDir()
-            + "/certs/ca-chain.cert.pem"), Charsets.UTF_8);
-      } catch (IOException | InterruptedException ex) {
-        logger.log(Level.SEVERE, "Cert signing error: {0}", ex.getMessage());
-        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
-            getStatusCode(), ex.toString());
-      }
+      responseDto = signCSR(hostId, null, csr, false, false);
+    } else {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Requested to sign CSR but no CSR"
+          + " provided");
     }
-
-    if (json.has("host-id") && json.has("agent-password")) {
-      String hostId = json.getString("host-id");
+    
+    if (json.has("agent-password")) {
       Hosts host;
       try {
         host = hostsFacade.findByHostname(hostId);
         String agentPassword = json.getString("agent-password");
         host.setAgentPassword(agentPassword);
         host.setRegistered(true);
-        hostsFacade.storeHost(host, true);
+// We set the hostnmae as hopsworks::default pre-populates with the hostname, but it's not the correct hostname for GCE.
+        host.setHostname(hostId);   
+        hostsFacade.storeHost(host);
       } catch (Exception ex) {
         logger.log(Level.SEVERE, "Host storing error while Cert signing: {0}", ex.getMessage());
       }
     }
-
-    CsrDTO dto = new CsrDTO(caPubCert, pubAgentCert, settings.getHadoopVersionedDir());
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(
-        dto).build();
+    
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(responseDto).build();
   }
-
+  
+  @POST
+  @Path("/rotate")
+  @RolesAllowed({"AGENT"})
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response keyRotate(@Context HttpServletRequest request, String jsonString) throws AppException {
+    JSONObject json = new JSONObject(jsonString);
+    String hostId = json.getString("host-id");
+    CsrDTO responseDto = null;
+    if (json.has("csr")) {
+      String csr = json.getString("csr");
+      String commandId = "-1";
+      if (json.has("id")) {
+        commandId = json.getString("id");
+      }
+      responseDto = signCSR(hostId, commandId, csr, true, false);
+    } else {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Requested to sign CSR but no CSR"
+          + " provided");
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(responseDto).build();
+  }
+  
+  @POST
+  @Path("/sign/app")
+  @RolesAllowed({"AGENT"})
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response signCSR(@Context HttpServletRequest request, String jsonString) throws AppException {
+    JSONObject json = new JSONObject(jsonString);
+    CsrDTO response = signCSR("-1", "-1", json.getString("csr"), false, true);
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(response).build();
+  }
+  
+  private CsrDTO signCSR(String hostId, String commandId, String csr, boolean rotation,
+      boolean isAppCertificate) throws AppException {
+    try {
+      // If there is a certificate already for that host, rename it to .TO_BE_REVOKED.COMMAND_ID
+      // When AgentResource has received a successful response for the key rotation, revoke and delete it
+      if (rotation) {
+        File certFile = Paths.get(settings.getIntermediateCaDir(), "certs", hostId
+            + CertificatesMgmService.CERTIFICATE_SUFFIX).toFile();
+        if (certFile.exists()) {
+          File destination = Paths.get(settings.getIntermediateCaDir(), "certs",
+              hostId + serviceCertificateRotationTimer.getToBeRevokedSuffix(commandId)).toFile();
+          try {
+            FileUtils.moveFile(certFile, destination);
+          } catch (FileExistsException ex) {
+            FileUtils.deleteQuietly(destination);
+            FileUtils.moveFile(certFile, destination);
+          }
+        }
+      }
+      String agentCert = opensslOperations.signCertificateRequest(csr, true, true, isAppCertificate);
+      File caCertFile = Paths.get(settings.getIntermediateCaDir(), "certs", "ca-chain.cert.pem").toFile();
+      String caCert = Files.toString(caCertFile, Charset.defaultCharset());
+      return new CsrDTO(caCert, agentCert, settings.getHadoopVersionedDir());
+    } catch (IOException ex) {
+      String errorMsg = "Error while signing CSR for host " + hostId + " Reason: " + ex.getMessage();
+      logger.log(Level.SEVERE, errorMsg, ex);
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), errorMsg);
+    }
+  }
+  
+  @POST
+  @Path("/revoke")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public Response revokeCertificate(@Context HttpServletRequest request, String jsonString) throws AppException {
+    JSONObject json = new JSONObject(jsonString);
+    String certificateID = json.getString("identifier");
+    File certificateFile = Paths.get(settings.getIntermediateCaDir(), "certs", certificateID
+        + CertificatesMgmService.CERTIFICATE_SUFFIX).toFile();
+    if (certificateFile.exists()) {
+      try {
+        opensslOperations.revokeCertificate(certificateID, CertificatesMgmService.CERTIFICATE_SUFFIX, true,
+            true);
+        certificateFile.delete();
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity("Certificate " + certificateID
+            + "revoked").build();
+      } catch (IOException ex) {
+        logger.log(Level.SEVERE, ex.getMessage(), ex);
+        throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+            "Error while revoking application certificate, check the logs");
+      }
+    }
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).entity("Certificate " + certificateID
+        + " does not exist").build();
+  }
+  
   @POST
   @Path("/hopsworks")
   @AllowCORS
@@ -143,7 +236,7 @@ public class CertSigningService {
       String csr = json.getString("csr");
       clusterCert = checkCSR(user, csr);
       try {
-        pubAgentCert = PKIUtils.signCertificate(settings, csr, true);
+        pubAgentCert = opensslOperations.signCertificateRequest(csr, true, false, false);
         caPubCert = Files.toString(new File(settings.getCertsDir() + "/certs/ca.cert.pem"), Charsets.UTF_8);
         intermediateCaPubCert = Files.toString(
             new File(settings.getIntermediateCaDir() + "/certs/intermediate.cert.pem"), Charsets.UTF_8);
@@ -154,20 +247,20 @@ public class CertSigningService {
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), ex.toString());
       }
     }
-
+    
     CsrDTO dto = new CsrDTO(caPubCert, intermediateCaPubCert, pubAgentCert, settings.getHadoopVersionedDir());
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(dto).build();
   }
-
+  
   @GET
   @Path("/crl")
   public Response getCRL() throws FileNotFoundException {
     File certFile;
     try {
       certFile = File.createTempFile(System.getProperty("java.io.tmpdir"), ".pem");
-      String crl = PKIUtils.createCRL(settings, true);
+      String crl = opensslOperations.createAndReadCRL(true);
       FileUtils.writeStringToFile(certFile, crl);
-    } catch (IOException | InterruptedException ex) {
+    } catch (IOException ex) {
       logger.log(Level.SEVERE, null, ex);
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(ex.getMessage()).build();
     }
@@ -188,7 +281,7 @@ public class CertSigningService {
     response.header("Content-disposition", "attachment; filename=crl.pem");
     return response.build();
   }
-
+  
   @POST
   @Path("/verifyCert")
   public Response verifyCert(String jsonString) {
@@ -204,7 +297,7 @@ public class CertSigningService {
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(status).build();
   }
-
+  
   private ClusterCert checkCSR(Users user, String csr) throws IOException, InterruptedException {
     if (user == null || user.getEmail() == null || csr == null || csr.isEmpty()) {
       throw new IllegalArgumentException("User or csr not set.");
@@ -212,7 +305,7 @@ public class CertSigningService {
     ClusterCert clusterCert;
     //subject=/C=se/CN=bbc.sics.se/ST=stockholm/L=kista/O=hopsworks/OU=hs/emailAddress=dela1@kth.se
     String subject = PKIUtils.getSubjectFromCSR(csr);
-    HashMap<String, String> keyVal = getKeyValuesFromSubject(subject);
+    HashMap<String, String> keyVal = PKIUtils.getKeyValuesFromSubject(subject);
     String email = keyVal.get("emailAddress");
     String commonName = keyVal.get("CN");
     String organizationName = keyVal.get("O");
@@ -246,24 +339,7 @@ public class CertSigningService {
     }
     return clusterCert;
   }
-
-  private HashMap<String, String> getKeyValuesFromSubject(String subject) {
-    if (subject == null || subject.isEmpty()) {
-      return null;
-    }
-    String[] parts = subject.split("/");
-    String[] keyVal;
-    HashMap<String, String> keyValStore = new HashMap<>();
-    for (String part : parts) {
-      keyVal = part.split("=");
-      if (keyVal.length < 2) {
-        continue;
-      }
-      keyValStore.put(keyVal[0], keyVal[1]);
-    }
-    return keyValStore;
-  }
-
+  
   private String getSerialNumFromCert(String pubAgentCert) throws IOException, InterruptedException {
     String serialNum = PKIUtils.getSerialNumberFromCert(pubAgentCert);
     String[] parts = serialNum.split("=");

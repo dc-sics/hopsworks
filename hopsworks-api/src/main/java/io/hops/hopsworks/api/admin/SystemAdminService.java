@@ -199,8 +199,12 @@ public class SystemAdminService {
       if (nodeToUpdate.getAgentPassword() != null && !nodeToUpdate.getAgentPassword().isEmpty()) {
         storedNode.setAgentPassword(nodeToUpdate.getAgentPassword());
       }
-      
-      hostsFacade.storeHost(storedNode, true);
+
+      if (nodeToUpdate.getCondaEnabled() != null) {
+        storedNode.setCondaEnabled(nodeToUpdate.getCondaEnabled());
+      }
+
+      hostsFacade.storeHost(storedNode);
       JsonResponse response = noCacheResponse.buildJsonResponse(Response.Status.NO_CONTENT, "Node updated");
       return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).entity(response).build();
     }
@@ -249,9 +253,19 @@ public class SystemAdminService {
     Hosts finalNode = new Hosts();
     finalNode.setHostname(newNode.getHostname());
     finalNode.setHostIp(newNode.getHostIp());
-    hostsFacade.storeHost(finalNode, true);
+    hostsFacade.storeHost(finalNode);
   
     GenericEntity<Hosts> response = new GenericEntity<Hosts>(finalNode){};
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.CREATED).entity(response).build();
+  }
+  
+  @POST
+  @Path("/rotate")
+  public Response serviceKeyRotate(@Context SecurityContext sc, @Context HttpServletRequest request)
+    throws AppException {
+    certificatesMgmService.issueServiceKeyRotationCommand();
+    JsonResponse response = noCacheResponse.buildJsonResponse(Response.Status.NO_CONTENT, "Key rotation commands " +
+        "issued");
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NO_CONTENT).entity(response).build();
   }
 }

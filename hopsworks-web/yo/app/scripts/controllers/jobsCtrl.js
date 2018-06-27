@@ -190,12 +190,12 @@ angular.module('hopsWorksApp')
                   "isOpen": false,
                   "visible": true,
                   "value": "",
-                  "title": "Configure and create"},
+                  "title": "Configure and create"}/*,
                 "accordion6" : {//Contains the pre-configuration and proposals for auto-configuration
                    "isOpen": false,
                    "visible": true,
                    "value": "",
-                   "title": "Pre-Configuration"}
+                   "title": "Pre-Configuration"}*/
               };
               StorageService.store(self.projectId + "_newjob", state);
               $location.path('project/' + self.projectId + '/newjob');
@@ -299,7 +299,7 @@ angular.module('hopsWorksApp')
                                             JobService.runJob(self.projectId, jobId).then(
                                                     function (success) {
                                                       self.toggle(job, index);
-                                                      //self.buttonClickedToggle(job.id, true);
+                                                      self.buttonClickedToggle(job.id, true);
                                                       StorageService.store(self.projectId + "_jobstopclicked_" + job.id, "running");
 //                                            self.stopbuttonClickedToggle(job.id, false);
                                                       self.getRunStatus();

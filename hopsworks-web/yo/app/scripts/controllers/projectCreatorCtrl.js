@@ -41,17 +41,13 @@ angular.module('hopsWorksApp')
             
             self.projectMembers = [];
             self.projectTeam = [];
-//            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'WORKFLOWS'];
-//            self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
-//            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'WORKFLOWS'];
-//            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'TENSORFLOW'];
-//            self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA'];
             if ($rootScope.isDelaEnabled) {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
-              self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
+              // , 'RSTUDIO'
+              self.projectTypes = ['JOBS', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
+              self.selectionProjectTypes = ['JOBS', 'KAFKA', 'JUPYTER', 'HIVE', 'DELA', 'SERVING'];
             } else {
-              self.projectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
-              self.selectionProjectTypes = ['JOBS', 'ZEPPELIN', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
+              self.projectTypes = ['JOBS', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
+              self.selectionProjectTypes = ['JOBS', 'KAFKA', 'JUPYTER', 'HIVE', 'SERVING'];
             }
 
             self.projectName = '';

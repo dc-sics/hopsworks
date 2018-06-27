@@ -100,11 +100,11 @@ import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.security.CertificatesController;
 import io.hops.hopsworks.common.jobs.yarn.YarnLogUtil;
 import io.hops.hopsworks.common.security.CertificatesMgmService;
+import io.hops.hopsworks.common.security.OpensslOperations;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.hive.HiveController;
 import io.hops.hopsworks.common.kafka.KafkaController;
 import io.hops.hopsworks.common.user.UsersController;
-import io.hops.hopsworks.common.util.LocalhostServices;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -218,6 +218,8 @@ public class ProjectController {
   private MessageController messageController;
   @EJB
   private HdfsInodeAttributesFacade hdfsInodeAttributesFacade;
+  @EJB
+  private OpensslOperations opensslOperations;
 
   /**
    * Creates a new project(project), the related DIR, the different services in
@@ -240,6 +242,9 @@ public class ProjectController {
       List<String> failedMembers, String sessionId) throws AppException {
 
     Long startTime = System.currentTimeMillis();
+    
+//    String pluginClassname = settings.getPluginClassname();
+//    Class<ProjectPlugin> plugin = Class.forName(pluginClassname);
 
     //check that the project name is ok
     String projectName = projectDTO.getProjectName();
@@ -515,6 +520,7 @@ public class ProjectController {
     //Create a new project object
     Date now = new Date();
     Project project = new Project(projectName, user, now, PaymentType.PREPAID);
+    project.setKafkaMaxNumTopics(settings.getKafkaMaxNumTopics());
     project.setDescription(projectDescription);
 
     // set retention period to next 10 years by default
@@ -634,9 +640,7 @@ public class ProjectController {
   }
 
   private boolean noExistingCertificates(String projectName) {
-    boolean result = !LocalhostServices.isPresentProjectCertificates(settings.
-        getIntermediateCaDir(),
-        projectName);
+    boolean result = !opensslOperations.isPresentProjectCertificates(projectName);
 
     if (!result) {
       LOGGER.log(Level.WARNING, "certificates existing for project {0}",
@@ -752,16 +756,14 @@ public class ProjectController {
 
     boolean toPersist;
     switch (service) {
-      case ZEPPELIN:
-        toPersist = addServiceDataset(project, user,
-            Settings.ServiceDataset.ZEPPELIN, dfso, udfso);
-        break;
       case JUPYTER:
         toPersist = addServiceDataset(project, user,
             Settings.ServiceDataset.JUPYTER, dfso, udfso);
         break;
       case HIVE:
-        toPersist = addServiceHive(project, user, dfso);
+        addServiceHive(project, user, dfso);
+        //HOPSWORKS-198: Enable Zeppelin at the same time as Hive
+        toPersist = addServiceDataset(project, user, Settings.ServiceDataset.ZEPPELIN, dfso, udfso);
         break;
       case SERVING:
         toPersist= addServiceDataset(project, user,
@@ -769,6 +771,7 @@ public class ProjectController {
         break;
       default:
         toPersist = true;
+        break;
     }
 
     if (toPersist) {
@@ -776,6 +779,11 @@ public class ProjectController {
       projectServicesFacade.addServiceForProject(project, service);
       logActivity(ActivityFacade.ADDED_SERVICE + service.toString(),
           ActivityFacade.FLAG_PROJECT, user, project);
+      if (service == ProjectServiceEnum.HIVE) {
+        projectServicesFacade.addServiceForProject(project, ProjectServiceEnum.ZEPPELIN);
+        logActivity(ActivityFacade.ADDED_SERVICE + ProjectServiceEnum.ZEPPELIN.toString(),
+            ActivityFacade.FLAG_PROJECT, user, project);
+      }
     } else {
       // either addServiceZeppelin or addServiceHive failed. Throw ServiceException to
       // signal it to the view
@@ -1167,6 +1175,7 @@ public class ProjectController {
         Date now = Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant());
         Users user = userFacade.findByEmail(userEmail);
         Project toDeleteProject = new Project(projectName, user, now, PaymentType.PREPAID);
+        toDeleteProject.setKafkaMaxNumTopics(settings.getKafkaMaxNumTopics());
         Path tmpInodePath = new Path(File.separator + "tmp" + File.separator + projectName);
         try {
           if (!dfso.exists(tmpInodePath.toString())) {
@@ -1250,7 +1259,7 @@ public class ProjectController {
 
         // Remove Certificates
         try {
-          LocalhostServices.deleteProjectCertificates(settings.getIntermediateCaDir(), projectName);
+          opensslOperations.deleteProjectCertificate(projectName);
           userCertsFacade.removeAllCertsOfAProject(projectName);
           cleanupLogger.logSuccess("Deleted certificates");
         } catch (IOException ex) {
@@ -1911,6 +1920,7 @@ public class ProjectController {
   public QuotasDTO getQuotasInternal(Project project) {
     Long hdfsQuota = -1L, hdfsUsage = -1L, hdfsNsQuota = -1L, hdfsNsCount = -1L, dbhdfsQuota = -1L,
         dbhdfsUsage = -1L, dbhdfsNsQuota = -1L, dbhdfsNsCount = -1L;
+    Integer kafkaQuota = project.getKafkaMaxNumTopics();
     Float yarnRemainingQuota = 0f, yarnTotalQuota = 0f;
 
     // Yarn Quota
@@ -1954,7 +1964,7 @@ public class ProjectController {
     }
 
     return new QuotasDTO(yarnRemainingQuota, yarnTotalQuota, hdfsQuota, hdfsUsage, hdfsNsQuota, hdfsNsCount,
-        dbhdfsQuota, dbhdfsUsage, dbhdfsNsQuota, dbhdfsNsCount);
+        dbhdfsQuota, dbhdfsUsage, dbhdfsNsQuota, dbhdfsNsCount, kafkaQuota);
   }
 
   /**
@@ -2733,7 +2743,11 @@ public class ProjectController {
         yarnProjectsQuotaFacade.changeYarnQuota(currentProject.getName(), quotas.getYarnQuotaInSecs());
         quotaChanged = true;
       }
-
+      if (quotas.getKafkaMaxNumTopics() != null) {
+        projectFacade.changeKafkaQuota(currentProject, quotas.getKafkaMaxNumTopics());
+        quotaChanged = true;
+      }
+ 
       // Register time of last quota change in the project entry
       if (quotaChanged) {
         projectFacade.setTimestampQuotaUpdate(currentProject, new Date());

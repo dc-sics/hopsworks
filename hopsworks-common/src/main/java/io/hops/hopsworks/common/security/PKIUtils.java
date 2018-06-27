@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -35,18 +36,6 @@ import org.apache.commons.io.FileUtils;
 public class PKIUtils {
 
   final static Logger logger = Logger.getLogger(PKIUtils.class.getName());
-
-  public static String signCertificate(Settings settings, String csr,
-      boolean isIntermediate) throws IOException, InterruptedException {
-    File csrFile = File.createTempFile(System.getProperty("java.io.tmpdir"),
-        ".csr");
-    FileUtils.writeStringToFile(csrFile, csr);
-
-    if (verifyCSR(csrFile)) {
-      return signCSR(settings, csrFile, isIntermediate);
-    }
-    return null;
-  }
 
   public static void revokeCert(Settings settings, String certFile, boolean intermediate) throws IOException,
       InterruptedException {
@@ -88,96 +77,7 @@ public class PKIUtils {
     //update the crl
     createCRL(settings, intermediate);
   }
-
-  private static boolean verifyCSR(File csr) throws IOException, InterruptedException {
-    logger.info("Verifying CSR...");
-    List<String> cmds = new ArrayList<>();
-
-    cmds.add("openssl");
-    cmds.add("req");
-    cmds.add("-in");
-    cmds.add(csr.getAbsolutePath());
-    cmds.add("-noout");
-    cmds.add("-verify");
-    StringBuilder sb = new StringBuilder("/usr/bin/openssl ");
-    for (String s : cmds) {
-      sb.append(s).append(" ");
-    }
-    logger.info(sb.toString());
-    Process process = new ProcessBuilder(cmds).directory(new File("/usr/bin/")).redirectErrorStream(true).start();
-    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF8")));
-    String line;
-    while ((line = br.readLine()) != null) {
-      if (line.equalsIgnoreCase("verify failure")) {
-        logger.info("verify failure");
-        return false;
-      } else if (line.equalsIgnoreCase("verify OK")) {
-        logger.info("verify OK");
-        return true;
-      }
-    }
-    process.waitFor();
-    if (process.exitValue() != 0) {
-      throw new RuntimeException("failed to verify csr");
-    }
-    return false;
-  }
-
-  private static String signCSR(Settings settings, File csr, boolean intermediate) throws IOException,
-      InterruptedException {
-
-    String caFile;
-    String extension;
-    if (intermediate) {
-      caFile = settings.getIntermediateCaDir() + "/openssl-intermediate.cnf";
-      extension = "usr_cert";
-    } else {
-      caFile = settings.getCaDir() + "/openssl-ca.cnf";
-      extension = "v3_intermediate_ca";
-    }
-    String hopsMasterPassword = settings.getHopsworksMasterPasswordSsl();
-
-    String prog = settings.getHopsworksDomainDir()
-        + "/bin/global-ca-sign-csr.sh";
-
-    String csrPath = csr.getAbsolutePath();
-
-    File generatedCertFile = File.createTempFile(System.getProperty(
-        "java.io.tmpdir"), ".cert.pem");
-
-    logger.info("Signing CSR...");
-    List<String> commands = new ArrayList<>();
-    commands.add("/usr/bin/sudo");
-    commands.add(prog);
-    commands.add(caFile);
-    commands.add(hopsMasterPassword);
-    commands.add(extension);
-    commands.add(csrPath);
-    commands.add(generatedCertFile.getAbsolutePath());
-
-    StringBuilder sb = new StringBuilder();
-    for (String s : commands) {
-      sb.append(s).append(" ");
-    }
-    logger.info(sb.toString());
-
-    Process process = new ProcessBuilder(commands).redirectErrorStream(true).start();
-    BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream(), Charset.forName("UTF8")));
-    String line;
-    while ((line = br.readLine()) != null) {
-      logger.info(line);
-    }
-    process.waitFor();
-    int exitValue = process.exitValue();
-    if (exitValue != 0) {
-      throw new RuntimeException("Failed to sign certificate. Exit value: "
-          + exitValue);
-    }
-    logger.info("Signed certificate. Verifying....");
-
-    return FileUtils.readFileToString(generatedCertFile);
-  }
-
+  
   public static String createCRL(Settings settings, boolean intermediate) throws IOException,
       InterruptedException {
     logger.info("Creating crl...");
@@ -293,7 +193,24 @@ public class PKIUtils {
     }
     return lines.toString();
   }
-
+  
+  public static HashMap<String, String> getKeyValuesFromSubject(String subject) {
+    if (subject == null || subject.isEmpty()) {
+      return null;
+    }
+    String[] parts = subject.split("/");
+    String[] keyVal;
+    HashMap<String, String> keyValStore = new HashMap<>();
+    for (String part : parts) {
+      keyVal = part.split("=");
+      if (keyVal.length < 2) {
+        continue;
+      }
+      keyValStore.put(keyVal[0], keyVal[1]);
+    }
+    return keyValStore;
+  }
+  
   public static String getSerialNumberFromCert(String cert) throws IOException, InterruptedException {
     File csrFile = File.createTempFile(System.getProperty("java.io.tmpdir"), ".pem");
     FileUtils.writeStringToFile(csrFile, cert);

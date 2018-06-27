@@ -59,7 +59,7 @@ angular.module('hopsWorksApp')
             self.shared = undefined;
             self.status = undefined;
 
-            self.tgState = true;
+            self.tgState = false;
 
             self.onSuccess = function (e) {
               growl.success("Copied to clipboard", {title: '', ttl: 1000});
@@ -266,7 +266,7 @@ angular.module('hopsWorksApp')
               }
               getDirContents();
 
-              self.tgState = true;
+              self.tgState = false;
             };
 
             init();
@@ -462,9 +462,26 @@ angular.module('hopsWorksApp')
               });
             };
 
+            self.zip = function (filename) {
+              var pathArray = self.pathArray.slice(0);
+//              pathArray.push(self.selected);
+              pathArray.push(filename);
+              var filePath = getPath(pathArray);
+
+              growl.info("Started zipping...",
+                      {title: 'Zipping Started', ttl: 2000, referenceId: 4});
+              dataSetService.zip(filePath).then(
+                      function (success) {
+                        growl.success("Refresh your browser when finished",
+                                {title: 'Zipping in Background', ttl: 5000, referenceId: 4});
+                      }, function (error) {
+                growl.error(error.data.errorMsg, {title: 'Error zipping file', ttl: 5000, referenceId: 4});
+              });
+            };
+
             self.isZippedfile = function () {
 
-// https://stackoverflow.com/questions/680929/how-to-extract-extension-from-filename-string-in-javascript
+              // https://stackoverflow.com/questions/680929/how-to-extract-extension-from-filename-string-in-javascript
               var re = /(?:\.([^.]+))?$/;
               var ext = re.exec(self.selected)[1];
               switch (ext) {
@@ -487,6 +504,14 @@ angular.module('hopsWorksApp')
               return false;
             };
 
+            self.isDirectory = function () {
+                if (!(self.selected == null)) {
+                    return (self.selected).dir;
+                } else {
+                    return false;
+                }
+            };
+
             self.convertIPythonNotebook = function (filename) {
               var pathArray = self.pathArray.slice(0);
               pathArray.push(filename); //self.selected
@@ -503,6 +528,7 @@ angular.module('hopsWorksApp')
                 growl.error(error.data.errorMsg, {title: 'Error converting notebook', ttl: 5000, referenceId: 4});
               });
             };
+           
 
             self.isIPythonNotebook = function () {
               if (self.selected === null || self.selected === undefined) {
@@ -877,6 +903,7 @@ angular.module('hopsWorksApp')
                 var newPathArray = self.pathArray.slice(0);
                 newPathArray.push(file.name);
                 getDirContents(newPathArray);
+                self.tgState = false;
               } else if (!file.underConstruction) {
                 ModalService.confirm('sm', 'Confirm', 'Do you want to download this file?').then(
                         function (success) {
@@ -922,6 +949,7 @@ angular.module('hopsWorksApp')
               var newPathArray = self.pathArray.slice(0);
               newPathArray.splice(index, newPathArray.length - index);
               getDirContents(newPathArray);
+              self.tgState = false;
             };
 
             self.menustyle = {
@@ -948,6 +976,7 @@ angular.module('hopsWorksApp')
               if (self.isSelectedFiles() > 0) {
                 self.selected = null;
               } else {
+                self.tgState = true;
                 self.selected = file.name;
               }
               self.selectedFiles[file.name] = file;
@@ -1039,6 +1068,7 @@ angular.module('hopsWorksApp')
                 self.selected = Object.keys(self.selectedFiles)[0];
               }
               self.all_selected = false;
+              self.tgState = false;
 
             };
 

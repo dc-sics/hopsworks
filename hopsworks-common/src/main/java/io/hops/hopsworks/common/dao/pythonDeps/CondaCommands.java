@@ -81,7 +81,12 @@ import javax.xml.bind.annotation.XmlRootElement;
           = "SELECT c FROM CondaCommands c WHERE c.status = :status"),
   @NamedQuery(name = "CondaCommands.findByCreated",
           query
-          = "SELECT c FROM CondaCommands c WHERE c.created = :created")})
+          = "SELECT c FROM CondaCommands c WHERE c.created = :created"),
+  @NamedQuery(name = "CondaCommands.deleteAllFailedCommands",
+          query
+          = "DELETE FROM CondaCommands c WHERE c.status = :status"),
+  @NamedQuery(name = "CondaCommands.findByHost",
+          query = "SELECT c FROM CondaCommands c WHERE c.hostId = :host")})
 public class CondaCommands implements Serializable {
 
   private static final long serialVersionUID = 1L;
@@ -155,6 +160,10 @@ public class CondaCommands implements Serializable {
           referencedColumnName = "id")
   @ManyToOne(optional = false)
   private Hosts hostId;
+  @Size(min = 1,
+          max = 10000)
+  @Column(name = "environment_yml")
+  private String environmentYml;
 
   public CondaCommands() {
   }
@@ -162,7 +171,7 @@ public class CondaCommands implements Serializable {
   public CondaCommands(Hosts h, String user, PythonDepsFacade.CondaOp op,
           PythonDepsFacade.CondaStatus status, PythonDepsFacade.CondaInstallType installType,
           PythonDepsFacade.MachineType machineType, Project project, String lib, String version, String channelUrl,
-                       Date created, String arg) {
+                       Date created, String arg,  String environmentYml) {
     this.hostId = h;
     if (op  == null || user == null || project == null) { 
       throw new NullPointerException("Op/user/project cannot be null");
@@ -179,6 +188,7 @@ public class CondaCommands implements Serializable {
     this.lib = lib;
     this.version = version;
     this.arg = arg;
+    this.environmentYml = environmentYml;
   }
 
   public Integer getId() {
@@ -294,7 +304,14 @@ public class CondaCommands implements Serializable {
     this.machineType = machineType;
   }
 
-  
+  public String getEnvironmentYml() {
+    return environmentYml;
+  }
+
+  public void setEnvironmentYml(String environmentYml) {
+    this.environmentYml = environmentYml;
+  }
+
   @Override
   public int hashCode() {
     int hash = 0;
@@ -318,8 +335,9 @@ public class CondaCommands implements Serializable {
 
   @Override
   public String toString() {
-    return "io.hops.hopsworks.common.dao.pythonDeps.CondaCommands[ id=" + id +
-            " ]";
+    return "[ id=" + id + ", proj=" + proj  + ", op=" + op + ", installType=" + installType 
+        + ", hostType=" + machineType + ", lib=" + lib + ", version=" + version + ", arg=" + arg 
+        + ", channel=" + channelUrl + " ]";
   }
 
 }

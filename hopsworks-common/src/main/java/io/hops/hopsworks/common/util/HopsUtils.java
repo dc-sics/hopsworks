@@ -30,7 +30,13 @@ import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.jobs.jobhistory.JobType;
 import io.hops.hopsworks.common.jobs.yarn.LocalResourceDTO;
 import io.hops.hopsworks.common.security.CertificateMaterializer;
+import io.hops.hopsworks.common.util.templates.AppendConfigReplacementPolicy;
+import io.hops.hopsworks.common.util.templates.ConfigProperty;
+import io.hops.hopsworks.common.util.templates.ConfigReplacementPolicy;
+import io.hops.hopsworks.common.util.templates.IgnoreConfigReplacementPolicy;
+import io.hops.hopsworks.common.util.templates.OverwriteConfigReplacementPolicy;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.LineIterator;
 import org.apache.commons.net.util.Base64;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -48,12 +54,17 @@ import java.nio.file.Paths;
 import java.security.Key;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utility methods.
@@ -67,6 +78,18 @@ public class HopsUtils {
   private static int RANDOM_PARTITIONING_MAX_LEVEL = 1;
   public static int ROOT_INODE_ID = 1;
   private static final FsPermission materialPermissions = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE);
+  private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\\r?\\n");
+  // e.x. spark.files=hdfs://someFile,hdfs://anotherFile
+  private static final Pattern SPARK_PROPS_PATTERN = Pattern.compile("(.+?)=(.+)");
+  public static final ConfigReplacementPolicy OVERWRITE = new OverwriteConfigReplacementPolicy();
+  public static final ConfigReplacementPolicy IGNORE = new IgnoreConfigReplacementPolicy();
+  public static final ConfigReplacementPolicy APPEND_SPACE = new AppendConfigReplacementPolicy(
+      AppendConfigReplacementPolicy.Delimiter.SPACE);
+  public static final ConfigReplacementPolicy APPEND_PATH = new AppendConfigReplacementPolicy(
+      AppendConfigReplacementPolicy.Delimiter.PATH_SEPARATOR);
+  public static final ConfigReplacementPolicy APPEND_COMMA = new AppendConfigReplacementPolicy(
+      AppendConfigReplacementPolicy.Delimiter.COMMA);
+  
   
   /**
    *
@@ -186,24 +209,6 @@ public class HopsUtils {
         jobType, dfso, projectLocalResources, jobSystemProperties,
         null, applicationId, certMat, isRpcTlsEnabled);
   }
-  
-  private static boolean checkUserMatCertsInHDFS(String username, String remoteFSDir,
-      DistributedFileSystemOps dfso, Settings settings) throws IOException {
-    Path kstoreU = new Path(remoteFSDir + Path.SEPARATOR +
-        username + Path.SEPARATOR + username + "__kstore.jks");
-    Path tstoreU = new Path(remoteFSDir + Path.SEPARATOR +
-        username + Path.SEPARATOR + username + "__tstore.jks");
-    Path passwdU = new Path(remoteFSDir + Path.SEPARATOR +
-        username + Path.SEPARATOR + username + "__cert.key");
-
-    if (!settings.getHopsRpcTls()) {
-      return dfso.exists(kstoreU.toString()) && dfso.exists(tstoreU.toString())
-          && dfso.exists(passwdU.toString());
-    }
-
-    return dfso.exists(kstoreU.toString()) && dfso.exists(tstoreU.toString());
-  }
-
 
   /**
    * Remote user generic project certificates materialized both from the local
@@ -214,11 +219,15 @@ public class HopsUtils {
    * @throws IOException
    */
   public static void cleanupCertificatesForProject(String projectName,
-      String remoteFSDir, CertificateMaterializer certificateMaterializer) throws IOException {
+      String remoteFSDir, CertificateMaterializer certificateMaterializer, Settings settings) throws IOException {
     
     certificateMaterializer.removeCertificatesLocal(projectName);
-    String remoteDirectory = remoteFSDir + Path.SEPARATOR + projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
-    certificateMaterializer.removeCertificatesRemote(null, projectName, remoteDirectory);
+    
+    // If Hops RPC TLS is enabled then we haven't put them in HDFS, so we should not delete them
+    if (!settings.getHopsRpcTls()) {
+      String remoteDirectory = remoteFSDir + Path.SEPARATOR + projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
+      certificateMaterializer.removeCertificatesRemote(null, projectName, remoteDirectory);
+    }
   }
 
   /**
@@ -230,19 +239,22 @@ public class HopsUtils {
    * @throws IOException
    */
   public static void cleanupCertificatesForUserCustomDir(String username,
-      String projectName, String remoteFSDir, CertificateMaterializer certificateMaterializer, String directory) throws
-      IOException {
+      String projectName, String remoteFSDir, CertificateMaterializer certificateMaterializer, String directory,
+      Settings settings) throws IOException {
 
     certificateMaterializer.removeCertificatesLocalCustomDir(username, projectName, directory);
     String projectSpecificUsername = projectName + HdfsUsersController
         .USER_NAME_DELIMITER + username;
-    String remoteDirectory = remoteFSDir + Path.SEPARATOR + projectSpecificUsername;
-    certificateMaterializer.removeCertificatesRemote(username, projectName, remoteDirectory);
+    // If Hops RPC TLS is enabled, we haven't put user certificates in HDFS, so we shouldn't try to remove them
+    if (!settings.getHopsRpcTls()) {
+      String remoteDirectory = remoteFSDir + Path.SEPARATOR + projectSpecificUsername;
+      certificateMaterializer.removeCertificatesRemote(username, projectName, remoteDirectory);
+    }
   }
   
   public static void cleanupCertificatesForUser(String username, String projectName, String remoteFSDir,
-      CertificateMaterializer certificateMaterializer) throws IOException {
-    cleanupCertificatesForUserCustomDir(username, projectName, remoteFSDir, certificateMaterializer, null);
+      CertificateMaterializer certificateMaterializer, Settings settings) throws IOException {
+    cleanupCertificatesForUserCustomDir(username, projectName, remoteFSDir, certificateMaterializer, null, settings);
   }
   
   /**
@@ -264,10 +276,13 @@ public class HopsUtils {
   
     certificateMaterializer.materializeCertificatesLocalCustomDir(userName, projectName, directory);
     
-    
-    String remoteDirectory = createRemoteDirectory(remoteFSDir, projectSpecificUsername, projectSpecificUsername, dfso);
-    certificateMaterializer.materializeCertificatesRemote(userName, projectName, projectSpecificUsername,
-        projectSpecificUsername, materialPermissions, remoteDirectory);
+    // When Hops RPC TLS is enabled, Yarn will take care of application certificate
+    if (!settings.getHopsRpcTls()) {
+      String remoteDirectory =
+          createRemoteDirectory(remoteFSDir, projectSpecificUsername, projectSpecificUsername, dfso);
+      certificateMaterializer.materializeCertificatesRemote(userName, projectName, projectSpecificUsername,
+          projectSpecificUsername, materialPermissions, remoteDirectory);
+    }
   }
   
   public static void materializeCertificatesForUser(String projectName, String userName, String remoteFSDir,
@@ -298,10 +313,14 @@ public class HopsUtils {
     
     String projectGenericUser = projectName + Settings.PROJECT_GENERIC_USER_SUFFIX;
   
-    String remoteDirectory = createRemoteDirectory(remoteFSDir, projectGenericUser, projectGenericUser, dfso);
-    
-    certificateMaterializer.materializeCertificatesRemote(null, projectName, projectGenericUser,
-        projectGenericUser, materialPermissions, remoteDirectory);
+    // When Hops RPC TLS is enabled, Yarn will take care of application certificate
+    // so we don't need them in HDFS
+    if (!settings.getHopsRpcTls()) {
+      String remoteDirectory = createRemoteDirectory(remoteFSDir, projectGenericUser, projectGenericUser, dfso);
+  
+      certificateMaterializer.materializeCertificatesRemote(null, projectName, projectGenericUser,
+          projectGenericUser, materialPermissions, remoteDirectory);
+    }
   }
   
   private static String createRemoteDirectory(String remoteFSDir, String certsSpecificDir, String owner,
@@ -403,19 +422,16 @@ public class HopsUtils {
                   Files.write(certFiles.get(Settings.T_CERTIFICATE), t_k_cert);
                 }
   
-                // If RPC TLS is enabled, password file would be injected by the
-                // NodeManagers. We don't need to add it as LocalResource
-                if (!isRpcTlsEnabled) {
-                  File certPass = new File(appDir.toString() + File.separator +
-                      passName);
-                  certPass.setExecutable(false);
-                  certPass.setReadable(true, true);
-                  certPass.setWritable(false);
-                  FileUtils.writeStringToFile(certPass, userCert
-                      .getUserKeyPwd(), false);
-                  jobSystemProperties.put(Settings.CRYPTO_MATERIAL_PASSWORD,
-                      certPass.toString());
-                }
+  
+                File certPass = new File(appDir.toString() + File.separator +
+                    passName);
+                certPass.setExecutable(false);
+                certPass.setReadable(true, true);
+                certPass.setWritable(false);
+                FileUtils.writeStringToFile(certPass, userCert
+                    .getUserKeyPwd(), false);
+                jobSystemProperties.put(Settings.CRYPTO_MATERIAL_PASSWORD,
+                    certPass.toString());
                 jobSystemProperties.put(Settings.K_CERTIFICATE, f_k_cert.toString());
                 jobSystemProperties.put(Settings.T_CERTIFICATE, t_k_cert.toString());
                 break;
@@ -428,12 +444,9 @@ public class HopsUtils {
                     localTmpDir + File.separator + kCertName));
                 certs.put(Settings.T_CERTIFICATE, new File(
                     localTmpDir + File.separator + tCertName));
-                // If RPC TLS is enabled, password file would be injected by the
-                // NodeManagers. We don't need to add it as LocalResource
-                if (!isRpcTlsEnabled) {
-                  certs.put(Settings.CRYPTO_MATERIAL_PASSWORD, new File(
-                      localTmpDir + File.separator + passName));
-                }
+                certs.put(Settings.CRYPTO_MATERIAL_PASSWORD, new File(
+                    localTmpDir + File.separator + passName));
+                
                 for (Map.Entry<String, File> entry : certs.entrySet()) {
                   //Write the actual file(cert) to localFS
                   //Create HDFS certificate directory. This is done
@@ -683,4 +696,124 @@ public class HopsUtils {
 
     return quotaSeconds;
   }
+  
+  /**
+   * Parse configuration properties defined by the user in Jupyter dashboard or Job Service.
+   *
+   * @param sparkProps Spark properties in one string
+   * @return Map of property name and value
+   */
+  public static Map<String, String> parseSparkProperties(String sparkProps) {
+    Map<String, String> sparkProperties = new HashMap<>();
+    if (sparkProps != null) {
+      Arrays.asList(NEW_LINE_PATTERN.split(sparkProps)).stream()
+          .map(l -> l.trim())
+          .forEach(l -> {
+            // User defined properties should be in the form of property_name=value
+              Matcher propMatcher = SPARK_PROPS_PATTERN.matcher(l);
+              if (propMatcher.matches()) {
+                sparkProperties.put(propMatcher.group(1), propMatcher.group(2));
+              }
+            });
+    }
+    if (LOG.isLoggable(Level.FINE)) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("User defined spark properties are: ");
+      if (sparkProperties.isEmpty()) {
+        sb.append("NONE");
+        LOG.log(Level.FINE, sb.toString());
+      } else {
+        for (Map.Entry<String, String> prop : sparkProperties.entrySet()) {
+          sb.append(prop.getKey()).append("=").append(prop.getValue()).append("\n");
+        }
+        LOG.log(Level.FINE, sb.toString());
+      }
+    }
+    return sparkProperties;
+  }
+  
+  /**
+   * Validate user defined properties against a list of blacklisted Spark properties
+   * @param sparkProps Parsed user defined properties
+   * @param sparkDir spark installation directory
+   */
+  public static Map<String, String> validateUserProperties(String sparkProps, String sparkDir) throws IOException {
+    Map<String, String> userProperties = parseSparkProperties(sparkProps);
+    Set<String> blackListedProps = readBlacklistedSparkProperties(sparkDir);
+    for (String userProperty : userProperties.keySet()) {
+      if (blackListedProps.contains(userProperty)) {
+        throw new IllegalArgumentException("User defined property <" + userProperty + "> is blacklisted!");
+      }
+    }
+    return userProperties;
+  }
+  
+  /**
+   * Read blacklisted Spark properties from file
+   * @return Blacklisted Spark properties
+   * @throws IOException
+   */
+  private static Set<String> readBlacklistedSparkProperties(String sparkDir) throws IOException {
+    File sparkBlacklistFile = Paths.get(sparkDir, Settings.SPARK_BLACKLISTED_PROPS).toFile();
+    LineIterator lineIterator = FileUtils.lineIterator(sparkBlacklistFile);
+    Set<String> blacklistedProps = new HashSet<>();
+    try {
+      while (lineIterator.hasNext()) {
+        String line = lineIterator.nextLine();
+        if (!line.startsWith("#")) {
+          blacklistedProps.add(line);
+        }
+      }
+      return blacklistedProps;
+    } finally {
+      LineIterator.closeQuietly(lineIterator);
+    }
+  }
+  
+  /**
+   * Merge system and user defined configuration properties based on the replacement policy of each property
+   * @param hopsworksParams System/default properties
+   * @param userParameters User defined properties parsed by parseSparkProperties(String sparkProps)
+   * @return A map with the replacement pattern and value for each property
+   */
+  public static Map<String, String> mergeHopsworksAndUserParams(Map<String, ConfigProperty> hopsworksParams,
+      Map<String, String> userParameters, boolean isJob) {
+    Map<String, String> finalParams = new HashMap<>();
+    Set<String> notReplacedUserParams = new HashSet<>();
+    
+    for (Map.Entry<String, String> userParam : userParameters.entrySet()) {
+      if (hopsworksParams.containsKey(userParam.getKey())) {
+        ConfigProperty prop = hopsworksParams.get(userParam.getKey());
+        prop.replaceValue(userParam.getValue());
+        finalParams.put(prop.getReplacementPattern(), prop.getValue());
+      } else {
+        notReplacedUserParams.add(userParam.getKey());
+        if(isJob){
+          finalParams.put(userParam.getKey(), userParam.getValue());
+        }
+      }
+    }
+    
+    String userParamsStr = "";
+    if (!notReplacedUserParams.isEmpty()) {
+      StringBuilder userParamsSb = new StringBuilder();
+      userParamsSb.append(",\n");
+      notReplacedUserParams.stream()
+          .forEach(p ->
+              userParamsSb.append("\"").append(p).append("\": ").append("\"").append(userParameters.get(p))
+                  .append("\"," + "\n"));
+      
+      userParamsStr = userParamsSb.toString();
+      // Remove last comma and add a new line char
+      userParamsStr = userParamsStr.trim().substring(0, userParamsStr.length() - 2) + "\n";
+    }
+    finalParams.put("spark_user_defined_properties", userParamsStr);
+    
+    for (ConfigProperty configProperty : hopsworksParams.values()) {
+      finalParams.putIfAbsent(configProperty.getReplacementPattern(), configProperty.getValue());
+    }
+    
+    return finalParams;
+  }
+  
 }

@@ -34,6 +34,8 @@ angular.module('hopsWorksApp')
             self.loadingDisplayCategories = false;
             self.loadingSelectedCategory = false;
             self.loadingReadme = false;
+            self.publicDSId = $rootScope.publicDSId;
+            $rootScope.publicDSId = undefined; //reset
 
             var getDisplayCategories = function () {
               self.loadingDisplayCategories = true;
@@ -213,6 +215,9 @@ angular.module('hopsWorksApp')
             
             self.sizeOnDisk = function (fileSizeInBytes) {
               if (fileSizeInBytes === undefined) {
+                return '--';
+              }
+              if (fileSizeInBytes === -1) {
                 return '--';
               }
               return convertSize(fileSizeInBytes);
