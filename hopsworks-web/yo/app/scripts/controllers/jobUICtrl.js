@@ -182,7 +182,7 @@ angular.module('hopsWorksApp')
                         function (success) {
                           var projectName = success.data;
 
-			  self.ui = "hopsworks-api/kibana/app/kibana#/discover?_g=()&_a=(columns:!(logdate,application,priority,logger_name,log_message),index:" 
+			  self.ui = "/hopsworks-api/kibana/app/kibana#/discover?_g=()&_a=(columns:!(logdate,application,priority,logger_name,log_message),index:" 
                                      + projectName.toLowerCase() +"_logs,interval:auto,query:(query_string:(analyze_wildcard:!t,query:'jobname%3D"
                                      +self.dashboardType+"%20AND%20jobid%3Dnotebook')),sort:!(logdate,desc))";
 
@@ -199,8 +199,8 @@ angular.module('hopsWorksApp')
                 });
               } else {
                 //if not zeppelin we should have a job
-                self.ui = "hopsworks-api/kibana/app/kibana#/discover?_g=()&_a=(columns:!(logdate,application,priority,logger_name,log_message),index:"
-                           + self.job.project.name.toLowerCase() +"_logs,interval:auto,query:(language:lucene,query:jobname%3D" + self.job.name +"),sort:!(logdate,desc))";
+                self.ui = "/hopsworks-api/kibana/app/kibana#/discover?_g=()&_a=(columns:!(logdate,application,priority,logger_name,log_message),index:"
+                           + self.job.project.name.toLowerCase() +"_logs,interval:auto,query:(language:lucene,query:jobname%3D%22" + self.job.name +"%22),sort:!(logdate,desc))";
 
                 self.current = "kibanaUI";
                 var iframe = document.getElementById('ui_iframe');
