@@ -53,7 +53,6 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRespon
 import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.types.TypesExistsResponse;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
@@ -276,11 +275,6 @@ public class ElasticController {
     params.put("op", "DELETE");
     sendElasticsearchReq(url, params, true);
 
-  }
-  
-  public void deleteIndex(String index) throws AppException {
-    Client client = getClient();
-    DeleteResponse response = client.prepareDelete().setId(index).get();
   }
 
   private Client getClient() throws AppException {
