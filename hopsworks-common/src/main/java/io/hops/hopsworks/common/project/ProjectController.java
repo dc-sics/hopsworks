@@ -2361,33 +2361,15 @@ public class ProjectController {
    */
   public boolean addElasticsearch(String project, ProjectServiceEnum serviceEnum) {
     project = project.toLowerCase();
-    Map<String, String> params = new HashMap<>();
 
     if(serviceEnum.equals(ProjectServiceEnum.JOBS)) {
-
-      params.put("op", "PUT");
-      params.put("project", project + "_logs");
-      params.put("resource", "");
-      params.put("data", "{}");
-
-      JSONObject resp = elasticController.sendElasticsearchReq(params);
-
-      boolean elasticIndexCreated = false;
-      if (resp.has("acknowledged")) {
-        elasticIndexCreated = (Boolean) resp.get("acknowledged");
-      }
-
-      if (elasticIndexCreated == false) {
-        LOGGER.log(Level.SEVERE, "Could not create elastic index " +
-                project + "_logs " + "for project " + project);
-      }
-      params.clear();
+      Map<String, String> params = new HashMap<>();
       params.put("op", "POST");
       params.put("project", project + "_logs");
       params.put("resource", "");
-      params.put("data", "{\"attributes\": {\"title\": \"" + project + "_logs"  + "\"}}");
-
-      resp = elasticController.sendKibanaReq(params, "index-pattern", project + "_logs");
+      params.put("data", "{\"attributes\": {\"title\": \"" + project + "_logs-*"  + "\"}}");
+  
+      JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", project + "_logs-*");
 
       LOGGER.log(Level.SEVERE, resp.toString(2));
 
@@ -2400,7 +2382,7 @@ public class ProjectController {
         LOGGER.log(Level.SEVERE, ("Could not create logs index for project " + project));
       }
 
-      return elasticIndexCreated && kibanaPatternCreated;
+      return kibanaPatternCreated;
     }
     return false;
   }

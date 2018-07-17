@@ -24,19 +24,6 @@ import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.project.ProjectDTO;
 import io.hops.hopsworks.common.util.Settings;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.ejb.EJB;
-import javax.ejb.Stateless;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -53,6 +40,20 @@ import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -240,17 +241,15 @@ public class KibanaProxyServlet extends ProxyServlet {
   /**
    * Copy response body data (the entity) from the proxy to the servlet client.
    *
-   * @param proxyResponse
-   * @param servletResponse
-   * @param kibanaFilter
-   * @param email
-   * @param index
-   * @throws java.io.IOException
+   * @param proxyResponse proxyResponse
+   * @param servletResponse servletResponse
+   * @param kibanaFilter kibanaFilter
+   * @param email email
+   * @param index index
+   * @throws java.io.IOException IOException
    */
-  protected void copyResponseEntity(HttpResponse proxyResponse,
-                                    HttpServletResponse servletResponse, KibanaFilter kibanaFilter,
-                                    String email, String index) throws
-          IOException {
+  protected void copyResponseEntity(HttpResponse proxyResponse, HttpServletResponse servletResponse, KibanaFilter
+    kibanaFilter, String email, String index) throws IOException {
     if (kibanaFilter == null) {
       super.copyResponseEntity(proxyResponse, servletResponse);
     } else {
@@ -302,31 +301,33 @@ public class KibanaProxyServlet extends ProxyServlet {
   /*
    *
    */
-  private boolean isAuthorized(HttpServletResponse servletResponse, String index,
-                               String email)
-          throws IOException {
-
-    //The index could be either projectname_logs or projectname_experiments
+  private boolean isAuthorized(HttpServletResponse servletResponse, String index, String email)
+    throws IOException {
+  
+    //The index could be either projectname_logs-* or projectname_experiments
     //Get the last part to figure that out
-    String[] indexParts = index.split("_");
+    
+    //If index is time based, split first with "-". This character is not allowed in project name so we can
+    //safely tokenize the index.
+    
+    String[] indexParts = index.split("-")[0].split("_");
     String indexType = indexParts[indexParts.length-1];
-
-    List<String> projects = projectController.findProjectNamesByUser(
-            email, true);
-
+  
+    List<String> projects = projectController.findProjectNamesByUser(email, true);
+  
     boolean projectIsValid = false;
-
-    for(String project: projects){
+  
+    for (String project : projects) {
       String projectIndex = project + "_" + indexType;
-      if(projectIndex.equals(index)) {
+      if (index.startsWith(projectIndex)) {
         projectIsValid = true;
       }
     }
-
+  
     if (!projectIsValid && !index.equals(
-            Settings.KIBANA_DEFAULT_INDEX)) {
+      Settings.KIBANA_DEFAULT_INDEX)) {
       servletResponse.sendError(403,
-              "User is not authorized to access this index");
+        "User is not authorized to access this index");
       return false;
     }
     return true;
