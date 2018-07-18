@@ -248,8 +248,10 @@ public class KibanaProxyServlet extends ProxyServlet {
    * @param index index
    * @throws java.io.IOException IOException
    */
-  protected void copyResponseEntity(HttpResponse proxyResponse, HttpServletResponse servletResponse, KibanaFilter
-    kibanaFilter, String email, String index) throws IOException {
+  protected void copyResponseEntity(HttpResponse proxyResponse,
+                                    HttpServletResponse servletResponse, KibanaFilter kibanaFilter,
+                                    String email, String index) throws
+          IOException {
     if (kibanaFilter == null) {
       super.copyResponseEntity(proxyResponse, servletResponse);
     } else {
