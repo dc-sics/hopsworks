@@ -1232,7 +1232,7 @@ public class ProjectController {
         try {
           removeElasticsearch(project);
           cleanupLogger.logSuccess("Removed ElasticSearch");
-        } catch (IOException ex) {
+        } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -2370,16 +2370,15 @@ public class ProjectController {
       params.put("data", "{\"attributes\": {\"title\": \"" + project + "_logs-*"  + "\"}}");
   
       JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", project + "_logs-*");
-
       LOGGER.log(Level.SEVERE, resp.toString(2));
-
+      
       boolean kibanaPatternCreated = false;
       if (resp.has("updated_at")) {
         kibanaPatternCreated = true;
       }
 
       if (kibanaPatternCreated == false) {
-        LOGGER.log(Level.SEVERE, ("Could not create logs index for project " + project));
+        LOGGER.log(Level.SEVERE, "Could not create logs index for project {0}", project);
       }
 
       return kibanaPatternCreated;
@@ -2387,8 +2386,7 @@ public class ProjectController {
     return false;
   }
 
-  public boolean removeElasticsearch(Project project) throws IOException {
-    //project = project.toLowerCase();
+  public boolean removeElasticsearch(Project project) throws IOException, AppException {
     Map<String, String> params = new HashMap<>();
 
     List<ProjectServiceEnum> projectServices = projectServicesFacade.
@@ -2399,19 +2397,14 @@ public class ProjectController {
     for(ProjectServiceEnum service: projectServices) {
       if(service.equals(ProjectServiceEnum.JOBS)) {
         //1. Delete Elasticsearch Index
-        params.clear();
-        params.put("op", "DELETE");
-        params.put("resource", "");
-        params.put("project", projectName + "_logs");
-        JSONObject resp = elasticController.sendElasticsearchReq(params);
-        LOGGER.log(Level.SEVERE, resp.toString(4));
-
+        elasticController.deleteProjectIndices(project);
+        
         //2. Delete Kibana Index
         params.clear();
         params.put("op", "DELETE");
         params.put("resource", "");
         params.put("project", projectName + "_logs");
-        resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs");
+        JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
         LOGGER.log(Level.SEVERE, resp.toString(4));
       }
     }

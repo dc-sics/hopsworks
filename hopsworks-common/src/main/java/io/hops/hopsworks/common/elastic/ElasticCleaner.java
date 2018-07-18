@@ -46,7 +46,8 @@ public class ElasticCleaner {
    * @param timer
    */
   @Schedule(persistent = false,
-      hour = "*/24")
+      minute = "0",
+      hour = "1")
   public void deleteLogIndices(Timer timer) {
     LOGGER.log(Level.INFO, "Cleaning up elastic job lobs, if any");
     //Get all log indices

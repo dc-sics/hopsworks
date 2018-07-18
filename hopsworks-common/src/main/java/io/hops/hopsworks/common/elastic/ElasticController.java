@@ -49,6 +49,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.ActionFuture;
+import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequestBuilder;
@@ -265,7 +266,27 @@ public class ElasticController {
   }
 
   public boolean deleteIndex(String index) throws AppException {
-    return getClient().admin().indices().delete(new DeleteIndexRequest(index)).actionGet().isAcknowledged();
+    boolean acked = getClient().admin().indices().delete(new DeleteIndexRequest(index)).actionGet().isAcknowledged();
+    if (acked) {
+      LOG.log(Level.INFO, "Acknowledged deletion of elastic index:{0}", index);
+    } else {
+      LOG.log(Level.SEVERE, "Elastic index:{0} deletion could not be acknowledged", index);
+    }
+    return acked;
+  }
+  
+  public void deleteProjectIndices(Project project) throws AppException {
+    //Get all project indices
+    Map<String, IndexMetaData> indices = getIndices(project.getName() + "_logs-\\d{4}.\\d{2}.\\d{2}");
+    for (String index : indices.keySet()) {
+      if (!deleteIndex(index)) {
+        LOG.log(Level.SEVERE, "Could not delete project index:{0}", index);
+      }
+    }
+  }
+  
+  public Result deleteDocument(String index, String type, String id) throws AppException {
+    return getClient().prepareDelete(index, type, id).get().getResult();
   }
   
   public Map<String,IndexMetaData> getIndices() throws AppException{
@@ -629,7 +650,7 @@ public class ElasticController {
     } else {
       templateUrl = params.get("url");
     }
-    return sendElasticsearchReq(templateUrl, params, false);
+    return sendELKReq(templateUrl, params, false);
   }
 
   /**
@@ -639,7 +660,7 @@ public class ElasticController {
    * @param async
    * @return
    */
-  public JSONObject sendElasticsearchReq(String templateUrl, Map<String, String> params, boolean async) {
+  public JSONObject sendELKReq(String templateUrl, Map<String, String> params, boolean async) {
     if (async) {
       ClientBuilder.newClient()
           .target(templateUrl)
@@ -671,6 +692,6 @@ public class ElasticController {
     String templateUrl = settings.getKibanaUri() + "/api/saved_objects/" + kibanaType + "/" + id;
 
     LOG.log(Level.SEVERE, templateUrl);
-    return sendElasticsearchReq(templateUrl, params, false);
+    return sendELKReq(templateUrl, params, false);
   }
 }
