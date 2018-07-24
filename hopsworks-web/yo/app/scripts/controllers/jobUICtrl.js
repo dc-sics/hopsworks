@@ -182,7 +182,7 @@ angular.module('hopsWorksApp')
                         function (success) {
                           var projectName = success.data;
 
-			  self.ui = "/hopsworks-api/kibana/app/kibana#/discover?_g=()&_a=(columns:!(logdate,application,host,priority,logger_name,log_message),index:'" 
+			  self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=()&_a=(columns:!(logdate,application,host,priority,logger_name,log_message),index:'" 
                                      + projectName.toLowerCase() +"_logs-*',interval:auto,query:(query_string:(analyze_wildcard:!t,query:'jobname%3D"
                                      +self.dashboardType+"%20AND%20jobid%3Dnotebook')),sort:!(logdate,desc))";
 
@@ -199,7 +199,7 @@ angular.module('hopsWorksApp')
                 });
               } else {
                 //if not zeppelin we should have a job
-                self.ui = "/hopsworks-api/kibana/app/kibana#/discover?_g=()&_a=(columns:!(logdate,application,host,priority,logger_name,log_message),index:'"
+                self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=()&_a=(columns:!(logdate,application,host,priority,logger_name,log_message),index:'"
                            + self.job.project.name.toLowerCase() +"_logs-*',interval:auto,query:(language:lucene,query:jobname=\"" + self.job.name +"\"),sort:!(logdate,desc))";
 
                 self.current = "kibanaUI";

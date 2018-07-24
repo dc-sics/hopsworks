@@ -2413,9 +2413,8 @@ public class ProjectController {
         params.clear();
         params.put("op", "DELETE");
         params.put("resource", "");
-        params.put("project", projectName + "_logs");
-        JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
-        LOGGER.log(Level.SEVERE, resp.toString(4));
+        params.put("project", projectName + "_logs-*");
+        elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
       }
     }
     return true;
