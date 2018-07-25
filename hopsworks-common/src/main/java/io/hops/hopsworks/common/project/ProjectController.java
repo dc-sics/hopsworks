@@ -751,8 +751,8 @@ public class ProjectController {
     boolean toPersist;
     switch (service) {
       case JUPYTER:
-        toPersist = addServiceDataset(project, user,
-            Settings.ServiceDataset.JUPYTER, dfso, udfso);
+        toPersist = addServiceDataset(project, user, Settings.ServiceDataset.JUPYTER, dfso, udfso);
+        toPersist = addElasticsearch(project, ProjectServiceEnum.JUPYTER);
         break;
       case HIVE:
         addServiceHive(project, user, dfso);
@@ -764,7 +764,7 @@ public class ProjectController {
             Settings.ServiceDataset.SERVING, dfso, udfso);
         break;
       case JOBS:
-        toPersist = addElasticsearch(project.getName(), ProjectServiceEnum.JOBS);
+        toPersist = addElasticsearch(project, ProjectServiceEnum.JOBS);
         break;
       default:
         toPersist = true;
@@ -1237,7 +1237,7 @@ public class ProjectController {
         try {
           removeElasticsearch(project);
           cleanupLogger.logSuccess("Removed ElasticSearch");
-        } catch (IOException ex) {
+        } catch (Exception ex) {
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -2369,56 +2369,37 @@ public class ProjectController {
    * Handles Kibana related indices and templates for projects.
    *
    * @param project
+   * @param serviceEnum
    * @return
    */
-  public boolean addElasticsearch(String project, ProjectServiceEnum serviceEnum) {
-    project = project.toLowerCase();
-    Map<String, String> params = new HashMap<>();
+  public boolean addElasticsearch(Project project, ProjectServiceEnum serviceEnum) {
 
-    if(serviceEnum.equals(ProjectServiceEnum.JOBS)) {
-
-      params.put("op", "PUT");
-      params.put("project", project + "_logs");
-      params.put("resource", "");
-      params.put("data", "{}");
-
-      JSONObject resp = elasticController.sendElasticsearchReq(params);
-
-      boolean elasticIndexCreated = false;
-      if (resp.has("acknowledged")) {
-        elasticIndexCreated = (Boolean) resp.get("acknowledged");
-      }
-
-      if (elasticIndexCreated == false) {
-        LOGGER.log(Level.SEVERE, "Could not create elastic index " +
-                project + "_logs " + "for project " + project);
-      }
-      params.clear();
+    if(serviceEnum.equals(ProjectServiceEnum.JOBS) || serviceEnum.equals(ProjectServiceEnum.JUPYTER) ) {
+            
+      String projectName = project.getName().toLowerCase();
+      Map<String, String> params = new HashMap<>();
       params.put("op", "POST");
-      params.put("project", project + "_logs");
+      params.put("project", projectName + "_logs");
       params.put("resource", "");
-      params.put("data", "{\"attributes\": {\"title\": \"" + project + "_logs"  + "\"}}");
-
-      resp = elasticController.sendKibanaReq(params, "index-pattern", project + "_logs");
-
-      LOGGER.log(Level.SEVERE, resp.toString(2));
-
+      params.put("data", "{\"attributes\": {\"title\": \"" + projectName + "_logs-*"  + "\"}}");
+  
+      JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
+      
       boolean kibanaPatternCreated = false;
-      if (resp.has("updated_at")) {
+      if (resp.has("updated_at") || (resp.has("statusCode") && resp.get("statusCode").toString().equals("409"))) {
         kibanaPatternCreated = true;
       }
 
       if (kibanaPatternCreated == false) {
-        LOGGER.log(Level.SEVERE, ("Could not create logs index for project " + project));
+        LOGGER.log(Level.SEVERE, "Could not create logs index for project {0}", projectName);
       }
 
-      return elasticIndexCreated && kibanaPatternCreated;
+      return kibanaPatternCreated;
     }
     return false;
   }
 
-  public boolean removeElasticsearch(Project project) throws IOException {
-    //project = project.toLowerCase();
+  public boolean removeElasticsearch(Project project) throws IOException, AppException {
     Map<String, String> params = new HashMap<>();
 
     List<ProjectServiceEnum> projectServices = projectServicesFacade.
@@ -2429,19 +2410,14 @@ public class ProjectController {
     for(ProjectServiceEnum service: projectServices) {
       if(service.equals(ProjectServiceEnum.JOBS)) {
         //1. Delete Elasticsearch Index
-        params.clear();
-        params.put("op", "DELETE");
-        params.put("resource", "");
-        params.put("project", projectName + "_logs");
-        JSONObject resp = elasticController.sendElasticsearchReq(params);
-        LOGGER.log(Level.SEVERE, resp.toString(4));
-
+        elasticController.deleteProjectIndices(project);
+        
         //2. Delete Kibana Index
         params.clear();
         params.put("op", "DELETE");
         params.put("resource", "");
         params.put("project", projectName + "_logs");
-        resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs");
+        JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
         LOGGER.log(Level.SEVERE, resp.toString(4));
       }
     }

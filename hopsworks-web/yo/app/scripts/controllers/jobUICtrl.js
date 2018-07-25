@@ -181,12 +181,11 @@ angular.module('hopsWorksApp')
                 JobService.getProjectName(self.projectId).then(
                         function (success) {
                           var projectName = success.data;
-                          self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=(refreshInterval:" +
-                                  "(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))" +
-                                  "&_a=(columns:!(%27timestamp%27,priority,logger_name,thread,message,host),index:" +
-                                  projectName.toLowerCase() + "_logs" +
-                                  ",interval:auto,query:(query_string:(analyze_wildcard:!t,query:'jobname%3D"
-                                  +self.dashboardType+"%20AND%20jobid%3Dnotebook')),sort:!(%27timestamp%27,desc))";
+
+			  self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=()&_a=(columns:!(logdate,application,host,priority,logger_name,log_message),index:'" 
+                                     + projectName.toLowerCase() +"_logs-*',interval:auto,query:(query_string:(analyze_wildcard:!t,query:'jobname%3D"
+                                     +self.dashboardType+"%20AND%20jobid%3Dnotebook')),sort:!(logdate,desc))";
+
                           self.current = "kibanaUI";
                           var iframe = document.getElementById('ui_iframe');
                           if (iframe !== null) {
@@ -200,16 +199,13 @@ angular.module('hopsWorksApp')
                 });
               } else {
                 //if not zeppelin we should have a job
-                self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=(refreshInterval:" +
-                        "(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))" +
-                        "&_a=(columns:!(%27timestamp%27,priority,application,logger_name,thread,message,host),index:" +
-                        self.job.project.name.toLowerCase() + "_logs" +
-                        ",interval:auto,query:(query_string:(analyze_wildcard:!t,query:jobname%3D"
-                        + self.job.name + ")),sort:!(%27timestamp%27,desc))";
+                self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=()&_a=(columns:!(logdate,application,host,priority,logger_name,log_message),index:'"
+                           + self.job.project.name.toLowerCase() +"_logs-*',interval:auto,query:(language:lucene,query:jobname=\"" + self.job.name +"\"),sort:!(logdate,desc))";
+
                 self.current = "kibanaUI";
                 var iframe = document.getElementById('ui_iframe');
                 if (iframe !== null) {
-                  iframe.src = $sce.trustAsResourceUrl(self.ui);
+                  iframe.src = $sce.trustAsResourceUrl(encodeURI(self.ui));
                 }
                 $timeout(stopLoading(), 1000);
               }

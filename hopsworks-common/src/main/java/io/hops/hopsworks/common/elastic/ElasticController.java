@@ -33,11 +33,13 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ejb.EJB;
@@ -47,7 +49,9 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Response;
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.action.ActionFuture;
+import org.elasticsearch.action.DocWriteResponse.Result;
 import org.elasticsearch.action.admin.indices.cache.clear.ClearIndicesCacheRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.exists.types.TypesExistsRequest;
@@ -58,6 +62,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.IndicesAdminClient;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.query.QueryBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -67,6 +73,7 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
 import static org.elasticsearch.index.query.QueryBuilders.queryStringQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
+
 import org.elasticsearch.search.SearchHit;
 import org.json.JSONObject;
 import static org.elasticsearch.index.query.QueryBuilders.fuzzyQuery;
@@ -258,24 +265,62 @@ public class ElasticController {
         getStatusCode(), ResponseMessages.ELASTIC_SERVER_NOT_FOUND);
   }
 
-  /**
-   * Deletes documents from the job index using delete-by-query. Must be re-implemented to client instead of REST-call
-   * when we move to 5.x Elastic.
-   *
-   * @param index
-   * @param type
-   * @param field
-   * @param jobId
-   */
-  public void deleteJobLogs(String index, String type, String field, Integer jobId) {
-    String url = "http://" + settings.getElasticRESTEndpoint() + "/" + index.toLowerCase() 
-        + "/" + type + "/_query?q=" + field + ":" + jobId;
-    Map<String, String> params = new HashMap<>();
-    params.put("op", "DELETE");
-    sendElasticsearchReq(url, params, true);
-
+  public boolean deleteIndex(String index) throws AppException {
+    boolean acked = getClient().admin().indices().delete(new DeleteIndexRequest(index)).actionGet().isAcknowledged();
+    if (acked) {
+      LOG.log(Level.INFO, "Acknowledged deletion of elastic index:{0}", index);
+    } else {
+      LOG.log(Level.SEVERE, "Elastic index:{0} deletion could not be acknowledged", index);
+    }
+    return acked;
   }
+  
+  public void deleteProjectIndices(Project project) throws AppException {
+    //Get all project indices
+    Map<String, IndexMetaData> indices = getIndices(project.getName() + "_logs-\\d{4}.\\d{2}.\\d{2}");
+    for (String index : indices.keySet()) {
+      if (!deleteIndex(index)) {
+        LOG.log(Level.SEVERE, "Could not delete project index:{0}", index);
+      }
+    }
+  }
+  
+  public Result deleteDocument(String index, String type, String id) throws AppException {
+    return getClient().prepareDelete(index, type, id).get().getResult();
+  }
+  
+  public Map<String,IndexMetaData> getIndices() throws AppException{
+    return getIndices(null);
+  }
+  
+  /**
+   * Get all indices. If pattern parameter is provided, only indices matching the pattern will be returned.
+   * @param regex
+   * @return
+   * @throws AppException 
+   */
+  public Map<String, IndexMetaData> getIndices(String regex) throws AppException {
+    ImmutableOpenMap<String, IndexMetaData> indices = getClient().admin().cluster().prepareState().get().getState()
+        .getMetaData().getIndices();
 
+    Map<String, IndexMetaData> indicesMap = null;
+
+    if (indices != null && !indices.isEmpty()) {
+      indicesMap = new HashMap<>();
+      Pattern pattern = null;
+      if (regex != null) {
+        pattern = Pattern.compile(regex);
+      }
+      for (Iterator<String> iter = indices.keysIt(); iter.hasNext();) {
+        String index = iter.next();
+        if (pattern == null || pattern.matcher(index).matches()) {
+          indicesMap.put(index, indices.get(index));
+        } 
+      }
+    }
+    return indicesMap;
+  }
+  
   private Client getClient() throws AppException {
     if (elasticClient == null) {
       final org.elasticsearch.common.settings.Settings settings
@@ -578,7 +623,7 @@ public class ElasticController {
       try {
         InetAddress.getByName(addr);
       } catch (UnknownHostException ex) {
-        LOG.log(Level.SEVERE, ResponseMessages.ELASTIC_SERVER_NOT_AVAILABLE);
+        LOG.log(Level.SEVERE, ResponseMessages.ELASTIC_SERVER_NOT_AVAILABLE, ex);
         throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.
             getStatusCode(), ResponseMessages.ELASTIC_SERVER_NOT_AVAILABLE);
 
@@ -605,7 +650,7 @@ public class ElasticController {
     } else {
       templateUrl = params.get("url");
     }
-    return sendElasticsearchReq(templateUrl, params, false);
+    return sendELKReq(templateUrl, params, false);
   }
 
   /**
@@ -615,7 +660,7 @@ public class ElasticController {
    * @param async
    * @return
    */
-  public JSONObject sendElasticsearchReq(String templateUrl, Map<String, String> params, boolean async) {
+  public JSONObject sendELKReq(String templateUrl, Map<String, String> params, boolean async) {
     if (async) {
       ClientBuilder.newClient()
           .target(templateUrl)
@@ -647,6 +692,6 @@ public class ElasticController {
     String templateUrl = settings.getKibanaUri() + "/api/saved_objects/" + kibanaType + "/" + id;
 
     LOG.log(Level.SEVERE, templateUrl);
-    return sendElasticsearchReq(templateUrl, params, false);
+    return sendELKReq(templateUrl, params, false);
   }
 }

@@ -17,19 +17,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 package io.hops.hopsworks.api.kibana;
 
+import com.google.api.client.repackaged.com.google.common.base.Strings;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.project.ProjectController;
 import io.hops.hopsworks.common.project.ProjectDTO;
+import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -66,10 +67,19 @@ public class KibanaProxyServlet extends ProxyServlet {
   @EJB
   private ProjectController projectController;
   private final static Logger LOG = Logger.getLogger(KibanaProxyServlet.class.getName());
-  Map<String, String> currentProjects = new HashMap<>();
+  private final HashMap<String, String> currentProjects = new HashMap<>();
+
+  private final List<String> registeredKibanaSuffix = new ArrayList<String>() {
+    {
+      add("_logs");
+      add("_experiments");
+      add("_experiments_summary-search");
+      add("_experiments_summary-dashboard");
+    }
+  };
 
   /**
-   * Authorizer user to access particular index.
+   * Authorize user to access particular index.
    *
    * @param servletRequest
    * @param servletResponse
@@ -85,13 +95,6 @@ public class KibanaProxyServlet extends ProxyServlet {
       return;
     }
     String email = servletRequest.getUserPrincipal().getName();
-    String index = null;
-    //Do not authorize admin
-    if (email.equals(Settings.AGENT_EMAIL)) {
-      super.service(servletRequest, servletResponse);
-      return;
-    }
-    //Get the current project of the user
     if (servletRequest.getParameterMap().containsKey("projectId")) {
       String projectId = servletRequest.getParameterMap().get("projectId")[0];
       try {
@@ -104,44 +107,21 @@ public class KibanaProxyServlet extends ProxyServlet {
         return;
       }
     }
-    MyRequestWrapper myRequestWrapper = new MyRequestWrapper(
-            (HttpServletRequest) servletRequest);
+
+    //Do not authorize admin
+    if (email.equals(Settings.AGENT_EMAIL)) {
+      super.service(servletRequest, servletResponse);
+      return;
+    }
+
+    MyRequestWrapper myRequestWrapper = new MyRequestWrapper((HttpServletRequest) servletRequest);
     KibanaFilter kibanaFilter = null;
     //Filter requests based on path
-    if (servletRequest.getRequestURI().contains(
-            "elasticsearch/.kibana/index-pattern/_search")) {
-      kibanaFilter = KibanaFilter.KIBANA_INDEXPATTERN_SEARCH;
-
-    } else if (servletRequest.getRequestURI().contains(
-            "elasticsearch/.kibana/index-pattern")) {
-      kibanaFilter = KibanaFilter.KIBANA_INDEXPATTERN;
-      //Get index from URI
-      index = servletRequest.getRequestURI().substring(servletRequest.
-              getRequestURI().lastIndexOf("/")).replace("/", "");
-      //Check if this user has access to this project
-      if (!isAuthorized(servletResponse, index, email)) {
-        return;
-      }
-    } else if (servletRequest.getRequestURI().contains("elasticsearch/_msearch")) {
-      JSONObject body = new JSONObject(myRequestWrapper.getBody());
-      JSONArray jsonArray = body.optJSONArray("index");
-      if (jsonArray != null) {
-        if (!isAuthorized(servletResponse, (String) jsonArray.get(0), email)) {
-          return;
-        }
-      } else {
-        if (!isAuthorized(servletResponse, (String) body.get("index"), email)) {
-          return;
-        }
-      }
-    } else if (servletRequest.getRequestURI().contains(
-            "elasticsearch/") && servletRequest.getRequestURI().contains(
-            "_mapping/field")) {
-      //Check if this user has access to this project
-      index = servletRequest.getRequestURI().split("/")[4];
-      if (!isAuthorized(servletResponse, index, email)) {
-        return;
-      }
+    LOG.log(Level.FINE, "servletRequest.getRequestURI():" + servletRequest.getRequestURI());
+    if (servletRequest.getRequestURI().contains("api/saved_objects/")) {
+      kibanaFilter = KibanaFilter.KIBANA_SAVED_OBJECTS_API;
+    } else if (servletRequest.getRequestURI().contains("elasticsearch/*/_search")) {
+      kibanaFilter = KibanaFilter.ELASTICSEARCH_SEARCH;
     }
 
     //initialize request attributes from caches if unset by a subclass by this point
@@ -204,8 +184,7 @@ public class KibanaProxyServlet extends ProxyServlet {
       copyResponseHeaders(proxyResponse, servletRequest, servletResponse);
 
       // Send the content to the client
-      copyResponseEntity(proxyResponse, servletResponse, kibanaFilter, email,
-              index);
+      copyResponseEntity(proxyResponse, servletResponse, kibanaFilter, email);
 
     } catch (Exception e) {
       //abort request, according to best practice with HttpClient
@@ -243,41 +222,55 @@ public class KibanaProxyServlet extends ProxyServlet {
    * @param proxyResponse
    * @param servletResponse
    * @param kibanaFilter
-   * @param email
-   * @param index
    * @throws java.io.IOException
    */
   protected void copyResponseEntity(HttpResponse proxyResponse,
-                                    HttpServletResponse servletResponse, KibanaFilter kibanaFilter,
-                                    String email, String index) throws
-          IOException {
+      HttpServletResponse servletResponse, KibanaFilter kibanaFilter, String email) throws
+      IOException {
     if (kibanaFilter == null) {
       super.copyResponseEntity(proxyResponse, servletResponse);
     } else {
       switch (kibanaFilter) {
-        case KIBANA_INDEXPATTERN_SEARCH:
+        case KIBANA_SAVED_OBJECTS_API:
+        case ELASTICSEARCH_SEARCH:
           HttpEntity entity = proxyResponse.getEntity();
           if (entity != null) {
-            GzipDecompressingEntity gzipEntity = new GzipDecompressingEntity(
-                    entity);
+            GzipDecompressingEntity gzipEntity = new GzipDecompressingEntity(entity);
             String resp = EntityUtils.toString(gzipEntity);
             BasicHttpEntity basic = new BasicHttpEntity();
-            JSONObject indices = new JSONObject(resp);
-
             //Remove all projects other than the current one and check
             //if user is authorizer to access it
-            List<String> projects = projectController.findProjectNamesByUser(email, true);
-            JSONArray hits = indices.getJSONObject("hits").getJSONArray("hits");
-            for (int i = hits.length() - 1; i >= 0; i--) {
-              String projectName = hits.getJSONObject(i).getString("_id");
-              if (index != null) {
-                if ((!currentProjects.get(email).equalsIgnoreCase(projectName) || !projects.contains(projectName))
-                        && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX) && !projectName.equals(index)) {
-                  hits.remove(i);
+            JSONObject indices = new JSONObject(resp);
+            JSONArray hits = null;
+
+            String projectName = currentProjects.get(email);
+            List<String> projects = new ArrayList();
+            //If we don't have the current project, filter out based on all user's projects
+            if (Strings.isNullOrEmpty(projectName)) {
+              projects.addAll(projectController.findProjectNamesByUser(email, true));
+            } else {
+              projects.add(projectName);
+            }
+            if (kibanaFilter == KibanaFilter.ELASTICSEARCH_SEARCH && HopsUtils.jsonKeyExists(indices, "buckets")) {
+              hits = indices.getJSONObject("aggregations").getJSONObject("indices").getJSONArray("buckets");
+            } else if (kibanaFilter == KibanaFilter.KIBANA_SAVED_OBJECTS_API && indices.has("saved_objects")) {
+              hits = indices.getJSONArray("saved_objects");
+            }
+            if (hits != null) {
+              for (int i = hits.length() - 1; i >= 0; i--) {
+                String objectId = null;
+                switch (kibanaFilter) {
+                  case ELASTICSEARCH_SEARCH:
+                    objectId = hits.getJSONObject(i).getString("key");
+                    break;
+                  case KIBANA_SAVED_OBJECTS_API:
+                    objectId = hits.getJSONObject(i).getString("id");
+                    break;
+                  default:
+                    break;
                 }
-              } else {
-                if ((!currentProjects.get(email).equalsIgnoreCase(projectName) || !projects.contains(projectName))
-                        && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX)) {
+                if (!Strings.isNullOrEmpty(objectId) && !isAuthorizedKibanaObject(objectId, email, projects)
+                    && !objectId.equals(Settings.KIBANA_DEFAULT_INDEX)) {
                   hits.remove(i);
                 }
               }
@@ -299,36 +292,14 @@ public class KibanaProxyServlet extends ProxyServlet {
     }
   }
 
-  /*
-   *
-   */
-  private boolean isAuthorized(HttpServletResponse servletResponse, String index,
-                               String email)
-          throws IOException {
-
-    //The index could be either projectname_logs or projectname_experiments
-    //Get the last part to figure that out
-    String[] indexParts = index.split("_");
-    String indexType = indexParts[indexParts.length-1];
-
-    List<String> projects = projectController.findProjectNamesByUser(
-            email, true);
-
-    boolean projectIsValid = false;
-
-    for(String project: projects){
-      String projectIndex = project + "_" + indexType;
-      if(projectIndex.equals(index)) {
-        projectIsValid = true;
+  private boolean isAuthorizedKibanaObject(String objectId, String email, List<String> projects) {
+    for (String objectSuffix : registeredKibanaSuffix) {
+      for (String name : projects) {
+        if (objectId.startsWith(name + objectSuffix)) {
+          return true;
+        }
       }
     }
-
-    if (!projectIsValid && !index.equals(
-            Settings.KIBANA_DEFAULT_INDEX)) {
-      servletResponse.sendError(403,
-              "User is not authorized to access this index");
-      return false;
-    }
-    return true;
+    return false;
   }
 }
