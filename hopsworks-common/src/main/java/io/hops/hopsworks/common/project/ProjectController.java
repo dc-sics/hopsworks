@@ -96,6 +96,7 @@ import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
 import io.hops.hopsworks.common.hdfs.HdfsUsersController;
 import io.hops.hopsworks.common.message.MessageController;
+import io.hops.hopsworks.common.security.CAException;
 import io.hops.hopsworks.common.security.CertificateMaterializer;
 import io.hops.hopsworks.common.security.CertificatesController;
 import io.hops.hopsworks.common.jobs.yarn.YarnLogUtil;
@@ -388,6 +389,8 @@ public class ProjectController {
       }
       LOGGER.log(Level.FINE, "PROJECT CREATION TIME. Step 8 (logs): {0}", System.currentTimeMillis() - startTime);
 
+      logProject(project, OperationType.Add);
+      
       // enable services
       for (ProjectServiceEnum service : projectServices) {
         try {
@@ -418,8 +421,6 @@ public class ProjectController {
             + "generation thread to finish. Will try to cleanup...", ex);
         cleanup(project, sessionId, certsGenerationFuture);
       }
-      
-      logProject(project, OperationType.Add);
       
       return project;
 
@@ -948,7 +949,7 @@ public class ProjectController {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.PROJECT_REMOVAL_NOT_ALLOWED);
     }
-
+    
     cleanup(project, sessionId);
     
     certificateMaterializer.forceRemoveLocalMaterial(user.getUsername(), project.getName(), null, true);
@@ -1075,8 +1076,12 @@ public class ProjectController {
         try {
           certificatesController.deleteProjectCertificates(project);
           cleanupLogger.logSuccess("Removed certificates");
+        } catch (CAException ex) {
+          if (ex.getError() != CAException.CAExceptionErrors.CERTNOTFOUND) {
+            cleanupLogger.logError("Error when removing certificates during project cleanup");
+          }
         } catch (IOException ex) {
-          cleanupLogger.logError("Error when removing certificates during project cleanup");          
+          cleanupLogger.logError("Error when removing certificates during project cleanup");
           cleanupLogger.logError(ex.getMessage());
         }
 
@@ -1519,11 +1524,13 @@ public class ProjectController {
       List<HdfsGroups> groupsToClean, Future<CertificatesController.CertsResult> certsGenerationFuture,
       boolean decreaseCreatedProj)
       throws IOException, InterruptedException, ExecutionException,
-      AppException {
+      AppException, CAException {
     DistributedFileSystemOps dfso = null;
     try {
       dfso = dfs.getDfsOps();
-
+      
+      datasetController.unsetMetaEnabledForAllDatasets(dfso, project);
+      
       //log removal to notify elastic search
       logProject(project, OperationType.Delete);
       //change the owner and group of the project folder to hdfs super user
@@ -1546,6 +1553,12 @@ public class ProjectController {
 
       try {
         certificatesController.deleteProjectCertificates(project);
+      } catch (CAException ex) {
+        if (ex.getError() != CAException.CAExceptionErrors.CERTNOTFOUND) {
+          LOGGER.log(Level.SEVERE, "Could not delete certificates during cleanup for project " + project.getName()
+              + ". Manual cleanup is needed!!!", ex);
+          throw ex;
+        }
       } catch (IOException ex) {
         LOGGER.log(Level.SEVERE, "Could not delete certificates during cleanup for project " + project.getName()
             + ". Manual cleanup is needed!!!", ex);
@@ -1736,9 +1749,8 @@ public class ProjectController {
                 if (certsResultFuture != null) {
                   certsResultFuture.get();
                 }
-                certificatesController.deleteUserSpecificCertificates(project,
-                    newMember);
-              } catch (IOException | InterruptedException | ExecutionException e) {
+                certificatesController.deleteUserSpecificCertificates(project, newMember);
+              } catch (IOException | InterruptedException | ExecutionException | CAException e) {
                 String failedUser = project.getName() + HdfsUsersController.USER_NAME_DELIMITER + newMember.
                     getUsername();
                 LOGGER.log(Level.SEVERE,
