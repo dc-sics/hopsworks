@@ -77,7 +77,6 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceFacade;
-import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.project.team.ProjectRoleTypes;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
@@ -2376,14 +2375,7 @@ public class ProjectController {
   public boolean addElasticsearch(Project project, ProjectServiceEnum serviceEnum) {
 
     if(serviceEnum.equals(ProjectServiceEnum.JOBS) || serviceEnum.equals(ProjectServiceEnum.JUPYTER) ) {
-      //We want to do this only once, so check if one of the services has already been enabled
-      for(ProjectServices service : project.getProjectServicesCollection()){
-        if(service.getProjectServicesPK().getService() == ProjectServiceEnum.JOBS 
-            || service.getProjectServicesPK().getService() == ProjectServiceEnum.JUPYTER){
-          return true;
-        }
-      }
-      
+            
       String projectName = project.getName().toLowerCase();
       Map<String, String> params = new HashMap<>();
       params.put("op", "POST");
@@ -2394,7 +2386,7 @@ public class ProjectController {
       JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
       
       boolean kibanaPatternCreated = false;
-      if (resp.has("updated_at")) {
+      if (resp.has("updated_at") || (resp.has("statusCode") && resp.get("statusCode").toString().equals("409"))) {
         kibanaPatternCreated = true;
       }
 
