@@ -17,7 +17,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
 package io.hops.hopsworks.api.kibana;
 
 import com.google.api.client.repackaged.com.google.common.base.Strings;
@@ -69,8 +68,9 @@ public class KibanaProxyServlet extends ProxyServlet {
   private ProjectController projectController;
   private final static Logger LOG = Logger.getLogger(KibanaProxyServlet.class.getName());
   private final HashMap<String, String> currentProjects = new HashMap<>();
-  
-  private final List<String> registeredKibanaSuffix = new ArrayList<String>() {{
+
+  private final List<String> registeredKibanaSuffix = new ArrayList<String>() {
+    {
       add("_logs");
       add("_experiments");
       add("_experiments_summary-search");
@@ -103,7 +103,7 @@ public class KibanaProxyServlet extends ProxyServlet {
       } catch (AppException ex) {
         LOG.log(Level.SEVERE, null, ex);
         servletResponse.sendError(403,
-                "Kibana was not accessed from Hopsworks, no current project information is available.");
+            "Kibana was not accessed from Hopsworks, no current project information is available.");
         return;
       }
     }
@@ -117,10 +117,10 @@ public class KibanaProxyServlet extends ProxyServlet {
     MyRequestWrapper myRequestWrapper = new MyRequestWrapper((HttpServletRequest) servletRequest);
     KibanaFilter kibanaFilter = null;
     //Filter requests based on path
-    LOG.log(Level.INFO, "***** servletRequest.getRequestURI():"+servletRequest.getRequestURI());
+    LOG.log(Level.INFO, "***** servletRequest.getRequestURI():" + servletRequest.getRequestURI());
     if (servletRequest.getRequestURI().contains("api/saved_objects/")) {
       kibanaFilter = KibanaFilter.KIBANA_SAVED_OBJECTS_API;
-    } else if (servletRequest.getRequestURI().contains("elasticsearch/*/_search")){
+    } else if (servletRequest.getRequestURI().contains("elasticsearch/*/_search")) {
       kibanaFilter = KibanaFilter.ELASTICSEARCH_SEARCH;
     }
 
@@ -242,7 +242,7 @@ public class KibanaProxyServlet extends ProxyServlet {
             //if user is authorizer to access it
             JSONObject indices = new JSONObject(resp);
             JSONArray hits = null;
-            
+
             String projectName = currentProjects.get(email);
             List<String> projects = new ArrayList();
             //If we don't have the current project, filter out based on all user's projects
@@ -259,12 +259,17 @@ public class KibanaProxyServlet extends ProxyServlet {
             if (hits != null) {
               for (int i = hits.length() - 1; i >= 0; i--) {
                 String objectId = null;
-                if (kibanaFilter.equals(KibanaFilter.ELASTICSEARCH_SEARCH)) {
-                  objectId = hits.getJSONObject(i).getString("key");
-                } else if (kibanaFilter.equals(KibanaFilter.KIBANA_SAVED_OBJECTS_API)) {
-                  hits.getJSONObject(i).getString("id");
-                } 
-                if (!Strings.isNullOrEmpty(objectId) && !isAuthorizedKibanaObject(objectId, email, projects) 
+                switch (kibanaFilter) {
+                  case ELASTICSEARCH_SEARCH:
+                    objectId = hits.getJSONObject(i).getString("key");
+                    break;
+                  case KIBANA_SAVED_OBJECTS_API:
+                    objectId = hits.getJSONObject(i).getString("id");
+                    break;
+                  default:
+                    break;
+                }
+                if (!Strings.isNullOrEmpty(objectId) && !isAuthorizedKibanaObject(objectId, email, projects)
                     && !objectId.equals(Settings.KIBANA_DEFAULT_INDEX)) {
                   hits.remove(i);
                 }
@@ -289,7 +294,7 @@ public class KibanaProxyServlet extends ProxyServlet {
 
   private boolean isAuthorizedKibanaObject(String objectId, String email, List<String> projects) {
     for (String objectSuffix : registeredKibanaSuffix) {
-      for(String name : projects){
+      for (String name : projects) {
         if (objectId.startsWith(name + objectSuffix)) {
           return true;
         }
@@ -298,4 +303,3 @@ public class KibanaProxyServlet extends ProxyServlet {
     return false;
   }
 }
-  
