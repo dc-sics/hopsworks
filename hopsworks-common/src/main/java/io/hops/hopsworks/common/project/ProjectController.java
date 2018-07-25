@@ -77,6 +77,7 @@ import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.cert.CertPwDTO;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceEnum;
 import io.hops.hopsworks.common.dao.project.service.ProjectServiceFacade;
+import io.hops.hopsworks.common.dao.project.service.ProjectServices;
 import io.hops.hopsworks.common.dao.project.team.ProjectRoleTypes;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
@@ -751,8 +752,8 @@ public class ProjectController {
     boolean toPersist;
     switch (service) {
       case JUPYTER:
-        toPersist = addServiceDataset(project, user,
-            Settings.ServiceDataset.JUPYTER, dfso, udfso);
+        toPersist = addServiceDataset(project, user, Settings.ServiceDataset.JUPYTER, dfso, udfso);
+        toPersist = addElasticsearch(project, ProjectServiceEnum.JUPYTER);
         break;
       case HIVE:
         addServiceHive(project, user, dfso);
@@ -764,7 +765,7 @@ public class ProjectController {
             Settings.ServiceDataset.SERVING, dfso, udfso);
         break;
       case JOBS:
-        toPersist = addElasticsearch(project.getName(), ProjectServiceEnum.JOBS);
+        toPersist = addElasticsearch(project, ProjectServiceEnum.JOBS);
         break;
       default:
         toPersist = true;
@@ -2369,20 +2370,28 @@ public class ProjectController {
    * Handles Kibana related indices and templates for projects.
    *
    * @param project
+   * @param serviceEnum
    * @return
    */
-  public boolean addElasticsearch(String project, ProjectServiceEnum serviceEnum) {
-    project = project.toLowerCase();
+  public boolean addElasticsearch(Project project, ProjectServiceEnum serviceEnum) {
 
-    if(serviceEnum.equals(ProjectServiceEnum.JOBS)) {
+    if(serviceEnum.equals(ProjectServiceEnum.JOBS) || serviceEnum.equals(ProjectServiceEnum.JUPYTER) ) {
+      //We want to do this only once, so check if one of the services has already been enabled
+      for(ProjectServices service : project.getProjectServicesCollection()){
+        if(service.getProjectServicesPK().getService() == ProjectServiceEnum.JOBS 
+            || service.getProjectServicesPK().getService() == ProjectServiceEnum.JUPYTER){
+          return true;
+        }
+      }
+      
+      String projectName = project.getName().toLowerCase();
       Map<String, String> params = new HashMap<>();
       params.put("op", "POST");
-      params.put("project", project + "_logs");
+      params.put("project", projectName + "_logs");
       params.put("resource", "");
-      params.put("data", "{\"attributes\": {\"title\": \"" + project + "_logs-*"  + "\"}}");
+      params.put("data", "{\"attributes\": {\"title\": \"" + projectName + "_logs-*"  + "\"}}");
   
-      JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", project + "_logs-*");
-      LOGGER.log(Level.SEVERE, resp.toString(2));
+      JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
       
       boolean kibanaPatternCreated = false;
       if (resp.has("updated_at")) {
@@ -2390,7 +2399,7 @@ public class ProjectController {
       }
 
       if (kibanaPatternCreated == false) {
-        LOGGER.log(Level.SEVERE, "Could not create logs index for project {0}", project);
+        LOGGER.log(Level.SEVERE, "Could not create logs index for project {0}", projectName);
       }
 
       return kibanaPatternCreated;
@@ -2415,8 +2424,9 @@ public class ProjectController {
         params.clear();
         params.put("op", "DELETE");
         params.put("resource", "");
-        params.put("project", projectName + "_logs-*");
-        elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
+        params.put("project", projectName + "_logs");
+        JSONObject resp = elasticController.sendKibanaReq(params, "index-pattern", projectName + "_logs-*");
+        LOGGER.log(Level.SEVERE, resp.toString(4));
       }
     }
     return true;

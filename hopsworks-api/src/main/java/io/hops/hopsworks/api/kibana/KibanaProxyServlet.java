@@ -88,8 +88,8 @@ public class KibanaProxyServlet extends ProxyServlet {
    */
   @Override
   protected void service(HttpServletRequest servletRequest,
-      HttpServletResponse servletResponse) throws ServletException,
-      IOException {
+                         HttpServletResponse servletResponse) throws ServletException,
+          IOException {
     if (servletRequest.getUserPrincipal() == null) {
       servletResponse.sendError(403, "User is not logged in");
       return;
@@ -103,7 +103,7 @@ public class KibanaProxyServlet extends ProxyServlet {
       } catch (AppException ex) {
         LOG.log(Level.SEVERE, null, ex);
         servletResponse.sendError(403,
-            "Kibana was not accessed from Hopsworks, no current project information is available.");
+                "Kibana was not accessed from Hopsworks, no current project information is available.");
         return;
       }
     }
@@ -117,7 +117,7 @@ public class KibanaProxyServlet extends ProxyServlet {
     MyRequestWrapper myRequestWrapper = new MyRequestWrapper((HttpServletRequest) servletRequest);
     KibanaFilter kibanaFilter = null;
     //Filter requests based on path
-    LOG.log(Level.INFO, "***** servletRequest.getRequestURI():" + servletRequest.getRequestURI());
+    LOG.log(Level.FINE, "servletRequest.getRequestURI():" + servletRequest.getRequestURI());
     if (servletRequest.getRequestURI().contains("api/saved_objects/")) {
       kibanaFilter = KibanaFilter.KIBANA_SAVED_OBJECTS_API;
     } else if (servletRequest.getRequestURI().contains("elasticsearch/*/_search")) {
@@ -139,13 +139,13 @@ public class KibanaProxyServlet extends ProxyServlet {
     HttpRequest proxyRequest;
     //spec: RFC 2616, sec 4.3: either of these two headers signal that there is a message body.
     if (servletRequest.getHeader(HttpHeaders.CONTENT_LENGTH) != null
-        || servletRequest.getHeader(HttpHeaders.TRANSFER_ENCODING) != null) {
+            || servletRequest.getHeader(HttpHeaders.TRANSFER_ENCODING) != null) {
       HttpEntityEnclosingRequest eProxyRequest
-          = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
+              = new BasicHttpEntityEnclosingRequest(method, proxyRequestUri);
       // Add the input entity (streamed)
       //  note: we don't bother ensuring we close the servletInputStream since the container handles it
       eProxyRequest.setEntity(new InputStreamEntity(myRequestWrapper.
-          getInputStream(), servletRequest.getContentLength()));
+              getInputStream(), servletRequest.getContentLength()));
       proxyRequest = eProxyRequest;
     } else {
       proxyRequest = new BasicHttpRequest(method, proxyRequestUri);
@@ -160,16 +160,16 @@ public class KibanaProxyServlet extends ProxyServlet {
       // Execute the request
       if (doLog) {
         log("proxy " + method + " uri: " + servletRequest.getRequestURI()
-            + " -- " + proxyRequest.getRequestLine().getUri());
+                + " -- " + proxyRequest.getRequestLine().getUri());
       }
       proxyResponse = super.proxyClient.execute(super.getTargetHost(
-          myRequestWrapper), proxyRequest);
+              myRequestWrapper), proxyRequest);
 
       // Process the response
       int statusCode = proxyResponse.getStatusLine().getStatusCode();
 
       if (doResponseRedirectOrNotModifiedLogic(myRequestWrapper, servletResponse,
-          proxyResponse, statusCode)) {
+              proxyResponse, statusCode)) {
         //the response is already "committed" now without any body to send
         //TODO copy response headers?
         return;
@@ -179,7 +179,7 @@ public class KibanaProxyServlet extends ProxyServlet {
       // deprecated but it's the only way to pass the reason along too.
       //noinspection deprecation
       servletResponse.setStatus(statusCode, proxyResponse.getStatusLine().
-          getReasonPhrase());
+              getReasonPhrase());
 
       copyResponseHeaders(proxyResponse, servletRequest, servletResponse);
 
@@ -190,7 +190,7 @@ public class KibanaProxyServlet extends ProxyServlet {
       //abort request, according to best practice with HttpClient
       if (proxyRequest instanceof AbortableHttpRequest) {
         AbortableHttpRequest abortableHttpRequest
-            = (AbortableHttpRequest) proxyRequest;
+                = (AbortableHttpRequest) proxyRequest;
         abortableHttpRequest.abort();
       }
       if (e instanceof RuntimeException) {
