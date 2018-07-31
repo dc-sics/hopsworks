@@ -161,10 +161,10 @@
           <groupId>org.apache.flink</groupId>
           <artifactId>flink-shaded-hadoop2</artifactId>
         </exclusion>
-        <!--        <exclusion>
+        <exclusion>
           <groupId>io.netty</groupId>
           <artifactId>netty-all</artifactId>
-        </exclusion>-->
+        </exclusion>
       </exclusions>
     </dependency> 
     <dependency>
