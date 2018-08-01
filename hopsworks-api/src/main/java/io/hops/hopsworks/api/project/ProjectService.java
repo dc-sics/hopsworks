@@ -27,6 +27,7 @@ import io.hops.hopsworks.api.jobs.JobService;
 import io.hops.hopsworks.api.jobs.KafkaService;
 import io.hops.hopsworks.api.jupyter.JupyterService;
 import io.hops.hopsworks.api.pythonDeps.PythonDepsService;
+import io.hops.hopsworks.api.tensorflow.TensorBoardService;
 import io.hops.hopsworks.api.tensorflow.TfServingService;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.api.util.LocalFsService;
@@ -117,6 +118,8 @@ public class ProjectService {
   private KafkaService kafka;
   @Inject
   private JupyterService jupyter;
+  @Inject
+  private TensorBoardService tensorboard;
   @Inject
   private TfServingService tfServingService;
   @Inject
@@ -494,6 +497,12 @@ public class ProjectService {
             case HIVE:
               error = ResponseMessages.HIVE_ADD_FAILURE;
               break;
+            case JOBS:
+              error = ResponseMessages.JOBS_ADD_FAILURE;
+              break;
+            case EXPERIMENTS:
+              error = ResponseMessages.EXPERIMENTS_ADD_FAILURE;
+              break;
             default:
               error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
               break;
@@ -832,25 +841,6 @@ public class ProjectService {
   }
 
   @POST
-  @Path("{id}/logs/enable")
-  @Produces(MediaType.TEXT_PLAIN)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public Response enableLogs(@PathParam("id") Integer id) throws AppException {
-    Project project = projectController.findProjectById(id);
-    if (!project.getLogs()) {
-      projectFacade.enableLogs(project);
-      try {
-        projectController.addElasticsearch(project.getName());
-      } catch (IOException ex) {
-        logger.log(Level.SEVERE, ex.getMessage());
-        return noCacheResponse.getNoCacheResponseBuilder(
-            Response.Status.SERVICE_UNAVAILABLE).build();
-      }
-    }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity("").build();
-  }
-
-  @POST
   @Path("{id}/downloadCert")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
@@ -918,6 +908,20 @@ public class ProjectService {
     this.jupyter.setProjectId(id);
 
     return this.jupyter;
+  }
+
+  @Path("{id}/tensorboard")
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
+  public TensorBoardService tensorboard(
+          @PathParam("id") Integer id) throws AppException {
+    Project project = projectController.findProjectById(id);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    this.tensorboard.setProjectId(id);
+
+    return this.tensorboard;
   }
 
   @Path("{id}/tfserving")

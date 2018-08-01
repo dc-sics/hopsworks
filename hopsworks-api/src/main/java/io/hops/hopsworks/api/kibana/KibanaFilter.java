@@ -60,6 +60,7 @@ package io.hops.hopsworks.api.kibana;
  */
 public enum KibanaFilter {
   MGET,
+  KIBANA_SAVED_OBJECTS_API,
   KIBANA_INDEXPATTERN_SEARCH, //DONE
   KIBANA_MAPPING_FIELD_SOURCE,
   MSEARCH, //DONE

@@ -269,6 +269,13 @@ public class JupyterService {
           Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
           "Could not find your username. Report a bug.");
     }
+    String loggedinemail = sc.getUserPrincipal().getName();
+    Users hopsworksUser = userFacade.findByEmail(loggedinemail);
+    if (hopsworksUser == null) {
+      throw new AppException(Response.Status.UNAUTHORIZED.getStatusCode(),
+              "You are not authorized for this invocation.");
+    }
+    String realName = hopsworksUser.getFname() + " " + hopsworksUser.getLname();
 
     if (project.getPaymentType().equals(PaymentType.PREPAID)) {
       YarnProjectsQuota projectQuota = yarnProjectsQuotaFacade.findByProjectName(project.getName());
@@ -294,7 +301,7 @@ public class JupyterService {
 
       try {
         jupyterSettingsFacade.update(jupyterSettings);
-        dto = jupyterProcessFacade.startServerAsJupyterUser(project, configSecret, hdfsUser, jupyterSettings);
+        dto = jupyterProcessFacade.startServerAsJupyterUser(project, configSecret, hdfsUser, realName, jupyterSettings);
         if (dto == null) {
           throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
               "Incomplete request!");

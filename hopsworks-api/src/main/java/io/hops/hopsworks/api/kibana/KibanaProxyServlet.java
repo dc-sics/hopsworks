@@ -27,9 +27,9 @@ import io.hops.hopsworks.common.util.Settings;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
@@ -66,7 +66,15 @@ public class KibanaProxyServlet extends ProxyServlet {
   @EJB
   private ProjectController projectController;
   private final static Logger LOG = Logger.getLogger(KibanaProxyServlet.class.getName());
-  Map<String, String> currentProjects = new HashMap<>();
+  private HashMap<String, String> currentProjects = new HashMap<>();
+
+  private final List<String> registeredKibanaSuffix = new ArrayList<String>() {{
+      add("_logs");
+      add("_experiments");
+      add("_experiments_summary-search");
+      add("_experiments_summary-dashboard");
+    }
+  };
 
   /**
    * Authorizer user to access particular index.
@@ -85,13 +93,7 @@ public class KibanaProxyServlet extends ProxyServlet {
       return;
     }
     String email = servletRequest.getUserPrincipal().getName();
-    String index = null;
-    //Do not authorize admin
-    if (email.equals(Settings.AGENT_EMAIL)) {
-      super.service(servletRequest, servletResponse);
-      return;
-    }
-    //Get the current project of the user
+
     if (servletRequest.getParameterMap().containsKey("projectId")) {
       String projectId = servletRequest.getParameterMap().get("projectId")[0];
       try {
@@ -100,48 +102,25 @@ public class KibanaProxyServlet extends ProxyServlet {
       } catch (AppException ex) {
         LOG.log(Level.SEVERE, null, ex);
         servletResponse.sendError(403,
-            "Kibana was not accessed from Hopsworks, no current project information is available.");
+                "Kibana was not accessed from Hopsworks, no current project information is available.");
         return;
       }
     }
+
+    //Do not authorize admin
+    if (email.equals(Settings.AGENT_EMAIL)) {
+      super.service(servletRequest, servletResponse);
+      return;
+    }
+
     MyRequestWrapper myRequestWrapper = new MyRequestWrapper(
         (HttpServletRequest) servletRequest);
     KibanaFilter kibanaFilter = null;
     //Filter requests based on path
-    if (servletRequest.getRequestURI().contains(
-        "elasticsearch/.kibana/index-pattern/_search")) {
-      kibanaFilter = KibanaFilter.KIBANA_INDEXPATTERN_SEARCH;
 
-    } else if (servletRequest.getRequestURI().contains(
-        "elasticsearch/.kibana/index-pattern")) {
-      kibanaFilter = KibanaFilter.KIBANA_INDEXPATTERN;
-      //Get index from URI
-      index = servletRequest.getRequestURI().substring(servletRequest.
-          getRequestURI().lastIndexOf("/")).replace("/", "");
-      //Check if this user has access to this project
-      if (!isAuthorized(servletResponse, index, email)) {
-        return;
-      }
-    } else if (servletRequest.getRequestURI().contains("elasticsearch/_msearch")) {
-      JSONObject body = new JSONObject(myRequestWrapper.getBody());
-      JSONArray jsonArray = body.optJSONArray("index");
-      if (jsonArray != null) {
-        if (!isAuthorized(servletResponse, (String) jsonArray.get(0), email)) {
-          return;
-        }
-      } else {
-        if (!isAuthorized(servletResponse, (String) body.get("index"), email)) {
-          return;
-        }
-      }
-    } else if (servletRequest.getRequestURI().contains(
-        "elasticsearch/") && servletRequest.getRequestURI().contains(
-            "_mapping/field")) {
-      //Check if this user has access to this project
-      index = servletRequest.getRequestURI().split("/")[4];
-      if (!isAuthorized(servletResponse, index, email)) {
-        return;
-      }
+    if (servletRequest.getRequestURI().contains(
+        "api/saved_objects/")) {
+      kibanaFilter = KibanaFilter.KIBANA_SAVED_OBJECTS_API;
     }
 
     //initialize request attributes from caches if unset by a subclass by this point
@@ -204,8 +183,8 @@ public class KibanaProxyServlet extends ProxyServlet {
       copyResponseHeaders(proxyResponse, servletRequest, servletResponse);
 
       // Send the content to the client
-      copyResponseEntity(proxyResponse, servletResponse, kibanaFilter, email,
-          index);
+      copyResponseEntity(proxyResponse, servletResponse, kibanaFilter,
+          email);
 
     } catch (Exception e) {
       //abort request, according to best practice with HttpClient
@@ -243,19 +222,16 @@ public class KibanaProxyServlet extends ProxyServlet {
    * @param proxyResponse
    * @param servletResponse
    * @param kibanaFilter
-   * @param email
-   * @param index
    * @throws java.io.IOException
    */
   protected void copyResponseEntity(HttpResponse proxyResponse,
-      HttpServletResponse servletResponse, KibanaFilter kibanaFilter,
-      String email, String index) throws
+      HttpServletResponse servletResponse, KibanaFilter kibanaFilter, String email) throws
       IOException {
     if (kibanaFilter == null) {
       super.copyResponseEntity(proxyResponse, servletResponse);
     } else {
       switch (kibanaFilter) {
-        case KIBANA_INDEXPATTERN_SEARCH:
+        case KIBANA_SAVED_OBJECTS_API:
           HttpEntity entity = proxyResponse.getEntity();
           if (entity != null) {
             GzipDecompressingEntity gzipEntity = new GzipDecompressingEntity(
@@ -266,19 +242,15 @@ public class KibanaProxyServlet extends ProxyServlet {
 
             //Remove all projects other than the current one and check
             //if user is authorizer to access it
-            List<String> projects = projectController.findProjectNamesByUser(email, true);
-            JSONArray hits = indices.getJSONObject("hits").getJSONArray("hits");
-            for (int i = hits.length() - 1; i >= 0; i--) {
-              String projectName = hits.getJSONObject(i).getString("_id");
-              if (index != null) {
-                if ((!currentProjects.get(email).equalsIgnoreCase(projectName) || !projects.contains(projectName))
-                    && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX) && !projectName.equals(index)) {
-                  hits.remove(i);
-                }
-              } else {
-                if ((!currentProjects.get(email).equalsIgnoreCase(projectName) || !projects.contains(projectName))
-                    && !projectName.equals(Settings.KIBANA_DEFAULT_INDEX)) {
-                  hits.remove(i);
+            if(indices.has("saved_objects")) {
+              JSONArray hits = indices.getJSONArray("saved_objects");
+              for (int i = hits.length() - 1; i >= 0; i--) {
+                String objectId = hits.getJSONObject(i).getString("id");
+                if (objectId != null) {
+                  if (!isAuthorizedKibanaObject(objectId, email)
+                          && !objectId.equals(Settings.KIBANA_DEFAULT_INDEX)) {
+                    hits.remove(i);
+                  }
                 }
               }
             }
@@ -289,6 +261,7 @@ public class KibanaProxyServlet extends ProxyServlet {
             basic.setContent(in);
             GzipCompressingEntity compress = new GzipCompressingEntity(basic);
             compress.writeTo(servletOutputStream);
+
           }
           break;
         default:
@@ -299,21 +272,14 @@ public class KibanaProxyServlet extends ProxyServlet {
     }
   }
 
-  /*
-   *
-   */
-  private boolean isAuthorized(HttpServletResponse servletResponse, String index,
-      String email)
-      throws IOException {
+  private boolean isAuthorizedKibanaObject(String objectId, String email) {
+    String projectName = currentProjects.get(email);
 
-    List<String> projects = projectController.findProjectNamesByUser(
-        email, true);
-    if (!projects.contains(index) && !index.equals(
-        Settings.KIBANA_DEFAULT_INDEX)) {
-      servletResponse.sendError(403,
-          "User is not authorized to access this index");
-      return false;
+    for (String objectSuffix : this.registeredKibanaSuffix) {
+      if ((projectName + objectSuffix).equals(objectId)) {
+        return true;
+      }
     }
-    return true;
+    return false;
   }
 }

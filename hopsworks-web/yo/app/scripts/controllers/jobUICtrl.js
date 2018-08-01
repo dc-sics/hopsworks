@@ -184,7 +184,7 @@ angular.module('hopsWorksApp')
                           self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=(refreshInterval:" +
                                   "(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))" +
                                   "&_a=(columns:!(%27timestamp%27,priority,logger_name,thread,message,host),index:" +
-                                  projectName.toLowerCase() +
+                                  projectName.toLowerCase() + "_logs" +
                                   ",interval:auto,query:(query_string:(analyze_wildcard:!t,query:'jobname%3D"
                                   +self.dashboardType+"%20AND%20jobid%3Dnotebook')),sort:!(%27timestamp%27,desc))";
                           self.current = "kibanaUI";
@@ -203,7 +203,7 @@ angular.module('hopsWorksApp')
                 self.ui = "/hopsworks-api/kibana/app/kibana?projectId=" + self.projectId + "#/discover?_g=(refreshInterval:" +
                         "(display:Off,pause:!f,value:0),time:(from:now-15m,mode:quick,to:now))" +
                         "&_a=(columns:!(%27timestamp%27,priority,application,logger_name,thread,message,host),index:" +
-                        self.job.project.name.toLowerCase() +
+                        self.job.project.name.toLowerCase() + "_logs" +
                         ",interval:auto,query:(query_string:(analyze_wildcard:!t,query:jobname%3D"
                         + self.job.name + ")),sort:!(%27timestamp%27,desc))";
                 self.current = "kibanaUI";

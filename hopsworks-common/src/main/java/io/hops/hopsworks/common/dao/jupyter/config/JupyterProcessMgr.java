@@ -173,7 +173,7 @@ public class JupyterProcessMgr {
   }
 
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)
-  public JupyterDTO startServerAsJupyterUser(Project project, String secretConfig, String hdfsUser,
+  public JupyterDTO startServerAsJupyterUser(Project project, String secretConfig, String hdfsUser, String realName,
       JupyterSettings js) throws AppException, IOException, InterruptedException {
 
     String prog = settings.getHopsworksDomainDir() + "/bin/jupyter.sh";
@@ -199,7 +199,7 @@ public class JupyterProcessMgr {
       // use pidfile to kill any running servers
       port = ThreadLocalRandom.current().nextInt(40000, 59999);
 
-      jc = new JupyterConfigFilesGenerator(project, secretConfig, hdfsUser,
+      jc = new JupyterConfigFilesGenerator(project, secretConfig, hdfsUser, realName,
           hdfsLeFacade.getSingleEndpoint(), settings, port, token, js);
 
       String secretDir = settings.getStagingDir() + Settings.PRIVATE_DIRS + js.getSecret();
