@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.admin.user.administration;
@@ -51,6 +70,7 @@ import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityQuestion;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
+import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.FormatUtils;
 import org.elasticsearch.common.Strings;
@@ -192,7 +212,7 @@ public class UserAdministration implements Serializable {
     return list;
   }
 
-  public String getChanged_Status(Users p) {
+  public String getChanged_Status(Users p) throws AppException {
     return userFacade.findByEmail(p.getEmail()).getStatusName();
   }
 
@@ -325,7 +345,13 @@ public class UserAdministration implements Serializable {
   
     FacesContext context = FacesContext.getCurrentInstance();
     HttpServletRequest request = (HttpServletRequest) context.getExternalContext().getRequest();
-    Users user = userFacade.findByEmail(userMail);
+    Users user;
+    try {
+      user = userFacade.findByEmail(userMail);
+    } catch (AppException ex) {
+      MessagesController.addErrorMessage("Error", "User not found in DB!");
+      return;
+    }
     if (user == null) {
       MessagesController.addErrorMessage("Error", "No user found!");
       return;
@@ -365,7 +391,7 @@ public class UserAdministration implements Serializable {
       usersController.deleteUser(user);
       MessagesController.addInfoMessage(user.getEmail() + " was removed.");
       spamUsers.remove(user);
-    } catch (RuntimeException ex) {
+    } catch (RuntimeException | AppException ex) {
       MessagesController.addSecurityErrorMessage("Remove failed. " + ex.
           getMessage());
       Logger.getLogger(UserAdministration.class.getName()).log(Level.SEVERE,
@@ -447,30 +473,38 @@ public class UserAdministration implements Serializable {
   }
 
   public void activateUser() {
-    Users user = userFacade.findByEmail(userMail);
+    Users user;
+    try {
+      user = userFacade.findByEmail(userMail);
+    } catch (AppException ex) {
+      Logger.getLogger(UserAdministration.class.getName()).log(Level.SEVERE, null, ex);
+      MessagesController.addSecurityErrorMessage("User is not in DB: " + userMail);
+      return;
+    }
     if (user == null) {
-      MessagesController.addSecurityErrorMessage("User is null.");
+      MessagesController.addSecurityErrorMessage("User is null: " + userMail);
       return;
     }
     if (role == null || role.isEmpty()) {
       role = "HOPS_USER";
     }
 
-    HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
-        getCurrentInstance().getExternalContext().getRequest();
-    String message = usersController.activateUser(role, user, sessionState.getLoggedInUser(), httpServletRequest);
-    if(Strings.isNullOrEmpty(message)){
-      MessagesController.addInfoMessage("User "+user.getEmail()+ " activated successfully", message);
-    } else {
-      MessagesController.addSecurityErrorMessage(message);
-    }
     try {
+      HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.
+          getCurrentInstance().getExternalContext().getRequest();
+      String message = usersController.activateUser(role, user, sessionState.getLoggedInUser(), httpServletRequest);
+      if (Strings.isNullOrEmpty(message)) {
+        MessagesController.addInfoMessage("User " + user.getEmail() + " activated successfully", message);
+      } else {
+        MessagesController.addSecurityErrorMessage(message);
+      }
+
       //send confirmation email
       emailBean.sendEmail(user.getEmail(), RecipientType.TO,
           UserAccountsEmailMessages.ACCOUNT_CONFIRMATION_SUBJECT,
           UserAccountsEmailMessages.
               accountActivatedMessage(user.getEmail()));
-    } catch (MessagingException e) {
+    } catch (MessagingException | AppException e) {
       MessagesController.addSecurityErrorMessage("Could not send email to "
           + user.getEmail() + ". " + e.getMessage());
       Logger.getLogger(UserAdministration.class.getName()).log(Level.SEVERE,
@@ -491,7 +525,7 @@ public class UserAdministration implements Serializable {
   }
 
   public void resendAccountVerificationEmail() throws
-      MessagingException {
+      MessagingException, AppException {
     FacesContext context = FacesContext.getCurrentInstance();
     HttpServletRequest request = (HttpServletRequest) context.getExternalContext().getRequest();
     Users user = userFacade.findByEmail(userMail);
@@ -505,7 +539,7 @@ public class UserAdministration implements Serializable {
 
   }
 
-  public String modifyUser() {
+  public String modifyUser() throws AppException {
     Users user1 = userFacade.findByEmail(userMail);
     FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("editinguser", user1);
 
@@ -516,7 +550,7 @@ public class UserAdministration implements Serializable {
     return "admin_profile";
   }
   
-  public String showProfile() {
+  public String showProfile() throws AppException {
     String email = FacesContext.getCurrentInstance().getExternalContext().getRemoteUser();
     Users user1 = userFacade.findByEmail(email);
     FacesContext.getCurrentInstance().getExternalContext().getSessionMap().put("editinguser", user1);

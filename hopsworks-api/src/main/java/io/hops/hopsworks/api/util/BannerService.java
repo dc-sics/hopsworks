@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,9 +35,7 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
-
 package io.hops.hopsworks.api.util;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
@@ -74,7 +92,8 @@ public class BannerService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response findUserBanner(@Context HttpServletRequest req) throws AppException {
-    Users user = userFacade.findByEmail(req.getRemoteUser());
+    Users user = null;
+    user = userFacade.findByEmail(req.getRemoteUser());
     JsonResponse json = new JsonResponse();
     json.setSuccessMessage("");
     if (user != null && (user.getSalt() == null || user.getSalt().isEmpty())) {
@@ -92,23 +111,31 @@ public class BannerService {
     }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
   }
-  
+
   @GET
   @Path("firstlogin")
   @Produces(MediaType.TEXT_PLAIN)
   @AllowedProjectRoles({AllowedProjectRoles.ANYONE})
   public Response firstLogin(@Context HttpServletRequest req) throws AppException {
-    settings.updateVariable("first_time_login", "0");
+    try {
+      settings.updateVariable("first_time_login", "0");
+    } catch (Exception e) {
+      throw new AppException(Response.Status.SERVICE_UNAVAILABLE, "Hopsworks unavailable. Is the DB down?");
+    }
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
-  }  
+  }
 
   @GET
-  @Path("admin_pwd_changed")  
+  @Path("admin_pwd_changed")
   @Produces(MediaType.TEXT_PLAIN)
   public Response adminPwdChanged(@Context HttpServletRequest req) throws AppException {
-    if (settings.isDefaultAdminPasswordChanged()) {
-      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+    try {
+      if (settings.isDefaultAdminPasswordChanged()) {
+        return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).build();
+      }
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
+    } catch (Exception e) {
+      return noCacheResponse.getNoCacheResponseBuilder(Response.Status.SERVICE_UNAVAILABLE).build();
     }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.NOT_FOUND).build();
   }
 }
