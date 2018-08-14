@@ -111,6 +111,7 @@ import static org.elasticsearch.index.query.QueryBuilders.queryStringQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
+import org.elasticsearch.search.sort.SortOrder;
 
 /**
  *
@@ -136,7 +137,7 @@ public class ElasticController {
       getClient();
     } catch (ServiceException ex) {
       LOG.log(Level.SEVERE, null, ex);
-  
+
     }
   }
 
@@ -161,8 +162,9 @@ public class ElasticController {
     SearchRequestBuilder srb = client.prepareSearch(Settings.META_INDEX);
     srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
     srb = srb.setQuery(this.globalSearchQuery(searchTerm.toLowerCase()));
-    srb = srb.highlighter(new HighlightBuilder().field("name"));
-    LOG.log(Level.INFO, "Global search Elastic query is: {0}", srb);
+    srb = srb.setSize(10000).addSort("_score", SortOrder.DESC);
+
+    LOG.log(Level.INFO, "Global search Elastic query is: {0}", srb.toString());
     ActionFuture<SearchResponse> futureResponse = srb.execute();
     SearchResponse response = futureResponse.actionGet();
 
@@ -250,7 +252,8 @@ public class ElasticController {
     srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
     srb = srb.setQuery(projectSearchQuery(projectId, searchTerm.toLowerCase()));
     srb = srb.highlighter(new HighlightBuilder().field("name"));
-
+    srb = srb.setSize(10000).addSort("_score", SortOrder.DESC);
+    
     LOG.log(Level.INFO, "Project Elastic query is: {0} {1}", new String[]{
       String.valueOf(projectId), srb.toString()});
     ActionFuture<SearchResponse> futureResponse = srb.execute();
@@ -307,7 +310,8 @@ public class ElasticController {
     SearchRequestBuilder srb = client.prepareSearch(Settings.META_INDEX);
     srb = srb.setTypes(Settings.META_DEFAULT_TYPE);
     srb = srb.setQuery(this.datasetSearchQuery(datasetId, searchTerm.toLowerCase()));
-
+    srb = srb.setSize(10000).addSort("_score", SortOrder.DESC);
+    
     LOG.log(Level.INFO, "Dataset Elastic query is: {0}", srb.toString());
     ActionFuture<SearchResponse> futureResponse = srb.execute();
     SearchResponse response = futureResponse.actionGet();
@@ -987,5 +991,3 @@ public class ElasticController {
     return (String)source.get("logdir");
   }
 }
-
-
