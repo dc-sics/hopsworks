@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.admin.security.ua;
@@ -30,6 +49,7 @@ import javax.servlet.http.HttpServletRequest;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.Users;
+import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.user.AuthController;
 import io.hops.hopsworks.common.user.UsersController;
 import java.io.IOException;
@@ -51,7 +71,7 @@ public class RoleEnforcementPoint implements Serializable {
   private int tabIndex;
   private Users user;
 
-  public Users getUserFromSession() {
+  public Users getUserFromSession() throws AppException {
     if (user == null) {
       ExternalContext context = FacesContext.getCurrentInstance().getExternalContext();
       String userEmail = context.getUserPrincipal().getName();
@@ -79,7 +99,7 @@ public class RoleEnforcementPoint implements Serializable {
    * <p>
    * @return
    */
-  public boolean isAdmin() {
+  public boolean isAdmin() throws AppException {
     if (getRequest().getRemoteUser() != null) {
       Users p = userFacade.findByEmail(getRequest().getRemoteUser());
       return usersController.isUserInRole(p, "HOPS_ADMIN");
@@ -92,12 +112,12 @@ public class RoleEnforcementPoint implements Serializable {
    * <p>
    * @return
    */
-  public boolean isUser() {
+  public boolean isUser() throws AppException {
     Users p = userFacade.findByEmail(getRequest().getRemoteUser());
     return usersController.isUserInRole(p, "HOPS_USER");
   }
 
-  public boolean isOnlyAuditorRole() {
+  public boolean isOnlyAuditorRole() throws AppException {
     Users p = userFacade.findByEmail(getRequest().getRemoteUser());
     return (usersController.isUserInRole(p,"AUDITOR") && !usersController.isUserInRole(p,"HOPS_ADMIN"));
   }
@@ -106,7 +126,7 @@ public class RoleEnforcementPoint implements Serializable {
    *
    * @return
    */
-  public boolean checkForRequests() {
+  public boolean checkForRequests() throws AppException {
     if (isAdmin()) {
       //return false if no requests
       return !(userFacade.findAllByStatus(UserAccountStatus.NEW_MOBILE_ACCOUNT).isEmpty())
@@ -139,7 +159,7 @@ public class RoleEnforcementPoint implements Serializable {
         authController.registerLogout(user, req);
       }
       FacesContext.getCurrentInstance().getExternalContext().redirect("/hopsworks/#!/home");
-    } catch (IOException | ServletException ex) {
+    } catch (IOException | ServletException | AppException ex) {
       Logger.getLogger(RoleEnforcementPoint.class.getName()).log(Level.SEVERE, null, ex);
     }
     return ("welcome");

@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 package io.hops.hopsworks.common.security;
 
@@ -193,7 +212,13 @@ public class CertificatesMgmService {
       throws IOException, EncryptionMasterPasswordException {
     String sha = DigestUtils.sha256Hex(providedPassword);
     if (!getMasterEncryptionPassword().equals(sha)) {
-      Users user = userFacade.findByEmail(userRequestedEmail);
+      Users user;
+      try {
+        user = userFacade.findByEmail(userRequestedEmail);
+      } catch (Exception ex) {
+        Logger.getLogger(CertificatesMgmService.class.getName()).log(Level.SEVERE, null, ex);
+        throw new IOException(ex.getMessage());
+      }
       String logMsg = "*** Attempt to change master encryption password with wrong credentials";
       if (user != null) {
         LOG.log(Level.INFO, logMsg + " by user <" + user.getUsername() + ">");
@@ -296,8 +321,14 @@ public class CertificatesMgmService {
   }
   
   private void sendInbox(String message, String preview, String userRequested) {
-    Users to = userFacade.findByEmail(userRequested);
-    Users from = userFacade.findByEmail(Settings.SITE_EMAIL);
+    Users to, from;
+    try {
+      to = userFacade.findByEmail(userRequested);
+      from = userFacade.findByEmail(Settings.SITE_EMAIL);
+    } catch (Exception ex) {
+      Logger.getLogger(CertificatesMgmService.class.getName()).log(Level.SEVERE, null, ex);
+      throw new IllegalArgumentException("Error when finding the user in the database. Is the database down?");
+    }
     messageController.send(to, from, "Master encryption password changed", preview, message, "");
   }
   

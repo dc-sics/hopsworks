@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 package io.hops.hopsworks.admin.user.profile;
 
@@ -50,6 +69,7 @@ import io.hops.hopsworks.common.dao.user.security.audit.Userlogins;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountStatus;
 import io.hops.hopsworks.common.dao.user.security.ua.SecurityUtils;
 import io.hops.hopsworks.common.dao.user.security.ua.UserAccountsEmailMessages;
+import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.FormatUtils;
 
@@ -165,7 +185,12 @@ public class AdminProfileAdministration implements Serializable {
   }
 
   public String getChangedStatus(Users p) {
-    return userFacade.findByEmail(p.getEmail()).getStatus().name();
+    try {
+      return userFacade.findByEmail(p.getEmail()).getStatus().name();
+    } catch (AppException ex) {
+      Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+      return "DB Problem";
+    }
   }
 
   public Users getUser() {
@@ -225,7 +250,12 @@ public class AdminProfileAdministration implements Serializable {
 
   public String getEditStatus() {
 
-    this.editStatus = userFacade.findByEmail(this.editingUser.getEmail()).getStatus().name();
+    try {
+      this.editStatus = userFacade.findByEmail(this.editingUser.getEmail()).getStatus().name();
+    } catch (AppException ex) {
+      Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+      return "DB Problem";
+    }
     return this.editStatus;
   }
 
@@ -246,7 +276,12 @@ public class AdminProfileAdministration implements Serializable {
           "editinguser_logins");
     } else {
       String email = FacesContext.getCurrentInstance().getExternalContext().getRemoteUser();
-      editingUser = userFacade.findByEmail(email);
+      try {
+        editingUser = userFacade.findByEmail(email);
+      } catch (AppException ex) {
+        Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+        return;
+      }
       login = auditManager.getLastUserLogin(editingUser);
     }
 
@@ -326,8 +361,14 @@ public class AdminProfileAdministration implements Serializable {
         Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
       }
     } else {
-      am.registerAccountChange(sessionState.getLoggedInUser(), AccountsAuditActions.CHANGEDSTATUS.name(),
-          UserAuditActions.FAILED.name(), selectedStatus, editingUser, httpServletRequest);
+      try {
+        am.registerAccountChange(sessionState.getLoggedInUser(), AccountsAuditActions.CHANGEDSTATUS.name(),
+            UserAuditActions.FAILED.name(), selectedStatus, editingUser, httpServletRequest);
+      } catch (AppException ex) {
+        Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+        MessagesController.addErrorMessage("Error", "DB Problem getting user!");
+        return;
+      }
       MessagesController.addErrorMessage("Error", "No selection made!");
 
     }
@@ -342,13 +383,26 @@ public class AdminProfileAdministration implements Serializable {
     // Register a new group
     if (!"#!".equals(newGroup)) {
       usersController.registerGroup(editingUser, bbcGroup.getGid());
-      am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditAction.ROLE_ADDED.name(),
-          RolesAuditAction.SUCCESS.name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
+      try {
+        am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditAction.ROLE_ADDED.name(),
+            RolesAuditAction.SUCCESS.name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
+      } catch (AppException ex) {
+        Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+        MessagesController.addErrorMessage("Error", "DB Problem getting user!");
+        return;
+      }
       MessagesController.addInfoMessage("Success", "Role updated successfully.");
 
     } else {
-      am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditAction.ROLE_ADDED.name(), RolesAuditAction.FAILED.
-          name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
+      try {
+        am.registerRoleChange(sessionState.getLoggedInUser(), RolesAuditAction.ROLE_ADDED.name(),
+            RolesAuditAction.FAILED.
+                name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
+      } catch (AppException ex) {
+        Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+        MessagesController.addErrorMessage("Error", "DB Problem getting user!");
+        return;
+      }
       MessagesController.addErrorMessage("Error", "No selection made!!");
     }
 
@@ -360,25 +414,29 @@ public class AdminProfileAdministration implements Serializable {
     HttpServletRequest httpServletRequest = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().
         getRequest();
 
-    // Remove a group
-    if (!"#!".equals(selectedGroup)) {
-      userFacade.removeGroup(editingUser.getEmail(), bbcGroup.getGid());
+    try {
+      // Remove a group
+      if (!"#!".equals(selectedGroup)) {
+        userFacade.removeGroup(editingUser.getEmail(), bbcGroup.getGid());
 
-      am.registerRoleChange(sessionState.getLoggedInUser(),
-          RolesAuditAction.ROLE_REMOVED.name(), RolesAuditAction.SUCCESS.
-          name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
-      MessagesController.addInfoMessage("Success", "User updated successfully.");
-    }
-
-    if ("#!".equals(selectedGroup)) {
-
-      if (("#!".equals(selectedStatus))
-          || "#!".equals(newGroup)) {
         am.registerRoleChange(sessionState.getLoggedInUser(),
-            RolesAuditAction.ROLE_REMOVED.name(), RolesAuditAction.FAILED.
+            RolesAuditAction.ROLE_REMOVED.name(), RolesAuditAction.SUCCESS.
             name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
-        MessagesController.addErrorMessage("Error", "No selection made!");
+        MessagesController.addInfoMessage("Success", "User updated successfully.");
       }
+
+      if ("#!".equals(selectedGroup)) {
+
+        if (("#!".equals(selectedStatus))
+            || "#!".equals(newGroup)) {
+          am.registerRoleChange(sessionState.getLoggedInUser(),
+              RolesAuditAction.ROLE_REMOVED.name(), RolesAuditAction.FAILED.
+              name(), bbcGroup.getGroupName(), editingUser, httpServletRequest);
+          MessagesController.addErrorMessage("Error", "No selection made!");
+        }
+      }
+    } catch (Exception ex) {
+      Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
     }
 
   }
@@ -392,8 +450,13 @@ public class AdminProfileAdministration implements Serializable {
   }
 
   public String getMaxNumProjs() {
-    return userFacade.findByEmail(editingUser.getEmail()).getMaxNumProjects().
-        toString();
+    try {
+      return userFacade.findByEmail(editingUser.getEmail()).getMaxNumProjects().
+          toString();
+    } catch (AppException ex) {
+      Logger.getLogger(AdminProfileAdministration.class.getName()).log(Level.SEVERE, null, ex);
+      return "-1";
+    }
   }
 
   public void setMaxNumProjs(String maxNumProjs) {

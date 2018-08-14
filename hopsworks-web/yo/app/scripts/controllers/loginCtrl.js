@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,18 +35,17 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('LoginCtrl', ['$location', '$cookies', 'growl', 'TourService', 'AuthService', 'BannerService', 'md5', 
-          function ($location, $cookies, growl, TourService, AuthService, BannerService, md5) {
+        .controller('LoginCtrl', ['$scope', '$location', '$cookies', 'growl', 'TourService', 'AuthService', 'BannerService', 'md5',
+          function ($scope, $location, $cookies, growl, TourService, AuthService, BannerService, md5) {
 
             var self = this;
 
-            self.announcement = "";
+            $scope.announcement = "";
             self.secondFactorRequired = false;
             self.firstTime = false;
             self.adminPasswordChanged = true;
@@ -43,7 +62,7 @@ angular.module('hopsWorksApp')
             self.ldapEnabled = $cookies.get('ldap') === 'true';
 
 
-            self.showDefaultPassword = function() {
+            self.showDefaultPassword = function () {
               if (self.firstTime === false || self.adminPasswordChanged === true ||
                       self.user.email !== 'admin@kth.se') {
                 return false;
@@ -57,10 +76,10 @@ angular.module('hopsWorksApp')
                         console.log(success);
                         self.otp = success.data.otp;
                         if (success.data.status === 1) {
-                          self.announcement = success.data.message;
+                          $scope.announcement = success.data.message;
                         }
                       }, function (error) {
-                self.announcement = '';
+                $scope.announcement = '';
               });
             };
 
@@ -69,10 +88,13 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.firstTime = true;
                         self.user.email = "admin@kth.se";
-//                        self.user.password = "admin";
                         self.user.toursState = 0;
                       }, function (error) {
-                self.firstTime = false;
+                        if (error.status === 503) { // service_unavailable
+                        $scope.announcement = "Hopsworks unavailable. Is MySQL down?"
+                      } else {
+                        self.firstTime = false;
+                      }
               });
             };
             var isAdminPasswordChanged = function () {
@@ -80,8 +102,12 @@ angular.module('hopsWorksApp')
                       function (success) {
                         self.adminPasswordChanged = true;
                       }, function (error) {
-                self.adminPasswordChanged = false;
-                self.announcement = "Security risk: change the current default password for the 'admin@kth.se' account."
+                      if (error.status === 503) { // service_unavailable
+                        $scope.announcement = "Hopsworks unavailable. Is MySQL down?"
+                      } else {
+                        self.adminPasswordChanged = false;
+                        $scope.announcement = "Security risk: change the current default password for the 'admin@kth.se' account."
+                      }
               });
             };
             self.enterAdminPassword = function () {
