@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.apiV2.projects;
@@ -65,7 +84,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import javax.xml.rpc.ServiceException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -214,18 +232,12 @@ public class ProjectsResource {
       projectDTO.setProjectName("demo_" + TourProjectType.KAFKA.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.KAFKA);
       readMeMessage = "jar file to demonstrate Kafka streaming";
-    } else if (TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName().replace("_", " ").equalsIgnoreCase(type)) {
-      // It's a Distributed TensorFlow guide
-      demoType = TourProjectType.DISTRIBUTED_TENSORFLOW;
-      projectDTO.setProjectName("demo_" + TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName() + "_" + username);
-      populateActiveServices(projectServices, TourProjectType.DISTRIBUTED_TENSORFLOW);
-      readMeMessage = "Mnist data to demonstrate the creation of a distributed TensorFlow job";
-    } else if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)) {
+    } else if (TourProjectType.DEEP_LEARNING.getTourName().equalsIgnoreCase(type)) {
       // It's a TensorFlow guide
-      demoType = TourProjectType.TENSORFLOW;
-      projectDTO.setProjectName("demo_" + TourProjectType.TENSORFLOW.getTourName() + "_" + username);
-      populateActiveServices(projectServices, TourProjectType.TENSORFLOW);
-      readMeMessage = "Mnist data and python files to demonstrate running TensorFlow noteooks";
+      demoType = TourProjectType.DEEP_LEARNING;
+      projectDTO.setProjectName("demo_" + TourProjectType.DEEP_LEARNING.getTourName() + "_" + username);
+      populateActiveServices(projectServices, TourProjectType.DEEP_LEARNING);
+      readMeMessage = "Jupyter notebooks and training data for demonstrating how to run Deep Learning";
     } else {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.STARTER_PROJECT_BAD_REQUEST);
@@ -307,7 +319,7 @@ public class ProjectsResource {
             // Service successfully enabled
             updated = true;
           }
-        } catch (ServiceException sex) {
+        } catch (AppException ae) {
           // Error enabling the service
           String error;
           switch (se) {

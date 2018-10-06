@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 /*jshint undef: false, unused: false, indent: 2*/
@@ -119,13 +138,9 @@ angular.module('hopsWorksApp')
                       self.tourService.kafkaProjectPrefix)) {
                 self.tourService.setActiveTour('kafka');
               } else if (angular.equals(self.currentProject.projectName
-                      .substr(0, self.tourService.tensorflowProjectPrefix.length),
-                      self.tourService.tensorflowProjectPrefix)) {
-                self.tourService.setActiveTour('tensorflow');
-              } else if (angular.equals(self.currentProject.projectName
-                      .substr(0, self.tourService.distributedtensorflowProjectPrefix.length),
-                      self.tourService.distributedtensorflowProjectPrefix)) {
-                self.tourService.setActiveTour('distributed tensorflow');
+                      .substr(0, self.tourService.deepLearningProjectPrefix.length),
+                      self.tourService.deepLearningProjectPrefix)) {
+                self.tourService.setActiveTour('deep_learning');
               }
 
               // Angular adds '#' symbol to the url when click on the home logo
@@ -339,13 +354,6 @@ angular.module('hopsWorksApp')
             };
 
             self.goToJobs = function () {
-              ProjectService.enableLogs({id: self.currentProject.projectId}).$promise.then(
-                      function (success) {
-
-                      }, function (error) {
-                growl.error(error.data.errorMsg, {title: 'Could not enable logging services', ttl: 5000});
-              });
-
               self.goToUrl('jobs');
               if (self.tourService.currentStep_TourTwo > -1) {
                 self.tourService.resetTours();
@@ -361,7 +369,9 @@ angular.module('hopsWorksApp')
               // If not running, start a new instance
 
 //              http://localhost:8080/hopsworks/#!/project/1/settings
-
+             if (self.tourService.currentStep_TourTwo > -1) {
+                self.tourService.resetTours();
+              }
 
 //              if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
 //                self.goToUrl('jupyter');
@@ -370,7 +380,7 @@ angular.module('hopsWorksApp')
               PythonDepsService.enabled(self.projectId).then(function (success) {
                 self.goToUrl('jupyter');
               }, function (error) {
-                if (self.currentProject.projectName.startsWith("demo_tensorflow")) {
+                if (self.currentProject.projectName.startsWith("demo_deep_learning")) {
                   self.goToUrl('jupyter');
                 } else {
                   ModalService.confirm('sm', 'Enable Anaconda First', 'You need to enable Anaconda before running Jupyter!')
@@ -399,11 +409,15 @@ angular.module('hopsWorksApp')
             };
 
             self.goToTfServing = function () {
-              self.goToUrl('tfserving');
+              self.goToUrl('serving');
             };
 
             self.goToPython = function () {
               self.goToUrl('python');
+            };
+
+            self.goToExperiments = function () {
+              self.goToUrl('experiments');
             };
 
             self.goToKafka = function () {
@@ -485,6 +499,10 @@ angular.module('hopsWorksApp')
 
             self.showJobs = function () {
               return showService("Jobs");
+            };
+
+            self.showExperiments = function () {
+              return (showService("Jobs") || showService("Jupyter"));
             };
 
             self.showSsh = function () {

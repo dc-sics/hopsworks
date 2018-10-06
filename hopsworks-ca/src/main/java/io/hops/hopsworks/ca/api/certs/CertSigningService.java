@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,14 +35,12 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 package io.hops.hopsworks.ca.api.certs;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import io.hops.hopsworks.ca.api.annotation.AllowCORS;
-import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
 import io.hops.hopsworks.common.dao.kafka.CsrDTO;
 import io.hops.hopsworks.common.exception.AppException;
@@ -87,43 +105,6 @@ public class CertSigningService {
   private DelaTrackerCertController delaTrackerCertController;
   @EJB
   private ServiceCertificateRotationTimer serviceCertificateRotationTimer;
-  
-  @POST
-  @Path("/register")
-  @RolesAllowed({"AGENT"})
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public Response register(@Context HttpServletRequest req, String jsonString)
-      throws AppException {
-    logger.log(Level.INFO, "Request to sign host certificate: \n{0}", jsonString);
-    JSONObject json = new JSONObject(jsonString);
-    String hostId = json.getString("host-id");
-    CsrDTO responseDto = null;
-    if (json.has("csr")) {
-      String csr = json.getString("csr");
-      responseDto = signCSR(hostId, null, csr, false, CertificateType.HOST);
-    } else {
-      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), "Requested to sign CSR but no CSR"
-          + " provided");
-    }
-    
-    if (json.has("agent-password")) {
-      Hosts host;
-      try {
-        host = hostsFacade.findByHostname(hostId);
-        String agentPassword = json.getString("agent-password");
-        host.setAgentPassword(agentPassword);
-        host.setRegistered(true);
-// We set the hostnmae as hopsworks::default pre-populates with the hostname, but it's not the correct hostname for GCE.
-        host.setHostname(hostId);   
-        hostsFacade.storeHost(host);
-      } catch (Exception ex) {
-        logger.log(Level.SEVERE, "Host storing error while Cert signing: {0}", ex.getMessage());
-      }
-    }
-    
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(responseDto).build();
-  }
   
   @POST
   @Path("/rotate")

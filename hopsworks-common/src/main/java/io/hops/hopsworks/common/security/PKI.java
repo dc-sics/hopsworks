@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,11 +35,16 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.common.security;
 
+import io.hops.hopsworks.common.util.Settings;
+import org.apache.commons.io.FileUtils;
+import org.javatuples.Pair;
+
+import javax.ejb.EJB;
+import javax.ejb.Stateless;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,12 +54,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
-import io.hops.hopsworks.common.util.Settings;
-import org.apache.commons.io.FileUtils;
-import org.javatuples.Pair;
-
-import javax.ejb.EJB;
-import javax.ejb.Stateless;
+import static io.hops.hopsworks.common.security.PKI.CAType.ROOT;
 
 @Stateless
 public class PKI {
@@ -65,7 +85,7 @@ public class PKI {
         return getAppCertificateValidityPeriod();
       case HOST:
         return getServiceCertificateValidityPeriod();
-      case DELA:
+      case DELA: case KUBE:
         return TEN_YEARS;
       default:
         throw new IllegalArgumentException("Certificate type not recognized");
@@ -118,6 +138,8 @@ public class PKI {
     switch (certType) {
       case HOST: case DELA: case APP: case PROJECT_USER:
         return CAType.INTERMEDIATE;
+      case KUBE:
+        return CAType.KUBECA;
       default:
         throw new IllegalArgumentException("Certificate type not recognized");
     }
@@ -125,7 +147,8 @@ public class PKI {
 
   public enum CAType {
     ROOT,
-    INTERMEDIATE;
+    INTERMEDIATE,
+    KUBECA;
   }
 
   public String getCAParentPath(CAType caType) {
@@ -134,6 +157,8 @@ public class PKI {
         return settings.getCaDir();
       case INTERMEDIATE:
         return settings.getIntermediateCaDir();
+      case KUBECA:
+        return settings.getKubeCAPath();
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -143,6 +168,8 @@ public class PKI {
     switch (caType) {
       case ROOT: case INTERMEDIATE:
         return settings.getHopsworksMasterPasswordSsl();
+      case KUBECA:
+        return settings.getKubeCAPassword();
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -154,6 +181,8 @@ public class PKI {
         return Paths.get(settings.getCaDir(), "openssl-ca.cnf");
       case INTERMEDIATE:
         return Paths.get(settings.getIntermediateCaDir(), "openssl-intermediate.cnf");
+      case KUBECA:
+        return Paths.get(settings.getKubeCAPath(), "kube-ca.cnf");
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -173,6 +202,8 @@ public class PKI {
         return Paths.get(settings.getCaDir(), "crl", "ca.crl.pem");
       case INTERMEDIATE:
         return Paths.get(settings.getIntermediateCaDir(), "crl", "intermediate.crl.pem");
+      case KUBECA:
+        return Paths.get(settings.getKubeCAPath(), "crl", "kube-ca.crl.pem");
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -184,6 +215,8 @@ public class PKI {
         return "v3_intermediate_ca";
       case INTERMEDIATE:
         return "usr_cert";
+      case KUBECA:
+        return "v3_ext";
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -203,6 +236,8 @@ public class PKI {
         return getCertPath(caType, "ca");
       case INTERMEDIATE:
         return getCertPath(caType, "intermediate");
+      case KUBECA:
+        return getCertPath(caType, "kube-ca");
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -218,9 +253,11 @@ public class PKI {
   public Path getChainOfTrustFilePath(CAType caType) {
     switch (caType) {
       case ROOT:
-        return getCertPath(caType,"ca.cert.pem");
+        return getCertPath(caType,"ca");
       case INTERMEDIATE:
-        return getCertPath(caType, "ca-chain.cert.pem");
+        return getCertPath(caType, "ca-chain");
+      case KUBECA:
+        return getCertPath(caType, "ca-chain");
       default:
         throw new IllegalArgumentException("CA type not recognized");
     }
@@ -234,12 +271,11 @@ public class PKI {
    */
   public Pair<String, String> getChainOfTrust(CAType caType) throws IOException {
     String intermediateCaCert = null;
-    switch (caType) {
-      case INTERMEDIATE:
-        intermediateCaCert = getCert(CAType.INTERMEDIATE);
+    if (caType != ROOT) {
+      intermediateCaCert = getCert(caType);
     }
 
-    String rootCaCert = getCert(CAType.ROOT);
+    String rootCaCert = getCert(ROOT);
 
     return new Pair<>(rootCaCert, intermediateCaCert);
   }

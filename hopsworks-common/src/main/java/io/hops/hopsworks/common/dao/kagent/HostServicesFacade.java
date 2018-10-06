@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,15 +35,18 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.common.dao.kagent;
 
+import io.hops.hopsworks.common.agent.AgentController;
 import io.hops.hopsworks.common.dao.host.Hosts;
 import io.hops.hopsworks.common.dao.host.HostsFacade;
+import io.hops.hopsworks.common.dao.host.Status;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.util.WebCommunication;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.ejb.Stateless;
@@ -31,6 +54,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.persistence.NonUniqueResultException;
@@ -314,4 +338,61 @@ public class HostServicesFacade {
     return host;
   }
 
+  public List<HostServices> updateHostServices(AgentController.AgentHeartbeatDTO heartbeat) throws AppException {
+    Hosts host = hostEJB.findByHostname(heartbeat.getHostId());
+    if (host == null) {
+      throw new AppException(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+          "Host with ID <" + heartbeat.getHostId() + "> does not exist");
+    }
+    final List<HostServices> hostServices = new ArrayList<>(heartbeat.getServices().size());
+    for (final AgentController.AgentServiceDTO service : heartbeat.getServices()) {
+      final String cluster = service.getCluster();
+      final String name = service.getService();
+      final String group = service.getGroup();
+      HostServices hostService = null;
+      try {
+        hostService = find(heartbeat.getHostId(), cluster, group, name);
+      } catch (Exception ex) {
+        logger.log(Level.WARNING, "Could not find service for " + heartbeat.getHostId() + "/"
+            + cluster + "/" + group + "/" + name);
+        continue;
+      }
+      
+      if (hostService == null) {
+        hostService = new HostServices();
+        hostService.setHost(host);
+        hostService.setCluster(cluster);
+        hostService.setGroup(group);
+        hostService.setService(name);
+        hostService.setStartTime(heartbeat.getAgentTime());
+      }
+  
+      final Integer pid = service.getPid() != null ? service.getPid(): -1;
+      hostService.setPid(pid);
+      if (service.getStatus() != null) {
+        if ((hostService.getStatus() == null || !hostService.getStatus().equals(Status.Started))
+            && service.getStatus().equals(Status.Started)) {
+          hostService.setStartTime(heartbeat.getAgentTime());
+        }
+        hostService.setStatus(service.getStatus());
+      } else {
+        hostService.setStatus(Status.None);
+      }
+  
+      if (service.getStatus().equals(Status.Started)) {
+        hostService.setStopTime(heartbeat.getAgentTime());
+      }
+      final Long startTime = hostService.getStartTime();
+      final Long stopTime = hostService.getStopTime();
+      if (startTime != null && stopTime != null) {
+        hostService.setUptime(stopTime - startTime);
+      } else {
+        hostService.setUptime(0L);
+      }
+      
+      store(hostService);
+      hostServices.add(hostService);
+    }
+    return hostServices;
+  }
 }

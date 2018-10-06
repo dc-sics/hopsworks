@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 package io.hops.hopsworks.api.project;
 
@@ -27,7 +46,8 @@ import io.hops.hopsworks.api.jobs.JobService;
 import io.hops.hopsworks.api.jobs.KafkaService;
 import io.hops.hopsworks.api.jupyter.JupyterService;
 import io.hops.hopsworks.api.pythonDeps.PythonDepsService;
-import io.hops.hopsworks.api.tensorflow.TfServingService;
+import io.hops.hopsworks.api.tensorflow.TensorBoardService;
+import io.hops.hopsworks.api.serving.TfServingService;
 import io.hops.hopsworks.api.util.JsonResponse;
 import io.hops.hopsworks.api.util.LocalFsService;
 import io.hops.hopsworks.common.constants.message.ResponseMessages;
@@ -92,7 +112,6 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import javax.xml.rpc.ServiceException;
 import org.apache.commons.net.util.Base64;
 import org.apache.hadoop.security.AccessControlException;
 
@@ -117,6 +136,8 @@ public class ProjectService {
   private KafkaService kafka;
   @Inject
   private JupyterService jupyter;
+  @Inject
+  private TensorBoardService tensorboard;
   @Inject
   private TfServingService tfServingService;
   @Inject
@@ -481,7 +502,7 @@ public class ProjectService {
               ResponseMessages.PROJECT_SERVICE_NOT_FOUND);
           json.setErrorMsg(s + ResponseMessages.PROJECT_SERVICE_NOT_FOUND + "\n "
               + json.getErrorMsg());
-        } catch (ServiceException sex) {
+        } catch (AppException ae) {
           // Error enabling the service
           String error = null;
           switch (se) {
@@ -493,6 +514,9 @@ public class ProjectService {
               break;
             case HIVE:
               error = ResponseMessages.HIVE_ADD_FAILURE;
+              break;
+            case JOBS:
+              error = ResponseMessages.JOBS_ADD_FAILURE;
               break;
             default:
               error = ResponseMessages.PROJECT_SERVICE_ADD_FAILURE;
@@ -564,18 +588,12 @@ public class ProjectService {
       projectDTO.setProjectName("demo_" + TourProjectType.KAFKA.getTourName() + "_" + username);
       populateActiveServices(projectServices, TourProjectType.KAFKA);
       readMeMessage = "jar file to demonstrate Kafka streaming";
-    } else if (TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName().replace("_", " ").equalsIgnoreCase(type)) {
-      // It's a Distributed TensorFlow guide
-      demoType = TourProjectType.DISTRIBUTED_TENSORFLOW;
-      projectDTO.setProjectName("demo_" + TourProjectType.DISTRIBUTED_TENSORFLOW.getTourName() + "_" + username);
-      populateActiveServices(projectServices, TourProjectType.DISTRIBUTED_TENSORFLOW);
-      readMeMessage = "Mnist data to demonstrate the creation of a distributed TensorFlow job";
-    } else if (TourProjectType.TENSORFLOW.getTourName().equalsIgnoreCase(type)) {
+    }  else if (TourProjectType.DEEP_LEARNING.getTourName().equalsIgnoreCase(type)) {
       // It's a TensorFlow guide
-      demoType = TourProjectType.TENSORFLOW;
-      projectDTO.setProjectName("demo_" + TourProjectType.TENSORFLOW.getTourName() + "_" + username);
-      populateActiveServices(projectServices, TourProjectType.TENSORFLOW);
-      readMeMessage = "Mnist data and python files to demonstrate running TensorFlow noteooks";
+      demoType = TourProjectType.DEEP_LEARNING;
+      projectDTO.setProjectName("demo_" + TourProjectType.DEEP_LEARNING.getTourName() + "_" + username);
+      populateActiveServices(projectServices, TourProjectType.DEEP_LEARNING);
+      readMeMessage = "Jupyter notebooks and training data for demonstrating how to run Deep Learning";
     } else {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.STARTER_PROJECT_BAD_REQUEST);
@@ -832,25 +850,6 @@ public class ProjectService {
   }
 
   @POST
-  @Path("{id}/logs/enable")
-  @Produces(MediaType.TEXT_PLAIN)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public Response enableLogs(@PathParam("id") Integer id) throws AppException {
-    Project project = projectController.findProjectById(id);
-    if (!project.getLogs()) {
-      projectFacade.enableLogs(project);
-      try {
-        projectController.addElasticsearch(project.getName());
-      } catch (IOException ex) {
-        logger.log(Level.SEVERE, ex.getMessage());
-        return noCacheResponse.getNoCacheResponseBuilder(
-            Response.Status.SERVICE_UNAVAILABLE).build();
-      }
-    }
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity("").build();
-  }
-
-  @POST
   @Path("{id}/downloadCert")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER})
@@ -876,7 +875,7 @@ public class ProjectService {
       //Pop-up a message from admin
       messageController.send(user, userFacade.findByEmail(Settings.SITE_EMAIL), "Certificate Info", "",
           "An email was sent with the password for your project's certificates. If an email does not arrive shortly, "
-          + "please check spam first and then contact the HopsWorks administrator.", "");
+          + "please check spam first and then contact the administrator.", "");
       emailBean.sendEmail(user.getEmail(), Message.RecipientType.TO, "Hopsworks certificate information",
           "The password for keystore and truststore is:" + certPwd);
     } catch (IOException ioe) {
@@ -920,16 +919,35 @@ public class ProjectService {
     return this.jupyter;
   }
 
-  @Path("{id}/tfserving")
+  @Path("{id}/tensorboard")
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
+  public TensorBoardService tensorboard(
+          @PathParam("id") Integer id) throws AppException {
+    Project project = projectController.findProjectById(id);
+    if (project == null) {
+      throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
+              ResponseMessages.PROJECT_NOT_FOUND);
+    }
+    this.tensorboard.setProjectId(id);
+
+    return this.tensorboard;
+  }
+
+  @Path("{id}/serving")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public TfServingService tfServingService(
-      @PathParam("id") Integer id) throws AppException {
+      @PathParam("id") Integer id,
+      @Context SecurityContext sc) throws AppException {
     Project project = projectController.findProjectById(id);
     if (project == null) {
       throw new AppException(Response.Status.BAD_REQUEST.getStatusCode(),
           ResponseMessages.PROJECT_NOT_FOUND);
     }
-    this.tfServingService.setProjectId(id);
+
+    Users user = userFacade.findByEmail(sc.getUserPrincipal().getName());
+
+    this.tfServingService.setProject(project);
+    this.tfServingService.setUser(user);
 
     return this.tfServingService;
   }

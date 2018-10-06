@@ -1,4 +1,24 @@
 <!--
+  ~ Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ This file is part of Hopsworks
+  ~ Copyright (C) 2018, Logical Clocks AB. All rights reserved
+  ~
+  ~ Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+  ~ the GNU Affero General Public License as published by the Free Software Foundation,
+  ~ either version 3 of the License, or (at your option) any later version.
+  ~
+  ~ Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  ~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  ~ PURPOSE.  See the GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License along with this program.
+  ~ If not, see <https://www.gnu.org/licenses/>.
+  ~
+  ~ Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
   ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
   ~ NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
   ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
   ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-  ~
   -->
 
 <aside class="offsidebar">
@@ -94,15 +113,20 @@
         </a>
       </li>
       
-      <li ng-click="projectCtrl.goToTfServing()" ng-show="projectCtrl.showTfServing()">
-        <a class="left-right" id="servingTab">
+      <li ng-click="projectCtrl.goToTfServing()" ng-show="projectCtrl.showTfServing()" id="servingTab">
+        <a class="left-right">
           Model Serving
           <img class="pull-right" style="margin-right:10px" height="25" src="images/tf-175x200_bw.png"/>
         </a>
       </li>
 
+      <li ng-click="projectCtrl.goToExperiments()" ng-show="projectCtrl.showExperiments()" id="experimentsTab">
+        <a>
+          Experiments<img class="pull-right" style="margin-right:8px" height="27" src="images/experiments.png"/>
+        </a>
+      </li>
       
-      <li ng-click="projectCtrl.goToDatasets()" style="margin-top:40px;" ng-show="projectCtrl.cloak">
+      <li ng-click="projectCtrl.goToDatasets()" style="margin-top:40px;" ng-show="projectCtrl.cloak" id="datasetsTab">
         <a>
           Data Sets <span class="sub_icon fa fa-folder-open fa-lg pull-right"></span>
           <i class=" pull-left fa " 
@@ -118,9 +142,9 @@
         </a>
       </li>
 
-      <li ng-click="projectCtrl.goToPython()" ng-show="projectCtrl.cloak">
+      <li ng-click="projectCtrl.goToPython()" ng-show="projectCtrl.cloak" id="pythonTab">
         <a>
-          Python<img class="pull-right" style="margin-right:10px" height="25" src="images/python_logo.png"/>
+          Python<img class="pull-right" style="margin-right:13px" height="23" src="images/python_logo.png"/>
         </a>
       </li>
 
@@ -177,7 +201,7 @@
 
 <tour class="ng-scope" step="projectCtrl.tourService.currentStep_TourTwo"
       post-tour="closeTour()"
-      ng-if="projectCtrl.showJobs() && projectCtrl.loadedView
+      ng-if="projectCtrl.loadedView
                   && (projectCtrl.tourService.informAndTips
                           || projectCtrl.tourService.tipsOnly)">
   <virtual-step
@@ -193,7 +217,6 @@
     tourtip-offset-vertical="-18"
     tourtip-offset-horizontal="-13"
     ></virtual-step>
-
   <virtual-step
     ng-if="projectCtrl.tourService.activeTour === 'kafka'"
     id="TourTwo"
@@ -206,32 +229,17 @@
     on-proceed="projectCtrl.goToKafka()"
     tourtip-offset-vertical="-15"
     ></virtual-step>
-
   <virtual-step
-    ng-if="projectCtrl.tourService.activeTour === 'tensorflow'"
+    ng-if="projectCtrl.tourService.activeTour === 'deep_learning'"
     id="TourTwo"
     class="ng-scope"
-    tourtip="Click Next to navigate to Jupyter and start your TensorFlow coding!"
+    tourtip="Click Next to navigate to Jupyter and follow the Deep Learning tour!"
     tourtip-step="0"
     tourtip-element="#jupyterTab"
     tourtip-placement="right"
-    tourtip-next-label="Done"
+    tourtip-next-label="Next"
     on-proceed="projectCtrl.goToJupyter()"
     tourtip-offset-vertical="-18"
     tourtip-offset-horizontal="-13"
     ></virtual-step>
-  <virtual-step
-    ng-if="projectCtrl.tourService.activeTour === 'distributed tensorflow'"
-    id="TourTwo"
-    class="ng-scope"
-    tourtip="Click Next, OR click on the Jobs tab to continue"
-    tourtip-step="0"
-    tourtip-element="#jobsTab"
-    tourtip-placement="right"
-    tourtip-next-label="Next"
-    on-proceed="projectCtrl.goToJobs()"
-    tourtip-offset-vertical="-18"
-    tourtip-offset-horizontal="-13"
-    ></virtual-step>
-
 </tour>

@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.common.util;
@@ -57,6 +76,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -65,6 +85,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.json.JSONObject;
 
 /**
  * Utility methods.
@@ -435,9 +456,7 @@ public class HopsUtils {
                 jobSystemProperties.put(Settings.K_CERTIFICATE, f_k_cert.toString());
                 jobSystemProperties.put(Settings.T_CERTIFICATE, t_k_cert.toString());
                 break;
-              case TENSORFLOW:
               case PYSPARK:
-              case TFSPARK:
               case SPARK:
                 Map<String, File> certs = new HashMap<>();
                 certs.put(Settings.K_CERTIFICATE, new File(
@@ -674,7 +693,7 @@ public class HopsUtils {
 
   /**
    * Convert processing quota from human friendly to seconds
-   * The format accepted is -?[0-9]{1,}:([0-9]{1,2}:){2}[0-9]{1,2}
+   * The format accepted is -?[0-9]+:([0-9]+:){2}[0-9]+
    * @param quota
    * @return
    */
@@ -814,6 +833,26 @@ public class HopsUtils {
     }
     
     return finalParams;
+  }
+  
+  /**
+   * Search recursively for a key in JSON.
+   * @param object json to parse
+   * @param searchedKey key to search for
+   * @return true if key is found, false otherwise.
+   */
+  public static boolean jsonKeyExists(JSONObject object, String searchedKey) {
+    boolean exists = object.has(searchedKey);
+    if (!exists) {
+      Iterator<?> keys = object.keys();
+      while (keys.hasNext()) {
+        String key = (String) keys.next();
+        if (object.get(key) instanceof JSONObject) {
+          exists = jsonKeyExists((JSONObject) object.get(key), searchedKey);
+        }
+      }
+    }
+    return exists;
   }
   
 }

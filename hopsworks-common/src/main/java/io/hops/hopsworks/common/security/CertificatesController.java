@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,11 +35,11 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 package io.hops.hopsworks.common.security;
 
 import io.hops.hopsworks.common.dao.certificates.CertsFacade;
+import io.hops.hopsworks.common.dao.certificates.UserCerts;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.dao.user.Users;
@@ -34,6 +54,9 @@ import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -60,7 +83,10 @@ public class CertificatesController {
   private CertificatesMgmService certificatesMgmService;
   @EJB
   private OpensslOperations opensslOperations;
-  
+  @Inject
+  @Any
+  private Instance<CertificateHandler> certificateHandlers;
+
   /**
    * Creates x509 certificates for a project specific user and project generic
    * @param project Associated project
@@ -115,12 +141,18 @@ public class CertificatesController {
       LOG.log(Level.FINE, "Created project generic certificates for project: "
           + project.getName());
     }
-  
-    certsFacade.putUserCerts(project.getName(), user.getUsername(), encryptedKey);
+
+    UserCerts uc = certsFacade.putUserCerts(project.getName(), user.getUsername(), encryptedKey);
+
+    // Run custom certificateHandlers
+    for (CertificateHandler certificateHandler : certificateHandlers) {
+      certificateHandler.generate(project, user, uc);
+    }
+
     return new AsyncResult<>(
         new CertsResult(project.getName(), user.getUsername()));
   }
-  
+
   @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
   public void deleteProjectCertificates(Project project) throws CAException, IOException {
     String projectName = project.getName();
@@ -136,6 +168,11 @@ public class CertificatesController {
         opensslOperations.revokeCertificate(certificateIdentifier, CertificateType.PROJECT_USER,
             false, false);
         opensslOperations.deleteUserCertificate(certificateIdentifier);
+
+        // Run custom handlers
+        for (CertificateHandler certificateHandler : certificateHandlers) {
+          certificateHandler.revoke(project, team.getUser());
+        }
       }
       opensslOperations.revokeCertificate(project.getProjectGenericUser(), CertificateType.PROJECT_USER,
           false, false);
@@ -167,6 +204,11 @@ public class CertificatesController {
       lock.unlock();
     }
     certsFacade.removeUserProjectCerts(project.getName(), user.getUsername());
+
+    // Run custom handlers
+    for (CertificateHandler certificateHandler : certificateHandlers) {
+      certificateHandler.revoke(project, user);
+    }
   }
   
   @TransactionAttribute(TransactionAttributeType.NOT_SUPPORTED)

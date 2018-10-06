@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,7 +35,6 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package io.hops.hopsworks.api.jobs;
@@ -30,14 +49,13 @@ import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstate;
 import io.hops.hopsworks.common.dao.jobhistory.YarnApplicationstateFacade;
 import io.hops.hopsworks.common.dao.jobs.description.AppIdDTO;
 import io.hops.hopsworks.common.dao.jobs.description.AppInfoDTO;
-import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.jobs.description.JobFacade;
+import io.hops.hopsworks.common.dao.jobs.description.Jobs;
 import io.hops.hopsworks.common.dao.jobs.description.YarnAppUrlsDTO;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.dao.user.activity.ActivityFacade;
-import io.hops.hopsworks.common.elastic.ElasticController;
 import io.hops.hopsworks.common.exception.AppException;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
@@ -52,29 +70,26 @@ import io.hops.hopsworks.common.jobs.yarn.YarnLogUtil;
 import io.hops.hopsworks.common.jobs.yarn.YarnMonitor;
 import io.hops.hopsworks.common.metadata.exception.DatabaseException;
 import io.hops.hopsworks.common.util.Settings;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.net.InetAddress;
-import java.net.URLEncoder;
-import java.util.Map;
-import java.util.Objects;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import io.hops.hopsworks.common.yarn.YarnClientService;
+import io.hops.hopsworks.common.yarn.YarnClientWrapper;
+import org.apache.commons.httpclient.Header;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.HttpMethod;
+import org.apache.commons.httpclient.cookie.CookiePolicy;
+import org.apache.commons.httpclient.methods.GetMethod;
+import org.apache.commons.httpclient.params.HttpClientParams;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.exceptions.YarnException;
+import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.influxdb.InfluxDB;
+import org.influxdb.InfluxDBFactory;
+import org.influxdb.dto.Query;
+import org.influxdb.dto.QueryResult;
+
 import javax.ejb.EJB;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
@@ -98,30 +113,31 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
-
-import io.hops.hopsworks.common.yarn.YarnClientService;
-import io.hops.hopsworks.common.yarn.YarnClientWrapper;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
+import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-import org.apache.commons.httpclient.Header;
-import org.apache.commons.httpclient.HostConfiguration;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.cookie.CookiePolicy;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.params.HttpClientParams;
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.yarn.exceptions.YarnException;
-import org.apache.hadoop.yarn.util.ConverterUtils;
-import org.influxdb.InfluxDB;
-import org.influxdb.InfluxDBFactory;
-import org.influxdb.dto.Query;
-import org.influxdb.dto.QueryResult;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  *
@@ -145,13 +161,7 @@ public class JobService {
   @Inject
   private SparkService spark;
   @Inject
-  private AdamService adam;
-  @Inject
   private FlinkService flink;
-  @Inject
-  private TensorFlowService tensorflow;
-  @Inject
-  private InfluxDBService influxdb;
   @EJB
   private JobController jobController;
   @EJB
@@ -170,8 +180,6 @@ public class JobService {
   private YarnApplicationstateFacade yarnApplicationstateFacade;
   @EJB
   private HdfsUsersController hdfsUsersBean;
-  @EJB
-  private ElasticController elasticController;
   @EJB
   private UserFacade userFacade;
   @EJB
@@ -435,10 +443,11 @@ public class JobService {
     try {
       client = dfs.getDfsOps(hdfsUser);
       FileStatus[] statuses = client.getFilesystem().globStatus(new org.apache.hadoop.fs.Path("/Projects/" + project.
-          getName() + "/Logs/TensorFlow/" + appId + "/TensorBoard.task*"));
+          getName() + "/Experiments/" + appId + "/TensorBoard.*"));
+      LOGGER.log(Level.INFO, "Found " + statuses.length + " tbs");
       DistributedFileSystem fs = client.getFilesystem();
       for (FileStatus status : statuses) {
-        //LOGGER.log(Level.INFO, "Reading tensorboard for: {0}", status.getPath());
+        LOGGER.log(Level.INFO, "Reading tensorboard for: {0}", status.getPath());
         FSDataInputStream in = null;
         try {
           in = fs.open(new org.apache.hadoop.fs.Path(status.getPath().toString()));
@@ -505,17 +514,43 @@ public class JobService {
             + appId + "/prox/" + trackingUrl;
         urls.add(new YarnAppUrlsDTO("spark", trackingUrl));
       }
-
-      if (isLivy.compareToIgnoreCase("true") == 0) {
-        YarnApplicationstate appStates;
-        appStates = appStateBean.findByAppId(appId);
-        if (appStates != null && appStates.getAppname().toUpperCase().contains("TENSORFLOW")) {
-          urls.addAll(getTensorBoardUrls(hdfsUser, appId));
-        }
-      }
-
     } catch (Exception e) {
       LOGGER.log(Level.SEVERE, "exception while geting job ui " + e.
+          getLocalizedMessage(), e);
+    }
+
+    GenericEntity<List<YarnAppUrlsDTO>> listUrls = new GenericEntity<List<YarnAppUrlsDTO>>(urls) { };
+
+    return noCacheResponse.getNoCacheResponseBuilder(response)
+        .entity(listUrls).build();
+  }
+
+  /**
+   * Get the Job UI url for the specified job
+   * <p>
+   * @param appId
+   * @param sc
+   * @return url
+   * @throws AppException
+   */
+  @GET
+  @Path("/{appId}/tensorboard")
+  @Produces(MediaType.APPLICATION_JSON)
+  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  public Response getTensorBoardUrls(@PathParam("appId") String appId,
+                                     @Context SecurityContext sc) throws AppException {
+    Response noAccess = checkAccessRight(appId);
+    if (noAccess != null) {
+      return noAccess;
+    }
+    Response.Status response = Response.Status.OK;
+    List<YarnAppUrlsDTO> urls = new ArrayList<>();
+    String hdfsUser = getHdfsUser(sc);
+
+    try {
+      urls.addAll(getTensorBoardUrls(hdfsUser, appId));
+    } catch (Exception e) {
+      LOGGER.log(Level.SEVERE, "Exception while getting TensorBoard endpoints" + e.
           getLocalizedMessage(), e);
     }
 
@@ -758,9 +793,6 @@ public class JobService {
       params.setBooleanParameter(HttpClientParams.ALLOW_CIRCULAR_REDIRECTS,
           true);
       HttpClient client = new HttpClient(params);
-      HostConfiguration config = new HostConfiguration();
-      InetAddress localAddress = InetAddress.getLocalHost();
-      config.setLocalAddress(localAddress);
 
       final HttpMethod method = new GetMethod(uri.getEscapedURI());
       Enumeration<String> names = req.getHeaderNames();
@@ -783,14 +815,17 @@ public class JobService {
             + URLEncoder.encode(user, "ASCII"));
       }
 
-      client.executeMethod(config, method);
+      client.executeMethod(method);
       Response.ResponseBuilder responseBuilder = noCacheResponse.
           getNoCacheResponseBuilder(Response.Status.OK);
       for (Header header : method.getResponseHeaders()) {
         responseBuilder.header(header.getName(), header.getValue());
       }
+      //method.getPath().contains("/allexecutors") is needed to replace the links under Executors tab
+      //which are in a json response object
       if (method.getResponseHeader("Content-Type") == null || method.
-          getResponseHeader("Content-Type").getValue().contains("html")) {
+          getResponseHeader("Content-Type").getValue().contains("html")
+          || method.getPath().contains("/allexecutors")) {
         final String source = "http://" + method.getURI().getHost() + ":"
             + method.getURI().getPort();
         if (method.getResponseHeader("Content-Length") == null) {
@@ -887,8 +922,13 @@ public class JobService {
     ui = ui.replaceAll("(?<=(href|src)=\')(?=[a-zA-Z])",
         "/hopsworks-api/api/project/"
         + project.getId() + "/jobs/" + appId + "/prox/" + param);
+    ui = ui.replaceAll("(?<=\"(stdout\"|stderr\") : \")(?=[a-zA-Z])",
+        "/hopsworks-api/api/project/"
+        + project.getId() + "/jobs/" + appId + "/prox/");
+    ui = ui.replaceAll("here</a>\\s+for full log", "here</a> for latest " + settings.getSparkUILogsOffset()
+        + " bytes of logs");
+    ui = ui.replaceAll("/@hwqmstart=0", "/@hwqmstart=-" + settings.getSparkUILogsOffset());
     return ui;
-
   }
 
   private boolean hasAppAccessRight(String trackingUrl) {
@@ -1352,8 +1392,6 @@ public class JobService {
       try {
         LOGGER.log(Level.INFO, "Request to delete job name ={0} job id ={1}",
             new Object[]{job.getName(), job.getId()});
-
-        elasticController.deleteJobLogs(project.getName(), "logs", settings.getJobLogsIdField(), job.getId());
         jobFacade.removeJob(job);
         LOGGER.log(Level.INFO, "Deleted job name ={0} job id ={1}",
             new Object[]{job.getName(), job.getId()});
@@ -1461,33 +1499,9 @@ public class JobService {
     return this.spark.setProject(project);
   }
 
-  @Path("/tfspark")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public SparkService tfspark() {
-    return this.spark.setProject(project);
-  }
-
-  @Path("/tensorflow")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public TensorFlowService tensorflow() {
-    return this.tensorflow.setProject(project);
-  }
-
-  @Path("/adam")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public AdamService adam() {
-    return this.adam.setProject(project);
-  }
-
   @Path("/flink")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
   public FlinkService flink() {
     return this.flink.setProject(project);
-  }
-
-  @Path("/{appId}/influxdb")
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
-  public InfluxDBService influxdb(@PathParam("appId") String appId) {
-    return this.influxdb.setAppId(appId);
   }
 }

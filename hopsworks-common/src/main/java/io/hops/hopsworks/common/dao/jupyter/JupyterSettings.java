@@ -1,4 +1,24 @@
 /*
+ * Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
+ * This file is part of Hopsworks
+ * Copyright (C) 2018, Logical Clocks AB. All rights reserved
+ *
+ * Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+ * the GNU Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License along with this program.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+ * are released under the following license:
+ *
  * Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this
@@ -15,9 +35,7 @@
  * NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
  * DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
-
 package io.hops.hopsworks.common.dao.jupyter;
 
 import io.hops.hopsworks.common.dao.project.Project;
@@ -58,9 +76,9 @@ import javax.xml.bind.annotation.XmlRootElement;
       query
       = "SELECT j FROM JupyterSettings j WHERE j.numTfPs = :numTfPs")
   ,
-    @NamedQuery(name = "JupyterSettings.findByNumTfGpus",
+    @NamedQuery(name = "JupyterSettings.findByNumExecutorGpus",
       query
-      = "SELECT j FROM JupyterSettings j WHERE j.numTfGpus = :numTfGpus")
+      = "SELECT j FROM JupyterSettings j WHERE j.numExecutorGpus = :numExecutorGpus")
   ,
     @NamedQuery(name = "JupyterSettings.findByNumMpiNp",
       query
@@ -145,7 +163,7 @@ public class JupyterSettings implements Serializable {
 
   @Basic(optional = false)
   @Column(name = "num_tf_gpus")
-  private int numTfGpus = 0;
+  private int numExecutorGpus = 0;
 
   @Basic(optional = false)
   @Column(name = "num_mpi_np")
@@ -196,14 +214,14 @@ public class JupyterSettings implements Serializable {
 
   @Basic(optional = false)
   @Column(name = "shutdown_level")
-  private int shutdownLevel=4;
+  private int shutdownLevel = 4;
 
   @Basic(optional = false)
   @NotNull
   @Size(min = 1,
       max = 32)
   @Column(name = "mode")
-  private String mode = "dynamicSpark";
+  private String mode = "dynamicspark";
 
   @Basic(optional = false)
   @Column(name = "advanced")
@@ -219,25 +237,25 @@ public class JupyterSettings implements Serializable {
   @Size(min = 0,
       max = 1500)
   @Column(name = "jars")
-  private String jars= "";
+  private String jars = "";
 
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "files")
-  private String files= "";
+  private String files = "";
 
   @Basic(optional = false)
   @Size(min = 0,
       max = 1500)
   @Column(name = "py_files")
-  private String pyFiles= "";
+  private String pyFiles = "";
 
   @Basic(optional = false)
   @Size(min = 0,
       max = 6500)
   @Column(name = "spark_params")
-  private String sparkParams= "";
+  private String sparkParams = "";
 
   @Basic(optional = false)
   @Size(min = 3,
@@ -267,8 +285,11 @@ public class JupyterSettings implements Serializable {
   @Transient
   private String privateDir = "";
 
-  @Transient
+  @Transient  
   private String baseDir = "/Jupyter/";
+
+  @Transient
+  private String distributionStrategy;
 
   public JupyterSettings() {
   }
@@ -277,14 +298,14 @@ public class JupyterSettings implements Serializable {
     this.jupyterSettingsPK = jupyterSettingsPK;
   }
 
-  public JupyterSettings(JupyterSettingsPK jupyterSettingsPK, int numTfPs, int numTfGpus, int numMpiNp,
+  public JupyterSettings(JupyterSettingsPK jupyterSettingsPK, int numTfPs, int numExecutorGpus, int numMpiNp,
       int appmasterCores, int appmasterMemory, int numExecutors, int numExecutorCores, int executorMemory,
       int dynamicInitialExecutors, int dynamicMinExecutors, int dynamicMaxExecutors, String secret, String mode,
       boolean advanced, String archives, String jars, String files, String pyFiles, String sparkParams, String umask,
-                         boolean faultTolerant) {
+      boolean faultTolerant) {
     this.jupyterSettingsPK = jupyterSettingsPK;
     this.numTfPs = numTfPs;
-    this.numTfGpus = numTfGpus;
+    this.numExecutorGpus = numExecutorGpus;
     this.numMpiNp = numMpiNp;
     this.appmasterCores = appmasterCores;
     this.appmasterMemory = appmasterMemory;
@@ -326,12 +347,12 @@ public class JupyterSettings implements Serializable {
     this.numTfPs = numTfPs;
   }
 
-  public int getNumTfGpus() {
-    return numTfGpus;
+  public int getNumExecutorGpus() {
+    return numExecutorGpus;
   }
 
-  public void setNumTfGpus(int numTfGpus) {
-    this.numTfGpus = numTfGpus;
+  public void setNumExecutorGpus(int numExecutorGpus) {
+    this.numExecutorGpus = numExecutorGpus;
   }
 
   public int getNumMpiNp() {
@@ -559,5 +580,13 @@ public class JupyterSettings implements Serializable {
 
   public void setFaultTolerant(boolean faultTolerant) {
     this.faultTolerant = faultTolerant;
+  }
+
+  public String getDistributionStrategy() {
+    return distributionStrategy;
+  }
+
+  public void setDistributionStrategy(String distributionStrategy) {
+    this.distributionStrategy = distributionStrategy;
   }
 }
