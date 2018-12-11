@@ -59,6 +59,7 @@
     <module>hopsworks-dela</module>
     <module>hopsworks-jwt</module>
     <module>hopsworks-persistence</module>
+    <module>aegis-web</module>
   </modules>
 
   <profiles>
@@ -233,4 +234,3 @@
     </repository>
   </distributionManagement>
 </project>
-

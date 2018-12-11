@@ -1,0 +1,245 @@
+<!--
+  ~ Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ This file is part of Hopsworks
+  ~ Copyright (C) 2018, Logical Clocks AB. All rights reserved
+  ~
+  ~ Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+  ~ the GNU Affero General Public License as published by the Free Software Foundation,
+  ~ either version 3 of the License, or (at your option) any later version.
+  ~
+  ~ Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  ~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  ~ PURPOSE.  See the GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License along with this program.
+  ~ If not, see <https://www.gnu.org/licenses/>.
+  ~
+  ~ Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  ~ software and associated documentation files (the "Software"), to deal in the Software
+  ~ without restriction, including without limitation the rights to use, copy, modify, merge,
+  ~ publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  ~ persons to whom the Software is furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all copies or
+  ~ substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS  OR IMPLIED, INCLUDING
+  ~ BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  ~ NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+  ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  -->
+
+<aside class="offsidebar">
+  <nav class="navbar navbar-inverse navbar-fixed-top" id="sidebar-wrapper" role="navigation" style="margin-top:50px;"  ng-cloak>
+
+    <ul class="nav sidebar-nav" ng-cloak ng-controller="ClusterUtilisationCtrl as clusterUtilCtrl">
+
+      <li style="background: #1a1a1a;">
+        <a href="#!/project/{{projectCtrl.currentProject.projectId}}" class="text-center" 
+           title="{{projectCtrl.currentProject.projectName.length > 17 ? projectCtrl.currentProject.projectName:''}}">
+          {{ projectCtrl.currentProject.projectName | limitTo: 17 }}{{projectCtrl.currentProject.projectName.length > 17
+          ? '...' : ''}}
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToJupyter()" ng-show="projectCtrl.showJupyter()">
+        <a>
+          Jupyter <img class="pull-right" style="margin-right:5px" width="30" src="images/jupyter-200x200-bw.png"
+                       id="jupyterTab"/>
+          <i class="pull-left fa"  
+             uib-tooltip="Orange triangle: jobs are encountering problems. Red means Jobs cannot be run just now." 
+             tooltip-placement="auto right"
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>          
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToZeppelin()" ng-show="projectCtrl.showZeppelin()">
+        <a>
+          Zeppelin 
+          <img class="pull-right" style="margin-right:5px" width="30" src="images/zeppelin_logo.png"/>
+          <i class=" pull-left fa " 
+             uib-tooltip="Orange triangle: jobs are encountering problems. Red means Jobs cannot be run just now." 
+             tooltip-placement="auto right"
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToJobs()" ng-show="projectCtrl.showJobs()" id="jobsTab">
+        <a>
+          Jobs <span class="sub_icon fa fa-cogs fa-lg pull-right"></span>
+          <i class=" pull-left fa " 
+             uib-tooltip="Orange triangle: jobs are encountering problems. Red means Jobs cannot be run just now."              
+             tooltip-placement="auto right"
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToKafka()"
+          ng-show="projectCtrl.showKafka()">
+        <a>
+          Kafka <img class="pull-right" style="margin-right:15px" height="25" src="images/kafka_logo.png" id="kafkaTab"/>
+          <i class=" pull-left fa " 
+             uib-tooltip="Orange triangle: Kafka is encountering problems. Red means Kafka is down."             
+             tooltip-placement="auto right"
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.KafkaBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.KafkaWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
+        </a>
+      </li>
+      <li ng-click="projectCtrl.goToService('DELA')" ng-show="projectCtrl.showDela()">
+        <a>
+          Dela<img class="pull-right" style="margin-right:15px" height="25" src="images/dela-green.png">
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToTensorflow()" ng-show="projectCtrl.showTensorflow()">
+        <a>
+          Tensorflow
+          <img ng-show="projectCtrl.activeService !== 'tensorflow'" class="pull-right" style="margin-left:10px" height="25" src="images/tf-175x200_bw.png"/>
+          <img ng-show="projectCtrl.activeService === 'tensorflow'" class="pull-right" style="margin-left:10px" height="25" src="images/tf-175x200.png"/>
+        </a>
+      </li>
+
+
+      <li ng-click="projectCtrl.goToRStudio()" ng-show="projectCtrl.showRStudio()">
+        <a>
+          RStudio<img class="pull-right" style="margin-right:15px" height="25" src="images/rstudio.png">
+        </a>
+      </li>
+      
+      <li ng-click="projectCtrl.goToTfServing()" ng-show="projectCtrl.showTfServing()" id="servingTab">
+        <a class="left-right">
+          Model Serving
+          <img class="pull-right" style="margin-right:10px" height="25" src="images/tf-175x200_bw.png"/>
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToExperiments()" ng-show="projectCtrl.showExperiments()" id="experimentsTab">
+        <a>
+          Experiments<img class="pull-right" style="margin-right:8px" height="27" src="images/experiments.png"/>
+        </a>
+      </li>
+      
+      <li ng-click="projectCtrl.goToDatasets()" style="margin-top:40px;" ng-show="projectCtrl.cloak" id="datasetsTab">
+        <a>
+          Data Sets <span class="sub_icon fa fa-folder-open fa-lg pull-right"></span>
+          <i class=" pull-left fa " 
+             uib-tooltip="Orange triangle: the filesystem is encountering problems. Red means the filesystem is down."                          
+             tooltip-placement="auto right"
+           ng-class="{'fa-ban text-danger': clusterUtilCtrl.HdfsBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.HdfsWarn }" aria-hidden="true" style="margin-top: 3px"></i>                              
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToSettings()" style="margin-top:40px;" ng-show="projectCtrl.cloak">
+        <a>
+          Settings<span class="sub_icon fa fa-dashboard fa-lg pull-right" id="settingsTab"></span>
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToPython()" ng-show="projectCtrl.cloak" id="pythonTab">
+        <a>
+          Python<img class="pull-right" style="margin-right:13px" height="23" src="images/python_logo.png"/>
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.membersModal()" ng-show="projectCtrl.cloak">
+        <a>
+          Members<span class="sub_icon fa fa-users fa-lg pull-right"></span>
+        </a>
+      </li>
+
+      <li ng-click="projectCtrl.goToMetadataDesigner()" ng-show="projectCtrl.role === 'Data owner'" ng-show="projectCtrl.cloak">
+        <a>
+          Metadata Designer<span
+            class="sub_icon fa fa-edit fa-lg pull-right"></span>
+        </a>
+      </li>
+      <br>
+      <div>
+        <div class="sidebar-nav-static">
+          <small ng-show="clusterUtilCtrl.utilisation >= 0" style="color: #ddd; font-size: 80%;"><em>Cluster Utilization: {{clusterUtilCtrl.utilisation}}%</em></small>
+          <small ng-show="clusterUtilCtrl.utilisation < 0" style="color: #ddd;"><em>Cluster Utilization is unknown</em></small>
+          <div class="progress" style="height: 10px;margin-bottom: 1px"
+               uib-tooltip="Orange (> 50%): consider allocating less resources for your application.
+               Red (> 80%): the cluster is fully loaded. Consider scheduling your jobs to run at a later time. "
+               tooltip-placement="bottom">
+            <div class="progress-bar" style="opacity: 0.7;"
+                 ng-class="clusterUtilCtrl.progressBarClass"
+                 role="progressbar"
+                 ng-style="{'width' : clusterUtilCtrl.utilisationBar + '%'}">
+            </div>
+          </div>
+          <br>
+        </div>
+        <div class="sidebar-nav-static">
+          <div ng-if="clusterUtilCtrl.allocatedGPUs !== 0 || clusterUtilCtrl.availableGPUs !== 0">
+            <small style="color: #ddd; font-size: 80%;">
+              <em>Allocated GPUs: {{clusterUtilCtrl.allocatedGPUs}}<br>Available GPUs: {{clusterUtilCtrl.availableGPUs}}
+                <br>Queued GPU Requests: {{clusterUtilCtrl.reservedGPUs}}</em></small>
+            <div class="progress" style="height: 10px;"
+                 uib-tooltip="If this bar is orange, a job requesting a small number of GPUs may succeed.
+                 If this bar is red, there are no GPUs available currently for running jobs."
+                 tooltip-placement="bottom">
+              <div class="progress-bar" style="opacity: 0.7;"
+                   ng-class="clusterUtilCtrl.gpuBarClass"
+                   role="progressbar"
+                   ng-style="{'width' : clusterUtilCtrl.gpusPercent + '%'}">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ul>
+  </nav>
+</aside>
+
+<tour class="ng-scope" step="projectCtrl.tourService.currentStep_TourTwo"
+      post-tour="closeTour()"
+      ng-if="projectCtrl.loadedView
+                  && (projectCtrl.tourService.informAndTips
+                          || projectCtrl.tourService.tipsOnly)">
+  <virtual-step
+    ng-if="projectCtrl.tourService.activeTour === 'spark'"
+    id="TourTwo"
+    class="ng-scope"
+    tourtip="Click Next, OR click on the Jobs tab to continue"
+    tourtip-step="0"
+    tourtip-element="#jobsTab"
+    tourtip-placement="right"
+    tourtip-next-label="Next"
+    on-proceed="projectCtrl.goToJobs()"
+    tourtip-offset-vertical="-18"
+    tourtip-offset-horizontal="-13"
+    ></virtual-step>
+  <virtual-step
+    ng-if="projectCtrl.tourService.activeTour === 'kafka'"
+    id="TourTwo"
+    class="ng-scope"
+    tourtip="Click Next, OR click on the Kafka tab to continue"
+    tourtip-step="0"
+    tourtip-element="#kafkaTab"
+    tourtip-placement="right"
+    tourtip-next-label="Next"
+    on-proceed="projectCtrl.goToKafka()"
+    tourtip-offset-vertical="-15"
+    ></virtual-step>
+  <virtual-step
+    ng-if="projectCtrl.tourService.activeTour === 'deep_learning'"
+    id="TourTwo"
+    class="ng-scope"
+    tourtip="Click Next to navigate to Jupyter and follow the Deep Learning tour!"
+    tourtip-step="0"
+    tourtip-element="#jupyterTab"
+    tourtip-placement="right"
+    tourtip-next-label="Next"
+    on-proceed="projectCtrl.goToJupyter()"
+    tourtip-offset-vertical="-18"
+    tourtip-offset-horizontal="-13"
+    ></virtual-step>
+</tour>

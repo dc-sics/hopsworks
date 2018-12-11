@@ -1,0 +1,364 @@
+<!--
+  ~ Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ This file is part of Hopsworks
+  ~ Copyright (C) 2018, Logical Clocks AB. All rights reserved
+  ~
+  ~ Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+  ~ the GNU Affero General Public License as published by the Free Software Foundation,
+  ~ either version 3 of the License, or (at your option) any later version.
+  ~
+  ~ Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  ~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  ~ PURPOSE.  See the GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License along with this program.
+  ~ If not, see <https://www.gnu.org/licenses/>.
+  ~
+  ~ Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  ~ software and associated documentation files (the "Software"), to deal in the Software
+  ~ without restriction, including without limitation the rights to use, copy, modify, merge,
+  ~ publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  ~ persons to whom the Software is furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all copies or
+  ~ substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS  OR IMPLIED, INCLUDING
+  ~ BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  ~ NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+  ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  -->
+
+<div ng-controller="MainCtrl as mainCtrl">
+  <div ng-include="'nav.html'"></div>
+
+
+  <div id="wrapper" class="toggled" ng-controller="ProjectCtrl as projectCtrl">
+    <div class="overlay"></div>
+
+    <div ng-include="'navProject.html'"></div>
+    <div class="job-content-wrapper">
+      <h3 id="projectBread" style="display: none;"> {{ projectCtrl.currentProject.projectName}} / Jobs</h3>
+    </div>
+    <div class="">
+
+      <section>
+        <div class="content-wrapper">
+          <h3 id="projectBread" style="display: none;"> {{ projectCtrl.currentProject.projectName}} Settings</h3>
+
+
+          <div ng-controller="PythonDepsCtrl as pythonDepsCtrl"  ng-init="indextab = 0">
+
+            <uib-tabset active="indextab">
+              <uib-tab index="0" heading="Project Settings">
+
+
+                <form role="form" name="projectForm" ng-submit="projectCtrl.saveProject()">
+
+                  <h2>Project Settings</h2>
+                  <div class="panel panel-default"  style="width: 800px; background-color: #F7F7F7;">
+                    <div class="panel-body">
+                      <div id="updateSettings">
+
+                        <div class="row">
+
+                          <div class="col-md-7">
+                            <fieldset>
+                              <div class="control-group col-md-offset-1">
+                                <label class="control-label">Name</label>
+                                <div class="controls">
+                                  <input class="form-control" name="project_name"
+                                         type="text"
+                                         id="projectname"
+                                         ng-model="projectCtrl.currentProject.projectName"
+                                         disabled>
+                                </div>
+                                <p></p>
+                                <label class="control-label">Description</label>
+                                <div class="controls">
+                                  <textarea class="form-control" style="resize:none;"
+                                            ng-model="projectCtrl.currentProject.description"
+                                            rows="3">
+                                  </textarea>
+                                </div>
+                                <p></p>
+                                <label class="control-label">Data Retention Period</label>
+                                <div class='input-group date col-md-8' id='schedulePicker'>
+                                  <input id="dpInput" type="text" ng-model="projectCtrl.currentProject.retentionPeriod" data-format="YYYY-MM-DD" class="form-control">
+                                  <span class="input-group-addon">
+                                    <span class="glyphicon glyphicon-calendar"></span>
+                                  </span>
+                                </div>
+                                <script type="text/javascript">
+                                              $(function () {
+                                                $('#schedulePicker').datetimepicker({
+                                                  format: 'YYYY-MM-DD'
+                                                }).on('dp.change', function (e) {
+                                                  $('#dpInput').trigger('input');
+                                                });
+                                              });</script>
+
+                                <p></p>
+                              </div>
+                            </fieldset>
+                          </div>
+
+                          <div class="col-md-5">
+                            <label class="control-label">Status</label>
+                            <fieldset>
+                              <label class="text-muted">Datasets</label>
+                              <div class="row" style="margin-left:15px; margin-bottom:0px">
+                                <fieldset ng-if="projectCtrl.hdfsQuota() != null">
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px">
+                                    {{projectCtrl.hdfsUsage()}} of {{projectCtrl.hdfsQuota()}} used
+                                  </span>
+                                </fieldset>
+                              </div>
+                              <div class="row" style="margin-top: 10px; margin-left:15px; margin-bottom:0px">
+                                <fieldset ng-if="projectCtrl.hdfsNsCount() != null">
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px" ng-show="projectCtrl.hdfsNsQuota() === -1">
+                                    {{projectCtrl.hdfsNsCount()}} files
+                                  </span>
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px" ng-show="projectCtrl.hdfsNsQuota() !== -1">
+                                    {{projectCtrl.hdfsNsCount()}} files of {{projectCtrl.hdfsNsQuota()}} used
+                                  </span>
+                                </fieldset>
+                              </div>
+                            </fieldset>
+                            <fieldset ng-if="projectCtrl.isServiceEnabled('HIVE')">
+                              <label class="text-muted">Hive Database</label>
+
+                              <div class="row" style="margin-left:15px; margin-bottom:0px">
+                                <fieldset ng-if="projectCtrl.hiveHdfsQuota() != null">
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px">
+                                    {{projectCtrl.hiveHdfsUsage()}} of {{projectCtrl.hiveHdfsQuota()}} used
+                                  </span>
+                                </fieldset>
+                              </div>
+                              <div class="row" style="margin-top: 10px; margin-left:15px; margin-bottom:0px">
+                                <fieldset ng-if="projectCtrl.hiveHdfsNsCount() != null">
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px" ng-show="projectCtrl.hiveHdfsNsQuota() === -1">
+                                    {{projectCtrl.hiveHdfsNsCount()}} files
+                                  </span>
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px" ng-show="projectCtrl.hiveHdfsNsQuota() !== -1">
+                                    {{projectCtrl.hiveHdfsNsCount()}} files of {{projectCtrl.hiveHdfsNsQuota()}} used
+                                  </span>
+                                </fieldset>
+                              </div>
+
+                            </fieldset>
+                            <fieldset>
+                              <label class="text-muted">CPU</label>
+                              <div class="row" style="margin-left:15px; margin-bottom:10px">
+                                <fieldset ng-if="projectCtrl.yarnQuota() != null">
+                                  <span style="margin-top: 40px; margin-left:10px; margin-bottom:0px" >
+                                    {{projectCtrl.yarnQuota()}} CPU hours
+                                  </span>
+                                </fieldset>
+                              </div>
+                            </fieldset>
+
+                            <fieldset>
+                              <label class="text-muted" ng-show="projectCtrl.allServicesSelected()">Services</label>
+                              <div class="control-group col-md-offset-1">
+                                <div class="row" ng-repeat="projectType in projectCtrl.projectTypes">
+                                  <md-checkbox class=" row md-primary" ng-click="projectCtrl.exists(projectType)">
+                                    {{ projectType}}
+                                  </md-checkbox>
+                                </div>
+                              </div>
+                            </fieldset>
+                            <div class="row" style="margin-left:15px; margin-bottom:0px">
+                              <button class="btn btn-success" type="button"
+
+                                      ng-disabled="projectCtrl.working"
+                                      ng-click="projectCtrl.getCerts()">
+                                Export Certificates
+                              </button>
+                              <i class="fa fa-info-circle" uib-tooltip="Click to download project's certificates. It allows communication with the project's services from outside Hospworks." style="margin-left: 10px; margin-bottom:0px"></i>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="btn btn-primary" type="submit"
+                          ng-disabled="projectCtrl.working">
+                    <i ng-if="projectCtrl.working" style="margin-top: 2px" class="fa fa-spinner fa-spin pull-right" ></i>
+                    Save
+                  </button>
+
+                </form>
+
+              </uib-tab>
+
+
+              <uib-tab index="1" heading="PIA">
+                <h2>Privacy Impact Assessment</h2>
+
+                <form ng-submit="projectCtrl.savePia()" name="piaForm" class="needs-validation" novalidate>
+                  <div class="form-group">
+                    <label for="personal_data" class="control-label">What Personal Data is Processed?</label>
+                    <textarea ng-model="projectCtrl.pia.personalData" maxlength="4000"
+                              class="form-control" cols="40" id="personal_data"
+                              name="personal_data" rows="4"></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="how_data_collected" class="control-label">How is that data collected and retained?</label>
+                    <textarea ng-model="projectCtrl.pia.howDataCollected" maxlength="2000"
+                              class="form-control" cols="40" id="how_data_collected"
+                              name="how_data_collected" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" ng-model="projectCtrl.pia.specifiedExplicitLegitimate"
+                           name="specified_explicit_legitimate" ng-true-value="1" ng-false-value="0">
+                    <label for="specified_explicit_legitimate" class="control-label"> The data collection and processing is specified, explicit, and legitimate.</label>
+                  </div>
+
+                  <div class="form-group">
+                    <label for="consent_process" class="control-label">What is the process for granting consent for the data processing, and is consent explicit and verifiable?</label>
+                    <textarea ng-model="projectCtrl.pia.consentProcess" maxlength="1000"
+                              class="form-control" cols="40" id="consent_process"
+                              name="consent_process" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="consent_basis" class="control-label">What is the basis of the consent for the data processing? If not based on consent, what is the legal basis for the data processing?</label>
+                    <textarea ng-model="projectCtrl.pia.consentBasis" maxlength="1000"
+                              class="form-control" cols="40" id="consent_basis"
+                              name="consent_basis" rows="4"></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataMinimized"  name="data_minimized"
+                           ng-true-value="1" ng-false-value="0">
+                    <label for="data_minimized" class="control-label"> Is the data minimized to what is explicitly required?</label>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataUptodate"  name="data_uptodate"
+                           ng-true-value="1" ng-false-value="0">
+                    <label for="data_uptodate" class="control-label">Is the data collection and processing specified, explicit, and legitimate?</label>
+                  </div>
+                  <div class="form-group">
+                    <label for="users_informed_how" class="control-label">How are users informed about the data processing?</label>
+                    <textarea ng-model="projectCtrl.pia.usersInformedHow" maxlength="500"
+                              class="form-control" cols="40" id="users_informed_how"
+                              name="users_informed_how" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="user_controls_data_collection_retention" class="control-label">What controls do users have over the data collection and retention?</label>
+                    <textarea ng-model="projectCtrl.pia.userControlsDataCollectionRetention" maxlength="500"
+                              class="form-control" cols="40" id="user_controls_data_collection_retention"
+                              name="user_controls_data_collection_retention" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataEncrypted"  name="data_encrypted"
+                           ng-true-value="1" ng-false-value="0">
+                    <label for="data_encrypted" class="control-label">Is the data encrypted?</label>
+                  </div>
+
+                  <div class="form-group">
+                    <label class="control-label">Is the data anonymized or pseudonymized?</label>
+                    <div class="radio">
+                      <label>
+                        <input type="radio" name="data_anonymization" value="1"
+                               ng-model="projectCtrl.pia.dataAnonymized" >
+                        Anonymized
+                      </label>
+                    </div>
+                    <div class="radio">
+                      <label>
+                        <input type="radio"  name="data_anonymization" value="1"
+                               ng-model="projectCtrl.pia.dataPseudonymized">
+                        Pseudonymized
+                      </label>
+                    </div>
+                    <div class="radio">
+                      <label>
+                        <input type="radio"  name="data_anonymization" value="none"
+                               ng-click="projectCtrl.pia.data_pseudonymized = 0; projectCtrl.pia.data_anonymized = 0">
+                        Neither
+                      </label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" ng-model="projectCtrl.pia.dataBackedup"  name="data_backedup"
+                           ng-true-value="1" ng-false-value="0">
+                    <label for="data_backedup" class="control-label">Is the data backed up at a remote location/project?</label>
+                  </div>
+                  <div class="form-group">
+                    <label for="data_security_measures" class="control-label">Describe any additional technical and security measures in this project.</label>
+                    <textarea ng-model="projectCtrl.pia.data_securityMeasures" maxlength="500"
+                              class="form-control" cols="40" id="data_security_measures"
+                              name="data_security_measures" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="data_portability_measure" class="control-label">What controls do users have over the data collection and retention?</label>
+                    <textarea ng-model="projectCtrl.pia.dataPortabilityMeasure" maxlength="500"
+                              class="form-control" cols="40" id="data_portability_measure"
+                              name="data_portability_measure" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="subject_access_rights" class="control-label">Describe the Subject Access Rights:</label>
+                    <i class="fa fa-info-circle" uib-tooltip="How does the data subject exercise their access rights? How does the data subject exercise their right to data portability? How does the data subject exercise their rights to erasure and the right to be forgotten? How does the data subject exercise their right to restrict and object?" style="margin-left: 10px"></i>
+                    <textarea ng-model="projectCtrl.pia.subjectAccessRights" maxlength="500"
+                              class="form-control" cols="40" id="subject_access_rights"
+                              name="subject_access_rights" rows="4"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="risks" class="control-label">Describe the risks.</label>
+                    <i class="fa fa-info-circle" uib-tooltip="What are the risks to the data subjects if the data is misused, mis-accessed, or breached? What are the risks to the data subjects if the data is modified?
+                       What are the risks to the data subjects if the data is lost? What are the main sources of risk?
+                       What steps have been taken to mitigate those risks?" style="margin-left: 10px"></i>
+                    <textarea ng-model="projectCtrl.pia.risks" maxlength="500"
+                              class="form-control" cols="40" id="risks"
+                              name="risks" rows="4"></textarea>
+                  </div>
+
+                  <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                  </div>
+                </form>
+              </uib-tab>
+
+              <uib-tab index="2" heading="Versions">
+
+                <h3>Hopsworks Software Versions</h3>
+                <table st-table="rowCollection" class="table table-striped" ng-show="projectCtrl.versions.length > 0">
+                  <thead>
+                    <tr>
+                      <th class="col-sm-3">Software</th>
+                      <th class="col-sm-9">Version</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr ng-repeat="version in projectCtrl.versions" class="row">
+                      <td class="col-sm-3 pull-left">
+                        <div style="margin-left: 10px;"><b>{{version.software}}</b></div>
+                      </td>                
+                      <td class="col-sm-9">
+                        <div style="margin-left: 10px;"><b>{{version.version}}</b></div>
+                      </td>                
+                    </tr>
+                  </tbody>
+                </table>
+              </uib-tab>
+
+            </uib-tabset>
+          </div>
+
+
+      </section>
+
+    </div>
+  </div>
+</div>
