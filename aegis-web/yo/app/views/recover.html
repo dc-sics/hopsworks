@@ -1,0 +1,101 @@
+<!--
+  ~ Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ This file is part of Hopsworks
+  ~ Copyright (C) 2018, Logical Clocks AB. All rights reserved
+  ~
+  ~ Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+  ~ the GNU Affero General Public License as published by the Free Software Foundation,
+  ~ either version 3 of the License, or (at your option) any later version.
+  ~
+  ~ Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  ~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  ~ PURPOSE.  See the GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License along with this program.
+  ~ If not, see <https://www.gnu.org/licenses/>.
+  ~
+  ~ Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  ~ software and associated documentation files (the "Software"), to deal in the Software
+  ~ without restriction, including without limitation the rights to use, copy, modify, merge,
+  ~ publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  ~ persons to whom the Software is furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all copies or
+  ~ substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS  OR IMPLIED, INCLUDING
+  ~ BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  ~ NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+  ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  -->
+
+<div class="wrapper">
+  <div class="center-block" style="width: 320px;">
+    <div class="panel ">
+      <div class="panel-heading text-center">
+        <a style="text-decoration:none; font-family: Lobster; font-size: 30px; margin-left: 5px; color: #fff;">Hopsworks
+          <img alt="" style="margin-left:10px" width="30" src="images/hops.png">
+        </a>
+      </div>
+      <div class="panel-body">
+        <p class="text-center">Account Recovery</p>
+        <form role="form" name="recoveryForm" ng-submit="recoverCtrl.send()" novalidate class="form-validate">
+          <p></p>
+          <div class="form-group has-feedback">
+            <input id="recover_inputEmail"
+                   class="form-control"
+                   type="email"
+                   required
+                   ng-model="recoverCtrl.user.email"
+                   autocomplete="off"
+                   placeholder="Email"
+                   name="user_email">
+            <span class="fa fa-envelope form-control-feedback text-muted"></span>
+            <span class="text-danger ng-hide" ng-show="(recoveryForm.$submitted || recoveryForm.user_email.$dirty) && recoveryForm.user_email.$error.required">This field is required</span>
+            <span class="text-danger ng-hide" ng-show="(recoveryForm.$submitted || recoveryForm.user_email.$dirty) && recoveryForm.user_email.$error.email">This field must be a valid email address</span>
+          </div>
+          <div class="form-group has-feedback">
+            <label class="text-muted">Security question</label>
+            <select name="sec_question"
+                    ng-model="recoverCtrl.user.securityQuestion"
+                    required
+                    class="form-control">
+              <option value="">Select security question</option>
+              <option ng-repeat="question in recoverCtrl.securityQuestions" value="{{question}}">{{question}}</option>
+            </select>
+            <span ng-show="(recoveryForm.$submitted || recoveryForm.sec_question.$dirty) &amp;&amp; recoveryForm.sec_question.$error.required"
+                  class="text-danger ng-hide">This field is required</span>
+          </div>
+          <div class="form-group has-feedback">
+            <label class="text-muted">Security answer</label>
+            <input name="sec_answer" placeholder="Security answer" autocomplete="off"
+                   ng-model="recoverCtrl.user.securityAnswer" required
+                   class="form-control"
+                   type="text">
+            <span ng-show="(recoveryForm.$submitted || recoveryForm.sec_answer.$dirty) &amp;&amp; recoveryForm.sec_answer.$error.required"
+                  class="text-danger ng-hide">This field is required</span>
+          </div>
+
+          <button class="btn btn-block btn-primary mt-lg" type="submit" data-ng-disabled="recoverCtrl.working">Send</button>
+        </form>
+          <div style="text-align: center" class="text-muted" ng-show="recoverCtrl.working">
+            <i class="fa fa-spinner fa-spin"></i> 
+            Sending
+          </div>
+        <div ng-show="recoverCtrl.successMessage" class="alert  alert-success text-center ng-binding ng-hide">{{recoverCtrl.successMessage}}</div>
+        <div class="alert alert-danger text-center ng-binding ng-hide" ng-show="recoverCtrl.errorMessage">{{recoverCtrl.errorMessage}}</div>
+        <p></p>
+        <a href="#!/login" class="btn btn-block btn-default">Sign in</a>
+      </div>
+    </div>
+
+  </div>
+</div>

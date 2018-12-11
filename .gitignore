@@ -12,6 +12,7 @@ scripts/private_key
 scripts/insecure_private_key
 
 hopsworks-web/yo/app/karma.conf.js
+aegis-web/yo/app/karma.conf.js
 
 glassfish-resources.xml
 
@@ -31,6 +32,7 @@ nbactions.xml
 
 ### Intellj ###
 hopsworks-web/overlays/
+aegis-web/overlays/
 
 ### Java ###
 *.class
@@ -101,6 +103,7 @@ package-lock.json
 .idea/
 
 hopsworks-web/yo/node_modules
+aegis-web/yo/node_modules
 
 ## File-based project format:
 *.ipr
@@ -117,5 +120,6 @@ src/main/setup/glassfish-resources.xml
 */glassfish-resources.xml
 
 /hopsworks-web/yo/nbproject/
+/aegis-web/yo/nbproject/
 /hopsworks-cluster/src/main/webapp/node_modules/
 /hopsworks-cluster/src/main/webapp/vendor/
