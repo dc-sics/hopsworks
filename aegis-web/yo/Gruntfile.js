@@ -48,6 +48,8 @@
 
 module.exports = function (grunt) {
 
+  var serveStatic = require('serve-static');
+  var proxyRequestMiddleware = require('grunt-connect-proxy/lib/utils').proxyRequest;
   // Load grunt tasks automatically
   require('load-grunt-tasks')(grunt);
 
@@ -103,26 +105,36 @@ module.exports = function (grunt) {
     // The actual grunt server settings
     connect: {
       options: {
-        port: 9000,
+        port: 9001,
         // Change this to '0.0.0.0' to access the server from outside.
         hostname: 'localhost',
         livereload: 35729
       },
+      proxies: [
+        {
+          context: '/hopsworks-api',
+          host: 'bbc6.sics.se',
+          port: 8080,
+          https: false,
+          xforward: false,
+        }
+      ],
       livereload: {
         options: {
           open: true,
           middleware: function (connect) {
             return [
-              connect.static('.tmp'),
+              proxyRequestMiddleware,
+              serveStatic('.tmp'),
               connect().use(
                       '/bower_components',
-                      connect.static('./bower_components')
+                      serveStatic('./bower_components')
                       ),
               connect().use(
                       '/app/styles',
-                      connect.static('./app/styles')
+                      serveStatic('./app/styles')
                       ),
-              connect.static(appConfig.app)
+              serveStatic(appConfig.app)
             ];
           }
         }
@@ -132,13 +144,13 @@ module.exports = function (grunt) {
           port: 9002,
           middleware: function (connect) {
             return [
-              connect.static('.tmp'),
-              connect.static('test'),
+              serveStatic('.tmp'),
+              serveStatic('test'),
               connect().use(
                       '/bower_components',
-                      connect.static('./bower_components')
+                      serveStatic('./bower_components')
                       ),
-              connect.static(appConfig.app)
+              serveStatic(appConfig.app)
             ];
           }
         }
@@ -459,6 +471,7 @@ module.exports = function (grunt) {
      // 'wiredep',
       'concurrent:server',
       'autoprefixer:server',
+      'configureProxies',
       'connect:livereload',
       'watch'
     ]);
