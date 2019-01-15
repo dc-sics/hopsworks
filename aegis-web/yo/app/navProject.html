@@ -38,47 +38,100 @@
   -->
 
 <aside class="offsidebar">
-  <nav class="navbar navbar-inverse navbar-fixed-top" id="sidebar-wrapper" role="navigation" style="margin-top:50px;"  ng-cloak>
+  <nav class="navbar navbar-fixed-top" id="sidebar-wrapper" role="navigation"  ng-cloak>
+
+    <header>
+      <a href="#home">
+        <img alt="hops icon" height="40px" src="images/aegis_logo.png"/>
+      </a>
+    </header>
 
     <ul class="nav sidebar-nav" ng-cloak ng-controller="ClusterUtilisationCtrl as clusterUtilCtrl">
+      <li class="dropdown">
+        <a class="dropdown-toggle" data-toggle="dropdown">
+          <img src="http://placehold.it/40x40" class="profile-image img-circle">
+          &nbsp;admin@kth.se
+          <b class="caret pull-right" style="margin-top: 15px"></b>
+        </a>
+        <ul class="dropdown-menu">
+          <li><a href="#"><i class="fa fa-cog"></i> Admin</a></li>
+          <li><a href="#"><i class="fa fa-cog"></i> Account</a></li>
+          <li><a href="#"><i class="fa fa-sign-out"></i> Sign-out</a></li>
+        </ul>
+      </li>
 
-      <li style="background: #1a1a1a;">
-        <a href="#!/project/{{projectCtrl.currentProject.projectId}}" class="text-center" 
-           title="{{projectCtrl.currentProject.projectName.length > 17 ? projectCtrl.currentProject.projectName:''}}">
-          {{ projectCtrl.currentProject.projectName | limitTo: 17 }}{{projectCtrl.currentProject.projectName.length > 17
-          ? '...' : ''}}
+      <li class="dropdown-header">Project</li>
+      
+      <li ng-click="projectCtrl.goToDatasets()" ng-show="projectCtrl.cloak" id="datasetsTab">
+        <a>
+          <span class="sub_icon fa fa-folder" style="width: 30px; display: inline-block; margin-right: 10px"></span>
+          Datasets
+          <i class=" pull-right fa " 
+             uib-tooltip="Orange triangle: the filesystem is encountering problems. Red means the filesystem is down."                          
+             tooltip-placement="auto right"
+           ng-class="{'fa-ban text-danger': clusterUtilCtrl.HdfsBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.HdfsWarn }" aria-hidden="true"></i>                              
         </a>
       </li>
 
+      <li ng-click="projectCtrl.goToSettings()" ng-show="projectCtrl.cloak">
+        <a>
+          <span class="sub_icon fa fa-cog fa-lg" style="width: 30px; display: inline-block; margin-right: 10px"></span>
+          Settings
+        </a>
+      </li>
+
+      <!-- li ng-click="projectCtrl.goToPython()" ng-show="projectCtrl.cloak" id="pythonTab">
+        <a>
+          <img style="margin-right: 18px" height="23" src="images/python_logo.png"/>
+          Python
+        </a>
+      </li -->
+
+      <li ng-click="projectCtrl.membersModal()" ng-show="projectCtrl.cloak">
+        <a>
+          <span class="sub_icon fa fa-users fa-lg" style="width: 30px; display: inline-block; margin-right: 10px"></span>
+          Members
+        </a>
+      </li>
+
+      <!-- li ng-click="projectCtrl.goToMetadataDesigner()" ng-show="projectCtrl.role === 'Data owner'" ng-show="projectCtrl.cloak">
+        <a>
+          <span class="sub_icon fa fa-edit fa-lg" style="width: 30px; display: inline-block; margin-right: 10px"></span>
+          Metadata Designer
+        </a>
+      </li -->
+
+      <li class="dropdown-header">Tools</li>
+
       <li ng-click="projectCtrl.goToJupyter()" ng-show="projectCtrl.showJupyter()">
         <a>
-          Jupyter <img class="pull-right" style="margin-right:5px" width="30" src="images/jupyter-200x200-bw.png"
-                       id="jupyterTab"/>
-          <i class="pull-left fa"  
+          <img style="margin-right: 10px" width="30" src="images/jupyter-200x200-bw.png" id="jupyterTab"/> Jupyter
+          <i class="pull-right fa"  
              uib-tooltip="Orange triangle: jobs are encountering problems. Red means Jobs cannot be run just now." 
              tooltip-placement="auto right"
-             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>          
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true"></i>          
         </a>
       </li>
 
       <li ng-click="projectCtrl.goToZeppelin()" ng-show="projectCtrl.showZeppelin()">
         <a>
-          Zeppelin 
-          <img class="pull-right" style="margin-right:5px" width="30" src="images/zeppelin_logo.png"/>
-          <i class=" pull-left fa " 
+          <img style="margin-right: 10px" width="30" src="images/zeppelin_logo.png"/>
+          Zeppelin
+          <i class=" pull-right fa " 
              uib-tooltip="Orange triangle: jobs are encountering problems. Red means Jobs cannot be run just now." 
              tooltip-placement="auto right"
-             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true"></i>                    
         </a>
       </li>
 
       <li ng-click="projectCtrl.goToJobs()" ng-show="projectCtrl.showJobs()" id="jobsTab">
         <a>
-          Jobs <span class="sub_icon fa fa-cogs fa-lg pull-right"></span>
-          <i class=" pull-left fa " 
+          <span class="sub_icon fa fa-cogs fa-lg" style="width: 30px; display: inline-block; margin-right: 10px"></span>
+          Jobs
+          <i class=" pull-right fa " 
              uib-tooltip="Orange triangle: jobs are encountering problems. Red means Jobs cannot be run just now."              
              tooltip-placement="auto right"
-             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.YarnBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.YarnWarn }" aria-hidden="true"></i>                    
         </a>
       </li>
 
@@ -86,10 +139,10 @@
           ng-show="projectCtrl.showKafka()">
         <a>
           Kafka <img class="pull-right" style="margin-right:15px" height="25" src="images/kafka_logo.png" id="kafkaTab"/>
-          <i class=" pull-left fa " 
+          <i class=" pull-right fa " 
              uib-tooltip="Orange triangle: Kafka is encountering problems. Red means Kafka is down."             
              tooltip-placement="auto right"
-             ng-class="{'fa-ban text-danger': clusterUtilCtrl.KafkaBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.KafkaWarn }" aria-hidden="true" style="margin-top: 3px"></i>                    
+             ng-class="{'fa-ban text-danger': clusterUtilCtrl.KafkaBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.KafkaWarn }" aria-hidden="true"></i>                    
         </a>
       </li>
       <li ng-click="projectCtrl.goToService('DELA')" ng-show="projectCtrl.showDela()">
@@ -125,41 +178,7 @@
           Experiments<img class="pull-right" style="margin-right:8px" height="27" src="images/experiments.png"/>
         </a>
       </li>
-      
-      <li ng-click="projectCtrl.goToDatasets()" style="margin-top:40px;" ng-show="projectCtrl.cloak" id="datasetsTab">
-        <a>
-          Data Sets <span class="sub_icon fa fa-folder-open fa-lg pull-right"></span>
-          <i class=" pull-left fa " 
-             uib-tooltip="Orange triangle: the filesystem is encountering problems. Red means the filesystem is down."                          
-             tooltip-placement="auto right"
-           ng-class="{'fa-ban text-danger': clusterUtilCtrl.HdfsBan, 'fa-exclamation-triangle text-warning': clusterUtilCtrl.HdfsWarn }" aria-hidden="true" style="margin-top: 3px"></i>                              
-        </a>
-      </li>
 
-      <li ng-click="projectCtrl.goToSettings()" style="margin-top:40px;" ng-show="projectCtrl.cloak">
-        <a>
-          Settings<span class="sub_icon fa fa-dashboard fa-lg pull-right" id="settingsTab"></span>
-        </a>
-      </li>
-
-      <li ng-click="projectCtrl.goToPython()" ng-show="projectCtrl.cloak" id="pythonTab">
-        <a>
-          Python<img class="pull-right" style="margin-right:13px" height="23" src="images/python_logo.png"/>
-        </a>
-      </li>
-
-      <li ng-click="projectCtrl.membersModal()" ng-show="projectCtrl.cloak">
-        <a>
-          Members<span class="sub_icon fa fa-users fa-lg pull-right"></span>
-        </a>
-      </li>
-
-      <li ng-click="projectCtrl.goToMetadataDesigner()" ng-show="projectCtrl.role === 'Data owner'" ng-show="projectCtrl.cloak">
-        <a>
-          Metadata Designer<span
-            class="sub_icon fa fa-edit fa-lg pull-right"></span>
-        </a>
-      </li>
       <br>
       <div>
         <div class="sidebar-nav-static">

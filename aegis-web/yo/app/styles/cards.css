@@ -46,7 +46,7 @@
     display: inline-block;
     float: left;
     height: 175px;
-    margin-bottom: 1rem;
+    margin-bottom: 3rem;
     margin-right: 1rem;
     min-width: 285px;
     width: 100%;
@@ -64,7 +64,7 @@
 }
 
 .col-sm-4.col-md-4 .card-item-content {
-  border-top: 2px solid;
+  border-top: 4px solid;
 }
 
 .card-modal .card-item-content {

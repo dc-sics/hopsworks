@@ -173,12 +173,6 @@ textarea.form-control {
   color: #e6e6e6
 }
 
-.content-wrapper {
-  border-top: 1px solid rgba(0, 0, 0, 0.15);
-  margin-top: 50px;
-  padding: 20px;
-}
-
 .project-content-wrapper {
   border-top: 1px solid rgba(0, 0, 0, 0.15);
   margin-top: -20px;
@@ -189,16 +183,11 @@ textarea.form-control {
   margin: -15px;
 }
 
-.content-wrapper>.content-heading, .content-wrapper>h3 {
-  font-family: inherit;
-  line-height: 0;
-  font-size: 16px;
+.content-wrapper>.content-heading, .content-wrapper>.content-utility-bar {
   color: #2B2B20;
-  margin: -23px -23px 5px;
-  padding: 35px 23px 22px;
+  margin: 0;
   font-weight: 400;
-  background-color: #fafbfc;
-  border-bottom: 1px solid #cfdbe2;
+  padding: 20px 0;
 }
 
 
@@ -226,4 +215,8 @@ textarea.form-control {
 
 .styleSelect {
   overflow: hidden;
+}
+
+.dark::placeholder {
+  color: #fff !important;
 }
