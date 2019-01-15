@@ -46,6 +46,58 @@
   </div>
 
   <div class="container content-wrapper" ng-if="!mainCtrl.showSearchPage" ng-controller="HomeCtrl as homeCtrl">
+    <div class="row">
+      <div class="col-md-12">
+        <h1 style="margin-top: 40px; margin-bottom: 30px">Projects</h1>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-3">
+        <a
+          ng-click="homeCtrl.newProject()"
+          class="home-project-container"
+          style="background-color: #0492b3; color: #fff; padding: 28px 15px; text-align: center; margin-bottom: 25px; display: block; box-shadow: 1px 2px 7px 1px rgba(0, 0, 0, 0.1)"
+        >
+          <h4 class="home-project-container-title"><span class="fa fa-plus"></span> New Project</h4>
+        </a>
+      </div>
+      <div class="col-sm-3" ng-repeat="project in homeCtrl.projects| filter: searchProject:false | startFrom:(homeCtrl.currentPageProjects - 1) * homeCtrl.pageSizeProjects | limitTo:homeCtrl.pageSizeProjects | orderBy: homeCtrl.sortBy">
+        <a
+          class="home-project-container"
+          style="border-top: 4px solid #0492b3; padding: 15px; text-align: center; margin-bottom: 25px; display: block; box-shadow: 1px 2px 7px 1px rgba(0, 0, 0, 0.1)"
+          href="#!/project/{{project.project.id}}"
+          context-menu
+          data-target="menu-{{$index}}"
+          id="{{project.project.name.substr(0, 5) === 'demo_'}}"
+          title="{{project.project.name.length > 28 ? project.project.name:''}}"
+        >
+          <h4 class="home-project-container-title">{{ project.project.name | limitTo: 18 }}{{project.project.name.length > 18 ? '...' : ''}}</h4>
+          <div class="home-project-container-title">5 datasets</div>
+        </a>
+      </div>
+    </div>
+    <hr style="margin-bottom: 40px">
+    <div class="row">
+      <div class="col-md-4" style="text-align: center">
+        <img src="https://i.pinimg.com/originals/9f/90/ab/9f90aba21e11b7b63e575785a2d4563c.png" height="130px">
+        <h2 style=" margin-bottom: 20px">Getting Started</h2>
+        <p>If you are new to AEGIS click here! Master the AEGIS platform in a simple 5 step tutorial!</p>
+        <a href="#">&raquo; Learn more</a>
+      </div>
+      <div class="col-md-4" style="text-align: center">
+        <img src="https://us.123rf.com/450wm/martialred/martialred1709/martialred170900039/85728240-online-shop-marktplatz-oder-e-commerce-shop-flache-vektor-symbol-für-apps-und-websites.jpg?ver=6" height="130px">
+        <h2 style="margin-bottom: 20px">AEGIS Marketplace</h2>
+        <p>See what's possible with AEGIS! Browse popular AEGIS datasets to use within your project</p>
+        <a href="#">&raquo; Go to Marketplace</a>
+      </div>
+      <div class="col-md-4" style="text-align: center">
+        <img src="https://img.evbuc.com/https%3A%2F%2Fcdn.evbuc.com%2Fimages%2F52230452%2F233567016891%2F1%2Foriginal.jpg?h=512&w=512&auto=compress&rect=0%2C0%2C800%2C400&s=aa46ba847eca4cc1beb9e6b79ccf6571" height="130px" style="padding-bottom: 10px">
+        <h2 style="margin-bottom: 20px">What's New</h2>
+        <p>October 2018 Report Published: An In-Depth Look at Big Data Trends and Challenges in Insurance</p>
+        <a href="#">&raquo; Read more</a>
+      </div>
+    </div>
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
     <div class="alert alert-warning alert-dismissable" ng-if="mainCtrl.userNotification !== ''">
       <a class="close" data-dismiss="alert" aria-label="close">&times;</a>
       <p align="center"><i class="fa fa-bullhorn"></i> <strong>Notification!</strong> {{mainCtrl.userNotification}}
