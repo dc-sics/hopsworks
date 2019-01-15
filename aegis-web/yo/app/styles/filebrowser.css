@@ -108,11 +108,12 @@
 }
 .file {
   background-color: #ffffff;
-  border: 1px solid #e7eaec;
+  border-top: 4px solid #0492b3;
   margin-bottom: 20px;
   margin-right: 20px;
   padding: 0;
   position: relative;
+  box-shadow: 1px 2px 7px 1px rgba(0, 0, 0, 0.1);
 }
 .file.greyed {
   background-color: #f3f3f4;
@@ -131,11 +132,14 @@
 }
 .file-control {
   color: inherit;
-  font-size: 11px;
+  font-size: 13px;
   margin-right: 10px;
+  cursor: pointer;
 }
+
 .file-control.active {
   text-decoration: underline;
+  font-weight: bold;
 }
 .file .icon i {
   color: #dadada;

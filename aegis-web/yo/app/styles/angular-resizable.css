@@ -178,9 +178,9 @@
 }
 
 .ds-box {
-    width: 98%;
+    /* width: 98%; */
     overflow-y: auto; 
-    height: 95%;
+    /* height: 95%; */
 }
 
 .ds-box-bottom {

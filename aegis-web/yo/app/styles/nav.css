@@ -46,7 +46,7 @@
     background-color: transparent;
     color: #fff;
 }
-nav.navbar-sics { background: #2e353d; border-color: #ccc; box-shadow: 0 0 2px 0 #ccc; }
+nav.navbar-sics { background: #0492b3; border: none; padding: 10px 0; margin: 0 }
 nav.navbar-sics a { color: #337ab7; }
 
 nav.navbar-sics ul.navbar-nav a {
@@ -177,7 +177,7 @@ ul.dropdown-messages .dropdown-header {
   overflow: hidden;
   position: absolute;
   right: 0;/*start from right*/
-  top: 110px;
+  top: 150px;
   bottom: 0;
   transition: all 0.3s ease;
   -webkit-transition: all 0.3s ease;

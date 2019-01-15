@@ -39,7 +39,7 @@
 
 <script>$(document).ready(hamburger);</script>
 
-<nav class="navbar navbar-default navbar-sics navbar-fixed-top" id="header_nav">
+<nav class="navbar navbar-default navbar-sics" id="header_nav">
   <div ng-class="{'container': !projectView, 'container-fluid': projectView}">
     <div growl class="pull-right"></div>
     <div class="navbar-header">
@@ -49,17 +49,10 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <div style="padding-right: 55px">
-        <a class="navbar-brand" href="#home" style="font-family: Lobster; font-size: 30px; color: #fff;">Hopsworks
-          <img alt="hops icon" class="pull-right" style="margin-left:10px;" width="25" src="images/hops.png"/>
+      <div style="width: 320px; padding-top: 9px">
+        <a href="#home">
+          <img alt="hops icon" height="40px" src="images/aegis_logo.png"/>
         </a>
-        <div class="input-group" ng-show="showHamburger">
-          <button type="button" class="hamburger is-open" style="color:white;" data-toggle="offcanvas" ng-click="projectCtrl.isClosed = !projectCtrl.isClosed">
-            <span class="hamb-top"></span>
-            <span class="hamb-middle"></span>
-            <span class="hamb-bottom"></span>
-          </button>
-        </div>
       </div>
     </div>
       <div class="collapse navbar-collapse" id="navbar">
@@ -70,10 +63,10 @@
               {{mainCtrl.email}} <b class="caret"></b>
             </a>
             <ul class="dropdown-menu">
-              <li ng-show="mainCtrl.isAdmin() === 'true'"><a ng-click="mainCtrl.goToAdminPage()"><i class="fa fa-user-secret"></i>Admin</a></li>
+              <li ng-show="mainCtrl.isAdmin() === 'true'"><a ng-click="mainCtrl.goToAdminPage()"><i class="fa fa-tools"></i> Admin</a></li>
               <li><a ng-click="mainCtrl.profileModal()"><i class="fa fa-cog"></i> Account</a></li>
               <!--<li><a ng-click="mainCtrl.sshKeysModal()"><i class="fa fa-key"></i> Ssh Keys</a></li>-->
-              <li><a href="#!/" ng-click="mainCtrl.logout()"><i class="fa fa-sign-out"></i> Sign out</a></li>
+              <li><a href="#!/" ng-click="mainCtrl.logout()"><i class="fa fa-sign-out-alt"></i> Sign out</a></li>
             </ul>
           </li>
         </ul>
@@ -108,15 +101,15 @@
         </ul>
         <!--ng-show="showDatasets"-->
         <form class="navbar-form">
-          <div class="col-xs-12 col-sm-4 col-md-4 input-group" ng-class="{'col-md-offset-0': !projectView, 'col-md-offset-1': projectView}">
-            <input type="text" class="form-control" style="height: 28px;margin-top: 3px;" placeholder="Search"
-                   name="srch-term" id="srch-term" ng-model="mainCtrl.searchTerm" ng-model-options="{debounce: 500}"
+          <div class="col-xs-12 col-sm-4 col-md-4 input-group">
+            <input type="text" class="form-control dark" style="height: 44px; background-color: #6baec6; border: none; color: #fff"
+                   name="srch-term" id="srch-term" placeholder="Search for projects or datasets..." ng-model="mainCtrl.searchTerm" ng-model-options="{debounce: 500}"
                    ng-change="mainCtrl.keyTyped()" ng-keyup="mainCtrl.hitEnter($event)">
 
             <div class="input-group-btn" style="width: 54px;">
-              <button class="btn btn-default" style="color: #028e9b;margin-top: 3px; padding: 6px 12px;"
+              <button class="btn btn-default" style="color: #028e9b;padding: 6px 12px; height: 44px"
                       ng-click="mainCtrl.search()" type="button">
-                <i class="glyphicon glyphicon-search"></i>
+                <i class="fa fa-search"></i>
               </button>
             </div>
           </div>
