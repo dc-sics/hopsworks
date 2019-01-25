@@ -168,6 +168,30 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
+                    .when('/walletTransactions', {
+                      templateUrl: 'views/walletTransactions.html',
+                      controller: 'WalletTransactionsCtrl as walletTransactionsCtrl',
+                      resolve: {
+                        auth: ['$rootScope', '$q', '$location', '$cookies', 'HopssiteService',
+                          function ($rootScope, $q, $location, $cookies, HopssiteService) {
+                            return HopssiteService.getServiceInfo("dela").then(function (success) {
+                              if (success.data.status === 1 ) {
+                                $rootScope['isDelaEnabled'] = true;
+                              } else {
+                                $rootScope['isDelaEnabled'] = false;
+                                $location.path('/');
+                                return $q.reject();
+                              }
+                            }, function (error) {
+                              $rootScope['isDelaEnabled'] = false;
+                              $cookies.remove("email");
+                              $cookies.remove("projectID");
+                              $location.path('/login');
+                              $location.replace();
+                              return $q.reject(error);
+                            });
+                          }]}
+                    })
                     .when('/login', {
                       templateUrl: 'views/login.html',
                       controller: 'LoginCtrl as loginCtrl',
