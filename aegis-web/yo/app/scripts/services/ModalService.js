@@ -235,6 +235,30 @@ angular.module('hopsWorksApp')
                 });
                 return modalInstance.result;
               },
+              transaction: function (size, asset) {
+                var modalInstance = $uibModal.open({
+                  templateUrl: 'views/transaction.html',
+                  controller: 'TransactionCtrl as transactionCtrl',
+                  size: size,
+                  resolve: {
+                    auth: ['$q', '$location', 'AuthService',
+                      function ($q, $location, AuthService) {
+                        return AuthService.session().then(
+                                function (success) {
+                                },
+                                function (err) {
+                                  $location.path('/login');
+                                  $location.replace();
+                                  return $q.reject(err);
+                                });
+                      }],
+                    asset: function () {
+                      return asset;
+                    },
+                  }
+                });
+                return modalInstance.result;
+              },
               sshKeys: function (size) {
                 var modalInstance = $uibModal.open({
                   templateUrl: 'views/sshKeys.html',

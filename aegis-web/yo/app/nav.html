@@ -65,6 +65,7 @@
             <ul class="dropdown-menu">
               <li ng-show="mainCtrl.isAdmin() === 'true'"><a ng-click="mainCtrl.goToAdminPage()"><i class="fa fa-tools"></i> Admin</a></li>
               <li><a ng-click="mainCtrl.profileModal()"><i class="fa fa-cog"></i> Account</a></li>
+              <li><a href="#!/walletTransactions"><i class="fa fa-suitcase"></i> Wallet Transactions</a></li>
               <!--<li><a ng-click="mainCtrl.sshKeysModal()"><i class="fa fa-key"></i> Ssh Keys</a></li>-->
               <li><a href="#!/" ng-click="mainCtrl.logout()"><i class="fa fa-sign-out-alt"></i> Sign out</a></li>
             </ul>
@@ -83,7 +84,7 @@
               <li class="dropdown-header text-muted" ng-if="!mainCtrl.messages.length"><h4>Inbox empty.</h4></li>
               <li ng-repeat="msg in mainCtrl.messages| limitTo:5">
                 <div>
-                  <div ng-click="mainCtrl.openMessageModal(msg)">                    
+                  <div ng-click="mainCtrl.openMessageModal(msg)">
                     <div class="message-subject text-muted">
                       <i ng-if="msg.unread" class="fa fa-circle pull-left" style="color:#f89406; margin-top: 4px;" title="Unread message"></i>
                       <i ng-if="!msg.unread" class="fa fa-circle pull-left" style="color:grey; margin-top: 4px;" title="Read message"></i>
@@ -97,7 +98,7 @@
               <a class="pull-right" ng-if="mainCtrl.messages.length" ng-click="mainCtrl.openMessageModal()" style="text-decoration:none;"> See all messages</a>
               <a class="pull-right" ng-if="!mainCtrl.messages.length" ng-click="mainCtrl.openMessageModal()" style="text-decoration:none;"> Goto messages</a>
             </ul>
-          </li>          
+          </li>
         </ul>
         <!--ng-show="showDatasets"-->
         <form class="navbar-form">
