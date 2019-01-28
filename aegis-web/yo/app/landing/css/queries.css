@@ -1,0 +1,118 @@
+@media only screen and (max-width: 1200px) {
+
+    html {
+        font-size: 55%;
+    }
+
+    .objectives__card {
+        width: 45rem;
+        height: 75rem;
+    }
+
+    .project-card {
+        width: 25rem;
+        height: 30rem;
+        margin: 5rem;
+    }
+
+    .features__card {
+        width: 45rem;
+        height: 60rem;
+        margin: 3rem;
+    }
+
+    .europe-flag {
+        display: none;
+    }
+
+    .footer__socialmedia {
+        margin-right: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .footer_project_name {
+        display: flex;
+    justify-content: center;
+    font-size: 4rem;
+    margin-bottom: 3rem;
+    }
+
+    .footer--button {
+        justify-content: center;
+    }
+
+    .footer_socialmedia-list {
+        justify-content: center;
+    }
+
+    .footer-box {
+        height: 25rem;
+        border-right: none;
+        border-bottom: 1px solid #707070;
+    }
+}
+
+@media only screen and (max-width: 1023px) {
+    html {
+        font-size: 50%;
+    }
+
+    .header__heading-box { 
+        width: 100%;
+    }
+
+    .project-card {
+        width: 27rem;
+    }
+
+ }
+
+ @media only screen and (max-width: 767px) {
+    html {
+        font-size: 47%;
+    }
+
+    li.tab {
+        display: none!important;
+    }
+ }
+
+ @media only screen and (max-width: 480px) {
+
+    .features__list, .objectives__list, .project-list {
+        margin-top: 3rem;
+    }
+
+    .features__card {
+        width: 45rem;
+        height: 50rem;
+    }
+
+    .features__card__image--img { width: 14rem; }
+
+    .features__card__image, .objectives__card__image {
+        margin: 3rem 0 2rem 0;
+    }
+
+    .features__card__text {
+        padding: 0 1rem;
+    }
+
+    .objectives__card {
+        width: 50rem;
+        height:75rem;
+    }
+
+    .objectives__card__image--img {
+        width: 14rem;
+    }
+
+    .objectives__card__text {
+        padding: 0 1rem 0 1rem;
+    }
+
+    .project-info div.row {
+        display: flex;
+    }
+
+ }
