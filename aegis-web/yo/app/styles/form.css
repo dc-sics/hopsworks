@@ -188,8 +188,16 @@ textarea.form-control {
   margin: 0;
   font-weight: 400;
   padding: 20px 0;
+  height: 80px
 }
 
+.content-utility-bar-head {
+  background: #efefef;
+}
+
+.content-utility-bar-actions {
+  box-shadow: 0 2em 3em #ddd;
+}
 
 .wrapper>section {
   background-color: #f5f7fa;
@@ -215,6 +223,10 @@ textarea.form-control {
 
 .styleSelect {
   overflow: hidden;
+}
+
+.dark:-ms-input-placeholder {
+  color: #fff !important;
 }
 
 .dark::placeholder {

@@ -648,3 +648,7 @@ nav .dropdown-header {
   font-size: inherit;
   font-weight: bold;
 }
+
+.fa, .fas {
+  font-weight: 900 !important;
+}
