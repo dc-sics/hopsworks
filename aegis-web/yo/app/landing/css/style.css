@@ -291,7 +291,7 @@ body {
 /***************************************/
 
 section {
-  padding: 4rem 6rem;
+  padding: 4rem 4rem;
 }
 
 .features,
@@ -430,7 +430,7 @@ section {
 
 .objectives__card {
   width: 55rem;
-  height: 67rem;
+  height: 70rem;
   border: 3px solid #fff;
   background-color: #fff;
   display: -webkit-box;
