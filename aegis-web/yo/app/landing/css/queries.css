@@ -1,24 +1,34 @@
+@media only screen and (max-width: 1441px) { 
+    .objectives__card {
+        width: 40rem;
+        height: 85rem;
+    }
+
+    .project-card {
+        width: 25rem;
+        height: 30rem;
+    }
+
+    .features__card {
+        width: 34rem;
+        height: 65rem;
+        margin: 3rem;
+    }
+
+    .features__card__text {
+        padding: 0px 1rem;
+    }
+}
+
+
 @media only screen and (max-width: 1200px) {
 
     html {
         font-size: 55%;
     }
 
-    .objectives__card {
-        width: 45rem;
-        height: 75rem;
-    }
-
     .project-card {
-        width: 25rem;
-        height: 30rem;
         margin: 5rem;
-    }
-
-    .features__card {
-        width: 45rem;
-        height: 60rem;
-        margin: 3rem;
     }
 
     .europe-flag {
@@ -54,7 +64,7 @@
 
 @media only screen and (max-width: 1023px) {
     html {
-        font-size: 50%;
+        font-size: 49%;
     }
 
     .header__heading-box { 
@@ -62,9 +72,27 @@
     }
 
     .project-card {
-        width: 27rem;
+        width: 25rem;
     }
 
+    .features__card__image--img { width: 14rem; }
+
+    .features__card__image, .objectives__card__image {
+        margin: 4rem 0 2rem 0;
+    }
+
+    .features__card {
+        width: 30rem;
+        height: 68rem;
+    }
+
+    .features__card__text {
+        font-size: 2rem;
+    }
+
+    .project-list {
+        margin-top: 0;
+    }
  }
 
  @media only screen and (max-width: 767px) {
@@ -75,6 +103,30 @@
     li.tab {
         display: none!important;
     }
+
+    .project-card {
+        width: 22rem;
+    }
+
+    .features__card {
+        width: 50rem;
+        height: 50rem;
+    }
+
+    .features__card__text {
+        font-size: 2.3rem;
+    }
+
+    .objectives__card {
+        width: 60rem;
+        height: 75rem;
+    }
+
+    .footer-mobile {
+        text-align: center;
+    }
+
+    
  }
 
  @media only screen and (max-width: 480px) {
@@ -83,12 +135,6 @@
         margin-top: 3rem;
     }
 
-    .features__card {
-        width: 45rem;
-        height: 50rem;
-    }
-
-    .features__card__image--img { width: 14rem; }
 
     .features__card__image, .objectives__card__image {
         margin: 3rem 0 2rem 0;
@@ -96,11 +142,6 @@
 
     .features__card__text {
         padding: 0 1rem;
-    }
-
-    .objectives__card {
-        width: 50rem;
-        height:75rem;
     }
 
     .objectives__card__image--img {
@@ -115,4 +156,14 @@
         display: flex;
     }
 
+
+    .objectives__card {
+        width: 40rem;
+        height: 90rem;
+    }
+
+    .features__card {
+        width: 40rem;
+        height: 60rem;
+    }
  }
