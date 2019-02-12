@@ -37,17 +37,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/*global angular: false */
-
 'use strict';
 
-angular.module('hopsWorksApp')
-    .factory('EndpointService', ['$http', function ($http) {
-            var service = {
+angular.module('hopsWorksApp').directive('orgchart', function() {
+    return {
+        restrict: 'E',
+        link: function($scope, $elm) {
+            // Instantiate and draw our chart, passing in some options.
+            var chart = new google.visualization.OrgChart($elm[0]);
+            chart.draw($scope.orgChartData);
+        },
+        controller: 'featurestoreCtrl as featurestoreCtrl'
+    }
+});
 
-                findEndpoint: function () {
-                    return $http.get('/api/endpoint');
-                }
-            };
-            return service;
-    }]);
