@@ -40,12 +40,13 @@
 'use strict';
 
 angular.module('hopsWorksApp')
-        .controller('DatasetsCtrl', ['$scope', '$q', '$mdSidenav', '$mdUtil', '$log',
-          'DataSetService', 'JupyterService', '$routeParams', '$route', 'ModalService', 'growl', '$location',
-          'MetadataHelperService', '$rootScope', 'DelaProjectService', 'DelaClusterProjectService',
-          function ($scope, $q, $mdSidenav, $mdUtil, $log, DataSetService, JupyterService, $routeParams,
-                  $route, ModalService, growl, $location, MetadataHelperService,
-                  $rootScope, DelaProjectService, DelaClusterProjectService) {
+        .controller('DatasetsCtrl', ['$scope', '$mdSidenav', '$mdUtil',
+          'DataSetService', 'JupyterService', '$routeParams', 'ModalService', 'growl', '$location',
+          'MetadataHelperService', '$rootScope', 'DelaProjectService', 'DelaClusterProjectService', 'UtilsService', 'UserService', '$mdToast',
+          'TourService',
+          function ($scope, $mdSidenav, $mdUtil, DataSetService, JupyterService, $routeParams,
+                  ModalService, growl, $location, MetadataHelperService,
+                  $rootScope, DelaProjectService, DelaClusterProjectService, UtilsService, UserService, $mdToast, TourService) {
 
             var self = this;
             self.itemsPerPage = 14;
@@ -57,7 +58,8 @@ angular.module('hopsWorksApp')
             self.sharedPathArray; //An array containing all the path components of a path in a shared dataset 
             self.highlighted;
             self.parentDS = $rootScope.parentDS;
-            
+            self.tourService = TourService;
+            self.tourService.currentStep_TourNine = 6; //Feature store Tour
 
             // Details of the currently selecte file/dir
             self.selected = null; //The index of the selected file in the files array.
@@ -131,7 +133,9 @@ angular.module('hopsWorksApp')
               }
             });
 
-
+            self.goToUrl = function (serviceName) {
+                $location.path('project/' + self.projectId + '/' + serviceName);
+            }
             self.isSharedDs = function (name) {
               var top = name.split("::");
               if (top.length === 1) {
@@ -581,11 +585,11 @@ angular.module('hopsWorksApp')
               var filePath = getPath(pathArray);
 
               growl.info("Converting...",
-                      {title: 'Conversion Started', ttl: 2000, referenceId: 4});
+                      {title: 'Conversion running in background, please wait...', ttl: 5000, referenceId: 4});
               JupyterService.convertIPythonNotebook(self.projectId, filePath).then(
                       function (success) {
-                        growl.success("Finished - refresh your browser",
-                                {title: 'Converting in Background', ttl: 3000, referenceId: 4});
+                        growl.success("Finished - refreshing directory contents",
+                                {title: 'Success', ttl: 4000, referenceId: 4});
                         getDirContents();
                       }, function (error) {
                       if (typeof error.data.usrMsg !== 'undefined') {
@@ -615,6 +619,47 @@ angular.module('hopsWorksApp')
               }
               return false;
             };
+            
+            self.browseDataset = function (dataset) {
+              if (dataset.status === true) {
+                UtilsService.setDatasetName(dataset.name);
+                $rootScope.parentDS = dataset;
+                $location.path($location.path() + '/' + dataset.name + '/');
+              } else {
+                ModalService.confirmShare('sm', 'Accept Shared Dataset?', 'Do you want to accept this dataset and add it to this project?')
+                  .then(function (success) {
+                    DataSetService(self.projectId).acceptDataset(dataset.id).then(
+                      function (success) {
+                        $location.path($location.path() + '/' + dataset.name + '/');
+                      }, function (error) {
+                        growl.warning("Error: " + error.data.errorMsg, {title: 'Error', ttl: 5000});
+                    });
+                  }, function (error) {
+                    if (error === 'reject') {
+                      DataSetService(self.projectId).rejectDataset(dataset.id).then(
+                        function (success) {
+                          $location.path($location.path() + '/');
+                          growl.success("Success: " + success.data.successMessage, {title: 'Success', ttl: 5000});
+                        }, function (error) {
+                           growl.warning("Error: " + error.data.errorMsg, {title: 'Error', ttl: 5000});
+                      });
+                    }
+                  });
+              }
+
+            };
+            
+            self.getRole = function () {
+              UserService.getRole(self.projectId).then(
+                function (success) {
+                  self.role = success.data.role;
+                }, function (error) {
+                  self.role = "";
+              });
+            };
+            
+            self.getRole();
+
 
             /**
              * Preview the requested file in a Modal. If the file is README.md
@@ -986,14 +1031,17 @@ angular.module('hopsWorksApp')
               } else if (!file.underConstruction) {
                 ModalService.confirm('sm', 'Confirm', 'Do you want to download this file?').then(
                         function (success) {
+                          showToast('Preparing Download..');
                           var downloadPathArray = self.pathArray.slice(0);
                           downloadPathArray.push(file.name);
-                          var filePath = getPath(downloadPathArray);
-                          //growl.success("Asdfasdf", {title: 'asdfasd', ttl: 5000});
+                          var filePath = getPath(downloadPathArray);                         
                           dataSetService.checkFileForDownload(filePath).then(
                                   function (success) {
-                                    dataSetService.fileDownload(filePath);
-                                  }, function (error) {
+                                    var token = success.data.data.value; 
+                                    closeToast();
+                                    dataSetService.fileDownload(filePath, token);
+                                  },function (error) {
+                                    closeToast();
                                     growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
                           });
                         }
@@ -1002,7 +1050,25 @@ angular.module('hopsWorksApp')
                 growl.info("File under construction.", {title: 'Info', ttl: 5000});
               }
             };
-
+            
+            var showToast = function(text) {
+              var toast = $mdToast.simple()
+                            .textContent(text)
+                            .action('Close')
+                            .position('bottom right')
+                            .hideDelay(0);
+                    
+              $mdToast.show(toast).then(function(response) {
+                if ( response == 'ok' ) {
+                  $mdToast.hide();
+                }
+              });
+            };
+            
+            var closeToast = function() {
+              $mdToast.hide();
+            };
+            
             /**
              * Go up to parent directory.
              * @returns {undefined}

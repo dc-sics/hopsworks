@@ -38,12 +38,12 @@
   -->
 
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <title>Hopsworks</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width">
-    <link rel="icon" type="image/png" href="images/hops-black.png" />
+    <link rel="icon" type="image/png" href="images/hops-black.png"/>
     <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Lobster'>
     <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Varela+Round'>
     <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Roboto:500'>
@@ -52,23 +52,24 @@
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <!-- build:css(.) styles/vendor.css -->
     <!-- bower:css -->
-    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
-    <link rel="stylesheet" href="bower_components/angular-hamburger-toggle/dist/angular-hamburger-toggle.css" />
-    <link rel="stylesheet" href="bower_components/jstree/dist/themes/default/style.css" />
-    <link rel="stylesheet" href="bower_components/ng-prettyjson/src/ng-prettyjson.css" />
-    <link rel="stylesheet" href="bower_components/ng-sortable/dist/ng-sortable.css" />
-    <link rel="stylesheet" href="bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css" />
-    <link rel="stylesheet" href="bower_components/bootstrap-switch/dist/css/bootstrap3/bootstrap-switch.css" />
-    <link rel="stylesheet" href="bower_components/angular-ui-select/dist/select.css" />
-    <link rel="stylesheet" href="bower_components/v-accordion/dist/v-accordion.css" />
-    <link rel="stylesheet" href="bower_components/angular-growl-v2/build/angular-growl.css" />
-    <link rel="stylesheet" href="bower_components/angular-xeditable/dist/css/xeditable.css" />
-    <link rel="stylesheet" href="bower_components/isteven-angular-multiselect/isteven-multi-select.css" />
-    <link rel="stylesheet" href="bower_components/angular-material/angular-material.css" />
-    <link rel="stylesheet" href="bower_components/angular-material-data-table/dist/md-data-table.css" />
-    <link rel="stylesheet" href="bower_components/angularjs-slider/dist/rzslider.css" />
-    <link rel="stylesheet" href="bower_components/nvd3/build/nv.d3.css" />
-    <link rel="stylesheet" href="bower_components/angular-bootstrap-toggle/dist/angular-bootstrap-toggle.min.css" />
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css"/>
+    <link rel="stylesheet" href="bower_components/angular-hamburger-toggle/dist/angular-hamburger-toggle.css"/>
+    <link rel="stylesheet" href="bower_components/jstree/dist/themes/default/style.css"/>
+    <link rel="stylesheet" href="bower_components/ng-prettyjson/src/ng-prettyjson.css"/>
+    <link rel="stylesheet" href="bower_components/ng-sortable/dist/ng-sortable.css"/>
+    <link rel="stylesheet"
+          href="bower_components/eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css"/>
+    <link rel="stylesheet" href="bower_components/bootstrap-switch/dist/css/bootstrap3/bootstrap-switch.css"/>
+    <link rel="stylesheet" href="bower_components/angular-ui-select/dist/select.css"/>
+    <link rel="stylesheet" href="bower_components/v-accordion/dist/v-accordion.css"/>
+    <link rel="stylesheet" href="bower_components/angular-growl-v2/build/angular-growl.css"/>
+    <link rel="stylesheet" href="bower_components/angular-xeditable/dist/css/xeditable.css"/>
+    <link rel="stylesheet" href="bower_components/isteven-angular-multiselect/isteven-multi-select.css"/>
+    <link rel="stylesheet" href="bower_components/angular-material/angular-material.css"/>
+    <link rel="stylesheet" href="bower_components/angular-material-data-table/dist/md-data-table.css"/>
+    <link rel="stylesheet" href="bower_components/angularjs-slider/dist/rzslider.css"/>
+    <link rel="stylesheet" href="bower_components/nvd3/build/nv.d3.css"/>
+    <link rel="stylesheet" href="bower_components/angular-bootstrap-toggle/dist/angular-bootstrap-toggle.min.css"/>
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:css(.tmp) styles/main.css -->
@@ -82,7 +83,7 @@
     <link rel="stylesheet" href="styles/angular-tour.css"/>
     <link rel="stylesheet" href="styles/timeline.css">
     <link rel="stylesheet" href="styles/ExampleProjectLoaderFix.css">
-    <link rel="stylesheet" href="styles/jquery.qtip.css" />
+    <link rel="stylesheet" href="styles/jquery.qtip.css"/>
     <link rel="stylesheet" href="styles/loading.css">
     <link rel="stylesheet" href="styles/angular-resizable.css">
     <link rel="stylesheet" href="styles/cards.css">
@@ -91,12 +92,16 @@
     <link rel="stylesheet" href="styles/publicDataset.css">
     <link rel="stylesheet" href="styles/dropdown-submenu.css">
     <link rel="stylesheet" href="styles/scrollbar.css">
+    <link rel="stylesheet" href="styles/filemgr/animations.css">
+    <link rel="stylesheet" href="styles/filemgr/dialogs.css">
+    <link rel="stylesheet" href="styles/filemgr/main.css">
     <!-- endbuild -->
-  </head>
-  <body  ng-app="hopsWorksApp">
-    <!--[if lt IE 7]>
-       <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
-    <![endif]-->
+</head>
+<body ng-app="hopsWorksApp">
+<!--[if lt IE 7]>
+<p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade
+    your browser</a> to improve your experience.</p>
+<![endif]-->
 
     <div class="hw-wrapper" id="hwWrapper">
       <div ng-view=""></div>
@@ -167,6 +172,10 @@
     <script src="bower_components/angular-nvd3/dist/angular-nvd3.js"></script>
     <script src="bower_components/angular-bootstrap-toggle/dist/angular-bootstrap-toggle.min.js"></script>
     <script src="bower_components/angular-file-saver/dist/angular-file-saver.bundle.js"></script>
+    <script src="bower_components/ng-file-upload/ng-file-upload-all.min.js"></script>
+    <script src="bower_components/angular-google-chart/ng-google-chart.js"></script>
+    <script src="bower_components/apexcharts/dist/apexcharts.js"></script>
+    
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:js({.tmp,app}) scripts/scripts.js -->
@@ -176,13 +185,13 @@
     <script src="scripts/js/hamburger.js"></script>
     <script src="scripts/js/ace/ace.js"></script>
     <script src="scripts/js/ace/mode-json.js"></script>
-    <script src="scripts/js/graph-settings.js"></script>
 
     <script src="scripts/directives/switch.js"></script>
     <script src="scripts/directives/modal.js"></script>
     <script src="scripts/directives/passwordMatch.js"></script>
     <script src="scripts/directives/hwcard.js"></script>
     <script src="scripts/directives/hwPanel.js"></script>
+    <script src="scripts/directives/filemgr/directives.js"></script>
 
     <script src="scripts/controllers/dataSetCreatorCtrl.js"></script>
     <script src="scripts/controllers/datasetsCtrl.js"></script>
@@ -227,7 +236,6 @@
     <script src="scripts/controllers/localFsCtrl.js"></script>
     <script src="scripts/controllers/inputModalCtrl.js"></script>
     <script src="scripts/controllers/uberCtrl.js"></script>
-    <script src="scripts/controllers/uberCtrl.js"></script>
     <script src="scripts/controllers/kafkaCtrl.js"></script>
     <script src="scripts/controllers/transformGraphCtrl.js"></script>
     <script src="scripts/controllers/pythonDepsCtrl.js"></script>
@@ -253,14 +261,37 @@
     <script src="scripts/controllers/publicDSPanelCtrl.js"></script>
     <script src="scripts/controllers/ldapLoginCtrl.js"></script>
     <script src="scripts/controllers/ldapUserConsentModalCtrl.js"></script>
-
+    <script src="scripts/controllers/filemgr/main.js"></script>
+    <script src="scripts/controllers/filemgr/selector-controller.js"></script>
+    <script src="scripts/controllers/featurestoreCtrl.js"></script>
+    <script src="scripts/controllers/featureSchemaViewContentCtrl.js"></script>
+    <script src="scripts/controllers/createFeaturegroupCtrl.js"></script>
+    <script src="scripts/controllers/updateFeaturegroupCtrl.js"></script>
+    <script src="scripts/controllers/featurestoreViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/featuregroupViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/createNewFeaturegroupVersionCtrl.js"></script>
+    <script src="scripts/controllers/selectFeatureTypeCtrl.js"></script>
+    <script src="scripts/controllers/previewFeaturegroupCtrl.js"></script>
+    <script src="scripts/controllers/createTrainingDatasetCtrl.js"></script>
+    <script src="scripts/controllers/trainingDatasetViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/updateTrainingDatasetCtrl.js"></script>
+    <script src="scripts/controllers/createNewTrainingDatasetVersionCtrl.js"></script>
+    <script src="scripts/controllers/featuregroupStatisticsCtrl.js"></script>
+    <script src="scripts/controllers/featureViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/viewTrainingDatasetSchemaContentCtrl.js"></script>
+    <script src="scripts/controllers/trainingDatasetStatisticsCtrl.js"></script>
+    <script src="scripts/controllers/featuregroupDependenciesCtrl.js"></script>
+    <script src="scripts/controllers/featurestoreStatisticModalCtrl.js"></script>
+    <script src="scripts/controllers/trainingDatasetDependenciesCtrl.js"></script>
+    
     <!-- Services -->
     <script src="scripts/services/AuthInterceptorService.js"></script>
     <script src="scripts/services/AuthService.js"></script>
+    <script src="scripts/services/AirflowService.js"></script>
     <script src="scripts/services/BannerService.js"></script>
     <script src="scripts/services/UtilsService.js"></script>
     <script src="scripts/services/ElasticService.js"></script>
-    <script src="scripts/services/EndpointService.js"></script>
+    <script src="scripts/services/AuthGuardService.js"></script>
     <script src="scripts/services/MetadataService.js"></script>
     <script src="scripts/services/DataSetService.js"></script>
     <script src="scripts/services/ProjectService.js"></script>
@@ -298,7 +329,19 @@
     <script src="scripts/services/KibanaService.js"></script>
     <script src="scripts/services/JupyterService.js"></script>
     <script src="scripts/services/CertService.js"></script>
+    <script src="scripts/services/filemgr/apihandler.js"></script>
+    <script src="scripts/services/filemgr/apimiddleware.js"></script>
+    <script src="scripts/services/filemgr/filenavigator.js"></script>
+    <script src="scripts/services/FeaturestoreService.js"></script>
+    <!-- Providers -->
+    <script src="scripts/providers/filemgr/config.js"></script>
+    <!-- Filters -->
+    <script src="scripts/filters/filters.js"></script>
+    <!-- Entities -->
+    <script src="scripts/entities/filemgr/chmod.js"></script>
+    <script src="scripts/entities/filemgr/item.js"></script>
     <!-- endbuild -->
+ 
 
-  </body>
+</body>
 </html>

@@ -146,6 +146,10 @@ a:focus {
   opacity: 0.5;
 }
 
+.modal-title {
+  word-wrap:  anywhere;
+}
+
 .modal-content {
   background-color: #fafafa;
 }
@@ -576,10 +580,10 @@ md-input-container {
   width: 100%;
 }
 
-.ui-select-multiple.ui-select-bootstrap{
+/*.ui-select-multiple.ui-select-bootstrap{
   max-height: 100px; 
   overflow: auto;
-}
+}*/
 
 .btn-huge{
     padding-top:10px;

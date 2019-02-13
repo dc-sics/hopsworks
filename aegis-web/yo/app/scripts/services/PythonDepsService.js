@@ -139,8 +139,8 @@ angular.module('hopsWorksApp')
                 };
                 return $http(regReq);
               },
-              clone: function (projectId, projName) {
-                return $http.get('/api/project/' + projectId + '/pythonDeps/clone/' + projName);
+              libInstalled: function(projectId, libName) {
+                return $http.get('/api/project/' + projectId + '/pythonDeps/installed/' + libName);
               }
             };
           }]);

@@ -67,7 +67,8 @@ angular.module('hopsWorksApp')
               self.tours = [
                 {'name': 'Deep Learning', 'tip': 'Take a tour by creating a project and running a Deep Learning notebook!'},
                 {'name': 'Spark', 'tip': 'Take a tour of Hopsworks by creating a project and running a Spark job!'},
-                {'name': 'Kafka', 'tip': 'Take a tour of Hopsworks by creating a project and running a Kafka job!'}
+                {'name': 'Kafka', 'tip': 'Take a tour of Hopsworks by creating a project and running a Kafka job!'},
+                {'name': 'Feature Store', 'tip': 'Take a tour of Hopsworks by creating a project and creating/reading features from your own Feature Store!'}
               ];
             };
 
@@ -93,119 +94,25 @@ angular.module('hopsWorksApp')
             // Load all projects
             var loadProjects = function (success) {
               self.projects = success;
-              console.log("Projects: ", self.projects);
               self.pageSizeProjects = 10;
               self.totalPagesProjects = Math.ceil(self.projects.length / self.pageSizeProjects);
               self.totalItemsProjects = self.projects.length;
               self.currentPageProjects = 1;
             };
 
-            var loadActivity = function (success) {
-              var i = 0;
-              var histories = success.data;
-              var today = new Date();
-              var day = today.getDate();
-              var yesterday = new Date(new Date().setDate(day - 1));
-              var lastWeek = new Date(new Date().setDate(day - 7));
-              var older = new Date(new Date().setDate(day - 14));
-
-              var firstToday = true;
-              var firstYesterday = true;
-              var firstThisWeek = true;
-              var firstLastWeek = true;
-              var firstOlder = true;
-
-              today.setHours(0, 0, 0, 0);
-              yesterday.setHours(0, 0, 0, 0);
-              lastWeek.setHours(0, 0, 0, 0);
-              older.setHours(0, 0, 0, 0);
-
-              if (histories.length === 0) {
-                self.histories = [];
-              } else {
-                histories.slice().forEach(function (history) {
-                  var historyDate = new Date(history.timestamp);
-                  historyDate.setHours(0, 0, 0, 0);
-
-                  if (+historyDate === +today) {
-                    if (firstToday) {
-                      firstToday = false;
-                      history.flag = 'today';
-                    } else if (i % 10 === 0) {
-                      history.flag = 'today';
-                    } else {
-                      history.flag = '';
-                    }
-                  } else if (+historyDate === +yesterday) {
-                    if (firstYesterday) {
-                      firstYesterday = false;
-                      history.flag = 'yesterday';
-                    } else if (i % 10 === 0) {
-                      history.flag = 'yesterday';
-                    } else {
-                      history.flag = '';
-                    }
-                  } else if (+historyDate > +lastWeek) {
-                    if (firstThisWeek) {
-                      firstThisWeek = false;
-                      history.flag = 'thisweek';
-                    } else if (i % 10 === 0) {
-                      history.flag = 'thisweek';
-                    } else {
-                      history.flag = '';
-                    }
-                  } else if (+historyDate <= +lastWeek && +historyDate >= +older) {
-                    if (firstLastWeek) {
-                      firstLastWeek = false;
-                      history.flag = 'lastweek';
-                    } else if (i % 10 === 0) {
-                      history.flag = 'lastweek';
-                    } else {
-                      history.flag = '';
-                    }
-                  } else {
-                    if (firstOlder) {
-                      firstOlder = false;
-                      history.flag = 'older';
-                    } else if (i % 10 === 0) {
-                      history.flag = 'older';
-                    } else {
-                      history.flag = '';
-                    }
-                  }
-
-                  self.histories.push(history);
-                  i++;
-
-                });
-              }
-
-
-              self.pageSize = 10;
-              self.totalPages = Math.floor(self.histories.length / self.pageSize);
-              self.totalItems = self.histories.length;
-
-            };
-
             var updateUIAfterChange = function (exampleProject) {
-
-              $q.all({
-                'first': ActivityService.getByUser(),
-                'second': ProjectService.query().$promise
-              }
-              ).then(function (result) {
-                if (exampleProject) {
-                  self.tourService.currentStep_TourOne = 0;
-                  self.tourService.KillTourOneSoon();
-                }
-                loadActivity(result.first);
-                loadProjects(result.second);
-              },
-                      function (error) {
-                        growl.info(error, {title: 'Info', ttl: 2000});
-                      });
+              ProjectService.query().$promise.then(function (result) {
+                  if (exampleProject) {
+                    self.tourService.currentStep_TourOne = 0;
+                    self.tourService.KillTourOneSoon();
+                  }
+                  loadProjects(result);
+                },
+                function (error) {
+                  growl.info(error, {title: 'Info', ttl: 2000});
+                });
             };
-
+            
             updateUIAfterChange(false);
 
             self.initCheckBox = function () {
@@ -288,7 +195,7 @@ angular.module('hopsWorksApp')
             };
 
             self.updateProfile = function (fun) {
-              UserService.UpdateProfile(self.user).then (
+              UserService.updateProfile(self.user).then (
                 function (success) {
                   fun();
                 }, function (error) {
@@ -311,14 +218,12 @@ angular.module('hopsWorksApp')
             // Create a new project
             self.newProject = function () {
               ModalService.createProject('lg').then(
-                      function (success) {
-                        updateUIAfterChange(false);
-                      }, function (error) {
-                      if (typeof error.data.usrMsg !== 'undefined') {
-                          growl.error(error.data.usrMsg, {title: error.data.errorMsg, ttl: 8000});
-                      } else {
-                          growl.error("", {title: error.data.errorMsg, ttl: 8000});
-                      }
+                function (success) {
+                  updateUIAfterChange(false);
+                }, function (error) {
+                  if (typeof error.data !== 'undefined' && typeof error.data.usrMsg !== 'undefined') {
+                    growl.error(error.data.usrMsg, {title: error.data.errorMsg, ttl: 8000});
+                  } 
               });
             };
 
@@ -329,9 +234,11 @@ angular.module('hopsWorksApp')
               var internalTourName = '';
               if(uiTourName === 'Deep Learning') {
                 internalTourName = 'Deep_Learning';
+              } else if(uiTourName === 'Feature Store') {
+                internalTourName = 'featurestore';
               } else {
                 internalTourName = uiTourName;
-              };
+              }
 
               if (self.showTourTips === false) {
                 self.toggleTourTips();
