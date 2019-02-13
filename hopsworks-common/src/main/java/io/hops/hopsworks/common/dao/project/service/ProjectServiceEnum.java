@@ -49,7 +49,9 @@ public enum ProjectServiceEnum {
   HIVE("Hive"),
   SERVING("Serving"),
   RSTUDIO("RStudio"),
-  PYTHON("Python");
+  AIRFLOW("Airflow"),
+  PYTHON("Python"),
+  FEATURESTORE("Featurestore");
 
   private final String readable;
 

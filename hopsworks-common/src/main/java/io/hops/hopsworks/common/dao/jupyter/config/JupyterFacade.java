@@ -39,12 +39,10 @@
 
 package io.hops.hopsworks.common.dao.jupyter.config;
 
-import com.google.common.base.Strings;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsers;
 import io.hops.hopsworks.common.dao.hdfsUser.HdfsUsersFacade;
 import io.hops.hopsworks.common.dao.jupyter.JupyterProject;
 import io.hops.hopsworks.common.dao.project.Project;
-import io.hops.hopsworks.common.dao.project.team.ProjectTeam;
 import io.hops.hopsworks.common.util.Settings;
 
 import javax.ejb.EJB;
@@ -78,27 +76,13 @@ public class JupyterFacade {
     return em;
   }
 
-//  public List<JupyterProject> findNotebooksByProject(Integer projectId) {
-//    TypedQuery<JupyterProject> query = em.createNamedQuery(
-//        "JupyterProject.findByProjectId",
-//        JupyterProject.class);
-//    query.setParameter("projectId", projectId);
-//    List<JupyterProject> res = query.getResultList();
-//    List<JupyterProject> notebooks = new ArrayList<>();
-//    for (JupyterProject pt : res) {
-////      notebooks.add(new TopicDTO(pt.getProjectTopicsPK().getTopicName(),
-////              pt.getSchemaTopics().getSchemaTopicsPK().getName(),
-////              pt.getSchemaTopics().getSchemaTopicsPK().getVersion()));
-//    }
-//    return notebooks;
-//  }
-  public boolean removeNotebookServer(String hdfsUsername) {
+  public boolean removeNotebookServer(String hdfsUsername, int port) {
 
     if (hdfsUsername == null || hdfsUsername.isEmpty()) {
       return false;
     }
 
-    JupyterProject jp = findByUser(hdfsUsername);
+    JupyterProject jp = findByUserAndPort(hdfsUsername, port);
     if (jp == null) {
       return false;
     }
@@ -113,35 +97,7 @@ public class JupyterFacade {
     return true;
   }
 
-  /**
-   * Deletes jupyter configuration dir for user.
-   *
-   * @param project
-   * @return
-   */
-  public boolean deleteProject(Project project) {
-    Collection<ProjectTeam> ptc = project.getProjectTeamCollection();
-
-    for (ProjectTeam pt : ptc) {
-
-    }
-
-//    JupyterConfig conf = hdfsuserConfCache.remove(project.getName());
-//    if (conf != null) {
-//      return conf.cleanAndRemoveConfDirs();
-//    }
-//    String projectDirPath = settings.getZeppelinDir() + File.separator
-//            + Settings.DIR_ROOT + File.separator + project.getName();
-//    File projectDir = new File(projectDirPath);
-//    String hdfsUser = hdfsUsername.getHdfsUserName(project, project.getOwner());
-//    if (projectDir.exists()) {
-//      conf = new JupyterConfig(project.getName(), hdfsUser, settings, null);
-//      return conf.cleanAndRemoveConfDirs();
-//    }
-    return false;
-  }
-
-  public JupyterProject findByUser(String hdfsUser) {
+  public JupyterProject findByUserAndPort(String hdfsUser, int port) {
     HdfsUsers res = null;
     TypedQuery<HdfsUsers> query = em.createNamedQuery(
         "HdfsUsers.findByName", HdfsUsers.class);
@@ -151,25 +107,39 @@ public class JupyterFacade {
     } catch (NoResultException e) {
       return null;
     }
-    JupyterProject res2 = null;
-    TypedQuery<JupyterProject> query2 = em.createNamedQuery(
-        "JupyterProject.findByHdfsUserId", JupyterProject.class);
-    query2.setParameter("hdfsUserId", res.getId());
+    TypedQuery<JupyterProject> jupyterProjectQuery = em.createNamedQuery(
+        "JupyterProject.findByHdfsUserIdAndPort", JupyterProject.class);
+    jupyterProjectQuery.setParameter("hdfsUserId", res.getId());
+    jupyterProjectQuery.setParameter("port", port);
     try {
-      res2 = query2.getSingleResult();
+      return jupyterProjectQuery.getSingleResult();
     } catch (NoResultException e) {
       Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
           e);
     }
-    return res2;
+    return null;
   }
-  
-  public void stopServer(String hdfsUser) {
-    if (Strings.isNullOrEmpty(hdfsUser)) {
-      throw new IllegalArgumentException("hdfsUser was not provided.");
+
+  public JupyterProject findByUser(String hdfsUser) {
+    HdfsUsers res = null;
+    TypedQuery<HdfsUsers> hdfsUsersQuery = em.createNamedQuery(
+      "HdfsUsers.findByName", HdfsUsers.class);
+    hdfsUsersQuery.setParameter("name", hdfsUser);
+    try {
+      res = hdfsUsersQuery.getSingleResult();
+    } catch (NoResultException e) {
+      return null;
     }
-    JupyterProject jp = this.findByUser(hdfsUser);
-    remove(jp);
+    TypedQuery<JupyterProject> jupyterProjectQuery = em.createNamedQuery(
+      "JupyterProject.findByHdfsUserId", JupyterProject.class);
+    jupyterProjectQuery.setParameter("hdfsUserId", res.getId());
+    try {
+      return jupyterProjectQuery.getSingleResult();
+    } catch (NoResultException e) {
+      Logger.getLogger(JupyterFacade.class.getName()).log(Level.FINE, null,
+        e);
+    }
+    return null;
   }
 
   public List<JupyterProject> getAllNotebookServers() {

@@ -40,7 +40,9 @@
 package io.hops.hopsworks.api.project;
 
 import io.hops.hopsworks.api.filter.AllowedProjectRoles;
+import io.hops.hopsworks.api.filter.Audience;
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.jwt.JWTHelper;
 import io.hops.hopsworks.api.metadata.wscomm.MetadataController;
 import io.hops.hopsworks.api.metadata.wscomm.MetadataProtocol;
 import io.hops.hopsworks.api.metadata.wscomm.message.ContentMessage;
@@ -67,7 +69,6 @@ import io.hops.hopsworks.common.dao.metadata.db.TupleToFileFacade;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.dao.project.ProjectFacade;
 import io.hops.hopsworks.common.dao.project.team.ProjectTeamFacade;
-import io.hops.hopsworks.common.dao.user.UserFacade;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.DatasetException;
 import io.hops.hopsworks.common.exception.GenericException;
@@ -75,12 +76,12 @@ import io.hops.hopsworks.common.exception.RESTCodes;
 import io.hops.hopsworks.common.exception.MetadataException;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.JsonUtil;
+import io.hops.hopsworks.jwt.annotation.JWTRequired;
 import io.swagger.annotations.Api;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ArrayNode;
 import org.codehaus.jackson.node.ObjectNode;
 
-import javax.annotation.security.RolesAllowed;
 import javax.ejb.EJB;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
@@ -89,7 +90,6 @@ import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonString;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -100,7 +100,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -110,12 +109,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ws.rs.core.SecurityContext;
 
 @Path("/metadata")
-@RolesAllowed({"HOPS_ADMIN", "HOPS_USER"})
-@Api(value = "Metadata Service", description = "Metadata Service")
-@Produces(MediaType.APPLICATION_JSON)
 @Stateless
+@JWTRequired(acceptedTokens={Audience.API}, allowedUserRoles={"HOPS_ADMIN", "HOPS_USER"})
+@Produces(MediaType.APPLICATION_JSON)
+@Api(value = "Metadata Service", description = "Metadata Service")
 @TransactionAttribute(TransactionAttributeType.NEVER)
 public class MetadataService {
 
@@ -143,13 +143,13 @@ public class MetadataService {
   @EJB
   private MetadataController metadataController;
   @EJB
-  private UserFacade userFacade;
-  @EJB
   private InodeFacade inodeFacade;
   @EJB
   private ProjectFacade projectFacade;
   @EJB
   private ProjectTeamFacade projectTeamFacade;
+  @EJB
+  private JWTHelper jWTHelper;
 
   /**
    * Uploads a template file (.json) to the file system (hopsfs) and persists it
@@ -159,8 +159,8 @@ public class MetadataService {
    */
   @Path("upload")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public UploadService upload() throws DatasetException {
-    this.uploader.confUploadTemplate();
+  public UploadService upload() {
+    this.uploader.setParams(null, null, -1, true);
     return this.uploader;
   }
 
@@ -168,18 +168,13 @@ public class MetadataService {
    * Fetch all metadata associated to an inode
    * <p/>
    * @param inodePid
-   * @param sc
-   * @param req
    * @return
    */
   @GET
   @Path("{inodepid}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response fetchMetadataCompact(
-          @PathParam("inodepid") Integer inodePid,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) {
+  public Response fetchMetadataCompact(@PathParam("inodepid") Long inodePid) {
   
     if (inodePid == null) {
       throw new IllegalArgumentException("inodepid was not provided.");
@@ -235,11 +230,9 @@ public class MetadataService {
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
   public Response fetchMetadata(
-          @PathParam("inodepid") Integer inodePid,
+          @PathParam("inodepid") Long inodePid,
           @PathParam("inodename") String inodeName,
-          @PathParam("tableid") Integer tableid,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) {
+          @PathParam("tableid") Integer tableid) {
 
     if (inodePid == null || inodeName == null || tableid == null) {
       throw new IllegalArgumentException("Incomplete request.");
@@ -306,10 +299,7 @@ public class MetadataService {
   @Path("fetchtemplatesforinode/{inodeid}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response fetchTemplatesforInode(
-          @PathParam("inodeid") Integer inodeid,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) {
+  public Response fetchTemplatesforInode(@PathParam("inodeid") Long inodeid) {
 
     if (inodeid == null) {
       throw new IllegalArgumentException("inodeid was not provided.");
@@ -342,10 +332,7 @@ public class MetadataService {
   @Path("fetchavailabletemplatesforinode/{inodeid}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response fetchAvailableTemplatesForInode(
-          @PathParam("inodeid") Integer inodeid,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) {
+  public Response fetchAvailableTemplatesForInode(@PathParam("inodeid") Long inodeid) {
   
     if (inodeid == null) {
       throw new IllegalArgumentException("inodeid was not provided.");
@@ -390,11 +377,8 @@ public class MetadataService {
   @Path("detachtemplate/{inodeid}/{templateid}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response detachTemplateFromInode(
-          @PathParam("inodeid") Integer inodeid,
-          @PathParam("templateid") Integer templateid,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws MetadataException {
+  public Response detachTemplateFromInode(@PathParam("inodeid") Long inodeid,
+          @PathParam("templateid") Integer templateid) throws MetadataException {
 
     if (inodeid == null || templateid == null) {
       throw new IllegalArgumentException("Either inodeid or templateId were not provided");
@@ -465,11 +449,8 @@ public class MetadataService {
   @Path("fetchtemplate/{templateid}/{sender}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response fetchTemplate(
-          @PathParam("templateid") Integer templateid,
-          @PathParam("sender") String sender,
-          @Context SecurityContext sc,
-          @Context HttpServletRequest req) throws GenericException, MetadataException {
+  public Response fetchTemplate(@PathParam("templateid") Integer templateid,
+          @PathParam("sender") String sender) throws GenericException, MetadataException {
 
     if (templateid == null || sender == null) {
       throw new IllegalArgumentException("templateId or sender were not provided");
@@ -497,39 +478,35 @@ public class MetadataService {
   @Path("addWithSchema")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response addMetadataWithSchema(
-          @Context SecurityContext sc, @Context HttpServletRequest req,
-          String metaObj) throws MetadataException, GenericException {
-    String email = sc.getUserPrincipal().getName();
-    return mutateMetadata(email, metaObj, MetadataOp.ADD);
+  public Response addMetadataWithSchema(@Context SecurityContext sc, String metaObj) throws MetadataException,
+      GenericException {
+    Users user = jWTHelper.getUserPrincipal(sc);
+    return mutateMetadata(user, metaObj, MetadataOp.ADD);
   }
 
   @POST
   @Path("updateWithSchema")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response updateMetadataWithSchema(
-          @Context SecurityContext sc, @Context HttpServletRequest req,
-          String metaObj) throws MetadataException, GenericException {
-
-    String email = sc.getUserPrincipal().getName();
-    return mutateMetadata(email, metaObj, MetadataOp.UPDATE);
+  public Response updateMetadataWithSchema(@Context SecurityContext sc, String metaObj) throws MetadataException,
+      GenericException {
+    Users user = jWTHelper.getUserPrincipal(sc);
+    return mutateMetadata(user, metaObj, MetadataOp.UPDATE);
   }
 
   @POST
   @Path("removeWithSchema")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response removeMetadataWithSchema(
-          @Context SecurityContext sc, @Context HttpServletRequest req,
-          String metaObj) throws MetadataException, GenericException {
-    String email = sc.getUserPrincipal().getName();
-    return mutateMetadata(email, metaObj, MetadataOp.REMOVE);
+  public Response removeMetadataWithSchema(@Context SecurityContext sc, String metaObj) throws MetadataException,
+      GenericException {
+    Users user = jWTHelper.getUserPrincipal(sc);
+    return mutateMetadata(user, metaObj, MetadataOp.REMOVE);
   }
 
-  private Response mutateMetadata(String email, String metaObj, MetadataOp op)
+  private Response mutateMetadata(Users user, String metaObj, MetadataOp op)
     throws MetadataException, GenericException {
-    if (op == null || email == null || metaObj == null) {
+    if (op == null || user == null || metaObj == null) {
       throw new IllegalArgumentException("MetadataOp  or email or metaObj were not provided.");
     }
     // Get Inode. Get project for the inode. Check if the user has DATA OWNER 
@@ -553,8 +530,6 @@ public class MetadataService {
     Inode projectInode = inodeFacade.getProjectRootForInode(inode);
     Project project = projectFacade.findByInodeId(projectInode.getInodePK().
             getParentId(), projectInode.getInodePK().getName());
-
-    Users user = userFacade.findByEmail(email);
 
     RESTApiJsonResponse json = new RESTApiJsonResponse();
     Response.Status status = Response.Status.FORBIDDEN;
@@ -615,26 +590,18 @@ public class MetadataService {
   @Path("attachSchemaless")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response attachSchemalessMetadata(
-          @Context SecurityContext sc, @Context HttpServletRequest req,
-          String metaObj) throws DatasetException, MetadataException {
-
+  public Response attachSchemalessMetadata(String metaObj) throws DatasetException, MetadataException {
     processSchemalessMetadata(metaObj, false);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.ACCEPTED).
-            build();
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.ACCEPTED).build();
   }
 
   @POST
   @Path("detachSchemaless")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response detachSchemalessMetadata(
-          @Context SecurityContext sc, @Context HttpServletRequest req,
-          String metaObj) throws DatasetException, MetadataException {
-
+  public Response detachSchemalessMetadata(String metaObj) throws DatasetException, MetadataException {
     processSchemalessMetadata(metaObj, true);
-    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.ACCEPTED).
-            build();
+    return noCacheResponse.getNoCacheResponseBuilder(Response.Status.ACCEPTED).build();
   }
 
   private void processSchemalessMetadata(String metaObj, boolean detach)

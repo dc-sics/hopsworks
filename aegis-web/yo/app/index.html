@@ -166,6 +166,9 @@
     <script src="bower_components/angular-nvd3/dist/angular-nvd3.js"></script>
     <script src="bower_components/angular-bootstrap-toggle/dist/angular-bootstrap-toggle.min.js"></script>
     <script src="bower_components/angular-file-saver/dist/angular-file-saver.bundle.js"></script>
+    <script src="bower_components/ng-file-upload/ng-file-upload-all.min.js"></script>
+    <script src="bower_components/angular-google-chart/ng-google-chart.js"></script>
+    <script src="bower_components/apexcharts/dist/apexcharts.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:js({.tmp,app}) scripts/scripts.js -->
@@ -182,6 +185,7 @@
     <script src="scripts/directives/passwordMatch.js"></script>
     <script src="scripts/directives/hwcard.js"></script>
     <script src="scripts/directives/hwPanel.js"></script>
+    <script src="scripts/directives/filemgr/directives.js"></script>
 
     <script src="scripts/controllers/dataSetCreatorCtrl.js"></script>
     <script src="scripts/controllers/datasetsCtrl.js"></script>
@@ -254,14 +258,37 @@
     <script src="scripts/controllers/publicDSPanelCtrl.js"></script>
     <script src="scripts/controllers/ldapLoginCtrl.js"></script>
     <script src="scripts/controllers/ldapUserConsentModalCtrl.js"></script>
+    <script src="scripts/controllers/filemgr/main.js"></script>
+    <script src="scripts/controllers/filemgr/selector-controller.js"></script>
+    <script src="scripts/controllers/featurestoreCtrl.js"></script>
+    <script src="scripts/controllers/featureSchemaViewContentCtrl.js"></script>
+    <script src="scripts/controllers/createFeaturegroupCtrl.js"></script>
+    <script src="scripts/controllers/updateFeaturegroupCtrl.js"></script>
+    <script src="scripts/controllers/featurestoreViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/featuregroupViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/createNewFeaturegroupVersionCtrl.js"></script>
+    <script src="scripts/controllers/selectFeatureTypeCtrl.js"></script>
+    <script src="scripts/controllers/previewFeaturegroupCtrl.js"></script>
+    <script src="scripts/controllers/createTrainingDatasetCtrl.js"></script>
+    <script src="scripts/controllers/trainingDatasetViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/updateTrainingDatasetCtrl.js"></script>
+    <script src="scripts/controllers/createNewTrainingDatasetVersionCtrl.js"></script>
+    <script src="scripts/controllers/featuregroupStatisticsCtrl.js"></script>
+    <script src="scripts/controllers/featureViewInfoCtrl.js"></script>
+    <script src="scripts/controllers/viewTrainingDatasetSchemaContentCtrl.js"></script>
+    <script src="scripts/controllers/trainingDatasetStatisticsCtrl.js"></script>
+    <script src="scripts/controllers/featuregroupDependenciesCtrl.js"></script>
+    <script src="scripts/controllers/featurestoreStatisticModalCtrl.js"></script>
+    <script src="scripts/controllers/trainingDatasetDependenciesCtrl.js"></script>
 
     <!-- Services -->
     <script src="scripts/services/AuthInterceptorService.js"></script>
     <script src="scripts/services/AuthService.js"></script>
+    <script src="scripts/services/AirflowService.js"></script>
     <script src="scripts/services/BannerService.js"></script>
     <script src="scripts/services/UtilsService.js"></script>
     <script src="scripts/services/ElasticService.js"></script>
-    <script src="scripts/services/EndpointService.js"></script>
+    <script src="scripts/services/AuthGuardService.js"></script>
     <script src="scripts/services/MetadataService.js"></script>
     <script src="scripts/services/DataSetService.js"></script>
     <script src="scripts/services/ProjectService.js"></script>
@@ -299,6 +326,17 @@
     <script src="scripts/services/KibanaService.js"></script>
     <script src="scripts/services/JupyterService.js"></script>
     <script src="scripts/services/CertService.js"></script>
+    <script src="scripts/services/filemgr/apihandler.js"></script>
+    <script src="scripts/services/filemgr/apimiddleware.js"></script>
+    <script src="scripts/services/filemgr/filenavigator.js"></script>
+    <script src="scripts/services/FeaturestoreService.js"></script>
+    <!-- Providers -->
+    <script src="scripts/providers/filemgr/config.js"></script>
+    <!-- Filters -->
+    <script src="scripts/filters/filters.js"></script>
+    <!-- Entities -->
+    <script src="scripts/entities/filemgr/chmod.js"></script>
+    <script src="scripts/entities/filemgr/item.js"></script>
     <!-- endbuild -->
 
   </body>

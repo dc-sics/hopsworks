@@ -66,10 +66,8 @@ import org.json.JSONObject;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.security.Key;
 import java.security.SecureRandom;
@@ -82,7 +80,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -95,10 +92,10 @@ import java.util.regex.Pattern;
 public class HopsUtils {
 
   private static final Logger LOG = Logger.getLogger(HopsUtils.class.getName());
-  private static final int ROOT_DIR_PARTITION_KEY = 0;
+  private static final long ROOT_DIR_PARTITION_KEY = 0;
   public static final short ROOT_DIR_DEPTH = 0;
   private static int RANDOM_PARTITIONING_MAX_LEVEL = 1;
-  public static int ROOT_INODE_ID = 1;
+  public static long ROOT_INODE_ID = 1;
   private static final FsPermission materialPermissions = new FsPermission(FsAction.ALL, FsAction.NONE, FsAction.NONE);
   private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\\r?\\n");
   // e.x. spark.files=hdfs://someFile,hdfs://anotherFile
@@ -130,11 +127,11 @@ public class HopsUtils {
     return false;
   }
 
-  public static int dataSetPartitionId(Inode parent, String name) {
+  public static long dataSetPartitionId(Inode parent, String name) {
     return calculatePartitionId(parent.getId(), name, 3);
   }
 
-  public static int calculatePartitionId(int parentId, String name, int depth) {
+  public static long calculatePartitionId(long parentId, String name, int depth) {
     if (isTreeLevelRandomPartitioned(depth)) {
       return partitionIdHashFunction(parentId, name, depth);
     } else {
@@ -142,7 +139,7 @@ public class HopsUtils {
     }
   }
 
-  private static int partitionIdHashFunction(int parentId, String name,
+  private static long partitionIdHashFunction(long parentId, String name,
       int depth) {
     if (depth == ROOT_DIR_DEPTH) {
       return ROOT_DIR_PARTITION_KEY;
@@ -153,46 +150,6 @@ public class HopsUtils {
 
   private static boolean isTreeLevelRandomPartitioned(int depth) {
     return depth <= RANDOM_PARTITIONING_MAX_LEVEL;
-  }
-
-  /**
-   * Retrieves the global hadoop classpath.
-   *
-   * @param params
-   * @return hadoop global classpath
-   */
-  public static String getHadoopClasspathGlob(String... params) throws IOException, InterruptedException {
-    ProcessBuilder pb = new ProcessBuilder(params);
-    Process process = pb.start();
-    StringBuilder sb = new StringBuilder();
-    try (BufferedReader br
-           = new BufferedReader(new InputStreamReader(process.
-      getInputStream()))) {
-      String line;
-      while ((line = br.readLine()) != null) {
-        sb.append(line);
-      }
-    }
-    process.waitFor(20l, TimeUnit.SECONDS);
-    int errCode  = process.exitValue();
-    if (errCode != 0) {
-      throw new IOException("Could not get hadoop glob classpath. errCode: " + errCode);
-    }
-    //Now we must remove the yarn shuffle library as it creates issues for
-    //Zeppelin Spark Interpreter
-    StringBuilder classpath = new StringBuilder();
-
-    for (String path : sb.toString().split(File.pathSeparator)) {
-      if (!path.contains("yarn") && !path.contains("jersey") && !path.
-          contains("servlet")) {
-        classpath.append(path).append(File.pathSeparator);
-      }
-    }
-    if (classpath.length() > 0) {
-      return classpath.toString().substring(0, classpath.length() - 1);
-    }
-  
-    throw new IOException("Could not get hadoop glob classpath.");
   }
 
   public static String getProjectKeystoreName(String project, String user) {
@@ -356,9 +313,6 @@ public class HopsUtils {
       dfso.mkdir(projectRemoteFSDir, new FsPermission(FsAction.ALL, FsAction.ALL, FsAction.NONE));
       dfso.setOwner(projectRemoteFSDir, owner, owner);
       createdDir = true;
-    }
-    if (createdDir) {
-      dfso.flushCache(owner, owner);
     }
     
     return projectRemoteFSDir.toString();

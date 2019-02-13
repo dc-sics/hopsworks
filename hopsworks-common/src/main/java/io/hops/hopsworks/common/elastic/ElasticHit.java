@@ -59,7 +59,7 @@ public class ElasticHit implements Comparator<ElasticHit> {
 
   //the inode id
   private String id;
-  //inode name 
+  //inode name
   private String name;
   private String description;
   private String publicId;
@@ -77,7 +77,9 @@ public class ElasticHit implements Comparator<ElasticHit> {
   public ElasticHit(SearchHit hit) {
     //the source of the retrieved record (i.e. all the indexed information)
     this.map = hit.getSourceAsMap();
-    this.score = hit.getScore();
+    this.type = hit.getType();
+    
+    this.score = Float.isNaN(hit.getScore()) ? 0 : hit.getScore();
     //export the name of the retrieved record from the list
     for (Entry<String, Object> entry : map.entrySet()) {
       //set the name explicitly so that it's easily accessible in the frontend
@@ -96,7 +98,7 @@ public class ElasticHit implements Comparator<ElasticHit> {
         }
       }
     }
-    
+
     if(type.equals(Settings.DOC_TYPE_PROJECT)){
       this.id = map.get(Settings.META_PROJECT_ID_FIELD).toString();
     }else{
@@ -113,7 +115,7 @@ public class ElasticHit implements Comparator<ElasticHit> {
     this.public_ds = public_ds;
   }
 
-  
+
   public boolean isLocalDataset() {
     return localDataset;
   }
