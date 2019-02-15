@@ -378,6 +378,16 @@
                                 Remove metadata</span>
                             </a>
                           </li>
+                          <li class="divider" ng-if="datasetsCtrl.isSelectedFiles() <= 1"></li>
+                          <li ng-show="datasetsCtrl.isSelectedFiles() <= 1">
+                            <a class="pointer"
+                               role="menuitem"
+                               tabindex="8"
+                               ng-click="projectCtrl.goToDistributionExtendedMetadata(); $event.stopPropagation();">
+                              <span><i class="fa fa-tag"></i>
+                                Add or edit extended metadata</span>
+                            </a>
+                          </li>
                         </ul>
                       </td>
                       </td>

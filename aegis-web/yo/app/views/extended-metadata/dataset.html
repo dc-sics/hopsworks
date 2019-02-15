@@ -106,8 +106,7 @@
                         </div>
                         <div class="row content-utility-bar content-utility-bar-actions">
                             <div class="col-md-8">
-                                <h4 style="margin-top: 10px; margin-bottom: 5px">Project > Extended Metadata for this
-                                    Project</h4>
+                                <h4 style="margin-top: 10px; margin-bottom: 5px">Project > Extended Metadata for Dataset</h4>
                             </div>
                             <div class="col-md-4">
                                 <div class="pull-right">
@@ -128,8 +127,20 @@
                                             <ul class="nav nav-stacked">
                                                 <li><a href="#GroupASub1">Title</a></li>
                                                 <li><a href="#GroupASub2">Description</a></li>
-                                                <li><a href="#GroupASub3">Project publisher name</a></li>
-                                                <li><a href="#GroupASub4">Project publisher homepage</a></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <a href="#GroupB">Recommended</a>
+                                            <ul class="nav nav-stacked">
+                                                <li><a href="#GroupBSub1">Sub-Group 1</a></li>
+                                                <li><a href="#GroupBSub2">Sub-Group 2</a></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <a href="#GroupC">Optional</a>
+                                            <ul class="nav nav-stacked">
+                                                <li><a href="#GroupCSub1">Sub-Group 1</a></li>
+                                                <li><a href="#GroupCSub2">Sub-Group 2</a></li>
                                             </ul>
                                         </li>
                                     </ul>
@@ -148,32 +159,117 @@
                                     <div class="col-md-12">
                                         <form>
                                             <div class="form-group">
-                                                <label for="inputProjectTitle" class="control-label">Project
-                                                    title*</label>
-                                                <input type="text" class="form-control" id="inputProjectTitle"
-                                                        placeholder="Project title" ng-model="vm.metadataExtendedCatalog.title">
+                                                <label for="inputTitle3">Title*</label>
+                                                <input type="text" class="form-control" id="inputTitle3" placeholder="Title">
                                             </div>
                                             <div class="form-group">
-                                                <label for="inputProjectDescription" class="control-label">Project
-                                                    description*</label>
-                                                <input type="text" class="form-control" id="inputProjectDescription"
-                                                        placeholder="Project description" ng-model="vm.metadataExtendedCatalog.description">
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="inputProjectPublisherName" class="control-label">Project
-                                                    publisher name*</label>
-                                                <input type="text" class="form-control" id="inputProjectPublisherName"
-                                                        placeholder="Project publisher name" ng-model="vm.metadataExtendedCatalog.publisher.name">
-                                            </div>
-                                            <div class="form-group">
-                                                <label for="inputProjectPublisherHomepage" class="control-label">Project
-                                                    publisher homepage*</label>
-                                                <input type="text" class="form-control" id="inputProjectPublisherHomepage"
-                                                        placeholder="Project publisher homepage" ng-model="vm.metadataExtendedCatalog.publisher.homepage">
+                                                <label for="inputDescription3">Description*</label>
+                                                <textarea class="form-control" id="inputDescription3" placeholder="Description"></textarea>
                                             </div>
                                         </form>
                                     </div>
                                 </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h3>Recommended</h3>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form class="bs-callout">
+                                            <h4 style="margin-top: 5px; margin-bottom: 25px">Contact point</h4>
+                                            <div class="form-group">
+                                                <label for="inputName3">Name</label>
+                                                <input type="text" class="form-control" id="inputName3" placeholder="Name">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputEmail3">Email*</label>
+                                                <input type="email" class="form-control" id="inputEmail3" placeholder="Email">
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <br>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form>
+                                            <div class="form-group">
+                                                <label for="inputKeywords3">Keywords</label>
+                                                <input type="text" class="form-control" id="inputKeywords3" placeholder="Keywords, comma-separated">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputPublisher3">Publisher</label>
+                                                <input type="text" class="form-control" id="inputPublisher3"
+                                                    placeholder="Publisher">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputTheme3">Theme/Category</label>
+                                                <select multiple id="inputTheme" class="form-control" size="13">
+                                                    <option value="AGRI">Agriculture, fisheries, forestry and food</option>
+                                                    <option value="ECON">Economy and finance</option>
+                                                    <option value="EDUC">Education, culture and sport</option>
+                                                    <option value="ENER">Energy</option>
+                                                    <option value="ENVI">Environment</option>
+                                                    <option value="GOVE">Government and public sector</option>
+                                                    <option value="HEAL">Health</option>
+                                                    <option value="INTR">International issues</option>
+                                                    <option value="JUST">Justice, legal system and public safety</option>
+                                                    <option value="REGI">Regions and cities</option>
+                                                    <option value="SOCI">Population and society</option>
+                                                    <option value="TECH">Science and technology</option>
+                                                    <option value="TRAN">Transport</option>
+                                                </select>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-12" style="margin-bottom: 15px">
+                                        <h3>Optional</h3>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form>
+                                            <div class="form-group">
+                                                <label for="inputIdentifier3">Identifier</label>
+                                                <input type="text" class="form-control" id="inputIdentifier3" placeholder="Identifier">
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <!--Main Content -->
+                                <!--div class="col-xs-9">
+                                    <section id="GroupA" class="group">
+                                        <h3>Group A</h3>
+                                        <div id="GroupASub1" class="subgroup">
+                                            <h4>Group A Sub 1</h4>
+                                        </div>
+                                        <div id="GroupASub2" class="subgroup">
+                                            <h4>Group A Sub 2</h4>
+                                        </div>
+                                    </section>
+                                    <section id="GroupB" class="group">
+                                        <h3>Group B</h3>
+                                        <div id="GroupBSub1" class="subgroup">
+                                            <h4>Group B Sub 1</h4>
+                                        </div>
+                                        <div id="GroupBSub2" class="subgroup">
+                                            <h4>Group B Sub 2</h4>
+                                        </div>
+                                    </section>
+                                    <section id="GroupC" class="group">
+                                        <h3>Group C</h3>
+                                        <div id="GroupCSub1" class="subgroup">
+                                            <h4>Group C Sub 1</h4>
+                                        </div>
+                                        <div id="GroupCSub2" class="subgroup">
+                                            <h4>Group C Sub 2</h4>
+                                        </div>
+                                    </section>
+                                </div-->
                             </div>
                             <!-- END Rightside tables -->
                             <div class="col-md-2">
