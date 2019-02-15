@@ -428,9 +428,19 @@ angular.module('hopsWorksApp', [
                                         $location.replace();
                                         return $q.reject(err);
                                     });
-                            }]
-                    }
-                })
+                          }]
+                      }
+                    })
+                    .when('/project/:projectID/extended-metadata', {
+                      templateUrl: 'views/extended-metadata/project.html',
+                      controller: 'ProjectCtrl as projectCtrl',
+                      resolve: {
+                        auth: ['$q', '$route', 'AuthGuardService',
+                          function ($q, $route, AuthGuardService) {
+                            return AuthGuardService.guardProject($q, $route.current.params.projectID);
+                          }]
+                      }
+                    })
                     .otherwise({
                       redirectTo: '/'
                     });
