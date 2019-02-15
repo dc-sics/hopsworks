@@ -674,6 +674,26 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
+                    .when('/project/:projectID/extended-metadata2', {
+                      templateUrl: 'views/extended-metadata/project.html',
+                      controller: 'ProjectCtrl as projectCtrl',
+                      resolve: {
+                        auth: ['$q', '$location', 'AuthService', '$cookies',
+                          function ($q, $location, AuthService, $cookies) {
+                            return AuthService.session().then(
+                                    function (success) {
+                                      $cookies.put("email", success.data.data.value);
+                                    },
+                                    function (err) {
+                                      $cookies.remove("email");
+                                      $cookies.remove("projectID");
+                                      $location.path('/login');
+                                      $location.replace();
+                                      return $q.reject(err);
+                                    });
+                          }]
+                      }
+                    })
                     .otherwise({
                       redirectTo: '/'
                     });
