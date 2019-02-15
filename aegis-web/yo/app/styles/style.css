@@ -652,3 +652,25 @@ nav .dropdown-header {
 .fa, .fas {
   font-weight: 900 !important;
 }
+
+nav[data-toggle='toc'] {
+  margin-top: 30px;
+}
+
+/* small screens */
+@media (max-width: 768px) {
+  /* override the Affix plugin so that the navigation isn't sticky */
+  nav.affix[data-toggle='toc'] {
+    position: static;
+  }
+
+  /* PICK ONE */
+  /* don't expand nested items, which pushes down the rest of the page when navigating */
+  nav[data-toggle='toc'] .nav .active .nav {
+    display: none;
+  }
+  /* alternatively, if you *do* want the second-level navigation to be shown (as seen on this page on mobile), use this */
+  nav[data-toggle='toc'] .nav .nav {
+    display: block;
+  }
+}

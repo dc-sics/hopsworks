@@ -1,0 +1,256 @@
+<!--
+  ~ Changes to this file committed after and not including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ This file is part of Hopsworks
+  ~ Copyright (C) 2018, Logical Clocks AB. All rights reserved
+  ~
+  ~ Hopsworks is free software: you can redistribute it and/or modify it under the terms of
+  ~ the GNU Affero General Public License as published by the Free Software Foundation,
+  ~ either version 3 of the License, or (at your option) any later version.
+  ~
+  ~ Hopsworks is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+  ~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  ~ PURPOSE.  See the GNU Affero General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU Affero General Public License along with this program.
+  ~ If not, see <https://www.gnu.org/licenses/>.
+  ~
+  ~ Changes to this file committed before and including commit-id: ccc0d2c5f9a5ac661e60e6eaf138de7889928b8b
+  ~ are released under the following license:
+  ~
+  ~ Copyright (C) 2013 - 2018, Logical Clocks AB and RISE SICS AB. All rights reserved
+  ~
+  ~ Permission is hereby granted, free of charge, to any person obtaining a copy of this
+  ~ software and associated documentation files (the "Software"), to deal in the Software
+  ~ without restriction, including without limitation the rights to use, copy, modify, merge,
+  ~ publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  ~ persons to whom the Software is furnished to do so, subject to the following conditions:
+  ~
+  ~ The above copyright notice and this permission notice shall be included in all copies or
+  ~ substantial portions of the Software.
+  ~
+  ~ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS  OR IMPLIED, INCLUDING
+  ~ BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  ~ NONINFRINGEMENT. IN NO EVENT SHALL  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+  ~ DAMAGES OR  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  ~ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  -->
+
+<div ng-controller="MainCtrl as mainCtrl">
+    <div id="wrapper" class="toggled" data-spy="scroll" data-target="#toc">
+        <div ng-controller="MetadataCtrl as metadataCtrl">
+            <div class="overlay"></div>
+            <div ng-include="'navProject.html'"></div>
+            <section>
+                <div>
+                    <div ng-if="mainCtrl.showSearchPage" class="container-fluid content-wrapper">
+                        <div id="projectSearchResults">
+                            <div ng-include="'views/search.html'"></div>
+                        </div>
+                    </div>
+                    <div ng-if="!mainCtrl.showSearchPage" class="container-fluid content-wrapper">
+                        <div growl reference="3" class="pull-right"></div>
+                        <div class="row content-utility-bar content-utility-bar-head">
+                            <div class="col-md-5">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" ng-model="search" placeholder="Search for projects or datasets...">
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-default fa fa-search icon-resize-small" type="button"
+                                            title="Filter"></button>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-7" style="padding-right: 30px;">
+                                <ul class="nav navbar-nav navbar-right">
+                                    <li class="dropdown" ng-click="mainCtrl.getMessages()">
+                                        <a class="dropdown-toggle" data-toggle="dropdown" style="padding:5px 15px 0px 20px; margin-top: 7px;"
+                                            aria-expanded="false">
+                                            <i ng-if="mainCtrl.unreadMessages" class="fa fa-envelope fa-lg" title="Unread messages">
+                                                <span class="badge" style="background-color: #f89406; font-family: sans-serif; z-index: 100; position: absolute; top: -10px; right: -18px">{{mainCtrl.unreadMessages}}</span>
+                                            </i>
+                                            <i ng-if="!mainCtrl.unreadMessages" class="fa fa-envelope fa-lg" title="No unread message"></i>
+                                            &nbsp;Messages
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-messages">
+                                            <li class="dropdown-header text-muted" ng-if="mainCtrl.messages.length">
+                                                <h4>Latest messages</h4>
+                                            </li>
+                                            <li class="dropdown-header text-muted" ng-if="!mainCtrl.messages.length">
+                                                <h4>Inbox empty.</h4>
+                                            </li>
+                                            <li ng-repeat="msg in mainCtrl.messages| limitTo:5">
+                                                <div>
+                                                    <div ng-click="mainCtrl.openMessageModal(msg)">
+                                                        <div class="message-subject text-muted">
+                                                            <i ng-if="msg.unread" class="fa fa-circle pull-left" style="color:#f89406; margin-top: 4px;"
+                                                                title="Unread message"></i>
+                                                            <i ng-if="!msg.unread" class="fa fa-circle pull-left" style="color:grey; margin-top: 4px;"
+                                                                title="Read message"></i>
+                                                            {{msg.subject}}</div>
+                                                        <div class="text-muted">{{msg.dateSent| date:'medium'}}</div>
+                                                    </div>
+                                                    <div ng-click="mainCtrl.openMessageModal(msg)" class="message-preview">{{msg.preview|
+                                                        limitTo:80}} {{msg.preview.length > 80 ? ' ...' : ''}}</div>
+                                                    <a ng-if="msg.path" href="#!/{{msg.path}}"> go to requested path.</a>
+                                                </div>
+                                            </li>
+                                            <a class="pull-right" ng-if="mainCtrl.messages.length" ng-click="mainCtrl.openMessageModal()"
+                                                style="text-decoration:none;"> See all messages</a>
+                                            <a class="pull-right" ng-if="!mainCtrl.messages.length" ng-click="mainCtrl.openMessageModal()"
+                                                style="text-decoration:none;"> Goto messages</a>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row content-utility-bar content-utility-bar-actions">
+                            <div class="col-md-3">
+                                <h4 style="margin-top: 10px; margin-bottom: 5px">Project "" > Extended Metadata</h4>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="pull-right">
+                                    <a href="http://www.w3.org/RDF/" title="RDF Resource Description Framework"><img
+                                            style="margin-right: 15px" src="http://www.w3.org/RDF/icons/rdf_metadata_button.48"
+                                            alt="RDF Resource Description Framework Metadata Icon" /></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <!-- Left menu -->
+                            <div class="col-md-4 col-sm-4 col-lg-3">
+                                <ul class="sidebar-nav" ng-cloak ng-controller="ClusterUtilisationCtrl as clusterUtilCtrl">
+                                    <li ng-click="projectCtrl.goToSettings()" ng-show="projectCtrl.cloak">
+                                        <a>Settings</a>
+                                    </li>
+
+                                    <li ng-click="projectCtrl.goToSettings()" ng-show="projectCtrl.cloak">
+                                        <a>Settings</a>
+                                    </li>
+                                </ul>
+                                <button class="btn" style="width: 100%; border-radius: 0px; padding: 10px; text-align: left"
+                                    data-toggle="collapse" data-target="#collapseNewTemplate" aria-expanded="false"
+                                    aria-controls="collapseNewTemplate">
+                                    <span>Mandatory</span>
+                                    <span class="pull-right">0/2</span>
+                                </button>
+
+                                <div style="width: 100%; height: 50px; background-color: #f5f5f5;" class="collapse" id="collapseNewTemplate">
+                                    <ng-form name="newTemplateForm">
+                                        <div class="input-group-btn search-panel">
+                                            <input type="text" name="newtemplatename" ng-model="metadataCtrl.newTemplateName"
+                                                style="margin:10px; height: 30px; width: 70%;border-radius: 0; text-indent: 5px;color: black"
+                                                placeholder="Template name..." required autofocus />
+                                            <button class="btn btn-success" ng-disabled="newTemplateForm.newtemplatename.$error.required"
+                                                ng-click="metadataCtrl.addNewTemplate()" style="border-radius: 0px; margin-left: -13px;margin-top: -9px; height: 30px; width: 20%">
+                                                <i class="fa fa-floppy-o fa-lg"></i>
+                                            </button>
+                                        </div>
+                                    </ng-form>
+                                </div>
+
+                                <button class="btn" style="width: 100%;border-radius: 0px; padding:10px; text-align: left"
+                                    data-toggle="collapse" data-target="#collapseExtendTemplate" aria-expanded="false"
+                                    aria-controls="collapseExtendTemplate">
+                                    <span>Recommended</span>
+                                    <span class="pull-right">0/5</span>
+                                </button>
+
+                                <div style="width: 100%; height: 50px; background-color: #f5f5f5;" class="collapse" id="collapseExtendTemplate">
+                                    <ng-form name="exTemplateForm">
+                                        <div class="input-group-btn search-panel">
+                                            <input type="text" name="exTemplateName" ng-model="metadataCtrl.extendedTemplateName"
+                                                style="margin:10px; height: 30px; width: 70%;border-radius: 0; text-indent: 5px; color:black"
+                                                placeholder="Template name..." required="" autofocus />
+                                            <button class="btn btn-success" ng-click="metadataCtrl.extendTemplate()"
+                                                ng-disabled="exTemplateForm.exTemplateName.$error.required" style="border-radius: 0px; margin-left: -13px;margin-top: -9px;  height: 30px; width:20%">
+                                                <i class="fa fa-floppy-o fa-lg"></i>
+                                            </button>
+
+                                            <select name="extendedFromName" ng-model="metadataCtrl.toExtend" class="form-control"
+                                                style="border-radius: 0px;margin: 9px;width: 90%;margin-top:0px;"
+                                                required>
+                                                <option ng-repeat="template in metadataCtrl.availableTemplates" value="{{template.id}}">
+                                                    {{template.name}}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </ng-form>
+                                </div>
+
+                                <button class="btn" style="width: 100%; border-radius: 0px; padding: 10px; text-align: left"
+                                    ng-click="metadataCtrl.importTemplate()">
+                                    <span>Optional</span>
+                                    <span class="pull-right">0/19</span>
+                                </button>
+                            </div>
+                            <!-- END Left menu -->
+
+                            <!-- Rightside tables -->
+                            <div class="col-md-8 col-sm-8 col-lg-6" style="border-right: 1px dashed lightgrey;">
+                                <div class="row" style="margin-bottom: 15px">
+                                    <div class="col-md-12">
+                                        <h3>Mandatory</h3>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form class="form-horizontal">
+                                            <div class="form-group">
+                                                <label for="inputTitle3" class="col-sm-4 control-label">Title*</label>
+                                                <div class="col-sm-8">
+                                                    <input type="text" class="form-control" id="inputTitle3"
+                                                        placeholder="Title">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputDescription3" class="col-sm-4 control-label">Description*</label>
+                                                <div class="col-sm-8">
+                                                    <input type="text" class="form-control" id="inputDescription3"
+                                                        placeholder="Description">
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="row" style="margin-bottom: 15px">
+                                    <div class="col-md-12">
+                                        <h3>Recommended</h3>
+                                        <h2 data-toc-text="Short text">Longer text</h2>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form class="form-horizontal">
+                                            <div class="form-group">
+                                                <label for="inputTitle3" class="col-sm-4 control-label">Title*</label>
+                                                <div class="col-sm-8">
+                                                    <input type="text" class="form-control" id="inputTitle3"
+                                                        placeholder="Title">
+                                                </div>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputDescription3" class="col-sm-4 control-label">Description</label>
+                                                <div class="col-sm-8">
+                                                    <input type="text" class="form-control" id="inputDescription3"
+                                                        placeholder="Description">
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <hr>
+                            </div>
+                            <!-- END Rightside tables -->
+                            <div class="col-md-2">
+                                <nav id="toc" data-toggle="toc"></nav>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /#wrapper -->
+                </div>
+            </section>
+        </div>
+    </div>
+</div>

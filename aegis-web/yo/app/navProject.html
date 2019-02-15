@@ -51,7 +51,7 @@
         <a class="dropdown-toggle" data-toggle="dropdown">
           <img src="http://placehold.it/40x40" class="profile-image img-circle">
           &nbsp;admin@kth.se
-          <b class="caret pull-right" style="margin-top: 15px"></b>
+          <b class="caret pull-right" style="margin-top: 20px"></b>
         </a>
         <ul class="dropdown-menu">
           <li><a href="#"><i class="fa fa-cog"></i> Admin</a></li>
@@ -102,6 +102,13 @@
       </li -->
 
       <li class="dropdown-header">Tools</li>
+
+      <li ng-click="projectCtrl.goToProjectExtendedMetadata()">
+        <a>
+          <span class="sub_icon fa fa-tags fa-lg" style="width: 30px; display: inline-block; margin-right: 10px"></span>
+          Extended Metadata
+        </a>
+      </li>
 
       <li ng-click="projectCtrl.goToJupyter()" ng-show="projectCtrl.showJupyter()">
         <a>
