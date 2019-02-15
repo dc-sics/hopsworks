@@ -116,78 +116,40 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row">
+                        <div class="row" style="margin-top: 15px">
                             <!-- Left menu -->
                             <div class="col-md-4 col-sm-4 col-lg-3">
-                                <ul class="sidebar-nav" ng-cloak ng-controller="ClusterUtilisationCtrl as clusterUtilCtrl">
-                                    <li ng-click="projectCtrl.goToSettings()" ng-show="projectCtrl.cloak">
-                                        <a>Settings</a>
-                                    </li>
-
-                                    <li ng-click="projectCtrl.goToSettings()" ng-show="projectCtrl.cloak">
-                                        <a>Settings</a>
-                                    </li>
-                                </ul>
-                                <button class="btn" style="width: 100%; border-radius: 0px; padding: 10px; text-align: left"
-                                    data-toggle="collapse" data-target="#collapseNewTemplate" aria-expanded="false"
-                                    aria-controls="collapseNewTemplate">
-                                    <span>Mandatory</span>
-                                    <span class="pull-right">0/2</span>
-                                </button>
-
-                                <div style="width: 100%; height: 50px; background-color: #f5f5f5;" class="collapse" id="collapseNewTemplate">
-                                    <ng-form name="newTemplateForm">
-                                        <div class="input-group-btn search-panel">
-                                            <input type="text" name="newtemplatename" ng-model="metadataCtrl.newTemplateName"
-                                                style="margin:10px; height: 30px; width: 70%;border-radius: 0; text-indent: 5px;color: black"
-                                                placeholder="Template name..." required autofocus />
-                                            <button class="btn btn-success" ng-disabled="newTemplateForm.newtemplatename.$error.required"
-                                                ng-click="metadataCtrl.addNewTemplate()" style="border-radius: 0px; margin-left: -13px;margin-top: -9px; height: 30px; width: 20%">
-                                                <i class="fa fa-floppy-o fa-lg"></i>
-                                            </button>
-                                        </div>
-                                    </ng-form>
-                                </div>
-
-                                <button class="btn" style="width: 100%;border-radius: 0px; padding:10px; text-align: left"
-                                    data-toggle="collapse" data-target="#collapseExtendTemplate" aria-expanded="false"
-                                    aria-controls="collapseExtendTemplate">
-                                    <span>Recommended</span>
-                                    <span class="pull-right">0/5</span>
-                                </button>
-
-                                <div style="width: 100%; height: 50px; background-color: #f5f5f5;" class="collapse" id="collapseExtendTemplate">
-                                    <ng-form name="exTemplateForm">
-                                        <div class="input-group-btn search-panel">
-                                            <input type="text" name="exTemplateName" ng-model="metadataCtrl.extendedTemplateName"
-                                                style="margin:10px; height: 30px; width: 70%;border-radius: 0; text-indent: 5px; color:black"
-                                                placeholder="Template name..." required="" autofocus />
-                                            <button class="btn btn-success" ng-click="metadataCtrl.extendTemplate()"
-                                                ng-disabled="exTemplateForm.exTemplateName.$error.required" style="border-radius: 0px; margin-left: -13px;margin-top: -9px;  height: 30px; width:20%">
-                                                <i class="fa fa-floppy-o fa-lg"></i>
-                                            </button>
-
-                                            <select name="extendedFromName" ng-model="metadataCtrl.toExtend" class="form-control"
-                                                style="border-radius: 0px;margin: 9px;width: 90%;margin-top:0px;"
-                                                required>
-                                                <option ng-repeat="template in metadataCtrl.availableTemplates" value="{{template.id}}">
-                                                    {{template.name}}
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </ng-form>
-                                </div>
-
-                                <button class="btn" style="width: 100%; border-radius: 0px; padding: 10px; text-align: left"
-                                    ng-click="metadataCtrl.importTemplate()">
-                                    <span>Optional</span>
-                                    <span class="pull-right">0/19</span>
-                                </button>
+                                <!--Nav Bar -->
+                                <nav class="bs-docs-sidebar">
+                                    <ul id="sidebar" class="nav nav-stacked fixed">
+                                        <li class="active">
+                                            <a href="#GroupA">Mandatory</a>
+                                            <ul class="nav nav-stacked">
+                                                <li><a href="#GroupASub1">Title</a></li>
+                                                <li><a href="#GroupASub2">Description</a></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <a href="#GroupB">Recommended</a>
+                                            <ul class="nav nav-stacked">
+                                                <li><a href="#GroupBSub1">Sub-Group 1</a></li>
+                                                <li><a href="#GroupBSub2">Sub-Group 2</a></li>
+                                            </ul>
+                                        </li>
+                                        <li>
+                                            <a href="#GroupC">Optional</a>
+                                            <ul class="nav nav-stacked">
+                                                <li><a href="#GroupCSub1">Sub-Group 1</a></li>
+                                                <li><a href="#GroupCSub2">Sub-Group 2</a></li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </nav>
                             </div>
                             <!-- END Left menu -->
 
                             <!-- Rightside tables -->
-                            <div class="col-md-8 col-sm-8 col-lg-6" style="border-right: 1px dashed lightgrey;">
+                            <div class="col-md-8 col-sm-8 col-lg-6" style="border-right: 1px dashed lightgrey; border-left: 1px dashed lightgrey;">
                                 <div class="row" style="margin-bottom: 15px">
                                     <div class="col-md-12">
                                         <h3>Mandatory</h3>
@@ -195,47 +157,69 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <form class="form-horizontal">
+                                        <form>
                                             <div class="form-group">
-                                                <label for="inputTitle3" class="col-sm-4 control-label">Title*</label>
-                                                <div class="col-sm-8">
-                                                    <input type="text" class="form-control" id="inputTitle3"
-                                                        placeholder="Title">
-                                                </div>
+                                                <label for="inputTitle3">Title*</label>
+                                                <input type="text" class="form-control" id="inputTitle3" placeholder="Title">
                                             </div>
                                             <div class="form-group">
-                                                <label for="inputDescription3" class="col-sm-4 control-label">Description*</label>
-                                                <div class="col-sm-8">
-                                                    <input type="text" class="form-control" id="inputDescription3"
-                                                        placeholder="Description">
-                                                </div>
+                                                <label for="inputDescription3">Description*</label>
+                                                <textarea class="form-control" id="inputDescription3" placeholder="Description"></textarea>
                                             </div>
                                         </form>
                                     </div>
                                 </div>
                                 <hr>
-                                <div class="row" style="margin-bottom: 15px">
+                                <div class="row">
                                     <div class="col-md-12">
                                         <h3>Recommended</h3>
-                                        <h2 data-toc-text="Short text">Longer text</h2>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <form class="form-horizontal">
+                                        <form class="bs-callout">
+                                            <h4 style="margin-top: 5px; margin-bottom: 25px">Contact point</h4>
                                             <div class="form-group">
-                                                <label for="inputTitle3" class="col-sm-4 control-label">Title*</label>
-                                                <div class="col-sm-8">
-                                                    <input type="text" class="form-control" id="inputTitle3"
-                                                        placeholder="Title">
-                                                </div>
+                                                <label for="inputName3">Name</label>
+                                                <input type="text" class="form-control" id="inputName3" placeholder="Name">
                                             </div>
                                             <div class="form-group">
-                                                <label for="inputDescription3" class="col-sm-4 control-label">Description</label>
-                                                <div class="col-sm-8">
-                                                    <input type="text" class="form-control" id="inputDescription3"
-                                                        placeholder="Description">
-                                                </div>
+                                                <label for="inputEmail3">Email*</label>
+                                                <input type="email" class="form-control" id="inputEmail3" placeholder="Email">
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                <br>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <form>
+                                            <div class="form-group">
+                                                <label for="inputKeywords3">Keywords</label>
+                                                <input type="text" class="form-control" id="inputKeywords3" placeholder="Keywords, comma-separated">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputPublisher3">Publisher</label>
+                                                <input type="text" class="form-control" id="inputPublisher3"
+                                                    placeholder="Publisher">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="inputTheme3">Theme/Category</label>
+                                                <select multiple id="inputTheme" class="form-control" size="13">
+                                                    <option value="AGRI">Agriculture, fisheries, forestry and food</option>
+                                                    <option value="ECON">Economy and finance</option>
+                                                    <option value="EDUC">Education, culture and sport</option>
+                                                    <option value="ENER">Energy</option>
+                                                    <option value="ENVI">Environment</option>
+                                                    <option value="GOVE">Government and public sector</option>
+                                                    <option value="HEAL">Health</option>
+                                                    <option value="INTR">International issues</option>
+                                                    <option value="JUST">Justice, legal system and public safety</option>
+                                                    <option value="REGI">Regions and cities</option>
+                                                    <option value="SOCI">Population and society</option>
+                                                    <option value="TECH">Science and technology</option>
+                                                    <option value="TRAN">Transport</option>
+                                                </select>
                                             </div>
                                         </form>
                                     </div>
@@ -244,7 +228,11 @@
                             </div>
                             <!-- END Rightside tables -->
                             <div class="col-md-2">
-                                <nav id="toc" data-toggle="toc"></nav>
+                                <div id="sidebar-usage-note" class="fixed">
+                                    <h5>Usage note</h5>
+                                    <p><small>This property contains a name given to the Dataset. This property can be
+                                            repeated for 1..n parallel language versions of the name.</small></p>
+                                </div>
                             </div>
                         </div>
                     </div>

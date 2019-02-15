@@ -297,6 +297,16 @@
                             </a>
                           </li>
                           <li class="divider" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner'  && (dataset.publicDs === 0)"></li>
+                          <li ng-if="dataset.name.indexOf('::') === -1" ng-show="projectCtrl.role === 'Data owner' && dataset.publicDs === 0">
+                            <a class="pointer"
+                               role="menuitem"
+                               tabindex="5"
+                               ng-click="projectCtrl.goToDatasetExtendedMetadata(); $event.stopPropagation();">
+                              <span><i class="fa fa-tag"></i>
+                                Add or edit extended metadata</span>
+                            </a>
+                          </li>
+                          <li class="divider" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner'  && (dataset.publicDs === 0)"></li>
                           <li ng-controller="DelaClientCtrl as delaClientCtrl" class="dropdown-submenu" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner' && (dataset.publicDs === 0)">
                             <a tabindex="-1"><span><i class="fa fa-share-alt"></i> Share with</span></a>
                             <ul class="dropdown-menu">

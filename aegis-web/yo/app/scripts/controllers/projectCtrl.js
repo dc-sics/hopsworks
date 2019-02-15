@@ -420,6 +420,10 @@ angular.module('hopsWorksApp')
               self.goToUrl('extended-metadata');
             };
 
+            self.goToDatasetExtendedMetadata = function () {
+              self.goToUrl('extended-metadata');
+            };
+
             /**
              * Checks if the file has been accepted before opening.
              * @param dataset
