@@ -47,12 +47,12 @@
       <div ng-include="'navProject.html'"></div>
       <section>
         <div>
-          <div ng-if="mainCtrl.showSearchPage" class="content-wrapper">
+          <div ng-if="mainCtrl.showSearchPage" class="container-fluid content-wrapper">
             <div id="projectSearchResults">
               <div ng-include="'views/search.html'"></div>
             </div>
           </div>
-          <div ng-if="!mainCtrl.showSearchPage" class="content-wrapper" ng-controller="ProjectCtrl as projectCtrl">
+          <div ng-if="!mainCtrl.showSearchPage" class="container-fluid content-wrapper" ng-controller="ProjectCtrl as projectCtrl">
             <div growl reference="3" class="pull-right" ></div>
             <div class="row content-utility-bar content-utility-bar-head">
               <div class="col-md-5">
@@ -294,6 +294,16 @@
                                tabindex="6"
                                ng-click="datasetsCtrl.showManifest(dataset.publicId); $event.stopPropagation();">
                               <span>Show Manifest</span>
+                            </a>
+                          </li>
+                          <li class="divider" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner'  && (dataset.publicDs === 0)"></li>
+                          <li ng-if="dataset.name.indexOf('::') === -1" ng-show="projectCtrl.role === 'Data owner' && dataset.publicDs === 0">
+                            <a class="pointer"
+                               role="menuitem"
+                               tabindex="5"
+                               ng-click="projectCtrl.goToDatasetExtendedMetadata(); $event.stopPropagation();">
+                              <span><i class="fa fa-tag"></i>
+                                Add or edit extended metadata</span>
                             </a>
                           </li>
                           <li class="divider" ng-if="dataset.name.indexOf('::') === -1 && projectCtrl.role === 'Data owner'  && (dataset.publicDs === 0)"></li>

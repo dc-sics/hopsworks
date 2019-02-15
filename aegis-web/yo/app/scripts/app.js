@@ -428,9 +428,41 @@ angular.module('hopsWorksApp', [
                                         $location.replace();
                                         return $q.reject(err);
                                     });
-                            }]
-                    }
-                })
+                          }]
+                      }
+                    })
+                    .when('/project/:projectID/extended-metadata', {
+                      templateUrl: 'views/extended-metadata/project.html',
+                      controller: 'ProjectCtrl as projectCtrl',
+                      resolve: {
+                        auth: ['$q', '$route', 'AuthGuardService',
+                          function ($q, $route, AuthGuardService) {
+                            return AuthGuardService.guardProject($q, $route.current.params.projectID);
+                          }]
+                      }
+                    })
+                    // TODO: use dataset id
+                    .when('/project/:projectID/extended-metadata-dataset', {
+                      templateUrl: 'views/extended-metadata/dataset.html',
+                      controller: 'ProjectCtrl as projectCtrl',
+                      resolve: {
+                        auth: ['$q', '$route', 'AuthGuardService',
+                          function ($q, $route, AuthGuardService) {
+                            return AuthGuardService.guardProject($q, $route.current.params.projectID);
+                          }]
+                      }
+                    })
+                    // TODO: use distribution id
+                    .when('/project/:projectID/extended-metadata-distribution', {
+                      templateUrl: 'views/extended-metadata/distribution.html',
+                      controller: 'ProjectCtrl as projectCtrl',
+                      resolve: {
+                        auth: ['$q', '$route', 'AuthGuardService',
+                          function ($q, $route, AuthGuardService) {
+                            return AuthGuardService.guardProject($q, $route.current.params.projectID);
+                          }]
+                      }
+                    })
                     .otherwise({
                       redirectTo: '/'
                     });

@@ -416,6 +416,18 @@ angular.module('hopsWorksApp')
               $location.path('history/' + self.projectId + '/history');
             };
 
+            self.goToProjectExtendedMetadata = function () {
+              self.goToUrl('extended-metadata');
+            };
+
+            self.goToDatasetExtendedMetadata = function () {
+              self.goToUrl('extended-metadata-dataset');
+            };
+
+            self.goToDistributionExtendedMetadata = function () {
+              self.goToUrl('extended-metadata-distribution');
+            };
+
             /**
              * Checks if the file has been accepted before opening.
              * @param dataset
