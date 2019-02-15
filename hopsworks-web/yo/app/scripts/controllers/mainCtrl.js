@@ -44,15 +44,21 @@
 
 angular.module('hopsWorksApp')
         .controller('MainCtrl', ['$interval', '$cookies', '$location', '$scope', '$rootScope',
-          'AuthService', 'UtilsService', 'ElasticService', 'DelaProjectService',
+          '$http', 'AuthService', 'UtilsService', 'ElasticService', 'DelaProjectService',
           'DelaService', 'md5', 'ModalService', 'ProjectService', 'growl',
           'MessageService', '$routeParams', '$window', 'HopssiteService', 'BannerService',
-          function ($interval, $cookies, $location, $scope, $rootScope, AuthService, UtilsService,
+          'AirflowService',
+          function ($interval, $cookies, $location, $scope, $rootScope, $http, AuthService, UtilsService,
                   ElasticService, DelaProjectService, DelaService, md5, ModalService, 
                   ProjectService, growl,
-                  MessageService, $routeParams, $window, HopssiteService, BannerService) {
+                  MessageService, $routeParams, $window, HopssiteService, BannerService,
+                  AirflowService) {
             const MIN_SEARCH_TERM_LEN = 2;
             var self = this;
+
+
+            self.ui = "/hopsworks-api/airflow/login?q=username=";
+
             self.email = $cookies.get('email');
             self.emailHash = md5.createHash(self.email || '');
             var elasticService = ElasticService();
@@ -64,18 +70,21 @@ angular.module('hopsWorksApp')
             } else {
               self.searchType = "global";
             }
-            
+
             var checkeIsAdmin = function () {
-              AuthService.isAdmin().then(
+              var isAdmin = sessionStorage.getItem("isAdmin");
+              if (isAdmin != 'true' && isAdmin != 'false') {
+                AuthService.isAdmin().then(
                   function (success) {
-                    $cookies.put("isAdmin", success.data === 'true');
-                },function (error) {
-                    $cookies.put("isAdmin", false);
-              });
+                    sessionStorage.setItem("isAdmin", success.data.data.value);
+                  }, function (error) {
+                    sessionStorage.setItem("isAdmin", null);
+                });
+              }
             };
             checkeIsAdmin();
             self.isAdmin = function () {
-              return $cookies.get('isAdmin');
+              return sessionStorage.getItem("isAdmin");
             };
 
             self.goToAdminPage = function () {
@@ -87,23 +96,24 @@ angular.module('hopsWorksApp')
             };
 
             self.logout = function () {
+              AirflowService.logout();
+
               AuthService.logout(self.user).then(
                       function (success) {
+                        AuthService.cleanSession();
+                        AuthService.removeToken();
                         $location.url('/login');
-                        $cookies.remove("email");
-                        $cookies.remove("isAdmin");
-                        localStorage.removeItem("SESSIONID");
-                        sessionStorage.removeItem("SESSIONID");
                       }, function (error) {
                 self.errorMessage = error.data.msg;
               });
             };
-            
+
             var checkDelaEnabled = function () {
+              
               HopssiteService.getServiceInfo("dela").then(function (success) {
                 console.log("isDelaEnabled", success);
                 self.delaServiceInfo = success.data;
-                if (self.delaServiceInfo.status === 1 ) {
+                if (self.delaServiceInfo.status === 1) {
                   $rootScope['isDelaEnabled'] = true;
                 } else {
                   $rootScope['isDelaEnabled'] = false;
@@ -113,20 +123,19 @@ angular.module('hopsWorksApp')
                 console.log("isDelaEnabled", error);
               });
             };
-            checkDelaEnabled(); // check 
-            
+            //checkDelaEnabled(); // check 
             self.userNotification = '';
             var getUserNotification = function () {
               self.userNotification = '';
               BannerService.findUserBanner().then(
-                function (success) {
-                  console.log(success);
-                  if (success.data.successMessage) {
-                    self.userNotification = success.data.successMessage;
-                  }
-                }, function (error) {
-                  console.log(error);
-                  self.userNotification = '';
+                      function (success) {
+                        console.log(success);
+                        if (success.data.successMessage) {
+                          self.userNotification = success.data.successMessage;
+                        }
+                      }, function (error) {
+                console.log(error);
+                self.userNotification = '';
               });
             };
             getUserNotification();
@@ -288,7 +297,7 @@ angular.module('hopsWorksApp')
                           }
                           self.searching = false;
                           self.resultPages = Math.ceil(self.searchResult.length / self.pageSize);
-                          self.resultItems = self.searchResult.length;                          
+                          self.resultItems = self.searchResult.length;
                         }, function (error) {
                           self.searching = false;
                           growl.error(error.data.errorMsg, {title: 'Error', ttl: 5000});
@@ -448,4 +457,7 @@ angular.module('hopsWorksApp')
                 ModalService.viewSearchResult('lg', result, result, null);
               }
             };
+
+
+
           }]);

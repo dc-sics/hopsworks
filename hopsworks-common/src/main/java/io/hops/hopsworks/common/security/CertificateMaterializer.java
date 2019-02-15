@@ -699,11 +699,11 @@ public class CertificateMaterializer {
     Map<MaterialKey, ReentrantReadWriteLock> materialKeyLocks = null;
   
     // Take all the write locks
-    TreeSet<ReentrantReadWriteLock> acquiredLocks = acquireWriteLocks(materialKeyLocks);
+    TreeSet<ReentrantReadWriteLock> acquiredLocks = acquireWriteLocks(this.materialKeyLocks);
     try {
       localMaterial = MapUtils.unmodifiableMap(materializedCerts);
       scheduledRemovals = MapUtils.unmodifiableMap(fileRemovers);
-      materialKeyLocks = MapUtils.unmodifiableMap(materialKeyLocks);
+      materialKeyLocks = MapUtils.unmodifiableMap(this.materialKeyLocks);
       remoteMaterial = remoteMaterialReferencesFacade.findAll();
     } finally {
       // Release all locks acquired
@@ -831,11 +831,20 @@ public class CertificateMaterializer {
           CryptoMaterial material = materialCache.get(key);
           if (material == null) {
             material = getMaterialFromDatabase(key);
+            materialCache.put(key, material);
           }
           // 2. Flush buffers to local filesystem
           flushToLocalFileSystem(key, material, localDirectory);
-          // 3. Increment cardinality
-          materializedDirs.add(localDirectory, 1);
+          // 3. Force removal has removed the mapping for materialized certificates
+          // so put it back
+          Bag materialBag = materializedCerts.get(key);
+          if (materialBag != null) {
+            materialBag.add(localDirectory, 1);
+          } else {
+            materialBag = new HashBag();
+            materialBag.add(localDirectory, 1);
+            materializedCerts.put(key, materialBag);
+          }
         }
       } else {
         // Materialization in this Directory has already been requested
@@ -887,6 +896,8 @@ public class CertificateMaterializer {
       return false;
     } else {
       forceRemoveLocalMaterial(key.username, key.projectName, materializationDirectory);
+      // We should put back lock for that key as forceRemoveLocalMaterial removes it
+      materialKeyLocks.putIfAbsent(key, new ReentrantReadWriteLock(true));
       return true;
     }
   }
@@ -1034,9 +1045,7 @@ public class CertificateMaterializer {
             writeToHDFS(dfso, passwordFile, new String(material.getPassword()).getBytes());
             dfso.setOwner(passwordFile, ownerName, groupName);
             dfso.setPermission(passwordFile, permissions);
-  
-            // Cache should be flushed otherwise NN will raise permission exceptions
-            dfso.flushCache(ownerName, groupName);
+            
           } finally {
             if (dfso != null) {
               distributedFsService.closeDfsClient(dfso);
@@ -1126,7 +1135,6 @@ public class CertificateMaterializer {
             remoteMaterialReferencesFacade.delete(materialRef.getIdentifier());
             deletedMaterial = true;
           } else {
-            materialRef.decrementReferences();
             remoteMaterialReferencesFacade.update(materialRef);
           }
         } else {

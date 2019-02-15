@@ -35,29 +35,35 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import com.google.common.base.Strings;
 import io.hops.hopsworks.api.filter.AllowedProjectRoles;
+import io.hops.hopsworks.api.filter.Audience;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
+import io.hops.hopsworks.api.jwt.JWTHelper;
 import io.hops.hopsworks.common.dao.project.Project;
 import io.hops.hopsworks.common.exception.CryptoPasswordNotFoundException;
 import io.hops.hopsworks.common.exception.KafkaException;
 import io.hops.hopsworks.common.exception.ProjectException;
+import io.hops.hopsworks.common.dao.project.ProjectFacade;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.RESTCodes;
 import io.hops.hopsworks.common.exception.ServiceException;
 import io.hops.hopsworks.common.exception.UserException;
 import io.hops.hopsworks.common.serving.tf.TfServingCommands;
-import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.serving.tf.TfServingController;
 import io.hops.hopsworks.common.serving.tf.TfServingException;
 import io.hops.hopsworks.common.serving.tf.TfServingModelPathValidator;
 import io.hops.hopsworks.common.serving.tf.TfServingWrapper;
+import io.hops.hopsworks.jwt.annotation.JWTRequired;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.elasticsearch.common.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.SecurityContext;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -69,6 +75,10 @@ public class TfServingService {
 
   @EJB
   private NoCacheResponse noCacheResponse;
+  @EJB
+  private ProjectFacade projectFacade;
+  @EJB
+  private JWTHelper jWTHelper;
 
   @EJB
   private TfServingModelPathValidator tfServingModelPathValidator;
@@ -89,21 +99,17 @@ public class TfServingService {
    */
 
   private Project project;
-  private Users user;
 
   public TfServingService(){ }
 
-  public void setProject(Project project) {
-    this.project = project;
-  }
-
-  public void setUser(Users user) {
-    this.user = user;
+  public void setProjectId(Integer projectId) {
+    this.project = projectFacade.find(projectId);
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  @JWTRequired(acceptedTokens={Audience.API}, allowedUserRoles={"HOPS_ADMIN", "HOPS_USER"})
   @ApiOperation(value = "Get the list of TfServing instances for the project",
       response = TfServingView.class,
       responseContainer = "List")
@@ -128,6 +134,7 @@ public class TfServingService {
   @Path("/{servingId}")
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  @JWTRequired(acceptedTokens={Audience.API}, allowedUserRoles={"HOPS_ADMIN", "HOPS_USER"})
   @ApiOperation(value = "Get info about a TfServing instance for the project", response = TfServingView.class)
   public Response getTfserving(
       @ApiParam(value = "Id of the TfServing instance", required = true) @PathParam("servingId") Integer servingId)
@@ -148,6 +155,7 @@ public class TfServingService {
   @DELETE
   @Path("/{servingId}")
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  @JWTRequired(acceptedTokens={Audience.API}, allowedUserRoles={"HOPS_ADMIN", "HOPS_USER"})
   @ApiOperation(value = "Delete a TfServing instance")
   public Response deleteTfServing(
       @ApiParam(value = "Id of the TfServing instance", required = true) @PathParam("servingId") Integer servingId)
@@ -165,10 +173,12 @@ public class TfServingService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  @JWTRequired(acceptedTokens={Audience.API}, allowedUserRoles={"HOPS_ADMIN", "HOPS_USER"})
   @ApiOperation(value = "Create or update a TfServing instance")
-  public Response createOrUpdate(
+  public Response createOrUpdate(@Context SecurityContext sc,
       @ApiParam(value = "TfServing specification", required = true) TfServingView tfServing)
       throws TfServingException, ServiceException, KafkaException, ProjectException, UserException {
+    Users user = jWTHelper.getUserPrincipal(sc);
     if (tfServing == null) {
       throw new IllegalArgumentException("tfServing was not provided");
     }
@@ -209,13 +219,14 @@ public class TfServingService {
   @Path("/{servingId}")
   @Consumes(MediaType.APPLICATION_JSON)
   @AllowedProjectRoles({AllowedProjectRoles.DATA_OWNER, AllowedProjectRoles.DATA_SCIENTIST})
+  @JWTRequired(acceptedTokens={Audience.API}, allowedUserRoles={"HOPS_ADMIN", "HOPS_USER"})
   @ApiOperation(value = "Start or stop a TfServing instance")
-  public Response startOrStop(
+  public Response startOrStop(@Context SecurityContext sc,
       @ApiParam(value = "ID of the TfServing instance to start/stop", required = true)
       @PathParam("servingId") Integer servingId,
       @ApiParam(value = "Action", required = true) @QueryParam("action") TfServingCommands servingCommand)
       throws TfServingException {
-  
+    Users user = jWTHelper.getUserPrincipal(sc);
     if (servingId == null) {
       throw new IllegalArgumentException("servingId was not provided");
     }

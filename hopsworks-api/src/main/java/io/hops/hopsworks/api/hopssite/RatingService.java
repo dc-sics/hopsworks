@@ -41,7 +41,7 @@ package io.hops.hopsworks.api.hopssite;
 
 import io.hops.hopsworks.api.filter.NoCacheResponse;
 import io.hops.hopsworks.api.hopssite.dto.RatingValueDTO;
-import io.hops.hopsworks.common.dao.user.UserFacade;
+import io.hops.hopsworks.api.jwt.JWTHelper;
 import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.RESTCodes;
 import io.hops.hopsworks.common.util.Settings;
@@ -74,11 +74,11 @@ public class RatingService {
   @EJB
   private HopssiteController hopsSite;
   @EJB
-  private UserFacade userFacade;
-  @EJB
   private Settings settings;
   @EJB
   private NoCacheResponse noCacheResponse;
+  @EJB
+  private JWTHelper jWTHelper;
 
   private String publicDSId;
 
@@ -96,8 +96,8 @@ public class RatingService {
   }
 
   @GET
-  public Response getRating(@Context SecurityContext sc,
-    @ApiParam(required = true) @QueryParam("filter") RatingFilter filter) throws DelaException {
+  public Response getRating(@ApiParam(required = true) @QueryParam("filter") RatingFilter filter,
+      @Context SecurityContext sc) throws DelaException {
     switch (filter) {
       case DATASET:
         return getDatasetAllRating();
@@ -116,10 +116,10 @@ public class RatingService {
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(rating).build();
   }
 
-  public Response getDatasetUserRating(@Context SecurityContext sc) throws DelaException {
+  public Response getDatasetUserRating(SecurityContext sc) throws DelaException {
     LOGGER.log(Settings.DELA_DEBUG, "hops-site:rating:get:user {0}", publicDSId);
     String publicCId = SettingsHelper.clusterId(settings);
-    Users user = SettingsHelper.getUser(userFacade, sc.getUserPrincipal().getName());
+    Users user = jWTHelper.getUserPrincipal(sc);
     RatingDTO rating = hopsSite.getDatasetUserRating(publicCId, publicDSId, user.getEmail());
     LOGGER.log(Settings.DELA_DEBUG, "hops-site:rating:get:user - done {0}", publicDSId);
     return noCacheResponse.getNoCacheResponseBuilder(Response.Status.OK).entity(rating).build();
@@ -129,7 +129,7 @@ public class RatingService {
   public Response addRating(@Context SecurityContext sc, RatingValueDTO rating) throws DelaException {
     LOGGER.log(Settings.DELA_DEBUG, "hops-site:rating:add {0}", publicDSId);
     String publicCId = SettingsHelper.clusterId(settings);
-    Users user = SettingsHelper.getUser(userFacade, sc.getUserPrincipal().getName());
+    Users user = jWTHelper.getUserPrincipal(sc);
     hopsSite.performAsUser(user, new HopsSite.UserFunc<String>() {
       @Override
       public String perform() throws DelaException {

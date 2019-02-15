@@ -48,6 +48,11 @@ import io.hops.hopsworks.common.jobs.yarn.ServiceProperties;
 import io.hops.hopsworks.common.jobs.yarn.YarnRunner;
 import io.hops.hopsworks.common.util.HopsUtils;
 import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.common.util.templates.ConfigProperty;
+import org.apache.hadoop.yarn.api.records.LocalResourceType;
+import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
+import org.apache.hadoop.yarn.client.api.YarnClient;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -55,18 +60,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import io.hops.hopsworks.common.util.templates.ConfigProperty;
-import org.apache.hadoop.yarn.api.records.LocalResourceType;
-import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
-import org.apache.hadoop.yarn.client.api.YarnClient;
 
 /**
  * Builder class for a Spark YarnRunner. Implements the common logic needed
@@ -90,19 +88,17 @@ public class SparkYarnRunnerBuilder {
   private int numberOfExecutorsMax = Settings.SPARK_MAX_EXECS;
   private int numberOfExecutorsInit = Settings.SPARK_INIT_EXECS;
   private int executorCores = 1;
-  private int numberOfGpus = 0;
+  private int executorGPUs = 0;
   private String properties;
   private boolean dynamicExecutors;
   private String executorMemory = "512m";
   private int driverMemory = 1024; // in MB
   private int driverCores = 1;
   private String driverQueue;
-  private int numOfGPUs = 0;
   private final Map<String, String> envVars = new HashMap<>();
   private final Map<String, String> sysProps = new HashMap<>();
   private String classPath;
   private ServiceProperties serviceProps;
-  final private Set<String> blacklistedProps = new HashSet<>();
 
   public SparkYarnRunnerBuilder(Jobs job) {
     this.job = job;
@@ -139,7 +135,7 @@ public class SparkYarnRunnerBuilder {
       throws IOException {
 
     Map<String, ConfigProperty> jobHopsworksProps = new HashMap<>();
-    JobType jobType = job.getJobConfig().getType();
+    JobType jobType = job.getJobConfig().getJobType();
     String appPath = ((SparkJobConfiguration) job.getJobConfig()).getAppPath();
 
     String hdfsSparkJarPath = settings.getHdfsSparkJarPath();
@@ -175,7 +171,7 @@ public class SparkYarnRunnerBuilder {
         Settings.SPARK_LOG4J_PROPERTIES, log4jPath,
         LocalResourceVisibility.APPLICATION.toString(),
         LocalResourceType.FILE.toString(), null), false);
-    //Add metrics 
+    //Add metrics
     builder.addLocalResource(new LocalResourceDTO(
         Settings.SPARK_METRICS_PROPERTIES, settings.getSparkConfDir() + "/metrics.properties",
         LocalResourceVisibility.PRIVATE.toString(),
@@ -184,6 +180,11 @@ public class SparkYarnRunnerBuilder {
     builder.addLocalResource(new LocalResourceDTO(
         Settings.DOMAIN_CA_TRUSTSTORE, settings.getGlassfishTrustStoreHdfs(),
         LocalResourceVisibility.PRIVATE.toString(),
+        LocalResourceType.FILE.toString(), null), false);
+    // Add Hive-site.xml for SparkSQL
+    builder.addLocalResource(new LocalResourceDTO(
+        Settings.HIVE_SITE, settings.getHiveSiteSparkHdfsPath(),
+        LocalResourceVisibility.APPLICATION.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
     //Add app file
@@ -224,7 +225,7 @@ public class SparkYarnRunnerBuilder {
           .append(Settings.SPARK_LOCALIZED_PYTHON_DIR)
           .append(File.pathSeparator).append(Settings.PYSPARK_ZIP)
           .append(File.pathSeparator).append(settings.getPy4JArchive());
-      //set app file from path
+
       appExecName = appPath.substring(appPath.lastIndexOf(File.separator) + 1);
 
       jobHopsworksProps.put(Settings.SPARK_APP_NAME_ENV,
@@ -254,10 +255,19 @@ public class SparkYarnRunnerBuilder {
         LocalResourceVisibility.APPLICATION.toString(),
         LocalResourceType.FILE.toString(), null), false);
 
+    // Add tf-spark-connector for Featurestore
+    builder.addLocalResource(new LocalResourceDTO(
+        settings.getTfSparkConnectorFilename(), settings.getTfSparkConnectorPath(),
+        LocalResourceVisibility.PUBLIC.toString(),
+        LocalResourceType.FILE.toString(), null), false);
+
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
         settings.getHopsUtilFilename());
+    builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
+        settings.getTfSparkConnectorFilename());
     extraClassPathFiles.append(settings.getHopsUtilFilename()).append(File.pathSeparator).
-        append(settings.getHopsLeaderElectionJarPath()).append(File.pathSeparator);
+        append(settings.getHopsLeaderElectionJarPath()).append(File.pathSeparator).
+        append(settings.getTfSparkConnectorFilename()).append(File.pathSeparator);
     builder.addToAppMasterEnvironment(YarnRunner.KEY_CLASSPATH,
         "$PWD/" + Settings.SPARK_LOCALIZED_CONF_DIR + File.pathSeparator
         + Settings.SPARK_LOCALIZED_CONF_DIR
@@ -310,6 +320,14 @@ public class SparkYarnRunnerBuilder {
       }
       builder.addToAppMasterEnvironment("KAFKA_BROKERS", settings.getKafkaBrokersStr());
     }
+
+    //JobName is used by hops-util
+    builder.addToAppMasterEnvironment("HOPSWORKS_JOB_NAME", jobName);
+    jobHopsworksProps.put(Settings.SPARK_EXECUTORENV_JOB_NAME,
+        new ConfigProperty(
+            Settings.SPARK_EXECUTORENV_JOB_NAME,
+            HopsUtils.IGNORE,
+            jobName));
 
     //Set Spark specific environment variables
     builder.addToAppMasterEnvironment("SPARK_YARN_MODE", "true");
@@ -366,7 +384,7 @@ public class SparkYarnRunnerBuilder {
               secondaryJars.toString().substring(0, secondaryJars.length() - 1)));
     }
 
-    //If DynamicExecutors are not enabled, set the user defined number 
+    //If DynamicExecutors are not enabled, set the user defined number
     //of executors
     if (dynamicExecutors) {
       jobHopsworksProps.put(Settings.SPARK_DYNAMIC_ALLOC_ENV,
@@ -560,7 +578,14 @@ public class SparkYarnRunnerBuilder {
           new ConfigProperty(
               Settings.SPARK_TF_GPUS_ENV,
               HopsUtils.IGNORE,
-              Integer.toString(numOfGPUs)));
+              Integer.toString(executorGPUs)));
+      if (executorGPUs > 0) {
+        jobHopsworksProps.put(Settings.SPARK_TENSORFLOW_APPLICATION,
+            new ConfigProperty(
+                Settings.SPARK_TENSORFLOW_APPLICATION,
+                HopsUtils.IGNORE,
+                "true"));
+      }
       //Add libs to PYTHONPATH
       if (serviceProps.isAnacondaEnabled()) {
         //Add libs to PYTHONPATH
@@ -606,7 +631,6 @@ public class SparkYarnRunnerBuilder {
 
     //Create a string with system properties from extraJavaOptions
     StringBuilder extraJavaOptionsSb = new StringBuilder();
-    //extraJavaOptionsSb.append("'-D"+Settings.SPARK_EXECUTOR_EXTRA_JAVA_OPTS+"=");
     for (String key : extraJavaOptions.keySet()) {
       extraJavaOptionsSb.append(" -D").append(key).append("=").append(extraJavaOptions.get(key)).append(" ");
     }
@@ -717,12 +741,12 @@ public class SparkYarnRunnerBuilder {
     return this;
   }
 
-  public SparkYarnRunnerBuilder setNumberOfGpusPerExecutor(int numberOfGpusPerExecutor) {
-    if (numberOfGpusPerExecutor < 0) {
+  public SparkYarnRunnerBuilder setExecutorGPUs(int executorGPUs) {
+    if (executorGPUs < 0) {
       throw new IllegalArgumentException(
           "Number of GPUs per executor cannot be less than 0.");
     }
-    this.numberOfGpus = numberOfGpusPerExecutor;
+    this.executorGPUs = executorGPUs;
     return this;
   }
 
@@ -841,10 +865,6 @@ public class SparkYarnRunnerBuilder {
 
   public void setDriverQueue(String driverQueue) {
     this.driverQueue = driverQueue;
-  }
-
-  public void setNumOfGPUs(int numOfGPUs) {
-    this.numOfGPUs = numOfGPUs;
   }
 
   public void setServiceProps(ServiceProperties serviceProps) {

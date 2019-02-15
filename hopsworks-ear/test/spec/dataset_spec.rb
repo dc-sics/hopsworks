@@ -423,9 +423,49 @@ describe "On #{ENV['OS']}" do
           create_session(member[:email],"Pass123")
           post "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset", {name: dirname}
           expect_status(403)
-          get_datasets_in(@project, @dataset[:name])
+          get_datasets_in(@project, @dataset[:inode_name])
           createdDir = json_body.detect { |inode| inode[:name] == "afterDir" }
           expect(createdDir).to be_nil
+        end
+      end
+
+      context 'test if the dataset owner is added to the dataset group' do
+        before :all do
+          with_valid_project
+          with_valid_dataset
+        end
+
+        it "should be able to download a file created by another user" do
+          # Make the dataset writable by other members of the project
+          put "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/permissions", {name: @dataset[:inode_name], permissions: "GROUP_WRITABLE_SB"}
+          expect_status(200)
+
+          dirname = @dataset[:inode_name] + "/afterDir"
+          project_owner = @user
+          member = create_user
+          add_member(member[:email], "Data owner")
+          create_session(member[:email],"Pass123")
+
+          # Create a subdirectory
+          post "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset", {name: dirname}
+          expect_status(200)
+
+          # Get README.md inodeId
+          get_datasets_in(@project, @dataset[:inode_name])
+          readme = json_body.detect { |inode| inode[:name] == "README.md" }
+
+          # Copy README.md to the subdirectory
+          post "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/copy",
+               {destPath: "/Projects/#{@project[:projectname]}/#{dirname}/README.md",
+                inodeId: readme[:id]}
+          expect_status(200)
+
+          # Log in as project owner, if the project owner is in the dataset group, it should be able to preview
+          # the copied README.md file.
+          create_session(project_owner[:email], "Pass123")
+          # Try to preview the README.md
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/filePreview/#{dirname}/README.md?mode=head"
+          expect_status(200)
         end
       end
     end
@@ -482,6 +522,76 @@ describe "On #{ENV['OS']}" do
           end
         end
       end
+    end
+    
+    describe "#Download" do
+      context 'without authentication' do
+        before :all do
+          with_valid_project
+          reset_session
+        end
+        it "should fail to get a download token" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/checkFileForDownload/Logs/README.md"
+          expect_json(errorCode: 200003)
+          expect_status(401)
+        end
+        it "should fail to download file without a token" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Logs/README.md"
+          expect_json(errorCode: 200003)
+          expect_status(401)
+        end
+        it "should fail to download file with an empty string token" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Logs/README.md?token= "
+          expect_json(errorCode: 200003)
+          expect_status(401)
+        end
+        it "should fail to download file with an empty token" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Logs/README.md?token="
+          expect_json(errorCode: 200003)
+          expect_status(401)
+        end
+      end
+      context 'with authentication and sufficient privileges' do
+        before :all do
+          with_valid_project
+        end
+        it "should download Logs/README.md" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/checkFileForDownload/Logs/README.md"
+          expect_status(200)
+          token = json_body[:data][:value]
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Logs/README.md?token=" + token 
+          expect_status(200)
+        end
+        it "should fail to download with a token issued for a different file path" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/checkFileForDownload/Resources/README.md"
+          expect_status(200)
+          token = json_body[:data][:value]
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Logs/README.md?token=" + token 
+          expect_status(401)
+        end
+        it "should fail to download more than one file with a single token" do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/checkFileForDownload/Resources/README.md"
+          expect_status(200)
+          token = json_body[:data][:value]
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Resources/README.md?token=" + token 
+          expect_status(200)
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Resources/README.md?token=" + token 
+          expect_status(401)
+        end
+        it 'should fail to download a file if variable download_allowed is false' do
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/checkFileForDownload/Logs/README.md"
+          expect_status(200)
+          token = json_body[:data][:value]
+          setVar("download_allowed", 'false')
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/checkFileForDownload/Logs/README.md"
+          expect_status(403)
+          get "#{ENV['HOPSWORKS_API']}/project/#{@project[:id]}/dataset/fileDownload/Logs/README.md?token=" + token
+          expect_status(403)
+          #set var back to true
+          setVar("download_allowed", "true")
+          expect(getVar("download_allowed").value). to eq "true"
+        end
+      end 
     end
   end
 end

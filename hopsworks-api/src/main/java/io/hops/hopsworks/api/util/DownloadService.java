@@ -39,17 +39,24 @@
 
 package io.hops.hopsworks.api.util;
 
-import io.hops.hopsworks.api.filter.AllowedProjectRoles;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import io.hops.hopsworks.api.jwt.JWTHelper;
 import io.hops.hopsworks.api.project.util.DsPath;
 import io.hops.hopsworks.api.project.util.PathValidator;
 import io.hops.hopsworks.common.dao.dataset.Dataset;
 import io.hops.hopsworks.common.dao.dataset.DatasetPermissions;
 import io.hops.hopsworks.common.dao.project.Project;
+import io.hops.hopsworks.common.dao.user.UserFacade;
+import io.hops.hopsworks.common.dao.user.Users;
 import io.hops.hopsworks.common.exception.DatasetException;
 import io.hops.hopsworks.common.exception.ProjectException;
 import io.hops.hopsworks.common.exception.RESTCodes;
 import io.hops.hopsworks.common.hdfs.DistributedFileSystemOps;
 import io.hops.hopsworks.common.hdfs.DistributedFsService;
+import io.hops.hopsworks.common.hdfs.HdfsUsersController;
+import io.hops.hopsworks.common.util.Settings;
+import io.hops.hopsworks.jwt.exception.SigningKeyNotFoundException;
+import io.hops.hopsworks.jwt.exception.VerificationException;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.Path;
 
@@ -61,15 +68,14 @@ import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.ws.rs.QueryParam;
 
 @RequestScoped
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -81,15 +87,18 @@ public class DownloadService {
   private DistributedFsService dfs;
   @EJB
   private PathValidator pathValidator;
+  @EJB
+  private UserFacade userFacade;
+  @EJB
+  private HdfsUsersController hdfsUsersBean;
+  @EJB
+  private JWTHelper jWTHelper;
+  @EJB
+  private Settings settings;
 
-  private String projectUsername;
   private Project project;
 
   public DownloadService() {
-  }
-
-  public void setProjectUsername(String projectUsername) {
-    this.projectUsername = projectUsername;
   }
 
   public void setProject(Project project) {
@@ -99,12 +108,17 @@ public class DownloadService {
   @GET
   @javax.ws.rs.Path("/{path: .+}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
-  @AllowedProjectRoles({AllowedProjectRoles.DATA_SCIENTIST, AllowedProjectRoles.DATA_OWNER})
-  public Response downloadFromHDFS(@PathParam("path") String path, @Context SecurityContext sc)
-    throws DatasetException, ProjectException {
-
-    DsPath dsPath = pathValidator.validatePath(this.project, path);
+  public Response downloadFromHDFS(@PathParam("path") String path, @QueryParam("token") String token)
+    throws DatasetException, ProjectException, SigningKeyNotFoundException, VerificationException {
+    if(!settings.isDownloadAllowed()){
+      throw new DatasetException(RESTCodes.DatasetErrorCode.DOWNLOAD_NOT_ALLOWED, Level.FINEST);
+    }
+    DsPath dsPath = pathValidator.validatePath(project, path);
     String fullPath = dsPath.getFullPath().toString();
+    DecodedJWT djwt = jWTHelper.verifyOneTimeToken(token, fullPath);
+    Users user = userFacade.findByUsername(djwt.getSubject());
+    String projectUsername = hdfsUsersBean.getHdfsUserName(project, user);
+
     Dataset ds = dsPath.getDs();
     if (ds.isShared() && ds.getEditable()==DatasetPermissions.OWNER_ONLY && !ds.isPublicDs()) {
       throw new DatasetException(RESTCodes.DatasetErrorCode.DOWNLOAD_ERROR, Level.FINE);
