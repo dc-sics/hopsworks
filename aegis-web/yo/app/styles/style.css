@@ -89,6 +89,15 @@ a:focus {
   border-radius: 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
+.panel-login {
+  background-color: #fafafa;
+  border-bottom: 1px solid #2e353d;
+  border-bottom-style: double;
+  border-width: medium;
+  border-left: none;
+  border-right: none;
+  border-radius: 0;
+}
 .panel.panel-filter {
   box-shadow:none;
   border-radius:0;
@@ -750,4 +759,17 @@ nav[data-toggle='toc'] {
   border: 1px solid #eee;
   border-left-width: 5px;
   border-radius: 3px;
+}
+.img-login {
+  width: 50%;
+}
+
+.button-login {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+}
+
+.button-login button {
+  width: 40%;
 }
