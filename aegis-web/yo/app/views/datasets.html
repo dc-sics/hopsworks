@@ -104,11 +104,11 @@
                 <div style="padding: 6px 0; padding-top: 11px;"">
                   Filter: &nbsp;
                   <a ng-click="datasetsCtrl.shared = undefined; datasetsCtrl.status = undefined; datasetsCtrl.isPublic = undefined;" class="file-control active">All</a>
-                  <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = true; datasetsCtrl.isPublic = 0;" class="file-control">Shared</a>
+                  <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = true; datasetsCtrl.isPublic = 0;" class="file-control">Shared with Me</a>
                   <a ng-click="datasetsCtrl.shared = undefined; datasetsCtrl.isPublic = 1; datasetsCtrl.status = true;" class="file-control">Public in Cluster</a>
                   <a ng-show="isDelaEnabled" ng-click="datasetsCtrl.shared = undefined; datasetsCtrl.isPublic = 2; datasetsCtrl.status = true;" class="file-control">Public in Hops</a>
-                  <a ng-click="datasetsCtrl.shared = false; datasetsCtrl.status = true; datasetsCtrl.isPublic = 0;" class="file-control">Exclusive</a>
-                  <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = false; datasetsCtrl.isPublic = 0;" class="file-control">Pending</a>
+                  <a ng-click="datasetsCtrl.shared = false; datasetsCtrl.status = true; datasetsCtrl.isPublic = 0;" class="file-control">My Datasets</a>
+                  <a ng-click="datasetsCtrl.shared = true; datasetsCtrl.status = false; datasetsCtrl.isPublic = 0;" class="file-control">My Requests</a>
                 </div>
               </div>
               <div class="col-md-3">
