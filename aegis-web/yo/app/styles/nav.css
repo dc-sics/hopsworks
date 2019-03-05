@@ -177,7 +177,7 @@ ul.dropdown-messages .dropdown-header {
   overflow: hidden;
   position: absolute;
   right: 0;/*start from right*/
-  top: 150px;
+  top: 160px;
   bottom: 0;
   transition: all 0.3s ease;
   -webkit-transition: all 0.3s ease;
