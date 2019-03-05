@@ -61,7 +61,7 @@
   position: absolute;
   box-sizing: border-box;
   display: block;
-  border: 1px solid #ccc;
+  border: 1px solid #fff;
 }
 
 .rg-right span, .rg-left span {
@@ -104,7 +104,7 @@
   left: 0;
   margin-bottom: -14px;
   z-index: 3;
-  background: #eee;
+  background: #0492b3;
 }
 
 .rg-left {
@@ -151,8 +151,9 @@
 
 .rg-row-top-ds > div.rg-bottom {
   margin-bottom: 0px !important;
-  width: 96%;
+  width: 90%;
   margin-left: 14px;
+  border-radius: 10px;
 }
 
 .rg-row-bottom {
@@ -184,7 +185,7 @@
 }
 
 .ds-box-bottom {
-    width: 98%;
+    width: 93%;
     overflow: auto;
     max-height: 55%;
 }
