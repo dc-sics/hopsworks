@@ -558,7 +558,7 @@ md-input-container {
     outline: none;
 }
 
-.btn-group {
+.btn-group:not(.btn-group-justified) {
   display: flex;
 }
 
