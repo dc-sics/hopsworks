@@ -190,6 +190,9 @@ angular.module('hopsWorksApp', [
                       controller: 'RegCtrl as regCtrl'
                     })
                     .when('/project/:projectID', {
+                      redirectTo: '/project/:projectID/datasets'
+                    })
+                    .when('/project/:projectID/activities', {
                       templateUrl: 'views/project.html',
                       controller: 'ProjectCtrl as projectCtrl',
                       resolve: {

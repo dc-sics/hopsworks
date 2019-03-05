@@ -200,9 +200,9 @@ angular.module('hopsWorksApp')
               }
             };
 
-            //we only need to load the activities if the path is project (endswith pId).
+            //we only need to load the activities if the path is /project/:projectID/activities.
             var locationPath = $location.path();
-            if (locationPath.substring(locationPath.length - self.projectId.length, locationPath.length) === self.projectId) {
+            if (locationPath === "/project/" + self.projectId + "/" + "activities") {
               getAllActivities(0);
             }            
 
