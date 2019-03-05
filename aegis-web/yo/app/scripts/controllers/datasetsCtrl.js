@@ -692,9 +692,7 @@ angular.module('hopsWorksApp')
                           var content = fileDetails.filePreviewDTO[0].content;
                           var conv = new showdown.Converter({parseImgDimensions: true});
                           console.log('readme: ', fileDetails);
-                          //$scope.readme = conv.makeHtml(content);
-                          $scope.readme = '<h2>'+content+'</h2>';
-                          console.log($scope.readme);
+                          $scope.readme = conv.makeHtml(content);
                         }, function (error) {
                   //To hide README from UI
                         if (typeof error.data.usrMsg !== 'undefined') {

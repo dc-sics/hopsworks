@@ -41,7 +41,7 @@
   <nav class="navbar navbar-default">
     <div class="container-fluid">
       <!-- Brand and toggle get grouped for better mobile display -->
-      <div class="navbar-header">
+      <div class="navbar-header col-md-6">
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#search-navbar" aria-expanded="false">
           <span class="sr-only">Toggle navigation</span>
           <span class="icon-bar"></span>
@@ -50,7 +50,7 @@
         </button>
         <a class="navbar-brand" >Search results</a>
       </div>
-      <div class="collapse navbar-collapse" id="search-navbar">
+      <div class="collapse navbar-collapse pull-right col-md-6" id="search-navbar">
         <ul class="nav navbar-nav navbar-right search-result-menu">
           <li>
             <a data-toggle="collapse" data-target="#filterdropdown" role="button" aria-haspopup="true" aria-expanded="false">
@@ -73,26 +73,35 @@
   </nav>
   <section id="filterdropdown" class="collapse search-result-filter">
     <div class="row result-filter-body">
-      <li class="col-md-4">
+        <li class="col-md-3">
         <ul>
-          <li class="dropdown-header">Type</li>
-          <li><a class="filter-menu-uppercase"
+        <div class="dropdown">
+                <button class="btn btn-default dropdown-toggle" data-toggle="dropdown" type="button" id="dropdownType">
+                    Type
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownType">
+                    <li><a class="filter-menu-uppercase"
                  data-toggle="collapse" data-target="#filterdropdown"
                  ng-click="searchTypePub=undefined; searchType=undefined;">all</a></li>
-          <li><a class="filter-menu-uppercase"
-                 data-toggle="collapse" data-target="#filterdropdown"
-                 style="color: #FC5120;"
-                 ng-click="searchType=undefined; searchTypePub='true'">public</a></li>
-          <li><a class="filter-menu-uppercase" 
-                 data-toggle="collapse" data-target="#filterdropdown"
-                 style="color: #4178BE;"
-                 ng-click="searchTypePub=undefined; searchType='proj';">project</a></li>
-          <li><a class="filter-menu-uppercase" 
-                 data-toggle="collapse" data-target="#filterdropdown"
-                 style="color: #5DA51D; "
-                 ng-click="searchTypePub=undefined; searchType='ds';">dataset</a></li>
-<!--          <li class="divider"></li>
-          <li class="dropdown-header">Tops</li>
+                    <li><a class="filter-menu-uppercase"
+                           data-toggle="collapse" data-target="#filterdropdown"
+                           style="color: #FC5120;"
+                           ng-click="searchType=undefined; searchTypePub='true'">public</a></li>
+                    <li><a class="filter-menu-uppercase" 
+                           data-toggle="collapse" data-target="#filterdropdown"
+                           style="color: #4178BE;"
+                           ng-click="searchTypePub=undefined; searchType='proj';">project</a></li>
+                    <li><a class="filter-menu-uppercase" 
+                           data-toggle="collapse" data-target="#filterdropdown"
+                           style="color: #5DA51D; "
+                           ng-click="searchTypePub=undefined; searchType='ds';">dataset</a></li>
+                </ul>
+            </div>
+      
+            
+          
+        <!--  <li class="dropdown-header">Tops</li>
           <li><a >Votes </a>
             <div class="input-group">
               <label class="sr-only" for="email">At list</label>
@@ -107,7 +116,7 @@
           </li>-->
         </ul>
       </li>
-      <li class="col-md-4">
+      <li class="col-md-5">
         <ul>
           <li class="dropdown-header">Size</li>
           <li>
@@ -120,8 +129,8 @@
             </div>
           </li>
           <li class="divider"></li>
-          <li class="dropdown-header">Date</li>
-          <li> <a>Created</a>
+          <li class="dropdown-header">Date Created</li>
+          <li> 
             <div class="input-group">
               <label class="sr-only" for="from">From</label>
               <input type="datepicker" class="form-control" id="datepicker1" placeholder="From date">
@@ -151,6 +160,7 @@
               <input type="email" class="form-control" id="email" placeholder="Enter name" ng-model="searchOwner">
             </div>
           </li>
+          <li class="divider"></li>
           <li class="dropdown-header">Name</li> 
           <li>
             <div>
@@ -159,16 +169,20 @@
             </div>
           </li>
           <li class="divider"></li>
-          <li class="dropdown-header">Sort by</li>
-          <li><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='name'">Name</a></li>
-          <li><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='user'">Owner</a></li>
-          <li><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='createDate'">Date</a></li>
-          <li><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='size'">Size</a></li>
+          <div class="form-group">
+              <label class="dropdown-header" for="selectSort">Sort by</label>
+                <select class="form-control" id="selectSort">
+                    <option><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='name'">Name</a></option>
+                    <option><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='user'">Owner</a></option>
+                    <option><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='createDate'">Date</a></option>
+                    <option><a data-toggle="collapse" data-target="#filterdropdown" ng-click="sortKey='size'">Size</a></option>
+                </select>
+          </div>
         </ul>
       </li>
     </div>
     <div class="row result-filter-body">
-      <div class="pull-right">
+      <div class="pull-right col-md-1">
         <button data-toggle="collapse" data-target="#filterdropdown" type="submit" class="btn btn-primary btn-block"
               ng-click="searchTypePub=undefined; 
                         searchType=undefined; 
