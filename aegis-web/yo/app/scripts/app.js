@@ -122,6 +122,16 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
+                    .when('/getStarted', {
+                      templateUrl: 'views/getStarted.html',
+                      controller: '',
+                      resolve: {
+                        auth: ['$q','AuthGuardService',
+                          function ($q, AuthGuardService) {
+                            return AuthGuardService.guardSession($q);
+                          }]
+                      }
+                    })
                     .when('/delahopsDataset', {
                       templateUrl: 'views/delahopsDataset.html',
                       controller: 'HopsDatasetCtrl as publicDataset',
