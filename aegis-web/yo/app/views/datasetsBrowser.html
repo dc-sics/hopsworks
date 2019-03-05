@@ -236,14 +236,14 @@
                       </td>
                       <td ng-click="!datasetsCtrl.haveSelected(file) ? datasetsCtrl.select($index, file, $event) : datasetsCtrl.deselect($index, file, $event)">
                         <div>{{file.name}}</div></td>
-                      <td ng-click="datasetsCtrl.openDir(file)">{{file.owner}} 
+                      <td ng-click="!datasetsCtrl.haveSelected(file) ? datasetsCtrl.select($index, file, $event) : datasetsCtrl.deselect($index, file, $event)">{{file.owner}} 
                       </td>
-                      <td ng-click="datasetsCtrl.openDir(file)" ng-if="file.owningProjectName">{{file.owningProjectName}} 
+                      <td ng-click="!datasetsCtrl.haveSelected(file) ? datasetsCtrl.select($index, file, $event) : datasetsCtrl.deselect($index, file, $event)" ng-if="file.owningProjectName">{{file.owningProjectName}} 
                       </td>
-                      <td ng-click="datasetsCtrl.openDir(file)">{{file.modification| date:'short'}} <span style=" color: #757575; font-size: 12px; padding-left: 5px;"></span>
+                      <td ng-click="!datasetsCtrl.haveSelected(file) ? datasetsCtrl.select($index, file, $event) : datasetsCtrl.deselect($index, file, $event)">{{file.modification| date:'short'}} <span style=" color: #757575; font-size: 12px; padding-left: 5px;"></span>
                       </td>
-                      <td style="width: 12%;" ng-click="datasetsCtrl.openDir(file)">{{(file.size == 0? '_': projectCtrl.sizeOnDisk(file.size))}}</td> 
-                      <td ng-click="datasetsCtrl.openDir(file)"> 
+                      <td style="width: 12%;" ng-click="!datasetsCtrl.haveSelected(file) ? datasetsCtrl.select($index, file, $event) : datasetsCtrl.deselect($index, file, $event)">{{(file.size == 0? '_': projectCtrl.sizeOnDisk(file.size))}}</td> 
+                      <td ng-click="!datasetsCtrl.haveSelected(file) ? datasetsCtrl.select($index, file, $event) : datasetsCtrl.deselect($index, file, $event)"> 
                         <i class="glyphicon"ng-class="{ 'glyphicon-hourglass': file.underConstruction === 1}"></i>
                       </td>
                       <td uib-dropdown class="position-fixed" id="menu-{{ $index}}" style="border-top: none">
