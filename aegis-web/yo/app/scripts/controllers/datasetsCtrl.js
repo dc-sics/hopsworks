@@ -1113,11 +1113,11 @@ angular.module('hopsWorksApp')
               // 1. Turn off the selected file at the top of the browser.
               // Add existing selected file (idempotent, if already added)
               // If file already selected, deselect it.
-              if (event && event.ctrlKey) {
+              /** if (event && event.ctrlKey) {
 
               } else {
                 self.selectedFiles = {};
-              }
+              } */
               if (self.isSelectedFiles() > 0) {
                 self.selected = null;
               } else {
