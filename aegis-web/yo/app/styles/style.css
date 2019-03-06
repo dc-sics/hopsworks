@@ -89,7 +89,6 @@ a:focus {
   border-radius: 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
 }
-
 .panel-login {
   background-color: #fafafa;
   border-bottom: 1px solid #2e353d;
@@ -764,13 +763,11 @@ nav[data-toggle='toc'] {
 .img-login {
   width: 50%;
 }
-
 .button-login {
   display: flex;
   justify-content: space-around;
   margin-bottom: 30px;
 }
-
 .button-login button {
   width: 40%;
 }
