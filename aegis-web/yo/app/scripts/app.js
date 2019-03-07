@@ -122,6 +122,16 @@ angular.module('hopsWorksApp', [
                           }]
                       }
                     })
+                    .when('/getStarted', {
+                      templateUrl: 'views/getStarted.html',
+                      controller: '',
+                      resolve: {
+                        auth: ['$q','AuthGuardService',
+                          function ($q, AuthGuardService) {
+                            return AuthGuardService.guardSession($q);
+                          }]
+                      }
+                    })
                     .when('/delahopsDataset', {
                       templateUrl: 'views/delahopsDataset.html',
                       controller: 'HopsDatasetCtrl as publicDataset',
@@ -190,6 +200,9 @@ angular.module('hopsWorksApp', [
                       controller: 'RegCtrl as regCtrl'
                     })
                     .when('/project/:projectID', {
+                      redirectTo: '/project/:projectID/datasets'
+                    })
+                    .when('/project/:projectID/activities', {
                       templateUrl: 'views/project.html',
                       controller: 'ProjectCtrl as projectCtrl',
                       resolve: {

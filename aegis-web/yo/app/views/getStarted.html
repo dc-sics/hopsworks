@@ -1,0 +1,150 @@
+<div ng-controller="MainCtrl as mainCtrl">
+  <div ng-include="'nav.html'"></div>
+  <div ng-if="mainCtrl.showSearchPage" class="row">
+    <div id="projectSearchResults">
+      <div ng-include="'views/search.html'"></div>
+    </div>
+  </div>
+
+  <div class="container-fluid" ng-if="!mainCtrl.showSearchPage">
+    <div class="row-fluid">
+      <div class="bs-docs-sidebar">
+        <ul class="nav nav-stacked fixed">
+          <li class="sidebar-header-0">Table of Contents</li>
+          <li class="sidebar-header-1"><a href="/#!/getStarted#a.-quick-introduction-to-the-aegis-tools"
+              target="_self">A. Quick Introduction to the AEGIS tools</a></li>
+          <li class="sidebar-header-1"><a href="/#!/getStarted#b.-getting-started-workflow">B. Getting started
+              workflow</a></li>
+          <li class="sidebar-header-2"><a href="/#!/getStarted#part-1---first-visit-step-by-step">Part 1 - First visit
+              step by step</a></li>
+          <li class="sidebar-header-2"><a href="/#!/getStarted#part-2---advanced-options">Part 2 - Advanced options</a>
+          </li>
+        </ul>
+      </div>
+      <div class="span9 wiki-main" style="border-left: 1px dashed lightgrey; padding-left: 15px;">
+        <h1 id="a.-quick-introduction-to-the-aegis-tools"><a class="header-link"
+            href="#a.-quick-introduction-to-the-aegis-tools"></a>A. Quick Introduction to the AEGIS tools</h1>
+        <p>AEGIS offers various tools to address the diverse needs of its users:</p>
+        <ul class="list">
+          <li>
+            <p>AEGIS Integrated Services</p>
+            <p>The AEGIS platform provides multi-tenant data management and processing services for Big Data, allowing
+              different users and services to securely and privately access and process their data and share them with
+              other users, allowing access for specific services. In order to do that, AEGIS builds upon <a
+                href="https://github.com/aegisbigdata/hopsworks/blob/aegis/README.md">Hopsworks</a>, which also enables
+              AEGIS to provide integrated support for various services such as interactive notebooks with Zeppelin and
+              Jupyter, Kafka, and ELK stack.</p>
+          </li>
+          <li>
+            <p>Query Builder</p>
+            <p>Query Builder provides the capability to interactively define and execute queries on data available
+              inside AEGIS. Query Builder aims to simplify and accelerate the process of retrieving data and creating
+              views on them, which could be then saved as new datasets or used as input for more high-level AEGIS tools,
+              like the Visualiser and the Algorithm Execution Container</p>
+          </li>
+          <li>
+            <p>Visualiser</p>
+            <p>The Visualiser is the component enabling the visualisation capabilities of the AEGIS platform for the
+              output of the querying and filtering results coming from the Query Builder as well as the output of the
+              analysis results as produced from the Algorithm Execution Container. </p>
+          </li>
+          <li>
+            <p>Algorithm Execution Container</p>
+            <p>This component features a UI that consists of an algorithm selection template, which offers to users some
+              basic information regarding each algorithm available in the big data analysis platform of AEGIS and also
+              enables the configuration and the execution of the selected algorithm.</p>
+          </li>
+          <li>
+            <p>The Data Harvester and Annotator</p>
+            <p>The Data Harvester and Annotator features several sub-components which, in connection, represent the
+              process of harvesting, transforming, harmonising, annotating and providing the required data and metadata
+              for the AEGIS platform. </p>
+          </li>
+        </ul>
+        <p>The previous tools are the ones that the users directly interact with through the core AEGIS platform. There
+          are also some tools working &quot;under the hood&quot; to enable certain functionalities:</p>
+        <ul class="list">
+          <li>AEGIS Linked Data Store, which is responsible for storing the metadata associated with a particular
+            dataset within the AEGIS platform </li>
+          <li>Brokerage Engine, which includes elements of the Data Policy and the Business Brokerage framework.</li>
+        </ul>
+        <p>Finally, AEGIS offers two optional offline tools, specifically:</p>
+        <ul class="list">
+          <li>An anonymisation tool, which is an extensible, schema-agnostic plugin that allows real-time efficient data
+            anonymisation.</li>
+          <li>A cleansing tool that enables data validation, data cleansing and data completion processes towards
+            increasing the reliability, accuracy and completeness of the data that will be imported in the AEGIS
+            platform</li>
+        </ul>
+        <h1 id="b.-getting-started-workflow"><a class="header-link" href="#b.-getting-started-workflow"></a>B. Getting
+          started workflow</h1>
+        <p>Welcome to the AEGIS platform! The following lines aim to help you familiarise yourself with the platform and
+          begin using our various tools and services. </p>
+        <h2 id="part-1---first-visit-step-by-step"><a class="header-link"
+            href="#part-1---first-visit-step-by-step"></a>Part 1 - First visit step by step</h2>
+        <ol class="list">
+          <li>Create a new account in the platform and wait for your activation e-mail.</li>
+          <li>Welcome! You are now in the AEGIS home page, where you can browse our assets, i.e. our projects and
+            datasets. Search around a bit to see what we have!</li>
+          <li>When you have looked around enough, it&#39;s time to move on to do more interesting things and for that,
+            you will need a project! You might have come to AEGIS through an invitation to join a project, so you may
+            find yourself in an already populated workspace. But we&#39;ll assume that&#39;s not the case for this
+            intro. So, go ahead and create a project by pressing the yellow button on the right</li>
+          <li>You are now in the project&#39;s home page. From here you can review the last actions performed by the
+            project users (currently only you). The menu on the left is the entrance point to the various offered tools.
+            Please note the cluster utilisation percentage right under the menu, it shows the current work load on the
+            cluster and it will be affected by the things you do in the platform as well. </li>
+          <li>Select the &quot;Project Datsets&quot; menu option. From here you can explore the available datasets and
+            of-course upload more data in your project. You will find six datasets already there, which are necessary
+            parts of every project. Don&#39;t mind them for now. Go ahead and create another dataset by pressing the
+            yellow button on the right. After that, you can upload some files in your new dataset - make sure to upload
+            some csv files as well to use in our next steps. When the upload is over, select one of the uploaded files
+            and notice the hdfs path that appears in the yellow box on the right. You may need this path in the future,
+            so make sure you remember how to find it.</li>
+          <li>Select the &quot;Visualiser&quot; menu option. For more information on how this tool is used and what you
+            can do with it, you may refer to <a
+              href="https://github.com/aegisbigdata/documentation/wiki/Visualizer">this guide</a>. For now, just try
+            loading one of your previously uploaded csv files and then choose a simple visualisation.</li>
+          <li>Select the &quot;Query Builder&quot; menu option. Let&#39;s assume that in the previous step, when using
+            the Visualiser, you would have wanted to filter out some values prior to visualising the data. Follow the
+            provided instructions <a href="https://github.com/aegisbigdata/documentation/wiki/Query-Builder">here</a> to
+            perform this simple task. The guide provides information for more advanced tasks as well and you can always
+            try things on your own to find out exactly what you can do. </li>
+          <li>Select the &quot;Analytics&quot; menu option. Again, for information about what you can do with this tool
+            and how, you may refer to <a
+              href="https://github.com/aegisbigdata/documentation/wiki/Algorithm-Execution-Container">this guide</a>.
+            Here you will need that hdfs path from step 5. Copy it and go ahead to try the tool!</li>
+          <li>Go to the &quot;Metadata Designer&quot; menu option. From here you can add metadata to your data which are
+            used for enhanced search and may also, under the hood, facilitate some data management processes. This part
+            may seem a bit advanced, but keep in mind it&#39;s there. For now keep experimenting in steps 5-8 and you
+            will gradually understand what metadata offer and you may even decide to contribute yourself! Take a look <a
+              href="https://github.com/aegisbigdata/documentation/wiki/Data-Harvester-and-Annotator">here</a> when you
+            are ready to know more! </li>
+        </ol>
+        <h2 id="part-2---advanced-options"><a class="header-link" href="#part-2---advanced-options"></a>Part 2 -
+          Advanced options</h2>
+        <p>Once you familiarise yourslef with the processes described in the first tour, you will understand how the
+          related tools can be leveraged to enable and/or facilitate various data management and processing tasks. At
+          the same time, you may realise some limitations and you may want to move on to more advanced operations. There
+          are four menu options not included in the first part, that offer exactly these capabilities:</p>
+        <ol class="list">
+          <li>Jupyter menu option: This will open another window with Jupyter Notebook, i.e. an open-source web
+            application that allows you to create and share documents that contain live code, equations, visualizations
+            and narrative text. Uses include data cleaning and transformation, numerical simulation, statistical
+            modeling, data visualization, machine learning, and more (see also <a href="http://jupyter.org/">Jupyter
+              website</a>. You have already seen Jupyter in the first tour, since Visualiser and Query Builder are built
+            inside this notebook. We support the sparkmagic Jupyter kernel, which is used to run Spark applications.
+          </li>
+          <li>Zeppelin menu option: This will take you to Apache Zeppelin, which is also a web-based interactive
+            notebook with support for various interpreters, including Spark and Angular. </li>
+          <li>Jobs menu option: This will take you to the AEGIS UI that provides support for running Jobs. Jobs could be
+            Spark applications or Spark workflows and they can be scheduled for periodic execution or run on-demand.
+          </li>
+          <li>Kafka: This will take you to the Kafka management page. AEGIS supports Kafka-as-a-Service. Kafka topics
+            (used as channels for producing/consuming messages) are private to projects and users can create a topic
+            with just a few clicks. Topics can also be shared with other projects enabling real-time communication
+            between projects.</li>
+        </ol>
+      </div>
+    </div>
+  </div>

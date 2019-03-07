@@ -41,14 +41,14 @@
 angular.module('hopsWorksApp')
     .controller('JupyterCtrl', ['$scope', '$routeParams', '$route',
         'growl', 'ModalService', '$interval', 'JupyterService', 'StorageService', '$location',
-        '$timeout', '$window', '$sce', 'PythonDepsService', 'TourService',
+        '$timeout', '$window', '$sce', 'PythonDepsService', 'TourService', 'AegisToolsService',
         function($scope, $routeParams, $route, growl, ModalService, $interval, JupyterService,
-            StorageService, $location, $timeout, $window, $sce, PythonDepsService, TourService) {
+            StorageService, $location, $timeout, $window, $sce, PythonDepsService, TourService, AegisToolsService) {
 
             var self = this;
             self.connectedStatus = false;
             self.loading = false;
-            self.advanced = true;
+            self.advanced = false;
             self.details = true;
             self.loadingText = "";
             self.jupyterServer;
@@ -65,8 +65,9 @@ angular.module('hopsWorksApp')
             self.condaEnabled = true;
             self.jupyterInstalled = true;
             $scope.sessions = null;
+            $scope.aegisTools = null;
             self.val = {};
-            $scope.tgState = true;
+            $scope.tgState = false;
             self.config = {};
             self.numNotEnabledEnvs = 0;
             self.opsStatus = {};
@@ -654,6 +655,16 @@ angular.module('hopsWorksApp')
                 );
                 self.livySessions(self.projectId);
 
+                //retrieve availabe Aegis Tools for the project
+                AegisToolsService.getAllTools(self.projectId).then(
+                    function(success) {
+                        $scope.aegisTools = success.data;
+                    },
+                    function(error) {
+                        $scope.aegisTools = null;
+                    }
+                );
+
             };
 
 
@@ -744,18 +755,20 @@ angular.module('hopsWorksApp')
             };
 
             var load = function() {
-                $scope.tgState = true;
+                $scope.tgState = false;
             };
 
             init();
 
             var navigateToPython = function() {
-                $location.path('/#!/project/' + self.projectId + '/python');
+                $location.path('project/' + self.projectId + '/python');
             };
 
-            self.start = function() {
+            self.navigateToPython = navigateToPython;
+
+            self.start = function(noBrowser, callback) {
                 startLoading("Connecting to Jupyter...");
-                $scope.tgState = true;
+                $scope.tgState = false;
                 self.setInitExecs();
 
                 // if quick-select libraries have been added, we need to add them as
@@ -865,7 +878,12 @@ angular.module('hopsWorksApp')
                             ttl: 20000
                         });
                         self.ui = "/hopsworks-api/jupyter/" + self.config.port + "/?token=" + self.config.token;
-                        $window.open(self.ui, '_blank');
+                        if (!noBrowser) {
+                            $window.open(self.ui, '_blank');
+                        }
+                        if (typeof callback === "function"){
+                            callback(true, self.config);
+                        }
                         $timeout(stopLoading(), 5000);
                         timeToShutdown();
                         if (self.tourService.currentStep_TourEight == 6 || self.tourService.currentStep_TourEight == 7) {
@@ -885,11 +903,44 @@ angular.module('hopsWorksApp')
                         } else {
                             growl.error("", {title: error.data.errorMsg, ttl: 8000});
                         }
+                        if (typeof callback === "function"){
+                            callback(false);
+                        }
                         stopLoading();
                         self.toggleValue = true;
                     }
                 );
 
+            };
+
+            self.executeIfStarted = function(callback) {
+                if (typeof callback !== "function") 
+                    throw new TypeError("callback is not a function");
+
+                // Check if jupiter has started
+                if (self.ui !== "") {
+                    callback(true);
+                } else {
+                    self.start(true, function(started) {
+                        callback(started);
+                    });
+                }
+            };
+
+            self.openNotebook = function(filename, pathArray) {
+                var path = (pathArray instanceof Array) ? pathArray.slice() : ["Jupyter"];
+                if (path.shift() !== "Jupyter")
+                    throw new Error("You can't open files outside Jupyter path.");
+                path.push(filename);
+                path = path.join('/');
+                self.executeIfStarted(function(started) {
+                    if (started) {
+                        $window.open(
+                            `/hopsworks-api/jupyter/${self.config.port}/notebooks/${path}?token=${self.config.token}`, 
+                            '_blank'
+                        );
+                    }
+                })
             };
         }
     ]);

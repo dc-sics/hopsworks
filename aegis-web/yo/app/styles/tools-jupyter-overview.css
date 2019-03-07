@@ -1,0 +1,168 @@
+.card-tool{
+    width: 25%;
+    min-width: 300px;
+    padding: 0px;
+    perspective: 1000px;
+    /* height:555px; */
+    margin-left: 5%;
+    float: left;
+}
+
+.card-tool-image{
+    object-fit: contain;
+    width: 100%;
+    height: 130px;
+    padding: 5% 5% 5% 5%;
+}
+
+.card-tool-header{
+    width: 100%;
+    height: 15px;
+    background-color: #0492b3;
+}
+.card-tool-title{
+    color: #0492b3;
+    display: block;
+    padding: 0px 5px 0px 5px;
+    font-size: 140%;
+    text-align: center;
+    height: 30px;
+}
+
+.card-tool-text{
+    text-align: center;
+    color: grey;
+    padding: 5% 5% 5% 5%;
+    margin-bottom: 0px;
+
+}
+.card-body-bottom{
+    width:100%;
+    background-color: #f2f2f2;
+    padding: 5% 5% 5% 5%;
+}
+
+.card-tool-bottom-title{
+    color: #0492b3;
+    font-size: 120%;
+    width: 100%;
+    display: inline-block;
+}
+
+.card-tool-bottom-text{
+    margin-top: 5px;
+    color:grey;
+    width: 100%;
+    display: inline-block;
+}
+
+.card-tool-bottom-link{
+    font-size: 110%;
+    margin-top: 20px;
+    width: 100%;
+    display: inline-block;
+}
+
+
+.card-tool-bottom-link-morethan{
+    float:right;
+}
+/* .card-inner-custom{
+    position: relative;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    transition: transform 0.8s;
+    transform-style: preserve-3d;
+}
+
+.tool-card:hover .card-inner-custom{
+    transform: rotateY(180deg);
+}
+
+.card-front-custom, .card-back-custom{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+}
+
+.card-front-custom{
+    background-color: white;
+}
+
+.card-back-custom{
+    background-color: white;
+    transform: rotateY(180deg);
+} */
+
+.info-icon{
+    height: 30px;
+    width: 30px;
+    object-fit: contain;
+
+}
+
+.jupyter-settings-tab{
+    margin-top: 30px;
+    width: 100%;
+    float: left;
+    text-align: center;
+}
+
+#jupyter-settings-access{
+    margin-left: 50px;
+    /* margin-bottom: 5px;
+    margin-top: 5px; */
+    padding: 20px;
+    border: 3px solid #0492b3;
+    color: #03677d;
+    /* border: 1px solid #0492b3; */
+    /* background-color: #e8eaed;
+    box-shadow: 1px 1px 2px 1px grey; */
+    /* border-top: none;
+    border-bottom: 2px solid #0492b3;
+    border-top: 2px solid #0492b3; */
+
+}
+
+#jupyter-settings-access:hover{
+    cursor: pointer;
+    color: #0492b3;
+}
+
+
+.tab-jupyter-settings-btn{
+    width: 240px;
+    background-color: #1e961e;
+    border: 3px solid #398439;
+    color:white;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.1);
+    -webkit-transition:0.5s all ease;
+    transition:0.5s all ease;
+    /* box-shadow: 1px 1px 1px 1px gray; */
+}
+
+.tab-jupyter-settings-btn:hover{
+    cursor: pointer;
+    background-color: white;
+    color: #398439; 
+}
+
+.row-margin{
+    margin-left: -150px;
+}
+
+.jupyter-tools-sidebard-z-index{
+    z-index: -1;
+}
+@media only screen and (max-width :1364px){
+    .card-tool{
+        margin-top: 30px;
+    }
+
+    .jupyter-tools-wrapper-margin{
+        margin-top: -20px;
+    }
+}

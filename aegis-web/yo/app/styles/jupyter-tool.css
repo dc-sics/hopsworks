@@ -1,0 +1,42 @@
+.card-img-custom{
+	width: 24rem;
+	height: inherit;
+	margin-left: 1rem;
+}
+
+.nav-align-center {
+	text-align: center;
+}
+
+.nav-align-center > li {
+	float: none;
+	display: inline-block;
+}
+
+
+.tool-card {
+	-webkit-transform: translateY(0) translateZ(0);
+    -ms-transform: translateY(0) translateZ(0);
+    -moz-transform: translateY(0) translateZ(0);
+    -o-transform: translateY(0) translateZ(0);
+    transform: translateY(0) translateZ(0);
+    -webkit-transition: all .16s ease-out;
+    -ms-transition: all .16s ease-out;
+    -moz-transition: all .16s ease-out;
+    -o-transition: all .16s ease-out;
+    transition: all .16s ease-out;
+}
+
+.tool-card:hover {
+	-webkit-transform: translateY(-4px) translateZ(0);
+    -ms-transform: translateY(-4px) translateZ(0);
+    -moz-transform: translateY(-4px) translateZ(0);
+    -o-transform: translateY(-4px) translateZ(0);
+    transform: translateY(-4px) translateZ(0);
+    -ms-transform: translateY(-4px);
+    -webkit-box-shadow: 2px 15px 29px -2px rgba(0, 0, 0, 0.3);
+    -ms-box-shadow: 2px 15px 29px -2px rgba(0, 0, 0, 0.3);
+    -moz-box-shadow: 2px 15px 29px -2px rgba(0, 0, 0, 0.3);
+    -o-box-shadow: 2px 15px 29px -2px rgba(0, 0, 0, 0.3);
+    box-shadow: 2px 15px 29px -2px rgba(0, 0, 0, 0.3);
+}

@@ -248,6 +248,17 @@
                       </td>
                       <td uib-dropdown class="position-fixed" id="menu-{{ $index}}" style="border-top: none">
                         <ul uib-dropdown-menu class="dropdown-amore" role="menu">
+                          <li ng-show="datasetsCtrl.pathArray[0] === 'Jupyter' && datasetsCtrl.isSelectedFiles() === 0 &&  file.name.substr(-6) === '.ipynb'"  ng-controller="JupyterCtrl as jupyterCtrl">
+                            <a class="pointer"
+                               role="menuitem"
+                               tabindex="10"
+                               ng-click="jupyterCtrl.openNotebook(file.name, datasetsCtrl.pathArray)"
+                               data-toggle="uib-tooltip" title="Open this Jupiter Notebook in new window."
+                               >
+                              <span><i class="fas fa-external-link-alt" ></i>
+                                Open Jupiter Notebook</span>
+                            </a>
+                          </li>
                           <li ng-show="datasetsCtrl.isSelectedFiles() <= 1" 
                               ng-hide="datasetsCtrl.isZippedfile()===false">
                             <a class="pointer"
