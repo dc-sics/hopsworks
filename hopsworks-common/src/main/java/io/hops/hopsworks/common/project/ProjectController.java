@@ -118,6 +118,7 @@ import io.hops.hopsworks.common.serving.tf.TfServingController;
 import io.hops.hopsworks.common.serving.tf.TfServingException;
 import io.hops.hopsworks.common.user.UsersController;
 import io.hops.hopsworks.common.util.HopsUtils;
+import io.hops.hopsworks.common.util.IoUtils;
 import io.hops.hopsworks.common.util.ProjectUtils;
 import io.hops.hopsworks.common.util.Settings;
 import io.hops.hopsworks.common.yarn.YarnClientService;
@@ -154,6 +155,7 @@ import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -179,6 +181,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.hadoop.fs.FSDataOutputStream;
 
 @Stateless
 @TransactionAttribute(TransactionAttributeType.NEVER)
@@ -767,13 +770,19 @@ public class ProjectController {
     try {
       String datasetName = ds.getName();
       //Training Datasets should be shareable, prefix with project name to avoid naming conflicts when sharing
-      if(ds == Settings.ServiceDataset.TRAININGDATASETS)
+      if (ds == Settings.ServiceDataset.TRAININGDATASETS) {
         datasetName = project.getName() + "_" + datasetName;
+      }
       datasetController.createDataset(user, project, datasetName, ds.
           getDescription(), -1, false, false, true, dfso);
       datasetController.generateReadme(udfso, datasetName,
           ds.getDescription(), project.getName());
 
+      if (datasetName.equals(Settings.ServiceDataset.JUPYTER.getName())) {
+        for(String notebook : Settings.AEGIS_NOTEBOOKS){
+          populateWithNotebooks(udfso, project.getName(),notebook);
+        }
+      }
       // This should only happen in project creation
       // Create dataset and corresponding README file as superuser
       // to postpone waiting for the certificates generation thread when
@@ -788,14 +797,60 @@ public class ProjectController {
         FileStatus fstatus = dfso.getFileStatus(dsPath);
         Path readmePath = new Path(dsPath, Settings.README_FILE);
         dfso.setOwner(readmePath, fstatus.getOwner(), fstatus.getGroup());
+        if (datasetName.equals(Settings.ServiceDataset.JUPYTER.getName())) {
+          for (String notebook : Settings.AEGIS_NOTEBOOKS) {
+            Path notebookPath = new Path(dsPath, notebook);
+            dfso.setOwner(notebookPath, fstatus.getOwner(), fstatus.getGroup());
+          }
+        }
       }
     } catch (IOException ex) {
       LOGGER.log(Level.SEVERE, "Could not create dir: " + ds.getName(), ex);
       throw new ProjectException(RESTCodes.ProjectErrorCode.PROJECT_SERVICE_ADD_FAILURE,
-        Level.SEVERE, "service: " + ds.toString(), ex.getMessage(), ex);
+          Level.SEVERE, "service: " + ds.toString(), ex.getMessage(), ex);
     }
   }
 
+  private void populateWithNotebooks(DistributedFileSystemOps udfso, String project, String notebook) {
+    if (udfso != null) {
+      try {
+        LOGGER.log(Level.INFO, "Add {0} to project ({1})", new Object[]{notebook, project});
+        String notebookfilePath;
+        StringBuilder notebookfileSB = new StringBuilder();
+        notebookfileSB.append(File.separator).append(Settings.DIR_ROOT)
+            .append(File.separator).append(project)
+            .append(File.separator).append(Settings.ServiceDataset.JUPYTER.getName())
+            .append(File.separator).append(notebook);
+
+        notebookfilePath = notebookfileSB.toString();
+
+        List<String> content = IoUtils.readLinesFromClasspath(Settings.getAEGISNotebookResouceFile(notebook));
+
+        long size = 0;
+        try (FSDataOutputStream fsOut = udfso.create(notebookfilePath)) {
+          for(String line : content){
+            fsOut.writeBytes(line);
+            size += line.length();
+          }
+        }
+        
+        LOGGER.log(Level.INFO, "Notebook {0} of size {1} added to project ({2})", new Object[]{notebook,
+          size, project});
+        
+        udfso.setPermission(new org.apache.hadoop.fs.Path(notebookfilePath),
+            new FsPermission(FsAction.ALL,
+                FsAction.ALL,
+                FsAction.NONE));
+      } catch (MalformedURLException ex) {
+        LOGGER.log(Level.WARNING, ex.toString());
+      } catch (IOException ex) {
+        LOGGER.log(Level.WARNING, ex.toString());
+      }
+    } else {
+      LOGGER.log(Level.WARNING, "DFS Client is null");
+    }
+  }
+   
   private void addServiceHive(Project project, Users user, DistributedFileSystemOps dfso) throws ProjectException {
     try {
       hiveController.createDatabase(project.getName(), "Project general-purpose Hive database");
