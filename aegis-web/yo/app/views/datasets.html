@@ -157,7 +157,7 @@
                             <div ng-if="dataset.status === false" data-toggle="tooltip" title="Shared Dataset. Click on this dataset to accept/reject it." class="icon" ng-click="projectCtrl.browseDataset(dataset)">
                               <i class="fa" ng-class="{'fa-folder-open' : datasetsCtrl.selected !== dataset.name}"></i>
                             </div>
-                            <div ng-if="dataset.status === true" data-toggle="tooltip" title="Click here to enter this dataset" class="icon" ng-click="projectCtrl.browseDataset(dataset)">
+                            <div ng-if="dataset.status === true" data-toggle="tooltip" title="Click here to enter this dataset" class="icon" ng-click="datasetsCtrl.select(dataset.name, dataset, $event); metadataCtrl.setMetadataTemplate(dataset); datasetsCtrl.filePreview(dataset, false, true);" ng-dblclick="projectCtrl.browseDataset(dataset)">
                               <i ng-show="!dataset.downloading" class="fa" ng-class="{'fa-folder-open': datasetsCtrl.selected === dataset.name, 'fa-folder' : datasetsCtrl.selected !== dataset.name}"></i>
                               <i ng-show="dataset.downloading"  class="glyphicon glyphicon-cloud-download"></i>
                             </div>
