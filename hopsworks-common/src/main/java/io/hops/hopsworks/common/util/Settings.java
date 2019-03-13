@@ -92,6 +92,7 @@ import java.util.regex.Pattern;
 
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.DLIMITER;
 import static io.hops.hopsworks.common.dao.kafka.KafkaFacade.SLASH_SEPARATOR;
+import java.util.Arrays;
 
 @Singleton
 @ConcurrencyManagement(ConcurrencyManagementType.BEAN)
@@ -3252,4 +3253,18 @@ public class Settings implements Serializable {
     return "hdfs:///user/" + getSparkUser() + "/" + getTfSparkConnectorFilename();
   }
 
+  //AEGIS
+  
+  public static final String QUERYBUILDER_NOTEBOOK = "QueryBuilder_v1.ipynb";
+  public static final String VISUALIZER_NOTEBOOK = "Visualizer.ipynb";
+  public static final String AEC_NOTEBOOK = "Algorithm Execution Container-Jupyter Version.ipynb";
+  
+  public static final String AEGIS_NOTEBOOKS_DIR = "notebooks";
+  
+  public static final List<String> AEGIS_NOTEBOOKS = Arrays.asList(QUERYBUILDER_NOTEBOOK, 
+      VISUALIZER_NOTEBOOK, AEC_NOTEBOOK);
+  
+  public static String getAEGISNotebookResouceFile(String notebook){
+    return AEGIS_NOTEBOOKS_DIR + File.separator + notebook;
+  }
 }
