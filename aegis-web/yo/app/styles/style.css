@@ -771,3 +771,21 @@ nav[data-toggle='toc'] {
 .button-login button {
   width: 40%;
 }
+
+/* For tabs not to be gradient -- projectSettings.html*/
+.ng-isolate-scope > .nav-tabs {
+  background: #fff;
+  height: 80px;
+  box-shadow: 0 2em 3em #ddd;
+}
+
+a.nav-link.ng-binding {
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+li.uib-tab.nav-item.ng-scope.ng-isolate-scope.active {
+  font-weight: bold;
+}
