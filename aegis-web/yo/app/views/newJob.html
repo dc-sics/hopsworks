@@ -39,7 +39,7 @@
 
 <!-- Create a new job -->
 <div ng-controller="MainCtrl as mainCtrl">
-  <div ng-include="'nav.html'"></div>
+  <!-- <div ng-include="'nav.html'"></div> -->
 
 
   <div id="wrapper" class="toggled" ng-controller="NewJobCtrl as newJobCtrl">
@@ -47,23 +47,94 @@
 
     <div ng-include="'navProject.html'"></div>
 
+    <div>
+      <div ng-if="mainCtrl.showSearchPage" class="container-fluid content-wrapper">
+        <div id="projectSearchResults">
+          <div ng-include="'views/search.html'"></div>
+        </div>
+      </div>
+      <div ng-if="!mainCtrl.showSearchPage" class="container-fluid content-wrapper" ng-controller="ProjectCtrl as projectCtrl">
+        <div growl reference="3" class="pull-right" ></div>
+        <div class="row content-utility-bar content-utility-bar-head">
+          <div class="col-md-5">
+            <div class="input-group">
+              <input type="text" class="form-control" ng-model="search" placeholder="Search for projects or datasets...">
+              <span class="input-group-btn">
+                <button class="btn btn-default fa fa-search icon-resize-small" type="button" title="Filter"></button>
+              </span>
+            </div>
+          </div>
+          <div class="col-md-7" style="padding-right: 30px;">
+            <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown" ng-click="mainCtrl.getMessages()">
+                <a class="dropdown-toggle" data-toggle="dropdown" style="padding:5px 15px 0px 20px; margin-top: 7px;" aria-expanded="false">
+                  <i ng-if="mainCtrl.unreadMessages" class="fa fa-envelope fa-lg" title="Unread messages">
+                    <span class="badge" style="background-color: #f89406; font-family: sans-serif; z-index: 100; position: absolute; top: -10px; right: -18px">{{mainCtrl.unreadMessages}}</span>
+                  </i>
+                  <i ng-if="!mainCtrl.unreadMessages" class="fa fa-envelope fa-lg" title="No unread message"></i>
+                  &nbsp;Messages
+                </a>
+                <ul class="dropdown-menu dropdown-messages" >
+                  <li class="dropdown-header text-muted" ng-if="mainCtrl.messages.length"><h4>Latest messages</h4></li>
+                  <li class="dropdown-header text-muted" ng-if="!mainCtrl.messages.length"><h4>Inbox empty.</h4></li>
+                  <li ng-repeat="msg in mainCtrl.messages| limitTo:5">
+                    <div>
+                      <div ng-click="mainCtrl.openMessageModal(msg)">                    
+                        <div class="message-subject text-muted">
+                          <i ng-if="msg.unread" class="fa fa-circle pull-left" style="color:#f89406; margin-top: 4px;" title="Unread message"></i>
+                          <i ng-if="!msg.unread" class="fa fa-circle pull-left" style="color:grey; margin-top: 4px;" title="Read message"></i>
+                          {{msg.subject}}</div>
+                        <div class="text-muted">{{msg.dateSent| date:'medium'}}</div>
+                      </div>
+                      <div ng-click="mainCtrl.openMessageModal(msg)" class="message-preview">{{msg.preview| limitTo:80}} {{msg.preview.length > 80 ? ' ...' : ''}}</div>
+                      <a ng-if="msg.path" href="#!/{{msg.path}}"> go to requested path.</a>
+                    </div>
+                  </li>
+                  <a class="pull-right" ng-if="mainCtrl.messages.length" ng-click="mainCtrl.openMessageModal()" style="text-decoration:none;"> See all messages</a>
+                  <a class="pull-right" ng-if="!mainCtrl.messages.length" ng-click="mainCtrl.openMessageModal()" style="text-decoration:none;"> Goto messages</a>
+                </ul>
+              </li>          
+            </ul>
+          </div>
+        </div>
+        <div class="row content-utility-bar content-utility-bar-actions">
+          <div class="col-md-3">
+            <h4 style="margin-top: 10px; margin-bottom: 5px">Jobs > {{ projectCtrl.currentProject.projectName}} > New job
+              <i class="fa fa-times-circle" uib-tooltip="Clear the current state." style="margin-left: 10px" ng-click="newJobCtrl.exitToJobs()"></i>
+            </h4>
+          </div>
+
+          <div class="col-md-9" style="display:flex; justify-content: flex-end;">
+            <!--
+              ID of tags should not be changed. It is referenced in JobsCtr
+              -->
+              <label for="jobConfigFile" class="btn btn-success">
+                Import job
+              </label>
+              <input type="file" id="jobConfigFile" name="file" accept=".json" style="display: none" />
+          </div>
+        </div>
+      </div><!--content wrapper -->
+
+    </div>
+
     <section>
-      <div class="content-wrapper">
-        <h3 id="projectBread" style="display: none;"> {{ projectCtrl.currentProject.projectName}} / New job</h3>
+      <div class="content-wrapper" style = "margin-top: 35px;">
+        <h3 id="projectBread" style="display: none;"> {{ projectCtrl.currentProject.projectName}} / New job definition</h3>
 
       <div class="row">
-        <div class="panel-header col-md-9">
+        <!-- <div class="panel-header col-md-9">
           <h2>New job definition
             <i class="fa fa-times-circle" uib-tooltip="Clear the current state." style="margin-left: 10px" ng-click="newJobCtrl.exitToJobs()"></i>
           </h2>
-        </div>
+        </div> -->
         <div class="col-md">
           <!--
             ID of tags should not be changed. It is referenced in JobsCtr
             -->
-            <label for="jobConfigFile" class="btn btn-success">
+            <!-- <label for="jobConfigFile" class="btn btn-success">
               Import job
-            </label>
+            </label> -->
             <input type="file" id="jobConfigFile" name="file" accept=".json" style="display: none" />
         </div>
       </div>

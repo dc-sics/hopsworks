@@ -789,3 +789,7 @@ a.nav-link.ng-binding {
 li.uib-tab.nav-item.ng-scope.ng-isolate-scope.active {
   font-weight: bold;
 }
+
+.panel {
+  box-shadow: none;
+}
