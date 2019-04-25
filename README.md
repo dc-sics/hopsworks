@@ -1,6 +1,6 @@
 # Note: Hopsworks has moved (this version is deprecated)!
 
-Hopsworks development has moved to <a href="https://github.com/logicalclocks.com/hopsworks">logicalclocks.com/hopsworks</a>.
+Hopsworks development has moved to <a href="https://github.com/logicalclocks/hopsworks">logicalclocks/hopsworks</a>.
 
 
 ## Hopsworks
